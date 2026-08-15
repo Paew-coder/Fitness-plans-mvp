@@ -37,8 +37,13 @@ Zakres formuł to wiersze 3–202 (200 miejsc), wypełnionych 164. Zapas 36 wier
 **6. Nie 3 tryby progresji, tylko 7.**
 `kg` (132), `masa ciała` (16), `dodatkowy ciężar` (4), `czas` (6), `asysta` (3), `ręczne ustawienie` (2), `dystans` (1).
 
-**7. Do zweryfikowania w BAZIE: 16 pozycji, nie „część".**
-Banded pistol squat, Cable lateral raise s/a, Dead bug izo + OH, Deficit push up, Dips, Eccentric pull up, Hollow body + OH, Incline dumbbell press, Leg curl, OHP barbell squat 15kg, Pull up eccentric weighted, Seated cable facepull, Seesaw press, Side crunches, Trap bar deadlift, Zercher jumps.
+**7. Do decyzji w BAZIE: 16 pozycji — ale kontrola w arkuszu widzi tylko 14.**
+
+`Analiza!B71` sprawdza `LEFT(uwagi;14)="DO WERYFIKACJI"`, więc łapie 14 pozycji:
+Cable lateral raise s/a, Dead bug izo + OH, Deficit push up, Dips, Eccentric pull up, Hollow body + OH, Incline dumbbell press, Leg curl, OHP barbell squat 15kg, Pull up eccentric weighted, Seated cable facepull, Seesaw press, Side crunches, Trap bar deadlift.
+
+Dwie kolejne są oznaczone innym prefiksem — `UZUPEŁNIĆ – brak part/coeff w 4.0` — i **przechodzą przez kontrolę niezauważone**: `EX-0008 Banded pistol squat` i `EX-0203 Zercher jumps`. Obie mają uzupełnione part i coeff w 5.17, więc prawdopodobnie da się je po prostu odznaczyć, ale to decyzja Pawła.
+
 Dodatkowo **26 ćwiczeń nie ma filmu**.
 
 ---

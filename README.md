@@ -39,8 +39,21 @@ Błąd TOP SET (formuły zaszyte w wierszu 7) — nadal aktualny.
 Nie ma tabeli RPE, tabel stresu, skoku kg, pętli feedbacku ani reguł ciężaru per tydzień.
 To prototyp UI, nie aplikacja do dokończenia.
 
-## Pierwszy krok
+## Silnik — faza 0 zrobiona
 
-`04-roadmapa.md`, faza 0: pakiet `silnik/` bez zależności + testy przeciwko realnym
-planom z Dysku. Kryterium: **zgodność co do grosza na ciężarze, do 0,1 na stresie.**
-Dopóki to nie przechodzi, arkusz zostaje wyrocznią.
+W [`silnik/`](silnik/) leży działające jądro: ciężary, stres, bilans, walidacja.
+Zero zależności, Node 22 uruchamia je wprost.
+
+```bash
+cd silnik
+npm test                                       # 57 testów, 194 wartości zgodne z arkuszem
+npm run policz -- 1rm 80 5                     # 1RM z serii maksymalnej
+npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz
+```
+
+Szczegóły i sposób dokładania własnych planów do testów: [`silnik/README.md`](silnik/README.md).
+
+## Następny krok
+
+`04-roadmapa.md`, faza 1: konsola trenera na tym silniku, klient dalej dostaje
+wyeksportowany arkusz. Przed startem — pięć otwartych decyzji na końcu roadmapy.
