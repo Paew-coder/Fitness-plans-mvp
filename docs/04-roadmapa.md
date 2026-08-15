@@ -105,21 +105,32 @@ Nie migrować. Katalog to 1 rekord, plan testowy odwołuje się do ćwiczeń, kt
 
 ---
 
-## Otwarte decyzje
+## Decyzje podjęte
 
-Rzeczy, których nie rozstrzygam za Ciebie, bo zmieniają zakres:
+Pięć pytań, które blokowały fazę 1 — rozstrzygnięte 15.08.2026.
 
-1. **Klienci stacjonarni.** `CLAUDE.md` mówi wprost: osobne arkusze, inny układ, nie mieszać założeń. Czy aplikacja ma ich obsłużyć, czy zostają poza systemem? Schemat jest na to gotowy (`klienci.user_id = null`), ale kreator planu zakłada układ 6-tygodniowy z 5 dniami.
+**1. Klienci stacjonarni zostają poza systemem.**
+Aktualnych nie migrujemy. `CLAUDE.md` mówi wprost: inny układ, nie mieszać założeń — i tak zostaje. Schemat zachowuje `klienci.user_id = null` jako furtkę na przyszłość, ale kreator planu projektujemy wyłącznie pod układ 6-tygodniowy.
 
-2. **Czy naprawiać TOP SET w arkuszu 5.17.** Aplikacja rozwiązuje to jawną referencją `top_sety.slot_id`. Ale arkusz będzie jeszcze długo w użyciu — a to jest realny błąd, który uderza, gdy w S01 stoi rozgrzewka.
+**2. Przełącznik objętość / intensywność zostaje ręczny.**
+Bez automatycznego przełączania w połowie cyklu. `czesc_planu` pozostaje własnością planu, ustawianą przez trenera — dokładnie jak `Analiza!B5` dziś. Silnik już tak działa.
 
-3. **Rozjazd `progresja` (7 typów) ↔ `exercise_type` w Base44 (4 typy).** Przyjąłem model z arkusza. Base44 wprowadziło też `is_unilateral` i `location` (gym/home/both), których arkusz nie ma — a które są sensowne. Czy dokładamy je do katalogu?
+**3. Katalog: bez `dom / siłownia`, z oznaczeniem ćwiczeń jednostronnych.**
+Na razie tylko siłownia, więc pole lokalizacji nie wchodzi. Jednostronne — wchodzi jako oznaczenie:
 
-4. **Czy `czesc_planu` (objętość / intensywność) jest własnością planu, czy tygodnia.** W arkuszu to jeden globalny przełącznik dla całego pliku. Przy blokach 3+3 naturalne byłoby: T1–T3 objętość, T4–T6 intensywność. Dziś trzeba to przełączać ręcznie w połowie cyklu.
+- **19 pozycji** ma jawny marker w nazwie (`s/a`, `s/l`, `alternating`) → oznaczone automatycznie.
+- **11 pozycji** to wzorce z natury jednostronne bez markera (`bulgarian`, `pistol`, `lunge`, `step up`, `split squat`) → wypisane jako kandydaci, **czekają na potwierdzenie**, zgodnie z zasadą „nie zgadywać".
+- `B/l dragonflag eccentric` ma marker *przeciwny* (obustronne) i celowo nie jest oznaczone.
 
-5. **Skąd bierze się liczba dni.** Arkusz ma zawsze 5 bloków i wykrywa wypełnione (`Analiza!B76`). W aplikacji `plany.liczba_dni` jest jawne. To lepsze, ale trzeba zdecydować, czy trener może zmienić liczbę dni w trakcie cyklu.
+Lista: [`dane/jednostronne.json`](dane/jednostronne.json), podgląd: `npm run policz -- kontrola`.
 
----
+> **Do rozstrzygnięcia przy okazji:** czy przy ćwiczeniu jednostronnym serie i powtórzenia w planie znaczą **na stronę**, czy **łącznie**. Arkusz 5.17 nie rozróżnia — stres liczy tak samo jak dla obustronnych. Silnik na razie tylko oznacza i nie zmienia matematyki, żeby zgodność z arkuszem została nienaruszona.
+
+**4. Zmiana liczby dni w trakcie cyklu — funkcja do dodania, nie na start.**
+Dziś nie ma takiej możliwości i to zostaje. Silnik jest na to gotowy: `dniTreningowe` wylicza się z faktycznie wypełnionych slotów, a wszystkie normy skalują się tą liczbą — więc dołożenie tego później to zmiana w UI, nie w jądrze.
+
+**5. TOP SET w arkuszu naprawiony.**
+Zrobione: [`arkusz/`](../arkusz/README.md) produkuje 5.18. Przy okazji wyszły dwa nieznane wcześniej błędy — brakujące formuły `START!B7` i `T1!G8`, oba na slocie `D1-S02`. Naprawione jako osobne, możliwe do pominięcia poprawki.
 
 ## Co jest zrobione tym dokumentem
 

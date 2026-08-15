@@ -52,6 +52,16 @@ export class Katalog {
   bezFilmu(): readonly Cwiczenie[] {
     return this.wszystkie.filter((c) => !c.film);
   }
+
+  /** Ćwiczenia jednostronne rozpoznane po jawnym markerze w nazwie. */
+  jednostronne(): readonly Cwiczenie[] {
+    return this.wszystkie.filter((c) => c.jednostronne);
+  }
+
+  /** Wzorce z natury jednostronne, ale bez markera — do potwierdzenia przez trenera. */
+  kandydaciJednostronne(): readonly Cwiczenie[] {
+    return this.wszystkie.filter((c) => c.jednostronneDoPotwierdzenia);
+  }
 }
 
 /** Katalog zbudowany z BAZY 5.17. */

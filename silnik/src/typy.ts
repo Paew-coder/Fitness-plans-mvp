@@ -46,6 +46,15 @@ export type Cwiczenie = {
   uwagi?: string;
   /** Duplikat zwinięty w tę pozycję. */
   scaloneId?: string;
+  /**
+   * Ćwiczenie wykonywane osobno na każdą stronę. BAZA 5.17 nie ma takiej kolumny —
+   * flaga pochodzi z jawnego markera w nazwie (`s/a`, `s/l`, `alternating`).
+   * Na razie tylko oznaczenie: stres liczy się identycznie jak dla obustronnych,
+   * dokładnie jak w arkuszu.
+   */
+  jednostronne?: boolean;
+  /** Wzorzec z natury jednostronny, ale bez markera w nazwie — czeka na decyzję trenera. */
+  jednostronneDoPotwierdzenia?: boolean;
 };
 
 export type Feedback = "OK" | "za łatwe" | "za trudne";
