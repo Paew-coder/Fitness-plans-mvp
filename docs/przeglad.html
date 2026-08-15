@@ -1,0 +1,855 @@
+<title>Silnik CraftMyPlan</title>
+<style>
+  /* ── Tokeny: pełna paleta jasna na gołym :root ─────────────────────── */
+  :root {
+    --ground:      #FAFAFC;
+    --surface:     #FFFFFF;
+    --panel:       #F1F3F8;
+    --ink:         #15171F;
+    --ink-soft:    #5C6274;
+    --ink-faint:   #878DA0;
+    --rule:        #DEE2EC;
+    --rule-strong: #C3C9D8;
+    --accent:      #1F3FD8;
+    --accent-soft: #E8ECFD;
+    --os-t:        #1F3FD8;
+    --os-c:        #A8501E;
+    --os-p:        #0E8F76;
+    --dobrze:      #0E7C4A;
+    --uwaga:       #9A6100;
+    --siatka:      rgba(21, 23, 31, .055);
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans:  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --czytelna: 34rem;
+    --szeroka:  64rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0F1117;
+      --surface:     #171A22;
+      --panel:       #1C1F29;
+      --ink:         #E9EBF2;
+      --ink-soft:    #969DB1;
+      --ink-faint:   #6E7688;
+      --rule:        #2A2F3B;
+      --rule-strong: #3A4152;
+      --accent:      #7B93FF;
+      --accent-soft: #1E2440;
+      --os-t:        #5B78F5;
+      --os-c:        #C46F33;
+      --os-p:        #16A98C;
+      --dobrze:      #3FBE83;
+      --uwaga:       #D19A3E;
+      --siatka:      rgba(233, 235, 242, .05);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0F1117;
+    --surface:     #171A22;
+    --panel:       #1C1F29;
+    --ink:         #E9EBF2;
+    --ink-soft:    #969DB1;
+    --ink-faint:   #6E7688;
+    --rule:        #2A2F3B;
+    --rule-strong: #3A4152;
+    --accent:      #7B93FF;
+    --accent-soft: #1E2440;
+    --os-t:        #5B78F5;
+    --os-c:        #C46F33;
+    --os-p:        #16A98C;
+    --dobrze:      #3FBE83;
+    --uwaga:       #D19A3E;
+    --siatka:      rgba(233, 235, 242, .05);
+  }
+
+  /* ── Podstawy ──────────────────────────────────────────────────────── */
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 1.4rem 6rem;
+  }
+
+  .kolumna { max-width: var(--czytelna); margin-inline: auto; }
+  .szeroko { max-width: var(--szeroka); margin-inline: auto; }
+
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; text-wrap: balance; line-height: 1.18; }
+
+  p { margin: 0; }
+  .kolumna > p + p { margin-top: .85rem; }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  strong { font-weight: 650; }
+  code, .liczba { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  code { font-size: .875em; background: var(--panel); padding: .1em .34em; border-radius: 3px; }
+
+  /* ── Nagłówek strony ───────────────────────────────────────────────── */
+  header.masthead {
+    border-bottom: 1px solid var(--rule-strong);
+    padding: 4.5rem 0 1.6rem;
+    margin-bottom: 3.2rem;
+  }
+  .masthead h1 { font-size: clamp(2.5rem, 6.5vw, 3.9rem); letter-spacing: -.02em; margin: 0 0 .9rem; }
+  .masthead .lead { font-size: 1.12rem; color: var(--ink-soft); max-width: 32rem; }
+  .stopka-masthead {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.6rem;
+    margin-top: 1.9rem; padding-top: 1.1rem; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: .715rem; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  /* ── Sekcje ────────────────────────────────────────────────────────── */
+  section { margin-top: 4rem; }
+  .etykieta {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--accent);
+    display: block; margin-bottom: .55rem;
+  }
+  section h2 { font-size: 1.72rem; letter-spacing: -.012em; margin: 0 0 1rem; }
+  section h3 { font-size: 1.06rem; margin: 2.2rem 0 .55rem; letter-spacing: -.005em; }
+
+  /* ── Panel (motyw arkusza: delikatna siatka) ───────────────────────── */
+  .panel {
+    background: var(--panel);
+    background-image:
+      linear-gradient(var(--siatka) 1px, transparent 1px),
+      linear-gradient(90deg, var(--siatka) 1px, transparent 1px);
+    background-size: 26px 26px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.7rem;
+    margin-top: 1.6rem;
+    overflow-x: auto;
+  }
+  .panel > :first-child { margin-top: 0; }
+
+  /* ── Karty ustaleń ─────────────────────────────────────────────────── */
+  .karty { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); margin-top: 1.6rem; }
+  .karta {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 1.15rem 1.2rem 1.25rem;
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .karta .znacznik {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .karta h3 { font-family: var(--sans); font-size: .97rem; font-weight: 650; margin: 0; line-height: 1.35; }
+  .karta p { font-size: .875rem; color: var(--ink-soft); line-height: 1.55; }
+  .karta.zielona { border-left: 3px solid var(--dobrze); }
+  .karta.zolta   { border-left: 3px solid var(--uwaga); }
+  .karta.niebieska { border-left: 3px solid var(--accent); }
+
+  /* ── Tabele ────────────────────────────────────────────────────────── */
+  .tabela-otoczka { overflow-x: auto; margin-top: 1.5rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-faint); font-weight: 500;
+    border-bottom: 1px solid var(--rule-strong); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wyroznij { background: var(--accent-soft); }
+
+  /* ── Listy ─────────────────────────────────────────────────────────── */
+  ul.zwykla { margin: .9rem 0 0; padding-left: 1.15rem; }
+  ul.zwykla li { margin-top: .4rem; }
+  ul.zwykla li::marker { color: var(--ink-faint); }
+
+  /* ── Fazy (prawdziwa sekwencja, więc numerowane) ───────────────────── */
+  ol.fazy { list-style: none; margin: 1.6rem 0 0; padding: 0; display: grid; gap: 0; }
+  ol.fazy li {
+    display: grid; grid-template-columns: 3.3rem 1fr; gap: 0 1.1rem;
+    padding: 1.05rem 0; border-top: 1px solid var(--rule);
+  }
+  ol.fazy li:last-child { border-bottom: 1px solid var(--rule); }
+  .faza-nr {
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .06em;
+    color: var(--ink-faint); padding-top: .18rem;
+  }
+  .faza-nr.zrobiona { color: var(--dobrze); }
+  .faza-tytul { font-weight: 650; font-size: .97rem; }
+  .faza-tytul .odznaka {
+    font-family: var(--mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--dobrze); border: 1px solid currentColor; border-radius: 2px;
+    padding: .1rem .34rem; margin-left: .5rem; vertical-align: .1em; font-weight: 500;
+  }
+  .faza-opis { font-size: .875rem; color: var(--ink-soft); margin-top: .28rem; line-height: 1.55; }
+
+  /* ── Wykres ────────────────────────────────────────────────────────── */
+  .wykres-otoczka { position: relative; margin-top: 1.4rem; }
+  #wykres { width: 100%; height: auto; display: block; touch-action: pan-y; }
+  .legenda { display: flex; flex-wrap: wrap; gap: .45rem 1.4rem; margin-top: .9rem; font-size: .82rem; }
+  .legenda span { display: inline-flex; align-items: center; gap: .45rem; color: var(--ink-soft); }
+  .prostokat { width: 15px; height: 3px; border-radius: 2px; flex: none; }
+  .dymek {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--surface); border: 1px solid var(--rule-strong); border-radius: 4px;
+    padding: .5rem .65rem; font-size: .78rem; box-shadow: 0 3px 14px rgba(0,0,0,.13);
+    min-width: 9.5rem; z-index: 5;
+  }
+  .dymek.widoczny { opacity: 1; }
+  .dymek .naglowek {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .05em;
+    color: var(--ink-faint); border-bottom: 1px solid var(--rule);
+    padding-bottom: .3rem; margin-bottom: .35rem; text-transform: uppercase;
+  }
+  .dymek .wiersz { display: flex; align-items: center; gap: .45rem; margin-top: .18rem; }
+  .dymek .wiersz .nazwa { color: var(--ink-soft); flex: 1; }
+  .dymek .wiersz .wart { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  details { margin-top: 1.2rem; border-top: 1px solid var(--rule); padding-top: .8rem; }
+  summary {
+    cursor: pointer; font-family: var(--mono); font-size: .72rem;
+    letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  summary:hover { color: var(--accent); }
+
+  /* ── Wzory ─────────────────────────────────────────────────────────── */
+  .wzor {
+    font-family: var(--mono); font-size: .84rem; line-height: 1.85;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); border-radius: 3px;
+    padding: .95rem 1.1rem; margin-top: 1.2rem; overflow-x: auto;
+    white-space: pre; font-variant-numeric: tabular-nums;
+  }
+  .terminal {
+    font-family: var(--mono); font-size: .8rem; line-height: 1.75;
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
+    padding: .95rem 1.1rem; margin-top: 1.2rem; overflow-x: auto; white-space: pre;
+  }
+  .terminal .zachęta { color: var(--ink-faint); }
+  .terminal .wynik { color: var(--dobrze); }
+
+  /* ── Diagram ───────────────────────────────────────────────────────── */
+  .diagram { width: 100%; height: auto; display: block; min-width: 30rem; }
+  .diagram text { font-family: var(--mono); fill: var(--ink); }
+  .diagram .etyk { font-size: 9px; letter-spacing: .09em; fill: var(--ink-faint); text-transform: uppercase; }
+  .diagram .tytul { font-size: 12.5px; font-weight: 600; }
+  .diagram .drobne { font-size: 9.5px; fill: var(--ink-soft); }
+  .diagram .pudlo { fill: var(--surface); stroke: var(--rule-strong); stroke-width: 1; }
+  .diagram .pudlo-akcent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+  .diagram .strzalka { stroke: var(--rule-strong); stroke-width: 1.4; fill: none; }
+
+  .przypis { font-size: .82rem; color: var(--ink-faint); margin-top: 1rem; line-height: 1.55; }
+
+  footer {
+    margin-top: 5rem; padding-top: 1.4rem; border-top: 1px solid var(--rule-strong);
+    font-family: var(--mono); font-size: .715rem; letter-spacing: .06em;
+    color: var(--ink-faint); line-height: 1.9;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 34rem) {
+    body { font-size: 16px; padding: 0 1.05rem 4rem; }
+    .panel { padding: 1.15rem; }
+    ol.fazy li { grid-template-columns: 2.6rem 1fr; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="kolumna">
+    <h1>Silnik CraftMyPlan</h1>
+    <p class="lead">
+      MasterTemplate 5.17 to nie plik z planem — to program napisany w formułach.
+      Oto jak liczy, co z tego przeniosłem do kodu i co dalej.
+    </p>
+    <div class="stopka-masthead">
+      <span>MasterTemplate 5.17</span>
+      <span>164 ćwiczenia</span>
+      <span>57 testów · 194 wartości zgodne</span>
+      <span>15.08.2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="kolumna">
+
+  <section>
+    <span class="etykieta">Ustalenia</span>
+    <h2>Trzy rzeczy zmieniają decyzje</h2>
+    <p>
+      Zasada nadrzędna z Twojej instrukcji brzmi: plik wygrywa nad pamięcią.
+      Przy czytaniu 5.17 komórka po komórce wyszły trzy rozbieżności, które
+      realnie zmieniają to, co warto robić dalej.
+    </p>
+
+    <div class="karty">
+      <div class="karta zielona">
+        <span class="znacznik">zamknięte</span>
+        <h3>Błąd przełączników B4/B5 jest już naprawiony</h3>
+        <p>
+          Zero odwołań do <code>Analiza!$C$3</code> i <code>$C$4</code> w całym pliku.
+          <code>PRZEL_AKCESORIA</code> występuje 60× w T2, T3, T5, T6 i ani razu
+          w T1 i T4 — dokładnie zgodnie z logiką. „Trzymaj z bloku” działa.
+          Poprawka ~570 odwołań jest niepotrzebna.
+        </p>
+      </div>
+      <div class="karta zolta">
+        <span class="znacznik">otwarte</span>
+        <h3>TOP SET nadal czyta sztywno wiersz poniżej</h3>
+        <p>
+          <code>G6</code> odwołuje się do <code>$C7</code>, <code>$Q7</code>,
+          <code>$R7</code> — i tak samo w pozostałych dniach. Blok rozgrzewkowy
+          w pierwszym slocie rozwala tę logikę. W silniku slot jest wskazany jawnie.
+        </p>
+      </div>
+      <div class="karta niebieska">
+        <span class="znacznik">skala</span>
+        <h3>Szablon obsługuje pięć dni, nie trzy</h3>
+        <p>
+          <code>DZIEŃ I…V</code>, każdy po 12 slotów. Cała analityka sumuje po pięciu
+          blokach i skaluje się liczbą dni faktycznie wypełnionych. Base44 ma trzy dni
+          zaszyte na sztywno — jest węższy niż arkusz.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="etykieta">T1 · BAZA · START · TABELE</span>
+    <h2>Jak liczy się jeden slot</h2>
+    <p>
+      Wpisujesz nazwę ćwiczenia w jedną komórkę. Reszta wiersza — dwadzieścia
+      kolumn, w większości ukrytych — dolicza się sama.
+    </p>
+  </section>
+</div>
+
+<div class="szeroko">
+  <div class="panel">
+    <svg class="diagram" viewBox="0 0 880 400" role="img"
+         aria-label="Przepływ danych: BAZA daje part, coeff, skok kg i progresję; START daje 1RM; TABELE dają procent 1RM. Z 1RM i procentu powstaje ciężar zaokrąglony do skoku. Z RPE i powtórzeń powstaje stres na trzech osiach, sumowany po wzorcach ruchu.">
+      <defs>
+        <marker id="grot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--rule-strong)"/>
+        </marker>
+      </defs>
+
+      <!-- źródła -->
+      <rect class="pudlo" x="8"   y="34"  width="180" height="62" rx="3"/>
+      <text class="etyk"   x="20" y="52">BAZA</text>
+      <text class="drobne" x="20" y="70">part · coeff · skok kg</text>
+      <text class="drobne" x="20" y="85">progresja · film · uwagi</text>
+
+      <rect class="pudlo" x="8"   y="118" width="180" height="52" rx="3"/>
+      <text class="etyk"   x="20" y="136">START</text>
+      <text class="drobne" x="20" y="155">1RM = ciężar / %1RM(RPE 10)</text>
+
+      <rect class="pudlo" x="8"   y="192" width="180" height="52" rx="3"/>
+      <text class="etyk"   x="20" y="210">TABELE</text>
+      <text class="drobne" x="20" y="229">%1RM(powtórzenia, RPE)</text>
+
+      <!-- strzałki do ciężaru -->
+      <path class="strzalka" d="M 188 65  H 232 V 132 H 268" marker-end="url(#grot)"/>
+      <path class="strzalka" d="M 188 144 H 268"              marker-end="url(#grot)"/>
+      <path class="strzalka" d="M 188 218 H 232 V 156 H 268"  marker-end="url(#grot)"/>
+
+      <!-- ciężar -->
+      <rect class="pudlo-akcent" x="272" y="104" width="248" height="80" rx="3"/>
+      <text class="etyk"  x="288" y="124" style="fill: var(--accent)">CIĘŻAR · kolumna G</text>
+      <text class="tytul" x="288" y="147">1RM × %1RM × mnożnik</text>
+      <text class="drobne" x="288" y="167">MROUND(…, MAX(skok kg; 0,5))</text>
+
+      <!-- stres -->
+      <path class="strzalka" d="M 396 184 V 218" marker-end="url(#grot)"/>
+      <rect class="pudlo" x="272" y="226" width="248" height="76" rx="3"/>
+      <text class="etyk"   x="288" y="246">STRES · kolumny T · U · V</text>
+      <text class="drobne" x="288" y="266">coeff × serie × tabela[RPE][powt.]</text>
+      <text class="drobne" x="288" y="286" style="fill: var(--ink); font-weight: 600">osobno dla trzech osi</text>
+
+      <!-- feedback: wyjście u góry, powrót niżej, żeby ścieżki się nie zlewały -->
+      <path class="strzalka" d="M 520 128 H 560" marker-end="url(#grot)"/>
+      <rect class="pudlo" x="564" y="104" width="240" height="80" rx="3"/>
+      <text class="etyk"   x="580" y="124">PĘTLA · kolumny H → AB → AC</text>
+      <text class="drobne" x="580" y="145">odczucie klienta w tygodniu N</text>
+      <text class="drobne" x="580" y="165">→ mnożnik w tygodniu N+1</text>
+      <path class="strzalka" d="M 684 184 V 205 H 542 V 168 H 524" marker-end="url(#grot)"/>
+
+      <!-- bilans -->
+      <path class="strzalka" d="M 520 264 H 560" marker-end="url(#grot)"/>
+      <rect class="pudlo" x="564" y="226" width="240" height="76" rx="3"/>
+      <text class="etyk"   x="580" y="246">BILANS · SUMIF po part</text>
+      <text class="drobne" x="580" y="266">dolne = s + d · górne = b + r</text>
+      <text class="drobne" x="580" y="286">core osobno, tylko do RAZEM</text>
+
+      <!-- norma -->
+      <path class="strzalka" d="M 684 302 V 330" marker-end="url(#grot)"/>
+      <rect class="pudlo" x="564" y="338" width="240" height="46" rx="3"/>
+      <text class="etyk"   x="580" y="357">NORMA · Analiza</text>
+      <text class="drobne" x="580" y="374">12–18 stresu na dzień treningowy</text>
+
+      <text class="drobne" x="8" y="374" style="fill: var(--ink-faint)">Kategoria nie wpływa na stres —</text>
+      <text class="drobne" x="8" y="388" style="fill: var(--ink-faint)">liczy się wyłącznie part i coeff.</text>
+    </svg>
+  </div>
+</div>
+
+<div class="kolumna">
+  <section>
+    <span class="etykieta">TABELE · trzy osie</span>
+    <h2>Model stresu jest tym, czego nie ma nigdzie indziej</h2>
+    <p>
+      Trzy niezależne tabele, indeksowane tak samo — RPE × powtórzenia — ale
+      o zupełnie różnych charakterystykach. Poniżej wszystkie trzy przy RPE 10,
+      dla jednej serii ćwiczenia o coeff 1.
+    </p>
+  </section>
+</div>
+
+<div class="szeroko">
+  <div class="panel">
+    <div class="wykres-otoczka">
+      <svg id="wykres" viewBox="0 0 760 320" role="img"
+           aria-label="Wykres liniowy: koszt jednej serii przy RPE 10 w zależności od liczby powtórzeń. Stres centralny spada z 1,8 przy jednym powtórzeniu do 0,4 przy piętnastu. Stres obwodowy rośnie z 0,5 do 1,8. Stres całkowity pozostaje w wąskim paśmie 1,0–1,3."></svg>
+      <div class="dymek" id="dymek" role="status" aria-live="polite"></div>
+    </div>
+    <div class="legenda">
+      <span><i class="prostokat" style="background: var(--os-c)"></i> centralny — koszt ośrodkowy</span>
+      <span><i class="prostokat" style="background: var(--os-p)"></i> obwodowy — koszt lokalny</span>
+      <span><i class="prostokat" style="background: var(--os-t)"></i> całkowity</span>
+    </div>
+
+    <details>
+      <summary>Pokaż dane liczbowe</summary>
+      <div class="tabela-otoczka">
+        <table id="tabela-stresu">
+          <caption class="przypis" style="text-align: left; margin-bottom: .6rem">
+            Stres na jedną serię przy RPE 10 i coeff 1 (TABELE, wiersze 33, 47, 61).
+          </caption>
+        </table>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="kolumna">
+  <p style="margin-top: 1.6rem">
+    Ciężki singiel kosztuje <strong>ośrodkowo</strong> — 1,8 na osi centralnej.
+    Piętnaście powtórzeń kosztuje <strong>obwodowo</strong> — 1,8 na osi obwodowej.
+    A suma całkowita w obu przypadkach jest niemal identyczna: 1,2 i 1,0.
+  </p>
+  <p>
+    Dlatego sam tonaż ani „liczba serii” niczego nie mówią o tym, czego plan wymaga
+    od klienta. Te trzy liczby mówią. Żadna komercyjna aplikacja treningowa tego nie liczy.
+  </p>
+
+  <section>
+    <span class="etykieta">Kolumny H → AB → AC</span>
+    <h2>Pętla feedbacku</h2>
+    <p>
+      Klient dotyka jednego z trzech przycisków po serii. To wszystko, co wpisuje —
+      i to wystarcza, żeby ciężar w kolejnym tygodniu policzył się sam.
+    </p>
+
+    <div class="wzor">mnożnik = 1 + 0,05 × (ile razy „za łatwe”)
+        − 0,05 × (ile razy „za trudne”)
+
+obcięty do przedziału 0,85 – 1,15</div>
+
+    <p style="margin-top: 1.2rem">
+      Zakres historii rośnie z każdym tygodniem — i <strong>nie resetuje się w T4</strong>.
+      Restart bloku intensyfikacji dotyczy bazy ciężaru, nie zebranych odczuć.
+    </p>
+
+    <div class="tabela-otoczka">
+      <table>
+        <thead>
+          <tr><th>Tydzień</th><th>Historia odczuć</th><th>Baza ciężaru</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">T1</td><td>—</td><td>1RM × %1RM</td></tr>
+          <tr><td class="num">T2</td><td>T1</td><td>ciężar z T1</td></tr>
+          <tr><td class="num">T3</td><td>T1 + T2</td><td>ciężar z T1</td></tr>
+          <tr class="wyroznij"><td class="num">T4</td><td>T1 + T2 + T3</td><td>przelicza od nowa z RPE</td></tr>
+          <tr><td class="num">T5</td><td>T1 … T4</td><td>ciężar z T4</td></tr>
+          <tr><td class="num">T6</td><td>T1 … T5</td><td>ciężar z T4</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="przypis">
+      Przy progresjach bez ciężaru — masa ciała, czas, dystans — mnożnik nie ma na co
+      działać, więc zamienia się na powtórzenia: ±5% to ±1 powtórzenie, maksymalnie ±3.
+    </p>
+
+    <h3>Cztery reguły ciężaru</h3>
+    <div class="tabela-otoczka">
+      <table>
+        <thead>
+          <tr>
+            <th>Tydzień</th><th>Bój główny (A1)</th>
+            <th>Akcesoria · trzymaj z bloku</th><th>Akcesoria · licz z RPE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">T1</td><td class="num">1RM × %</td><td class="num">1RM × %</td><td class="num">1RM × %</td></tr>
+          <tr><td class="num">T2, T3</td><td class="num">1RM × % × AC</td><td class="num">ciężarT1 × AC / AC_T1</td><td class="num">1RM × % × AC</td></tr>
+          <tr class="wyroznij"><td class="num">T4</td><td class="num">1RM × % × AC</td><td class="num">1RM × % × AC</td><td class="num">1RM × % × AC</td></tr>
+          <tr><td class="num">T5, T6</td><td class="num">1RM × % × AC</td><td class="num">ciężarT4 × AC / AC_T4</td><td class="num">1RM × % × AC</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="przypis">
+      Bój główny i TOP SET zawsze liczą z RPE — przełącznik ich nie dotyczy.
+      Wszystko przechodzi przez <code>MROUND(…, MAX(skok kg; 0,5))</code>.
+    </p>
+  </section>
+
+  <section>
+    <span class="etykieta">Zrobione</span>
+    <h2>Silnik działa i zgadza się z arkuszem</h2>
+    <p>
+      Jądro jest przeniesione do kodu jako osobny pakiet bez żadnych zależności.
+      Nie zastępuje arkusza — najpierw musi policzyć dokładnie to samo, co on.
+    </p>
+
+    <div class="terminal"><span class="zachęta">$</span> npm test
+
+<span class="wynik">✓</span> zgodność z arkuszem — master-5-17.json
+  porównanych wartości: 194, pominiętych: 6
+
+<span class="wynik">✓</span> tests 57 · pass 57 · fail 0</div>
+
+    <p style="margin-top: 1.3rem">
+      Porównywane są powtórzenia, %1RM, mnożnik adaptacji, trzy osie stresu
+      i bilans wzorców — przez wszystkie sześć tygodni naraz. Kryterium:
+      <strong>ciężar co do grosza, stres do 0,1.</strong> Sześć pominiętych pól to te,
+      których arkusz nie miał przeliczonych przed eksportem; test je raportuje,
+      zamiast zaliczać po cichu.
+    </p>
+
+    <h3>Kalkulator działa z wiersza poleceń</h3>
+    <div class="terminal"><span class="zachęta">$</span> npm run policz -- blok "Rope pushdown" --1rm 40
+
+EX-0170  Rope pushdown
+  kategoria Tricep · wzorzec b · coeff 0,25 · skok 1,0 kg
+
+  tydzień   serie × powt.   RPE    ciężar     stres t/c/p
+  ──────────────────────────────────────────────────────────
+  T1         3 × 10       8,0    27,0 kg    0,53 / 0,30 / 0,82
+  T2         3 × 11       8,0    26,0 kg    0,53 / 0,23 / 0,82
+  T3         3 × 12       8,0    25,0 kg    0,53 / 0,23 / 0,75
+  T4         3 × 10       8,0    27,0 kg    0,53 / 0,30 / 0,82
+  T5         3 × 11       8,0    26,0 kg    0,53 / 0,23 / 0,82
+  T6         3 × 12       8,0    25,0 kg    0,53 / 0,23 / 0,75</div>
+
+    <p class="przypis">
+      Widać tu automat powtórzeń (10 → 11 → 12, restart w T4) i to, że rosnąca
+      objętość obniża ciężar przy stałym RPE. Stres centralny spada, obwodowy trzyma poziom.
+    </p>
+
+    <h3>Nowe zestawy testowe dokładasz sam</h3>
+    <div class="terminal"><span class="zachęta">$</span> python3 narzedzia/zrzut-arkusza.py "Plan Zuzanna C 3.0.xlsx" \
+      testy/zlote/zuzanna-3.json
+<span class="zachęta">$</span> npm test</div>
+    <p class="przypis">
+      Plik musi być przeliczony przed eksportem — arkusz zapisuje ostatnio wyliczone
+      wartości. Im więcej prawdziwych planów w zestawie, tym pewniejsza migracja.
+    </p>
+  </section>
+
+  <section>
+    <span class="etykieta">Base44</span>
+    <h2>Czego brakuje w CraftMyPlan</h2>
+    <p>
+      Aplikacja ma przemyślane ekrany: onboarding, wybór ćwiczeń per slot, kalendarz
+      z przesuwaniem dat, log wagi, Stripe. Nie ma natomiast silnika — i luka jest systematyczna.
+    </p>
+
+    <div class="tabela-otoczka">
+      <table>
+        <thead><tr><th>Element 5.17</th><th>Base44</th><th>Skutek</th></tr></thead>
+        <tbody>
+          <tr><td>BAZA 164 ćwiczeń</td><td class="num">1 rekord</td><td>Nie ma czym wypełnić planu</td></tr>
+          <tr><td>Skok kg</td><td>brak</td><td>Nie ma jak zaokrąglić ciężaru</td></tr>
+          <tr><td>Tabela RPE → %1RM</td><td>brak</td><td>Ciężar nie jest liczony</td></tr>
+          <tr><td>Trzy tabele stresu</td><td>brak</td><td>Zero analityki obciążenia</td></tr>
+          <tr class="wyroznij"><td>Pętla feedbacku</td><td>brak</td><td>Brak adaptacji — sedno systemu</td></tr>
+          <tr><td>Reguły ciężaru per tydzień</td><td>brak</td><td>Brak bloków i restartu w T4</td></tr>
+          <tr><td>11 kontroli danych</td><td>brak</td><td>Brak walidacji przed wysyłką</td></tr>
+          <tr><td>Pięć dni</td><td class="num">3 na sztywno</td><td>Węższe niż arkusz</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="przypis">
+      Dodatkowo plany trzymają ćwiczenia po nazwie, nie po ID — a katalogi już się
+      rozjechały: rekord testowy odwołuje się do pozycji, których w BAZIE pod tymi
+      nazwami nie ma. To prototyp ekranów, nie aplikacja do dokończenia.
+    </p>
+  </section>
+
+  <section>
+    <span class="etykieta">Kolejność</span>
+    <h2>Pięć faz</h2>
+    <p>
+      Każda daje coś użytecznego sama z siebie i żadna nie jest wyrzucana w następnej.
+      Arkusz przestaje być używany dopiero wtedy, gdy aplikacja policzy to samo.
+    </p>
+
+    <ol class="fazy">
+      <li>
+        <span class="faza-nr zrobiona">FAZA 0</span>
+        <div>
+          <div class="faza-tytul">Jądro i złoty zestaw testowy<span class="odznaka">zrobione</span></div>
+          <div class="faza-opis">
+            Pakiet bez zależności, 57 testów, 194 wartości zgodne z arkuszem.
+            Narzędzie robiące zestaw porównawczy z dowolnego pliku 5.17.
+          </div>
+        </div>
+      </li>
+      <li>
+        <span class="faza-nr">FAZA 1</span>
+        <div>
+          <div class="faza-tytul">Konsola trenera, klient dalej na arkuszu</div>
+          <div class="faza-opis">
+            Plany układasz w aplikacji — filtrowanie ćwiczeń, analiza na żywo,
+            walidacja przed wysyłką. Na koniec eksport do <code>.xlsx</code> w formacie 5.17.
+            Klient nie zauważa zmiany. Tu można się zatrzymać na dłużej.
+          </div>
+        </div>
+      </li>
+      <li>
+        <span class="faza-nr">FAZA 2</span>
+        <div>
+          <div class="faza-tytul">Aplikacja klienta</div>
+          <div class="faza-opis">
+            PWA działająca offline — zasięg na siłowni bywa żaden. Serie maksymalne,
+            dzisiejszy trening, feedback jednym dotknięciem. Pętla zamyka się bez maila.
+          </div>
+        </div>
+      </li>
+      <li>
+        <span class="faza-nr">FAZA 3</span>
+        <div>
+          <div class="faza-tytul">To, czego arkusz nie umiał</div>
+          <div class="faza-opis">
+            Ostrzeżenie o powtórkach z poprzedniego cyklu, automatyczna aktualizacja 1RM
+            z wykonań, porównanie cykli, moduły oddechowy i biegowy, przegląd klientów.
+          </div>
+        </div>
+      </li>
+      <li>
+        <span class="faza-nr">FAZA 4</span>
+        <div>
+          <div class="faza-tytul">Warstwa AI</div>
+          <div class="faza-opis">
+            Propozycja szkieletu, dobór ćwiczeń w ramach kategorii, odczytanie analizy
+            słowami. Zawsze do akceptacji. <strong>AI nigdy nie liczy ciężaru</strong> —
+            to robi jądro, deterministycznie i sprawdzalnie.
+          </div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <span class="etykieta">Do decyzji</span>
+    <h2>Pięć pytań — wszystkie trenerskie</h2>
+    <p>
+      Blokują start fazy 1. Żadne nie dotyczy programowania.
+    </p>
+    <ul class="zwykla">
+      <li>Klienci stacjonarni — w systemie, czy zostają osobno? Instrukcja mówi wprost: inny układ, nie mieszać założeń.</li>
+      <li>Czy „objętość / intensywność” ma przełączać się automatycznie w połowie cyklu — T1–T3 objętość, T4–T6 intensywność — czy zostaje ręcznie, jak dziś?</li>
+      <li>Czy dokładamy do katalogu pola, które ma Base44, a arkusz nie: <em>jednostronne</em> oraz <em>dom / siłownia</em>?</li>
+      <li>Czy trener może zmienić liczbę dni w trakcie trwającego cyklu?</li>
+      <li>Czy naprawiamy TOP SET w samym arkuszu 5.17, skoro będzie w użyciu jeszcze długo?</li>
+    </ul>
+  </section>
+
+  <footer>
+    Analiza: MasterTemplate 5.17 · CLAUDE.md · STAN-PROJEKTU.md · ~30 planów klientów z Dysku · dwie aplikacje Base44<br>
+    Dokumentacja i kod: repozytorium <span style="color: var(--ink-soft)">Fitness-plans-mvp</span>,
+    gałąź <span style="color: var(--ink-soft)">claude/craftmyplan-training-app-hokugh</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // Stres na jedną serię przy RPE 10, coeff 1 — TABELE, wiersze 33 / 47 / 61.
+  const POWT = Array.from({ length: 15 }, (_, i) => i + 1);
+  const SERIE = [
+    { klucz: "centralny", nazwa: "centralny", zmienna: "--os-c",
+      dane: [1.8, 1.6, 1.4, 1.2, 1.1, 1.0, 0.8, 0.8, 0.7, 0.6, 0.5, 0.5, 0.4, 0.4, 0.4] },
+    { klucz: "obwodowy", nazwa: "obwodowy", zmienna: "--os-p",
+      dane: [0.5, 0.9, 1.2, 1.4, 1.6, 1.7, 1.8, 1.8, 1.8, 1.8, 1.8, 1.7, 1.7, 1.7, 1.6] },
+    { klucz: "calkowity", nazwa: "całkowity", zmienna: "--os-t",
+      dane: [1.2, 1.2, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.2, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0] },
+  ];
+
+  const W = 760, H = 320;
+  const M = { gora: 22, prawo: 122, dol: 44, lewo: 46 };
+  const szer = W - M.lewo - M.prawo;
+  const wys  = H - M.gora - M.dol;
+  const Y_MAX = 2;
+
+  const x = (i) => M.lewo + (i / (POWT.length - 1)) * szer;
+  const y = (v) => M.gora + wys - (v / Y_MAX) * wys;
+  const przecinek = (v) => v.toFixed(2).replace(".", ",");
+
+  const svg = document.getElementById("wykres");
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (nazwa, atrybuty) => {
+    const e = document.createElementNS(NS, nazwa);
+    for (const [k, v] of Object.entries(atrybuty)) e.setAttribute(k, v);
+    return e;
+  };
+
+  // ── siatka i osie (recesywne) ──
+  for (let v = 0; v <= Y_MAX; v += 0.5) {
+    svg.appendChild(el("line", {
+      x1: M.lewo, x2: M.lewo + szer, y1: y(v), y2: y(v),
+      stroke: "var(--rule)", "stroke-width": v === 0 ? 1.2 : 1,
+    }));
+    const t = el("text", {
+      x: M.lewo - 10, y: y(v) + 3.5, "text-anchor": "end",
+      "font-family": "var(--mono)", "font-size": 10, fill: "var(--ink-faint)",
+    });
+    t.textContent = przecinek(v).replace(",00", "");
+    svg.appendChild(t);
+  }
+
+  for (const p of POWT) {
+    if (p !== 1 && p !== 5 && p !== 10 && p !== 15) continue;
+    const t = el("text", {
+      x: x(p - 1), y: H - M.dol + 20, "text-anchor": "middle",
+      "font-family": "var(--mono)", "font-size": 10, fill: "var(--ink-faint)",
+    });
+    t.textContent = p;
+    svg.appendChild(t);
+  }
+
+  const opisX = el("text", {
+    x: M.lewo + szer / 2, y: H - 8, "text-anchor": "middle",
+    "font-family": "var(--mono)", "font-size": 9.5, fill: "var(--ink-faint)",
+    "letter-spacing": ".08em",
+  });
+  opisX.textContent = "POWTÓRZENIA W SERII";
+  svg.appendChild(opisX);
+
+  // ── linie 2px + etykieta na końcu ──
+  for (const s of SERIE) {
+    const d = s.dane.map((v, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+    svg.appendChild(el("path", {
+      d, fill: "none", stroke: `var(${s.zmienna})`, "stroke-width": 2,
+      "stroke-linejoin": "round", "stroke-linecap": "round",
+    }));
+
+    const ostatni = s.dane[s.dane.length - 1];
+    svg.appendChild(el("circle", {
+      cx: x(POWT.length - 1), cy: y(ostatni), r: 4,
+      fill: `var(${s.zmienna})`, stroke: "var(--panel)", "stroke-width": 2,
+    }));
+    const et = el("text", {
+      x: x(POWT.length - 1) + 11, y: y(ostatni) + 4,
+      "font-family": "var(--mono)", "font-size": 10.5, fill: `var(${s.zmienna})`,
+      "font-weight": 600,
+    });
+    et.textContent = `${s.nazwa} ${przecinek(ostatni)}`;
+    svg.appendChild(et);
+  }
+
+  // ── warstwa hover: krzyż + kropki + dymek ──
+  const krzyz = el("line", {
+    y1: M.gora, y2: M.gora + wys, stroke: "var(--rule-strong)",
+    "stroke-width": 1, "stroke-dasharray": "3 3", opacity: 0,
+  });
+  svg.appendChild(krzyz);
+
+  const kropki = SERIE.map((s) => {
+    const k = el("circle", {
+      r: 5, fill: `var(${s.zmienna})`, stroke: "var(--panel)",
+      "stroke-width": 2, opacity: 0,
+    });
+    svg.appendChild(k);
+    return k;
+  });
+
+  const dymek = document.getElementById("dymek");
+  const otoczka = svg.parentElement;
+
+  const powierzchnia = el("rect", {
+    x: M.lewo - szer / 28, y: M.gora, width: szer + szer / 14, height: wys,
+    fill: "transparent", style: "cursor: crosshair",
+  });
+  svg.appendChild(powierzchnia);
+
+  function pokaz(indeks, klientX) {
+    const p = POWT[indeks];
+    krzyz.setAttribute("x1", x(indeks));
+    krzyz.setAttribute("x2", x(indeks));
+    krzyz.setAttribute("opacity", 1);
+
+    SERIE.forEach((s, i) => {
+      kropki[i].setAttribute("cx", x(indeks));
+      kropki[i].setAttribute("cy", y(s.dane[indeks]));
+      kropki[i].setAttribute("opacity", 1);
+    });
+
+    dymek.innerHTML =
+      `<div class="naglowek">${p} ${p === 1 ? "powtórzenie" : p < 5 ? "powtórzenia" : "powtórzeń"} · RPE 10</div>` +
+      SERIE.map((s) =>
+        `<div class="wiersz">` +
+          `<i class="prostokat" style="background: var(${s.zmienna})"></i>` +
+          `<span class="nazwa">${s.nazwa}</span>` +
+          `<span class="wart">${przecinek(s.dane[indeks])}</span>` +
+        `</div>`).join("");
+    dymek.classList.add("widoczny");
+
+    const prostokatSvg = svg.getBoundingClientRect();
+    const skala = prostokatSvg.width / W;
+    let lewo = x(indeks) * skala + 16;
+    if (lewo + dymek.offsetWidth > prostokatSvg.width) lewo = x(indeks) * skala - dymek.offsetWidth - 16;
+    dymek.style.left = Math.max(0, lewo) + "px";
+    dymek.style.top = M.gora * skala + "px";
+  }
+
+  function schowaj() {
+    krzyz.setAttribute("opacity", 0);
+    for (const k of kropki) k.setAttribute("opacity", 0);
+    dymek.classList.remove("widoczny");
+  }
+
+  function indeksZeZdarzenia(zdarzenie) {
+    const prostokatSvg = svg.getBoundingClientRect();
+    const wzgledny = ((zdarzenie.clientX - prostokatSvg.left) / prostokatSvg.width) * W;
+    const udzial = (wzgledny - M.lewo) / szer;
+    return Math.max(0, Math.min(POWT.length - 1, Math.round(udzial * (POWT.length - 1))));
+  }
+
+  powierzchnia.addEventListener("pointermove", (e) => pokaz(indeksZeZdarzenia(e), e.clientX));
+  powierzchnia.addEventListener("pointerleave", schowaj);
+  powierzchnia.addEventListener("pointerdown", (e) => pokaz(indeksZeZdarzenia(e), e.clientX));
+
+  // ── widok tabelaryczny (dostępność) ──
+  const tabela = document.getElementById("tabela-stresu");
+  const glowa = document.createElement("thead");
+  glowa.innerHTML =
+    "<tr><th>Powtórzenia</th>" +
+    SERIE.map((s) => `<th class="num">${s.nazwa}</th>`).join("") + "</tr>";
+  const cialo = document.createElement("tbody");
+  cialo.innerHTML = POWT.map((p, i) =>
+    `<tr><td class="num">${p}</td>` +
+    SERIE.map((s) => `<td class="num">${przecinek(s.dane[i])}</td>`).join("") +
+    "</tr>").join("");
+  tabela.append(glowa, cialo);
+})();
+</script>
