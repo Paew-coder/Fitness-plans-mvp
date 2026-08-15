@@ -127,7 +127,19 @@ Mechanizm „do potwierdzenia" zostaje w silniku pusty — przyda się przy ćwi
 
 Lista: [`dane/jednostronne.json`](dane/jednostronne.json), podgląd: `npm run policz -- kontrola`.
 
-> **Do rozstrzygnięcia przy okazji:** czy przy ćwiczeniu jednostronnym serie i powtórzenia w planie znaczą **na stronę**, czy **łącznie**. Arkusz 5.17 nie rozróżnia — stres liczy tak samo jak dla obustronnych. Silnik na razie tylko oznacza i nie zmienia matematyki, żeby zgodność z arkuszem została nienaruszona.
+**3a. Serie i powtórzenia przy jednostronnych znaczą NA STRONĘ.** *(rozstrzygnięte)*
+
+Zapis `3 × 10` to sesyjnie **6 serii roboczych**. Arkusz liczy 3 — czyli zaniża objętość i stres tych 30 pozycji dwukrotnie.
+
+Silnik dostał opcję `liczenieJednostronnych`, **domyślnie `"jak w arkuszu"`**. Powód jest praktyczny: normy objętości w zakładce Analiza (`s` 4–7, `b` 8–13, `r` 7–11 serii na dzień) powstały na planach liczonych po staremu. Przełączenie bez przeliczenia norm wypchnęłoby z zakresu każdy plan zawierający pracę jednostronną — na przykładowym dniu z trzema takimi pozycjami stres tygodniowy rośnie z 4,18 do 7,55.
+
+`porownajLiczenieJednostronnych(plan)` pokazuje różnicę dla dowolnego planu i wskazuje, przy których wzorcach zmienia się ocena normy.
+
+**Do zrobienia przy fazie 1 — jedna z dwóch dróg:**
+- przeliczyć normy na nowe liczenie i przełączyć tryb na stałe, albo
+- zostawić liczenie jak jest, a klientowi po prostu wyświetlać „na stronę”.
+
+Warto przy tym rozważyć, czy płaskie ×2 jest właściwe na wszystkich trzech osiach stresu: koszt **obwodowy na kończynę** się nie podwaja (każda strona dostaje swoje `3 × 10`), podwaja się raczej **centralny**. Szczegóły: [`02-silnik-obliczeniowy.md`](02-silnik-obliczeniowy.md) §8a.
 
 **4. Zmiana liczby dni w trakcie cyklu — funkcja do dodania, nie na start.**
 Dziś nie ma takiej możliwości i to zostaje. Silnik jest na to gotowy: `dniTreningowe` wylicza się z faktycznie wypełnionych slotów, a wszystkie normy skalują się tą liczbą — więc dołożenie tego później to zmiana w UI, nie w jądrze.

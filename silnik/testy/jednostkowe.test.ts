@@ -10,10 +10,10 @@ import { oblicz1RM, procent1RM, rozwiaz1RM, konfliktSeriiMaksymalnych } from "..
 import { mnoznikAdaptacji, mnoznikNaTydzien, korektaPowtorzen } from "../src/adaptacja.ts";
 import { powtorzeniaAkcesorium, powtorzeniaBazowe, offsetTygodnia } from "../src/powtorzenia.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "../src/ciezar.ts";
-import { stresSlotu, bilansTygodnia, ocenaNormy, NORMY } from "../src/stres.ts";
+import { stresSlotu, bilansTygodnia, ocenaNormy, serieEfektywne, NORMY } from "../src/stres.ts";
 import { mround } from "../src/pomocnicze.ts";
 import { katalog } from "../src/katalog.ts";
-import { przeliczPlan, type Plan } from "../src/plan.ts";
+import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../src/walidacja.ts";
 
 describe("tabela RPE (TABELE!B4:J18)", () => {
@@ -489,5 +489,49 @@ describe("przeliczenie planu i walidacja", () => {
 
   test("dni treningowe liczą się z wypełnionych slotów", () => {
     assert.equal(przeliczPlan(planTestowy()).dniTreningowe, 1);
+  });
+
+  test("jednostronne: domyślnie liczą się jak w arkuszu", () => {
+    // Parytet z MasterTemplate jest domyślny — bez niego złote testy przestają mieć sens.
+    assert.equal(serieEfektywne(3, true, "jak w arkuszu"), 3);
+    assert.equal(serieEfektywne(3, true, "obie strony"), 6);
+    assert.equal(serieEfektywne(3, false, "obie strony"), 3, "obustronne bez zmian");
+    assert.equal(serieEfektywne(3, undefined, "obie strony"), 3);
+  });
+
+  test("jednostronne: tryb 'obie strony' podwaja serie, powtórzenia i stres", () => {
+    const plan: Plan = {
+      ...planTestowy(),
+      sloty: [{ positionId: "D1-S01", dzien: 1, lp: "A1.", cwiczenieId: "EX-0184" }], // split squat
+    };
+    const arkusz = przeliczPlan({ ...plan, liczenieJednostronnych: "jak w arkuszu" });
+    const obie = przeliczPlan({ ...plan, liczenieJednostronnych: "obie strony" });
+
+    const sa = arkusz.tygodnie[0]!.sloty[0]!;
+    const so = obie.tygodnie[0]!.sloty[0]!;
+    assert.equal(sa.serie, so.serie, "serie w planie zapisane tak samo — na stronę");
+    assert.equal(so.serieEfektywne, sa.serieEfektywne * 2);
+    assert.equal(so.stres.calkowity, sa.stres.calkowity * 2);
+    assert.equal(obie.tygodnie[0]!.bilans.razem, arkusz.tygodnie[0]!.bilans.razem * 2);
+    assert.equal(so.ciezar, sa.ciezar, "ciężar bez zmian — to samo obciążenie na stronę");
+  });
+
+  test("porównanie trybów pokazuje, gdzie ocena normy się zmienia", () => {
+    const plan: Plan = {
+      ...planTestowy(),
+      sloty: [
+        { positionId: "D1-S01", dzien: 1, lp: "A1.", cwiczenieId: "EX-0011" }, // obustronne
+        { positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId: "EX-0184" }, // jednostronne
+      ],
+    };
+    const p = porownajLiczenieJednostronnych(plan);
+    assert.equal(p.slotowJednostronnych, 1);
+    assert.ok(p.stresRazemObieStrony > p.stresRazemJakWArkuszu);
+    const przysiad = p.wzorce.find((w) => w.part === "s")!;
+    assert.equal(przysiad.serieObieStrony, przysiad.serieJakWArkuszu * 2);
+    // wyciskanie jest obustronne — nie może się zmienić
+    const wyciskanie = p.wzorce.find((w) => w.part === "b")!;
+    assert.equal(wyciskanie.serieObieStrony, wyciskanie.serieJakWArkuszu);
+    assert.equal(wyciskanie.ocenaSieZmienia, false);
   });
 });

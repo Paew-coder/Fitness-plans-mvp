@@ -271,7 +271,7 @@
     <div class="stopka-masthead">
       <span>MasterTemplate 5.17</span>
       <span>164 ćwiczenia</span>
-      <span>59 testów · 653 wartości zgodne</span>
+      <span>62 testy · 653 wartości zgodne</span>
       <span>15.08.2026</span>
     </div>
   </div>
@@ -535,7 +535,7 @@ obcięty do przedziału 0,85 – 1,15</div>
 <span class="wynik">✓</span> zgodność z arkuszem — plan-2-dni-518.json
   porównanych wartości: 459, pominiętych: 0
 
-<span class="wynik">✓</span> tests 59 · pass 59 · fail 0</div>
+<span class="wynik">✓</span> tests 62 · pass 62 · fail 0</div>
 
     <p style="margin-top: 1.3rem">
       Porównywane są powtórzenia, %1RM, mnożnik adaptacji, trzy osie stresu
@@ -621,7 +621,7 @@ EX-0170  Rope pushdown
         <div>
           <div class="faza-tytul">Jądro i złoty zestaw testowy<span class="odznaka">zrobione</span></div>
           <div class="faza-opis">
-            Pakiet bez zależności, 59 testów, 653 wartości zgodne z arkuszem.
+            Pakiet bez zależności, 62 testy, 653 wartości zgodne z arkuszem.
             Narzędzie robiące zestaw porównawczy z dowolnego pliku 5.17.
             Osobno: poprawki do samego arkusza (5.18).
           </div>
@@ -724,6 +724,43 @@ EX-0170  Rope pushdown
     <p class="przypis">
       Mechanizm „do potwierdzenia" zostaje w silniku pusty — przyda się przy ćwiczeniach
       dokładanych do bazy w przyszłości.
+    </p>
+
+    <h3>Serie liczą się na stronę — a arkusz o tym nie wie</h3>
+    <p>
+      Zapis <code>3 × 10</code> przy pozycji jednostronnej znaczy <strong>na stronę</strong>.
+      Sesja zawiera więc <strong>6 serii roboczych, nie 3</strong>. Arkusz liczy 3 —
+      czyli zaniża objętość i stres tych 30 pozycji dwukrotnie.
+    </p>
+    <p>
+      Silnik dostał przełącznik, ale <strong>domyślnie liczy jak arkusz</strong>. Powód jest
+      praktyczny: normy objętości w zakładce Analiza powstały na planach liczonych po staremu.
+      Oto co się dzieje na dniu z trzema pozycjami jednostronnymi na cztery:
+    </p>
+
+    <div class="tabela-otoczka">
+      <table>
+        <thead>
+          <tr><th>Wzorzec</th><th class="num">Serie</th><th class="num">Stres</th><th>Ocena normy</th></tr>
+        </thead>
+        <tbody>
+          <tr class="wyroznij">
+            <td>przysiad</td><td class="num">3 → 6</td><td class="num">1,80 → 3,60</td>
+            <td>▼ poniżej → ✓ w normie</td>
+          </tr>
+          <tr><td>wyciskanie</td><td class="num">4 → 7</td><td class="num">1,32 → 1,85</td><td>▼ poniżej → ▼ poniżej</td></tr>
+          <tr><td>wiosłowanie</td><td class="num">3 → 6</td><td class="num">1,05 → 2,10</td><td>▼ poniżej → ▼ poniżej</td></tr>
+          <tr><td><strong>RAZEM</strong></td><td class="num">—</td><td class="num"><strong>4,18 → 7,55</strong></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="przypis">
+      Przy fazie 1 jedna z dwóch dróg: przeliczyć normy i przełączyć tryb na stałe,
+      albo zostawić liczenie i po prostu wyświetlać klientowi „na stronę”.
+      Warto przy tym sprawdzić, czy płaskie ×2 jest właściwe na wszystkich trzech osiach —
+      koszt <strong>obwodowy na kończynę</strong> się nie podwaja, bo każda strona i tak
+      dostaje swoje <code>3 × 10</code>. Podwaja się raczej <strong>centralny</strong>.
     </p>
     <p class="przypis">
       Zostaje jedno pytanie do rozstrzygnięcia przy okazji: czy przy ćwiczeniu

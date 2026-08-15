@@ -1,6 +1,6 @@
 {
  "opis": "Oznaczenie ćwiczeń jednostronnych. BAZA 5.17 nie ma takiej kolumny — klasyfikacja wywiedziona z nazw i potwierdzona przez trenera. „potwierdzone” to pozycje oznaczone jako jednostronne; „kandydaci” to lista robocza dla nowych ćwiczeń dokładanych do bazy w przyszłości.",
- "uwaga_do_rozstrzygniecia": "Czy przy ćwiczeniu jednostronnym serie i powtórzenia w planie oznaczają wartość NA STRONĘ, czy łącznie. Arkusz 5.17 nie rozróżnia — stres liczy się tak samo jak dla obustronnych. Silnik na razie tylko oznacza, nie zmienia matematyki.",
+ "uwaga_do_rozstrzygniecia": "Arkusz 5.17 liczy takie sloty jako 3 serie, nie 6 — i na tym liczeniu skalibrowane są normy objętości w zakładce Analiza. Silnik ma opcję `liczenieJednostronnych`, domyślnie 'jak w arkuszu' (parytet). Przełączenie na 'obie strony' podwaja serie, powtórzenia i stres tych 30 pozycji — i wymaga przeliczenia norm. Decyzja do podjęcia przy fazie 1.",
  "potwierdzone": [
   {
    "id": "EX-0005",
@@ -153,5 +153,6 @@
    "podstawa": "wzorzec ruchu „lunge” — potwierdzone przez trenera 15.08.2026"
   }
  ],
- "kandydaci": []
+ "kandydaci": [],
+ "semantyka": "Przy ćwiczeniu jednostronnym serie i powtórzenia w planie znaczą NA STRONĘ (potwierdzone 15.08.2026). Zapis 3 × 10 to sesyjnie 6 serii roboczych."
 }

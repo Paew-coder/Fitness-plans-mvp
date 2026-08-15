@@ -233,6 +233,51 @@ Ciężki singiel kosztuje ośrodkowo, wysokie powtórzenia kosztują obwodowo. S
 
 ---
 
+## 8a. Ćwiczenia jednostronne — `serieEfektywne`
+
+W planie `3 × 10` przy pozycji jednostronnej znaczy **na stronę**. Sesja zawiera
+więc 6 serii roboczych, nie 3.
+
+**Arkusz 5.17 liczy 3.** Dotyczy to 30 z 164 ćwiczeń — najwięcej w przysiadzie (11),
+wyciskaniu (9) i wiosłowaniu (7).
+
+```ts
+export type TrybJednostronnych = "jak w arkuszu" | "obie strony";
+
+function serieEfektywne(serie: number, jednostronne: boolean | undefined,
+                        tryb: TrybJednostronnych): number {
+  return jednostronne && tryb === "obie strony" ? serie * 2 : serie;
+}
+```
+
+**Domyślnie `"jak w arkuszu"` — i to nie jest przeoczenie.** Normy objętości
+w zakładce Analiza (`s` 4–7, `b` 8–13, `r` 7–11 serii na dzień) powstały na planach
+liczonych po staremu. Przełączenie trybu bez przeliczenia norm wypchnęłoby
+z zakresu wszystko, co zawiera pracę jednostronną.
+
+Przykład — dzień z trzema pozycjami jednostronnymi na cztery:
+
+| wzorzec | serie: arkusz → obie strony | stres | ocena |
+|---|---|---|---|
+| przysiad | 3 → 6 | 1,80 → 3,60 | ▼ poniżej → ✓ w normie |
+| wyciskanie | 4 → 7 | 1,32 → 1,85 | ▼ poniżej → ▼ poniżej |
+| wiosłowanie | 3 → 6 | 1,05 → 2,10 | ▼ poniżej → ▼ poniżej |
+| **RAZEM (stres)** | **4,18 → 7,55** | | |
+
+`porownajLiczenieJednostronnych(plan)` zwraca to zestawienie dla dowolnego planu,
+razem z informacją, przy których wzorcach ocena normy się zmienia.
+
+> **Nierozstrzygnięte, i warte uwagi przy fazie 1.** Płaskie ×2 jest proste, ale
+> nie jest oczywiście poprawne na wszystkich trzech osiach. Koszt **obwodowy
+> na kończynę** się nie podwaja — każda strona i tak dostaje swoje 3 × 10.
+> Podwaja się raczej koszt **centralny**: dwa razy więcej serii, dwa razy dłuższa
+> jednostka. Rozdzielenie tego wymagałoby innego mnożnika per oś — do decyzji,
+> gdy będzie na czym to skalibrować.
+
+Ciężar nie zmienia się w żadnym trybie: to samo obciążenie na stronę.
+
+---
+
 ## 9. `bilansTygodnia` — agregacja
 
 ```ts

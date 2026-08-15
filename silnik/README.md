@@ -82,6 +82,19 @@ Dane referencyjne (`src/dane/`) są **generowane**, nie pisane ręcznie:
 npm run dane    # z docs/dane/*.json
 ```
 
+## Ćwiczenia jednostronne
+
+`3 × 10` przy pozycji jednostronnej znaczy **na stronę** — sesja zawiera 6 serii.
+Arkusz liczy 3, więc silnik ma na to przełącznik:
+
+```ts
+przeliczPlan({ ...plan, liczenieJednostronnych: "obie strony" })
+porownajLiczenieJednostronnych(plan)   // co się zmienia i gdzie wypada z normy
+```
+
+**Domyślnie `"jak w arkuszu"`** — normy objętości w zakładce Analiza powstały na
+starym liczeniu, więc przełączenie wymaga ich przeliczenia. Decyzja przy fazie 1.
+
 ## Trzy rzeczy, które łatwo zepsuć
 
 Wszystkie mają testy — to miejsca, w których pierwsza wersja się myliła:

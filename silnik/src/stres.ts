@@ -46,6 +46,26 @@ export function stresSlotu(args: {
   };
 }
 
+/**
+ * Jak liczyć ćwiczenia jednostronne. W planie `3 × 10` przy pozycji jednostronnej
+ * znaczy **na stronę**, więc sesja zawiera 6 serii roboczych, nie 3.
+ *
+ * `"jak w arkuszu"` — liczy 3. Tak działa MasterTemplate i tak skalibrowane są
+ *   normy objętości w zakładce Analiza. Domyślne, bo zachowuje parytet z arkuszem.
+ * `"obie strony"` — liczy 6. Bliżej rzeczywistej pracy, ale rozjeżdża się z arkuszem
+ *   i z normami, które na nim powstały.
+ */
+export type TrybJednostronnych = "jak w arkuszu" | "obie strony";
+
+/** Serie faktycznie wykonane w sesji, zależnie od trybu liczenia jednostronnych. */
+export function serieEfektywne(
+  serie: number,
+  jednostronne: boolean | undefined,
+  tryb: TrybJednostronnych,
+): number {
+  return jednostronne && tryb === "obie strony" ? serie * 2 : serie;
+}
+
 export type SlotObliczony = {
   part: Part;
   serie: number;
