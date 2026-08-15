@@ -175,10 +175,12 @@ switch (polecenie) {
 
     const jedn = katalog.jednostronne();
     const kand = katalog.kandydaciJednostronne();
-    console.log(`\nJednostronne — rozpoznane po markerze w nazwie (${jedn.length}):`);
+    console.log(`\nJednostronne (${jedn.length}):`);
     for (const c of jedn) console.log(`  ${c.id}  ${c.nazwa}`);
-    console.log(`\nJednostronne — do potwierdzenia (${kand.length}):`);
-    for (const c of kand) console.log(`  ${c.id}  ${c.nazwa}`);
+    if (kand.length > 0) {
+      console.log(`\nJednostronne — do potwierdzenia (${kand.length}):`);
+      for (const c of kand) console.log(`  ${c.id}  ${c.nazwa}`);
+    }
     console.log("");
     break;
   }

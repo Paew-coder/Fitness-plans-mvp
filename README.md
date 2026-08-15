@@ -25,7 +25,7 @@ Wyciągnięte z 5.17 i sprawdzone przeciwko komórkom arkusza:
 | [`dane/tabele-przeliczeniowe.json`](docs/dane/tabele-przeliczeniowe.json) | RPE → %1RM (powt. 1–15 × RPE 6–10) + 3 tabele stresu |
 | [`dane/baza-cwiczen.json`](docs/dane/baza-cwiczen.json) | 164 ćwiczenia: kategoria, part, coeff, skok kg, progresja, film, uwagi |
 | [`dane/oddech-progi.json`](docs/dane/oddech-progi.json) | 5 progów TWOT → dawka oddechowa |
-| [`dane/jednostronne.json`](docs/dane/jednostronne.json) | 19 ćwiczeń jednostronnych + 11 do potwierdzenia |
+| [`dane/jednostronne.json`](docs/dane/jednostronne.json) | 30 ćwiczeń jednostronnych |
 
 ## Trzy rzeczy, które trzeba wiedzieć przed czytaniem
 
