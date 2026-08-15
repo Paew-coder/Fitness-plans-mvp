@@ -59,7 +59,7 @@ function opisCwiczenia(c: Cwiczenie): string {
   return `${c.id}  ${c.nazwa}\n` +
     `  kategoria ${c.kategoria} · wzorzec ${c.part} · coeff ${liczba(c.coeff, 2)} · ` +
     `skok ${liczba(c.skokKg, 1)} kg · progresja ${c.progresja}` +
-    (c.jednostronne ? "\n  ↔ jednostronne — wykonywane osobno na każdą stronę" : "") +
+    (c.jednostronne ? "\n  ↔ jednostronne — serie i powtórzenia liczą się NA STRONĘ" : "") +
     (c.jednostronneDoPotwierdzenia ? "\n  ↔ wzorzec jednostronny — do potwierdzenia" : "") +
     (c.uwagi ? `\n  ⚠ ${c.uwagi}` : "") +
     (c.film ? "" : "\n  ⚠ brak nagrania");
@@ -104,7 +104,11 @@ switch (polecenie) {
     const procent = procent1RM(powt, rpe);
 
     console.log(`\n${opisCwiczenia(c)}\n`);
-    console.log(`  1RM ${liczba(oneRM)} kg · ${serie} × ${powt} powt. · RPE ${liczba(rpe)}`);
+    const naStrone = c.jednostronne ? " na stronę" : "";
+    console.log(`  1RM ${liczba(oneRM)} kg · ${serie} × ${powt} powt.${naStrone} · RPE ${liczba(rpe)}`);
+    if (c.jednostronne) {
+      console.log(`  → sesja zawiera ${serie * 2} serii roboczych; arkusz liczy ${serie}`);
+    }
     console.log(`  %1RM z tabeli: ${procent === null ? "poza tabelą" : liczba(procent) + "%"}`);
     console.log(`  CIĘŻAR: ${typeof wynik === "number" ? liczba(wynik) + " kg" : wynik}`);
     console.log(`  stres — całkowity ${liczba(stres.calkowity, 2)} · ` +
@@ -126,6 +130,9 @@ switch (polecenie) {
 
     console.log(`\n${opisCwiczenia(c)}\n`);
     console.log(`  1RM ${liczba(oneRM)} kg · tryb akcesoriów: licz z RPE · część: objętość\n`);
+    if (c.jednostronne) {
+      console.log("  ↔ serie i powtórzenia NA STRONĘ — sesja zawiera dwa razy tyle serii\n");
+    }
     console.log("  tydzień   serie × powt.   RPE    ciężar      stres t/c/p");
     console.log("  " + "─".repeat(62));
 

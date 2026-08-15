@@ -16,10 +16,12 @@ import {
   bilansTygodnia,
   NORMY,
   ocenaNormy,
+  serieEfektywne,
   stresSlotu,
   type BilansTygodnia,
   type OcenaNormy,
   type SlotObliczony,
+  type TrybJednostronnych,
 } from "./stres.ts";
 import { procent1RM, rozwiaz1RM, type SeriaMaksymalna } from "./rpe.ts";
 
@@ -67,6 +69,11 @@ export type Plan = {
   serieMaksymalne: readonly SeriaMaksymalna[];
   sloty: readonly SlotPlanu[];
   topSety?: readonly TopSet[];
+  /**
+   * Jak liczyć serie ćwiczeń jednostronnych. Domyślnie `"jak w arkuszu"` —
+   * zmiana rozjeżdża wynik z MasterTemplate i z normami z zakładki Analiza.
+   */
+  liczenieJednostronnych?: TrybJednostronnych;
 };
 
 export type SlotWyliczony = {
@@ -74,7 +81,10 @@ export type SlotWyliczony = {
   dzien: number;
   lp: string;
   cwiczenie: Cwiczenie | null;
+  /** Serie tak, jak stoją w planie. Przy ćwiczeniu jednostronnym: na stronę. */
   serie: number;
+  /** Serie faktycznie wykonane — zależnie od `liczenieJednostronnych`. */
+  serieEfektywne: number;
   powtorzenia: number;
   rpe: number;
   procent1RM: number | null;
@@ -156,6 +166,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
           lp: slot.lp,
           cwiczenie: null,
           serie: 0,
+          serieEfektywne: 0,
           powtorzenia: 0,
           rpe: 0,
           procent1RM: null,
@@ -175,6 +186,9 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       const mnoznik = mnoznikNaTydzien(tydzien, odczucia);
 
       const serie = p.serie ?? (bojGlowny ? 1 : 3);
+      const efektywne = serieEfektywne(
+        serie, cwiczenie.jednostronne, plan.liczenieJednostronnych ?? "jak w arkuszu",
+      );
       const rpe = p.rpe ?? 8;
       const powtorzenia =
         p.powtorzenia ??
@@ -217,6 +231,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         lp: slot.lp,
         cwiczenie,
         serie,
+        serieEfektywne: efektywne,
         powtorzenia,
         rpe,
         procent1RM: procent1RM(powtorzenia, rpe),
@@ -224,7 +239,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         mnoznik,
         ciezar: p.ciezarOverride ?? policzony,
         ciezarNadpisany: p.ciezarOverride !== undefined,
-        stres: stresSlotu({ coeff: cwiczenie.coeff, serie, rpe, powtorzenia }),
+        stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
       });
     }
 
@@ -232,7 +247,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       .filter((s) => s.cwiczenie !== null)
       .map((s) => ({
         part: s.cwiczenie!.part,
-        serie: s.serie,
+        serie: s.serieEfektywne,
         powtorzenia: s.powtorzenia,
         stres: s.stres,
       }));
@@ -264,8 +279,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       const topSetDnia = topSety.find((t) => t.dzien === dzien && t.cwiczenie);
       return {
         dzien,
-        serie: wDniu.reduce((a, s) => a + s.serie, 0) + (topSetDnia ? 1 : 0),
-        powtorzenia: wDniu.reduce((a, s) => a + s.serie * s.powtorzenia, 0),
+        serie: wDniu.reduce((a, s) => a + s.serieEfektywne, 0) + (topSetDnia ? 1 : 0),
+        powtorzenia: wDniu.reduce((a, s) => a + s.serieEfektywne * s.powtorzenia, 0),
         stresCalkowity: Math.round(wDniu.reduce((a, s) => a + s.stres.calkowity, 0) * 1e4) / 1e4,
       };
     });
@@ -293,4 +308,70 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
   }
 
   return { nazwa: plan.nazwa, dniTreningowe: dni, tygodnie, ocenaObjetosci };
+}
+
+export type PorownanieJednostronnych = {
+  /** Ile slotów w planie to ćwiczenia jednostronne. */
+  slotowJednostronnych: number;
+  wzorce: {
+    part: string;
+    nazwa: string;
+    serieJakWArkuszu: number;
+    serieObieStrony: number;
+    stresJakWArkuszu: number;
+    stresObieStrony: number;
+    ocenaJakWArkuszu: OcenaNormy;
+    ocenaObieStrony: OcenaNormy;
+    ocenaSieZmienia: boolean;
+  }[];
+  stresRazemJakWArkuszu: number;
+  stresRazemObieStrony: number;
+};
+
+/**
+ * Pokazuje, co zmienia przełączenie liczenia jednostronnych — na poziomie tygodnia 1.
+ *
+ * Po co: w planie `3 × 10` przy pozycji jednostronnej znaczy na stronę, więc sesja
+ * zawiera 6 serii. Arkusz liczy 3, a normy w zakładce Analiza powstały na tym
+ * liczeniu. Zanim się je przestawi, warto zobaczyć, ile pozycji wypada z normy.
+ */
+export function porownajLiczenieJednostronnych(
+  plan: Plan,
+  katalog: Katalog = katalogDomyslny,
+): PorownanieJednostronnych {
+  const jakWArkuszu = przeliczPlan({ ...plan, liczenieJednostronnych: "jak w arkuszu" }, katalog);
+  const obieStrony = przeliczPlan({ ...plan, liczenieJednostronnych: "obie strony" }, katalog);
+  const dni = jakWArkuszu.dniTreningowe;
+
+  const slotowJednostronnych = plan.sloty.filter(
+    (s) => s.cwiczenieId && katalog.poId(s.cwiczenieId)?.jednostronne,
+  ).length;
+
+  const a = jakWArkuszu.tygodnie[0]!.bilans;
+  const b = obieStrony.tygodnie[0]!.bilans;
+
+  const wzorce = a.wzorce.map((wa) => {
+    const wb = b.wzorce.find((x) => x.part === wa.part)!;
+    const zakres = NORMY.serie[wa.part as keyof typeof NORMY.serie];
+    const ocenaA = ocenaNormy(wa.serie, zakres, dni);
+    const ocenaB = ocenaNormy(wb.serie, zakres, dni);
+    return {
+      part: wa.part,
+      nazwa: wa.nazwa,
+      serieJakWArkuszu: wa.serie,
+      serieObieStrony: wb.serie,
+      stresJakWArkuszu: wa.calkowity,
+      stresObieStrony: wb.calkowity,
+      ocenaJakWArkuszu: ocenaA,
+      ocenaObieStrony: ocenaB,
+      ocenaSieZmienia: ocenaA !== ocenaB,
+    };
+  });
+
+  return {
+    slotowJednostronnych,
+    wzorce,
+    stresRazemJakWArkuszu: a.razem,
+    stresRazemObieStrony: b.razem,
+  };
 }
