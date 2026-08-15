@@ -1,0 +1,576 @@
+{
+ "zrodlo": "9c2d84b4-MasterTemplate517.xlsx",
+ "ustawienia": {
+  "tryb_akcesoriow": "trzymaj z bloku",
+  "czesc_planu": "objętość",
+  "dni_treningowe": 1
+ },
+ "serie_maksymalne": [
+  {
+   "position_id": "D1-S02",
+   "nazwa": "Allah",
+   "ciezar": 50.0,
+   "powtorzenia": 8.0,
+   "oczekiwany_1rm": 62.1,
+   "ex_id": "EX-0003"
+  }
+ ],
+ "sloty": [
+  {
+   "position_id": "D1-S02",
+   "dzien": 1,
+   "wiersz": 8,
+   "lp": "B1.",
+   "nazwa": "Allah",
+   "ex_id": "EX-0003",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "serie": 3.0,
+     "rpe": 8.0,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": null,
+     "ocz_procent": 67.5,
+     "ocz_one_rm": null,
+     "ocz_mnoznik": 1.0,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 1.65
+    },
+    "T2": {
+     "serie": 3.0,
+     "rpe": 8.0,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": null,
+     "ocz_procent": 64.5,
+     "ocz_one_rm": null,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.45,
+     "ocz_stres_p": 1.65
+    },
+    "T3": {
+     "serie": 3.0,
+     "rpe": 8.0,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": null,
+     "ocz_procent": 62.5,
+     "ocz_one_rm": null,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.45,
+     "ocz_stres_p": 1.5
+    },
+    "T4": {
+     "serie": 3.0,
+     "rpe": 9.0,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": "— brak 1RM",
+     "ocz_procent": 71.5,
+     "ocz_one_rm": null,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.75,
+     "ocz_stres_p": 2.1
+    },
+    "T5": {
+     "serie": 3.0,
+     "rpe": 9.0,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": "— brak 1RM",
+     "ocz_procent": 68.5,
+     "ocz_one_rm": null,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 2.1
+    },
+    "T6": {
+     "serie": 3.0,
+     "rpe": 9.0,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": "— brak 1RM",
+     "ocz_procent": 66.5,
+     "ocz_one_rm": null,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 2.1
+    }
+   },
+   "arkusz_nieprzeliczony": true
+  }
+ ],
+ "top_sety": [
+  {
+   "dzien": 1,
+   "wlaczony": true,
+   "rpe": 7.0,
+   "slot_position_id": "D1-S01"
+  },
+  {
+   "dzien": 2,
+   "wlaczony": true,
+   "rpe": 7.0,
+   "slot_position_id": "D2-S01"
+  },
+  {
+   "dzien": 3,
+   "wlaczony": true,
+   "rpe": 7.0,
+   "slot_position_id": "D3-S01"
+  },
+  {
+   "dzien": 4,
+   "wlaczony": true,
+   "rpe": 7.0,
+   "slot_position_id": "D4-S01"
+  },
+  {
+   "dzien": 5,
+   "wlaczony": true,
+   "rpe": 7.0,
+   "slot_position_id": "D5-S01"
+  }
+ ],
+ "podsumowania": {
+  "T1": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": "30 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "r": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "c": {
+     "ocz_calkowity": 1.05,
+     "ocz_centralny": 0.6,
+     "ocz_obwodowy": 1.65,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 30
+    }
+   },
+   "ocz_razem": 1.05,
+   "ocz_serie_razem": 3,
+   "ocz_powtorzenia_razem": 30
+  },
+  "T2": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": "33 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "r": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "c": {
+     "ocz_calkowity": 1.05,
+     "ocz_centralny": 0.45,
+     "ocz_obwodowy": 1.65,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 33
+    }
+   },
+   "ocz_razem": 1.05,
+   "ocz_serie_razem": 3,
+   "ocz_powtorzenia_razem": 33
+  },
+  "T3": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": "36 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "r": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "c": {
+     "ocz_calkowity": 1.05,
+     "ocz_centralny": 0.45,
+     "ocz_obwodowy": 1.5,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 36
+    }
+   },
+   "ocz_razem": 1.05,
+   "ocz_serie_razem": 3,
+   "ocz_powtorzenia_razem": 36
+  },
+  "T4": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": "30 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "r": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "c": {
+     "ocz_calkowity": 1.35,
+     "ocz_centralny": 0.75,
+     "ocz_obwodowy": 2.1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 30
+    }
+   },
+   "ocz_razem": 1.35,
+   "ocz_serie_razem": 3,
+   "ocz_powtorzenia_razem": 30
+  },
+  "T5": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": "33 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "r": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "c": {
+     "ocz_calkowity": 1.35,
+     "ocz_centralny": 0.6,
+     "ocz_obwodowy": 2.1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 33
+    }
+   },
+   "ocz_razem": 1.35,
+   "ocz_serie_razem": 3,
+   "ocz_powtorzenia_razem": 33
+  },
+  "T6": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": "36 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "r": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "c": {
+     "ocz_calkowity": 1.35,
+     "ocz_centralny": 0.6,
+     "ocz_obwodowy": 2.1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 36
+    }
+   },
+   "ocz_razem": 1.35,
+   "ocz_serie_razem": 3,
+   "ocz_powtorzenia_razem": 36
+  }
+ },
+ "diagnostyka": {
+  "komorek_bez_wartosci": 9,
+  "sloty_z_nieprzeliczonym_1rm": [
+   "D1-S02"
+  ]
+ }
+}
