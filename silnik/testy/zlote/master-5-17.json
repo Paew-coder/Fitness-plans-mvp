@@ -116,7 +116,7 @@
      "ocz_stres_p": 2.1
     }
    },
-   "arkusz_nieprzeliczony": true
+   "1rm_nierozwiazany": true
   }
  ],
  "top_sety": [
@@ -569,7 +569,7 @@
  },
  "diagnostyka": {
   "komorek_bez_wartosci": 9,
-  "sloty_z_nieprzeliczonym_1rm": [
+  "sloty_bez_rozwiazanego_1rm": [
    "D1-S02"
   ]
  }

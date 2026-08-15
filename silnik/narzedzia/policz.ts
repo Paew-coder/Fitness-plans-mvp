@@ -59,6 +59,8 @@ function opisCwiczenia(c: Cwiczenie): string {
   return `${c.id}  ${c.nazwa}\n` +
     `  kategoria ${c.kategoria} · wzorzec ${c.part} · coeff ${liczba(c.coeff, 2)} · ` +
     `skok ${liczba(c.skokKg, 1)} kg · progresja ${c.progresja}` +
+    (c.jednostronne ? "\n  ↔ jednostronne — wykonywane osobno na każdą stronę" : "") +
+    (c.jednostronneDoPotwierdzenia ? "\n  ↔ wzorzec jednostronny — do potwierdzenia" : "") +
     (c.uwagi ? `\n  ⚠ ${c.uwagi}` : "") +
     (c.film ? "" : "\n  ⚠ brak nagrania");
 }
@@ -170,6 +172,13 @@ switch (polecenie) {
     for (const c of decyzje) console.log(`  ${c.id}  ${c.nazwa.padEnd(32)} ${c.uwagi}`);
     console.log(`\nBez nagrania (${bezFilmu.length}):`);
     for (const c of bezFilmu) console.log(`  ${c.id}  ${c.nazwa}`);
+
+    const jedn = katalog.jednostronne();
+    const kand = katalog.kandydaciJednostronne();
+    console.log(`\nJednostronne — rozpoznane po markerze w nazwie (${jedn.length}):`);
+    for (const c of jedn) console.log(`  ${c.id}  ${c.nazwa}`);
+    console.log(`\nJednostronne — do potwierdzenia (${kand.length}):`);
+    for (const c of kand) console.log(`  ${c.id}  ${c.nazwa}`);
     console.log("");
     break;
   }

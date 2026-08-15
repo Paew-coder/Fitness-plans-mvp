@@ -185,16 +185,18 @@ def zrzut(sciezka_xlsx: str) -> dict:
         if slot and not s["nazwa"]:
             s["nazwa"] = slot["nazwa"]
 
-    # Slot, w ktorym arkusz nie ma wyliczonego 1RM mimo istniejacej serii maksymalnej,
-    # znaczy tylko tyle, ze plik nie byl przeliczony — porownanie ciezaru trzeba pominac.
+    # Slot z seria maksymalna, ale bez wyliczonego 1RM w arkuszu. Dwie mozliwe przyczyny:
+    #   a) plik nie byl przeliczony przed eksportem,
+    #   b) brakuje formuly lustrzanej w START!B dla tego slotu (blad 5.17, naprawiony w 5.18).
+    # W obu przypadkach porownanie ciezaru trzeba pominac — arkusz nie jest wtedy wyrocznia.
     z_seria = {s["ex_id"] for s in serie_max if s.get("ex_id")}
     for slot in sloty.values():
         t1_pole = slot["tygodnie"]["T1"]
-        slot["arkusz_nieprzeliczony"] = bool(
+        slot["1rm_nierozwiazany"] = bool(
             slot["ex_id"] in z_seria and t1_pole["ocz_one_rm"] is None
         )
-        if slot["arkusz_nieprzeliczony"]:
-            braki.setdefault("sloty_z_nieprzeliczonym_1rm", []).append(slot["position_id"])
+        if slot["1rm_nierozwiazany"]:
+            braki.setdefault("sloty_bez_rozwiazanego_1rm", []).append(slot["position_id"])
 
     return {
         "zrodlo": pathlib.Path(sciezka_xlsx).name,

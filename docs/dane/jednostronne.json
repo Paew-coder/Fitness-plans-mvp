@@ -1,0 +1,158 @@
+{
+ "opis": "Oznaczenie ćwiczeń jednostronnych. BAZA 5.17 nie ma takiej kolumny — klasyfikacja wywiedziona z nazw. „potwierdzone” mają jawny marker w nazwie i nie wymagają decyzji. „kandydaci” to wzorce z natury jednostronne, ale bez markera — wymagają potwierdzenia Pawła, zgodnie z zasadą „nie zgadywać”.",
+ "uwaga_do_rozstrzygniecia": "Czy przy ćwiczeniu jednostronnym serie i powtórzenia w planie oznaczają wartość NA STRONĘ, czy łącznie. Arkusz 5.17 nie rozróżnia — stres liczy się tak samo jak dla obustronnych. Silnik na razie tylko oznacza, nie zmienia matematyki.",
+ "potwierdzone": [
+  {
+   "id": "EX-0005",
+   "nazwa": "Arnold press alternating",
+   "podstawa": "marker „alternating” w nazwie"
+  },
+  {
+   "id": "EX-0041",
+   "nazwa": "Cable lateral raise s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0043",
+   "nazwa": "Cable row s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0060",
+   "nazwa": "Dumbbell bench press alternating",
+   "podstawa": "marker „alternating” w nazwie"
+  },
+  {
+   "id": "EX-0076",
+   "nazwa": "Dumbbell over head press alternating",
+   "podstawa": "marker „alternating” w nazwie"
+  },
+  {
+   "id": "EX-0079",
+   "nazwa": "Dumbbell s/a Arnold press",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0080",
+   "nazwa": "Dumbbell s/a row",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0085",
+   "nazwa": "Extensive plyo jumps s/l",
+   "podstawa": "marker „s/l” w nazwie"
+  },
+  {
+   "id": "EX-0094",
+   "nazwa": "Halfkneeling s/a cable pull",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0105",
+   "nazwa": "Incline bench lateral raise s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0112",
+   "nazwa": "Incline dumbbell press alternating",
+   "podstawa": "marker „alternating” w nazwie"
+  },
+  {
+   "id": "EX-0130",
+   "nazwa": "Lat pulldown s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0131",
+   "nazwa": "Lateral raise s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0140",
+   "nazwa": "Lateral raises incline s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0144",
+   "nazwa": "Machine row s/a",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0172",
+   "nazwa": "S/a cable pulldown incline bench",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0173",
+   "nazwa": "S/a lat pulldown incline bench",
+   "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0174",
+   "nazwa": "S/l dragonflag eccentric",
+   "podstawa": "marker „s/l” w nazwie"
+  },
+  {
+   "id": "EX-0175",
+   "nazwa": "S/l hip thrust",
+   "podstawa": "marker „s/l” w nazwie"
+  }
+ ],
+ "kandydaci": [
+  {
+   "id": "EX-0008",
+   "nazwa": "Banded pistol squat",
+   "podstawa": "wzorzec ruchu „pistol”"
+  },
+  {
+   "id": "EX-0037",
+   "nazwa": "Bulgarian clean plyo",
+   "podstawa": "wzorzec ruchu „bulgarian”"
+  },
+  {
+   "id": "EX-0038",
+   "nazwa": "Bulgarian squat assisted",
+   "podstawa": "wzorzec ruchu „bulgarian”"
+  },
+  {
+   "id": "EX-0055",
+   "nazwa": "Deficit reverse lunge",
+   "podstawa": "wzorzec ruchu „lunge”"
+  },
+  {
+   "id": "EX-0071",
+   "nazwa": "Dumbbell lunges",
+   "podstawa": "wzorzec ruchu „lunge”"
+  },
+  {
+   "id": "EX-0088",
+   "nazwa": "Front foot elevated split squat",
+   "podstawa": "wzorzec ruchu „split squat”"
+  },
+  {
+   "id": "EX-0149",
+   "nazwa": "Pistol squat eccentric",
+   "podstawa": "wzorzec ruchu „pistol”"
+  },
+  {
+   "id": "EX-0154",
+   "nazwa": "Poliquin step up",
+   "podstawa": "wzorzec ruchu „step up”"
+  },
+  {
+   "id": "EX-0155",
+   "nazwa": "Poliquin step up paused 3sec",
+   "podstawa": "wzorzec ruchu „step up”"
+  },
+  {
+   "id": "EX-0184",
+   "nazwa": "Split squat",
+   "podstawa": "wzorzec ruchu „split squat”"
+  },
+  {
+   "id": "EX-0201",
+   "nazwa": "Walking lunges",
+   "podstawa": "wzorzec ruchu „lunge”"
+  }
+ ]
+}

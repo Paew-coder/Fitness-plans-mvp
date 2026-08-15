@@ -37,8 +37,9 @@ To jest sedno: silnik nie zastępuje arkusza, dopóki nie policzy tego samego.
 
 ```bash
 npm test
-# porównanych wartości: 194, pominiętych (brak w arkuszu): 6
-# tests 57 · pass 57 · fail 0
+# porównanych wartości: 194, pominiętych: 6     ← master-5-17 (szablon, prawie pusty)
+# porównanych wartości: 459, pominiętych: 0     ← plan-2-dni-518 (realny plan)
+# tests 59 · pass 59 · fail 0
 ```
 
 **Kryterium:** ciężar co do grosza (tolerancja 0,005 kg), stres do 0,1.
@@ -56,8 +57,11 @@ Każdy zestaw zawiera jednocześnie **wejście** (co wpisał trener) i **wynik**
 > **Plik musi być przeliczony przed eksportem.** Arkusz zapisuje ostatnio wyliczone
 > wartości — w pliku edytowanym bez przeliczenia część komórek jest pusta. Takie pola
 > są pomijane i raportowane jako „pominiętych", nigdy zaliczane po cichu.
-> Sześć pominiętych w zestawie `master-5-17` to właśnie ten przypadek: w szablonie
-> nie ma przeliczonego 1RM dla jedynego wypełnionego slotu.
+>
+> Sześć pominiętych w zestawie `master-5-17` ma inną przyczynę: to slot `D1-S02`,
+> któremu w 5.17 brakuje formuły w `START!B7`, więc arkusz **nigdy** nie rozwiązuje
+> tam 1RM. W 5.18 ten błąd jest naprawiony — zestaw `plan-2-dni-518` nie pomija
+> już nic. Szczegóły: [`../arkusz/`](../arkusz/README.md).
 
 ## Co jest w środku
 
@@ -68,7 +72,7 @@ Każdy zestaw zawiera jednocześnie **wejście** (co wpisał trener) i **wynik**
 | `powtorzenia.ts` | automat powtórzeń akcesoriów | kolumna `E` |
 | `ciezar.ts` | cztery reguły ciężaru, TOP SET | kolumna `G`, wiersze TOP SET |
 | `stres.ts` | trzy osie stresu, bilans wzorców, normy | `TABELE!B23:P61`, `T1!D87:I94` |
-| `katalog.ts` | 164 ćwiczenia, filtrowanie po kategorii | `BAZA`, zastępuje `LISTY` |
+| `katalog.ts` | 164 ćwiczenia, filtrowanie po kategorii, oznaczenie jednostronnych | `BAZA`, zastępuje `LISTY` |
 | `plan.ts` | przeliczenie sześciu tygodni naraz | `T1`–`T6` |
 | `walidacja.ts` | 11 kontroli + powtórki z poprzedniego cyklu | `Analiza!A66:C76` |
 
