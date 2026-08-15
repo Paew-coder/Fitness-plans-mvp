@@ -48,12 +48,16 @@ export type Cwiczenie = {
   scaloneId?: string;
   /**
    * Ćwiczenie wykonywane osobno na każdą stronę. BAZA 5.17 nie ma takiej kolumny —
-   * flaga pochodzi z jawnego markera w nazwie (`s/a`, `s/l`, `alternating`).
+   * flaga pochodzi z markera w nazwie (`s/a`, `s/l`, `alternating`) albo z decyzji
+   * trenera dla wzorców z natury jednostronnych (wykrok, pistol, bułgarski…).
    * Na razie tylko oznaczenie: stres liczy się identycznie jak dla obustronnych,
    * dokładnie jak w arkuszu.
    */
   jednostronne?: boolean;
-  /** Wzorzec z natury jednostronny, ale bez markera w nazwie — czeka na decyzję trenera. */
+  /**
+   * Wzorzec z natury jednostronny, ale bez markera w nazwie — czeka na decyzję trenera.
+   * Dziś pusta: wszystkie rozstrzygnięte. Zostaje dla ćwiczeń dokładanych w przyszłości.
+   */
   jednostronneDoPotwierdzenia?: boolean;
 };
 
