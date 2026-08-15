@@ -28,8 +28,19 @@ Przełączniki trenera siedzą w `Analiza!B4` (`PRZEL_AKCESORIA`) i `Analiza!B5`
 **3. Znany błąd „przełączniki B4/B5 referencjonowane jako C3/C4" — naprawiony.**
 Sprawdziłem XML wszystkich arkuszy: zero odwołań do `Analiza!$C$3` / `$C$4`. `PRZEL_AKCESORIA` występuje 60× w T2, T3, T5, T6 i **0×** w T1 i T4 — dokładnie tak, jak powinno, bo T1 i T4 zawsze liczą z RPE. Przełącznik „trzymaj z bloku" działa. Decyzja o wdrożeniu fixa jest nieaktualna — można wykreślić z listy problemów.
 
-**4. Znany błąd „TOP SET zaszyty w wierszu 7" — nadal aktualny.**
-`T1!G6` czyta `$C7`, `$Q7`, `$R7` na sztywno; analogicznie wiersze 22→23, 38→39, 54→55, 70→71. TOP SET zawsze pokazuje bój z pierwszego slotu dnia. Blok rozgrzewkowy w slocie S01 rozwala tę logikę.
+**4. Znany błąd „TOP SET zaszyty w wierszu 7" — potwierdzony i naprawiony w 5.18.**
+`T1!G6` czytał `$C7`, `$Q7`, `$R7` na sztywno; analogicznie wiersze 22→23, 38→39, 54→55, 70→71. TOP SET zawsze pokazywał bój z pierwszego slotu dnia. Blok rozgrzewkowy w slocie S01 rozwalał tę logikę. Poprawka: [`arkusz/`](../arkusz/README.md).
+
+**4a. Dwa błędy, o których nikt nie wiedział — oba na slocie `D1-S02`.**
+
+Wyszły przy testowaniu poprawki TOP SETU:
+
+- **`START!B7` nie ma formuły.** Kolumna B w START to lustro nazw z T1 — wypełnionych jest 59 z 60 komórek. Bez tej jednej nazwa ćwiczenia nigdy nie trafia na START, więc 1RM się nie rozwiązuje, a **seria maksymalna wpisana przez klienta jest po cichu ignorowana**. Ciężar pokazuje `— brak 1RM` mimo poprawnego wejścia.
+- **`T1!G8` nie ma formuły ciężaru.** Jedyna taka komórka spośród 360 w kolumnie G we wszystkich sześciu tygodniach. Slot nigdy nie pokazuje ciężaru.
+
+Oba to ślad po dawnej edycji tego jednego wiersza. Oba naprawione w 5.18, każdy jako osobna, możliwa do pominięcia zmiana.
+
+Przy okazji: braki formuł w kolumnie `E` w wierszach 7, 23, 39, 55, 71 **nie są błędem** — to wiersze boju głównego, gdzie powtórzenia wpisuje trener. Automat dotyczy wyłącznie akcesoriów.
 
 **5. BAZA: 164 ćwiczenia, nie ~200.**
 Zakres formuł to wiersze 3–202 (200 miejsc), wypełnionych 164. Zapas 36 wierszy — nowe ćwiczenia wstawiać wewnątrz, nie poniżej.

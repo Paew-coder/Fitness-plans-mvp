@@ -52,7 +52,7 @@ type SlotZlota = {
   nazwa: string;
   ex_id: string | null;
   kategoria_szkieletu: string | null;
-  arkusz_nieprzeliczony: boolean;
+  "1rm_nierozwiazany": boolean;
   tygodnie: Record<string, PoleTygodnia>;
 };
 
@@ -184,9 +184,10 @@ for (const plik of pliki) {
           porownane++;
         }
 
-        // Ciężar pomijamy, gdy arkusz nie był przeliczony dla tego slotu —
-        // inaczej test sprawdzałby nieaktualny cache, a nie logikę.
-        if (slotZ.arkusz_nieprzeliczony || pole.ocz_ciezar === null) { pominiete++; return; }
+        // Ciężar pomijamy, gdy arkusz sam nie rozwiązał 1RM dla tego slotu —
+        // wtedy nie jest wyrocznią. W 5.17 dotyczy to slotu D1-S02 (brak formuły
+        // w START!B7); w 5.18 już nie występuje.
+        if (slotZ["1rm_nierozwiazany"] || pole.ocz_ciezar === null) { pominiete++; return; }
 
         if (typeof pole.ocz_ciezar === "number") {
           assert.equal(typeof obliczony.ciezar, "number", `ciężar powinien być liczbą — ${gdzie}`);

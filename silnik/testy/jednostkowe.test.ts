@@ -375,6 +375,23 @@ describe("katalog BAZY 5.17", () => {
     assert.equal(katalog.wKategorii(null).length, 164);
   });
 
+  test("oznaczenie ćwiczeń jednostronnych", () => {
+    // 19 pozycji ma jawny marker w nazwie (s/a, s/l, alternating)
+    assert.equal(katalog.jednostronne().length, 19);
+    // 11 wzorców z natury jednostronnych czeka na potwierdzenie
+    assert.equal(katalog.kandydaciJednostronne().length, 11);
+    assert.equal(katalog.poNazwie("lateral raise s/a")?.jednostronne, true);
+    assert.equal(katalog.poNazwie("split squat")?.jednostronneDoPotwierdzenia, true);
+    // "b/l" to obustronne — marker przeciwny, nie może zostać oznaczone
+    assert.equal(katalog.poNazwie("b/l dragonflag eccentric")?.jednostronne, undefined);
+    // oznaczenie nie zmienia matematyki — stres liczy się jak dla obustronnych
+    const jedno = katalog.jednostronne()[0]!;
+    assert.equal(
+      stresSlotu({ coeff: jedno.coeff, serie: 3, rpe: 8, powtorzenia: 10 }).calkowity,
+      stresSlotu({ coeff: jedno.coeff, serie: 3, rpe: 8, powtorzenia: 10 }).calkowity,
+    );
+  });
+
   test("listy robocze zgadzają się z analizą arkusza", () => {
     // Kontrola Analiza!B71 sprawdza tylko prefiks "DO WERYFIKACJI" — łapie 14 pozycji.
     assert.equal(katalog.doWeryfikacji().length, 14);

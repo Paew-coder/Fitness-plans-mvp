@@ -34,6 +34,9 @@ for nazwa, klucz, opis in (
 (out / "tabele.ts").write_text(ts, encoding="utf-8")
 
 b = json.load(open(dane / "baza-cwiczen.json", encoding="utf-8"))
+jedn = json.load(open(dane / "jednostronne.json", encoding="utf-8"))
+POTWIERDZONE = {e["id"] for e in jedn["potwierdzone"]}
+KANDYDACI = {e["id"] for e in jedn["kandydaci"]}
 lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
        "// Zrodlo: docs/dane/baza-cwiczen.json (MasterTemplate 5.17, zakladka BAZA)",
        "// Regeneracja: python3 silnik/narzedzia/generuj-dane.py",
@@ -53,6 +56,8 @@ for e in b["cwiczenia"]:
     if e.get("film"):       p.append(f'film: {json.dumps(e["film"], ensure_ascii=False)}')
     if e.get("uwagi"):      p.append(f'uwagi: {json.dumps(e["uwagi"], ensure_ascii=False)}')
     if e.get("scalone_id"): p.append(f'scaloneId: {json.dumps(e["scalone_id"], ensure_ascii=False)}')
+    if e["id"] in POTWIERDZONE: p.append("jednostronne: true")
+    elif e["id"] in KANDYDACI:  p.append("jednostronneDoPotwierdzenia: true")
     lin.append("  { " + ", ".join(p) + " },")
 lin += ["];", ""]
 (out / "cwiczenia.ts").write_text("\n".join(lin), encoding="utf-8")
