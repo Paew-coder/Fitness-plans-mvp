@@ -376,12 +376,12 @@ describe("katalog BAZY 5.17", () => {
   });
 
   test("oznaczenie ćwiczeń jednostronnych", () => {
-    // 19 pozycji ma jawny marker w nazwie (s/a, s/l, alternating)
-    assert.equal(katalog.jednostronne().length, 19);
-    // 11 wzorców z natury jednostronnych czeka na potwierdzenie
-    assert.equal(katalog.kandydaciJednostronne().length, 11);
+    // 19 z jawnym markerem w nazwie + 11 wzorców potwierdzonych przez trenera
+    assert.equal(katalog.jednostronne().length, 30);
+    assert.equal(katalog.kandydaciJednostronne().length, 0, "wszystkie rozstrzygnięte");
     assert.equal(katalog.poNazwie("lateral raise s/a")?.jednostronne, true);
-    assert.equal(katalog.poNazwie("split squat")?.jednostronneDoPotwierdzenia, true);
+    assert.equal(katalog.poNazwie("split squat")?.jednostronne, true);
+    assert.equal(katalog.poNazwie("walking lunges")?.jednostronne, true);
     // "b/l" to obustronne — marker przeciwny, nie może zostać oznaczone
     assert.equal(katalog.poNazwie("b/l dragonflag eccentric")?.jednostronne, undefined);
     // oznaczenie nie zmienia matematyki — stres liczy się jak dla obustronnych
