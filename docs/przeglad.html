@@ -271,7 +271,7 @@
     <div class="stopka-masthead">
       <span>MasterTemplate 5.17</span>
       <span>164 ćwiczenia</span>
-      <span>57 testów · 194 wartości zgodne</span>
+      <span>59 testów · 653 wartości zgodne</span>
       <span>15.08.2026</span>
     </div>
   </div>
@@ -299,13 +299,22 @@
           Poprawka ~570 odwołań jest niepotrzebna.
         </p>
       </div>
-      <div class="karta zolta">
-        <span class="znacznik">otwarte</span>
-        <h3>TOP SET nadal czyta sztywno wiersz poniżej</h3>
+      <div class="karta zielona">
+        <span class="znacznik">naprawione w 5.18</span>
+        <h3>TOP SET czytał sztywno wiersz poniżej</h3>
         <p>
-          <code>G6</code> odwołuje się do <code>$C7</code>, <code>$Q7</code>,
-          <code>$R7</code> — i tak samo w pozostałych dniach. Blok rozgrzewkowy
-          w pierwszym slocie rozwala tę logikę. W silniku slot jest wskazany jawnie.
+          <code>G6</code> odwoływało się do <code>$C7</code>, <code>$Q7</code>,
+          <code>$R7</code>. Rozgrzewka w pierwszym slocie rozwalała logikę.
+          Teraz wiersz TOP SET sam znajduje bój główny po literze <code>A</code>.
+        </p>
+      </div>
+      <div class="karta zolta">
+        <span class="znacznik">znalezione po drodze</span>
+        <h3>Dwa błędy, o których nikt nie wiedział</h3>
+        <p>
+          Oba na slocie <code>D1-S02</code>: brak formuły w <code>START!B7</code>
+          (seria maksymalna klienta była <strong>po cichu ignorowana</strong>)
+          i brak formuły ciężaru w <code>T1!G8</code> — jedynej spośród 360.
         </p>
       </div>
       <div class="karta niebieska">
@@ -523,14 +532,18 @@ obcięty do przedziału 0,85 – 1,15</div>
 <span class="wynik">✓</span> zgodność z arkuszem — master-5-17.json
   porównanych wartości: 194, pominiętych: 6
 
-<span class="wynik">✓</span> tests 57 · pass 57 · fail 0</div>
+<span class="wynik">✓</span> zgodność z arkuszem — plan-2-dni-518.json
+  porównanych wartości: 459, pominiętych: 0
+
+<span class="wynik">✓</span> tests 59 · pass 59 · fail 0</div>
 
     <p style="margin-top: 1.3rem">
       Porównywane są powtórzenia, %1RM, mnożnik adaptacji, trzy osie stresu
       i bilans wzorców — przez wszystkie sześć tygodni naraz. Kryterium:
-      <strong>ciężar co do grosza, stres do 0,1.</strong> Sześć pominiętych pól to te,
-      których arkusz nie miał przeliczonych przed eksportem; test je raportuje,
-      zamiast zaliczać po cichu.
+      <strong>ciężar co do grosza, stres do 0,1.</strong> Drugi zestaw to realny
+      plan dwudniowy z odczuciami klienta; nie pomija ani jednego pola.
+      Sześć pominiętych w pierwszym to slot <code>D1-S02</code> z brakującą formułą —
+      test je raportuje, zamiast zaliczać po cichu.
     </p>
 
     <h3>Kalkulator działa z wiersza poleceń</h3>
@@ -608,8 +621,9 @@ EX-0170  Rope pushdown
         <div>
           <div class="faza-tytul">Jądro i złoty zestaw testowy<span class="odznaka">zrobione</span></div>
           <div class="faza-opis">
-            Pakiet bez zależności, 57 testów, 194 wartości zgodne z arkuszem.
+            Pakiet bez zależności, 59 testów, 653 wartości zgodne z arkuszem.
             Narzędzie robiące zestaw porównawczy z dowolnego pliku 5.17.
+            Osobno: poprawki do samego arkusza (5.18).
           </div>
         </div>
       </li>
@@ -659,18 +673,61 @@ EX-0170  Rope pushdown
   </section>
 
   <section>
-    <span class="etykieta">Do decyzji</span>
-    <h2>Pięć pytań — wszystkie trenerskie</h2>
+    <span class="etykieta">Rozstrzygnięte</span>
+    <h2>Pięć decyzji</h2>
     <p>
-      Blokują start fazy 1. Żadne nie dotyczy programowania.
+      Wszystkie trenerskie, żadna techniczna. Fazę 1 można zaczynać.
+    </p>
+
+    <div class="tabela-otoczka">
+      <table>
+        <thead><tr><th>Pytanie</th><th>Decyzja</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Klienci stacjonarni w systemie?</td>
+            <td><strong>Nie.</strong> Aktualnych nie migrujemy — inny układ, nie mieszać założeń.</td>
+          </tr>
+          <tr>
+            <td>Objętość / intensywność automatycznie?</td>
+            <td><strong>Zostaje ręcznie</strong>, jak dziś. Silnik już tak działa.</td>
+          </tr>
+          <tr>
+            <td>Pola <em>dom / siłownia</em> i <em>jednostronne</em>?</td>
+            <td><strong>Tylko jednostronne.</strong> Na razie sama siłownia, więc lokalizacja odpada.</td>
+          </tr>
+          <tr>
+            <td>Zmiana liczby dni w trakcie cyklu?</td>
+            <td><strong>Funkcja na później.</strong> Jądro jest gotowe — to zmiana w UI.</td>
+          </tr>
+          <tr class="wyroznij">
+            <td>Naprawiamy TOP SET w arkuszu?</td>
+            <td><strong>Zrobione.</strong> Plik 5.18, trzy poprawki, każda do pominięcia osobno.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Ćwiczenia jednostronne — 19 pewnych, 11 do potwierdzenia</h3>
+    <p>
+      BAZA 5.17 nie ma takiej kolumny, więc oznaczenie trzeba było wywieść z nazw.
+      Podział zgodny z zasadą „nie zgadywać”:
     </p>
     <ul class="zwykla">
-      <li>Klienci stacjonarni — w systemie, czy zostają osobno? Instrukcja mówi wprost: inny układ, nie mieszać założeń.</li>
-      <li>Czy „objętość / intensywność” ma przełączać się automatycznie w połowie cyklu — T1–T3 objętość, T4–T6 intensywność — czy zostaje ręcznie, jak dziś?</li>
-      <li>Czy dokładamy do katalogu pola, które ma Base44, a arkusz nie: <em>jednostronne</em> oraz <em>dom / siłownia</em>?</li>
-      <li>Czy trener może zmienić liczbę dni w trakcie trwającego cyklu?</li>
-      <li>Czy naprawiamy TOP SET w samym arkuszu 5.17, skoro będzie w użyciu jeszcze długo?</li>
+      <li><strong>19 oznaczonych automatycznie</strong> — mają jawny marker w nazwie:
+        <code>s/a</code>, <code>s/l</code>, <code>alternating</code>.</li>
+      <li><strong>11 czeka na Twoje potwierdzenie</strong> — wzorce z natury jednostronne,
+        ale bez markera: <em>bulgarian</em>, <em>pistol</em>, <em>lunge</em>,
+        <em>step up</em>, <em>split squat</em>.</li>
+      <li><code>B/l dragonflag eccentric</code> ma marker <em>przeciwny</em> — obustronne.
+        Celowo nieoznaczone.</li>
     </ul>
+    <p class="przypis">
+      Zostaje jedno pytanie do rozstrzygnięcia przy okazji: czy przy ćwiczeniu
+      jednostronnym serie i powtórzenia znaczą <strong>na stronę</strong>, czy
+      <strong>łącznie</strong>. Arkusz nie rozróżnia — stres liczy tak samo jak dla
+      obustronnych. Silnik na razie tylko oznacza i nie rusza matematyki, żeby
+      zgodność z arkuszem została nienaruszona.
+    </p>
   </section>
 
   <footer>
