@@ -1,0 +1,43 @@
+/**
+ * Service worker — żeby aplikacja otworzyła się bez zasięgu.
+ *
+ * Trzymamy tylko szkielet (HTML, CSS, JS). Dane planu idą przez localStorage
+ * w app.js, bo muszą przetrwać także wtedy, gdy przeglądarka wyczyści cache.
+ */
+const CACHE = "trening-v1";
+const SZKIELET = ["/klient/style.css", "/klient/app.js", "/klient/manifest.json"];
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SZKIELET)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((klucze) => Promise.all(klucze.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener("fetch", (e) => {
+  const url = new URL(e.request.url);
+  if (e.request.method !== "GET" || url.origin !== location.origin) return;
+
+  // Zapytania o dane zawsze z sieci — app.js sam radzi sobie z brakiem odpowiedzi.
+  if (url.pathname.startsWith("/api/")) return;
+
+  // Adres /k/<token> to zawsze ta sama strona.
+  const zapytanie = url.pathname.startsWith("/k/") ? "/klient/index.html" : e.request;
+
+  e.respondWith(
+    caches.match(zapytanie).then((zCache) =>
+      zCache ?? fetch(e.request).then((odp) => {
+        if (odp.ok) {
+          const kopia = odp.clone();
+          caches.open(CACHE).then((c) => c.put(zapytanie, kopia));
+        }
+        return odp;
+      }).catch(() => caches.match("/klient/index.html")),
+    ),
+  );
+});

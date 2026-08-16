@@ -7,6 +7,7 @@
  * silnik i tak nie wie, skąd biorą się dane.
  */
 import { mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync, existsSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plan } from "../silnik/src/plan.ts";
@@ -14,6 +15,24 @@ import type { Plan } from "../silnik/src/plan.ts";
 const KORZEN = join(dirname(fileURLToPath(import.meta.url)), "dane", "plany");
 
 export type StatusPlanu = "szkic" | "wysłany" | "zakończony";
+
+/** Co klient faktycznie zrobił — tego arkusz nie przechowuje w ogóle. */
+export type Wykonanie = {
+  positionId: string;
+  tydzien: number;
+  /** ISO — kiedy klient to odhaczył. */
+  data: string;
+  ciezarWykonany?: number;
+  powtorzeniaWykonane?: number;
+  feedback?: "OK" | "za łatwe" | "za trudne";
+};
+
+/** Dzień oznaczony przez klienta jako zrobiony. */
+export type UkonczonyDzien = {
+  dzien: number;
+  tydzien: number;
+  data: string;
+};
 
 /** Plan razem z tym, czego silnik nie potrzebuje, a trener tak. */
 export type ZapisanyPlan = {
@@ -26,8 +45,21 @@ export type ZapisanyPlan = {
   zmieniony: string;
   /** Plan z poprzedniego cyklu — do ostrzegania o powtórkach ćwiczeń. */
   poprzedniId?: string;
+  /**
+   * Klucz dostępu dla klienta. Kto ma link, ten widzi plan — bez hasła.
+   * Przy kilkunastu klientach to proporcjonalne; przy setkach trzeba by kont.
+   * Token da się unieważnić (`odswiezToken`), gdy link wycieknie.
+   */
+  token?: string;
+  wykonania?: Wykonanie[];
+  ukonczoneDni?: UkonczonyDzien[];
   plan: Plan;
 };
+
+/** Nowy klucz dostępu. 192 bity losowości — nie do zgadnięcia. */
+export function nowyToken(): string {
+  return randomBytes(24).toString("base64url");
+}
 
 function upewnijKatalog(): void {
   mkdirSync(KORZEN, { recursive: true });
@@ -71,6 +103,12 @@ export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
   };
   writeFileSync(sciezka(pelny.id), JSON.stringify(pelny, null, 1), "utf-8");
   return pelny;
+}
+
+/** Plan po kluczu dostępu klienta. Zwraca null, gdy token nieznany. */
+export function wczytajPoTokenie(token: string): ZapisanyPlan | null {
+  if (!token || token.length < 16) return null;
+  return lista().find((p) => p.token === token) ?? null;
 }
 
 export function usun(id: string): void {
