@@ -53,11 +53,15 @@ Fazy są ułożone tak, że każda daje coś użytecznego sama z siebie i żadna
 
 *Faza, w której arkusz przestaje jeździć mailem.*
 
-1. Konta klientów, PWA, offline-first.
-2. Ekran `Serie maksymalne` (START), ekran `Dzisiaj` (T1–T6), feedback trzystanowy.
-3. Pętla zamyka się w aplikacji: feedback klienta → `mnoznikAdaptacji` → ciężar w kolejnym tygodniu. Bez wysyłania czegokolwiek.
-4. Historia wykonań — pierwsza rzecz, której arkusz nie ma w ogóle.
-5. Eksport `.xlsx` zostaje. Klienci stacjonarni i ci, którzy wolą arkusz, dostają arkusz.
+1. ~~Dostęp klienta, PWA, offline-first~~ — **zrobione**. Zamiast kont: link z tokenem (192 bity), do unieważnienia w konsoli. Service worker + kolejka w przeglądarce, więc oceny nie giną bez zasięgu.
+2. ~~Ekran `Serie maksymalne`, ekran treningu, feedback trzystanowy~~ — **zrobione**. [`klient/`](../klient/README.md).
+3. ~~Pętla zamyka się w aplikacji~~ — **zrobione i sprawdzone na żywo**: „za łatwe" w T1 → mnożnik 1,05 → ciężar 85 → 87,5 kg w T2. Bez odsyłania arkusza.
+4. ~~Historia wykonań~~ — **zrobione**. Każde dotknięcie zapisuje się z datą.
+5. Wpisywanie faktycznie wykonanego ciężaru i powtórzeń — miejsce w danych jest (`Wykonanie.ciezarWykonany`), brakuje pól w interfejsie.
+6. Ekran postępu klienta: 1RM w czasie, frekwencja, waga.
+7. Eksport `.xlsx` zostaje. Klienci stacjonarni i ci, którzy wolą arkusz, dostają arkusz.
+
+**O dostępie bez hasła — świadomy kompromis.** Kto ma link, ten widzi plan. Przy kilkunastu klientach to proporcjonalne, a konta z hasłami to osobny kawałek pracy i kłopot dla klienta. Gdy dojdą setki klientów albo dane wrażliwe (kontuzje, historia zdrowotna), trzeba to zamienić na prawdziwe konta — i wtedy przyda się baza z `03-architektura.md`.
 
 **Wyjście fazy:** klient online realizuje plan z telefonu, trener widzi realizację.
 
