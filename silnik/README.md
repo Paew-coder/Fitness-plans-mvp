@@ -15,6 +15,28 @@ npm run policz    # kalkulator z wiersza poleceń
 
 Nie trzeba nic instalować — `node --version` musi pokazać 22.6 lub wyżej.
 
+## Sprawdzanie planu klienta
+
+Bierze plik `.xlsx` i mówi, co jest z nim nie tak:
+
+```bash
+npm run sprawdz -- "Plan Zuzanna C 3.0.xlsx"
+```
+
+Raport ma cztery części:
+
+1. **Co blokuje wysyłkę** — brak serii maksymalnej, ćwiczenie spoza BAZY,
+   powtórzenia poza tabelą.
+2. **Do sprawdzenia** — bez nagrania, niezgodne ze szkieletem, pozycja
+   „DO WERYFIKACJI", powtórka z poprzedniego cyklu.
+3. **Obciążenie tydzień po tygodniu** z oceną normy i rozkładem wzorców.
+4. **Czy arkusz liczy to samo co silnik** — rozbieżność zwykle znaczy skasowaną
+   formułę w pliku. Tak wychodzi brak `T1!G8` w plikach zbudowanych na 5.17.
+
+Najcichszy błąd, który to łapie: **ćwiczenie wpisane z literówką**. Arkusz nie
+znajduje go w BAZIE i pomija slot — bez ciężaru, bez stresu, poza objętością —
+a w planie wygląda normalnie. Żadna kontrola w zakładce Analiza tego nie widzi.
+
 ## Kalkulator
 
 ```bash
@@ -43,6 +65,9 @@ npm test
 ```
 
 **Kryterium:** ciężar co do grosza (tolerancja 0,005 kg), stres do 0,1.
+
+Test przechodzi **tą samą ścieżką co `npm run sprawdz`** — ten sam import,
+to samo porównanie. Jeśli test jest zielony, narzędzie liczy tak samo.
 
 Zestawy porównawcze leżą w `testy/zlote/` i powstają z prawdziwych plików:
 

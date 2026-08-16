@@ -26,6 +26,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3.0,
      "rpe": 8.0,
      "feedback": null,
@@ -41,6 +42,7 @@
      "ocz_stres_p": 1.65
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3.0,
      "rpe": 8.0,
      "feedback": null,
@@ -56,6 +58,7 @@
      "ocz_stres_p": 1.65
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3.0,
      "rpe": 8.0,
      "feedback": null,
@@ -71,6 +74,7 @@
      "ocz_stres_p": 1.5
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3.0,
      "rpe": 9.0,
      "feedback": null,
@@ -86,6 +90,7 @@
      "ocz_stres_p": 2.1
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3.0,
      "rpe": 9.0,
      "feedback": null,
@@ -101,6 +106,7 @@
      "ocz_stres_p": 2.1
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3.0,
      "rpe": 9.0,
      "feedback": null,
