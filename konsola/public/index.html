@@ -40,6 +40,26 @@
   </section>
 
   <section class="panel">
+    <h2>Wczytaj plan z arkusza</h2>
+    <form id="form-import" class="rzad-formularza">
+      <label>Klient
+        <input name="klient" required placeholder="np. Maciek Tabakowski" autocomplete="off">
+      </label>
+      <label>Wersja
+        <input name="wersja" type="number" min="1" value="1" required>
+      </label>
+      <label>Plik .xlsx
+        <input name="plik" type="file" accept=".xlsx" required>
+      </label>
+      <button type="submit">Wczytaj</button>
+    </form>
+    <p class="wskazowka">
+      Plik musi być w układzie 5.17 lub 5.18 i przeliczony przed eksportem.
+      Plany 4.0, warianty 3-dniowe i Rehab mają inny układ — tych nie wczyta.
+    </p>
+  </section>
+
+  <section class="panel">
     <h2>Plany</h2>
     <div id="lista-planow" class="lista"></div>
   </section>

@@ -98,6 +98,54 @@ $("#form-nowy").onsubmit = async (e) => {
   }
 };
 
+$("#form-import").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const plik = f.get("plik");
+  if (!plik || !plik.size) return alert("Wybierz plik");
+
+  const przycisk = e.target.querySelector("button");
+  przycisk.disabled = true;
+  przycisk.textContent = "Wczytuję…";
+  try {
+    const parametry = new URLSearchParams({
+      klient: f.get("klient"),
+      wersja: String(f.get("wersja")),
+    });
+    const odp = await fetch(`/api/import?${parametry}`, {
+      method: "POST",
+      headers: { "content-type": "application/octet-stream" },
+      body: await plik.arrayBuffer(),
+    });
+    const dane = await odp.json();
+    if (!odp.ok) throw new Error(dane.blad ?? "Błąd wczytywania");
+
+    e.target.reset();
+    obraz = dane;
+    tydzien = 1;
+    rysujPlan();
+
+    if (dane.nierozpoznane?.length) {
+      $("#modal-tytul").textContent = "Wczytane, ale nie wszystko";
+      $("#modal-body").replaceChildren();
+      $("#modal-body").append(
+        el("p", "", `${dane.nierozpoznane.length} ćwiczeń z arkusza nie ma w BAZIE — ` +
+          `te sloty są puste i trzeba je dobrać ręcznie:`),
+      );
+      const lista = el("ul");
+      for (const n of dane.nierozpoznane) lista.append(el("li", "", `${n.positionId} — „${n.nazwa}"`));
+      $("#modal-body").append(lista,
+        el("p", "wskazowka", "Najczęściej to literówka albo ćwiczenie, którego jeszcze nie ma w bazie."));
+      $("#modal").classList.remove("ukryty");
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    przycisk.disabled = false;
+    przycisk.textContent = "Wczytaj";
+  }
+};
+
 // ── otwieranie i zapis ─────────────────────────────────────────────
 async function otworzPlan(id) {
   obraz = await api(`/api/plany/${id}`);

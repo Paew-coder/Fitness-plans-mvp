@@ -9,7 +9,9 @@
  * i zwraca wynik przeliczenia.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,6 +20,7 @@ import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM } from "../silnik/src/rpe.ts";
 import { NORMY } from "../silnik/src/stres.ts";
+import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import * as magazyn from "./magazyn.ts";
 import { eksportujDoArkusza } from "./eksport-xlsx.ts";
 
@@ -43,11 +46,55 @@ function blad(res: ServerResponse, wiadomosc: string, kod = 400): void {
   json(res, { blad: wiadomosc }, kod);
 }
 
-async function cialo(req: IncomingMessage): Promise<any> {
+async function bajty(req: IncomingMessage): Promise<Buffer> {
   const kawalki: Buffer[] = [];
   for await (const k of req) kawalki.push(k as Buffer);
-  if (kawalki.length === 0) return {};
-  return JSON.parse(Buffer.concat(kawalki).toString("utf-8"));
+  return Buffer.concat(kawalki);
+}
+
+async function cialo(req: IncomingMessage): Promise<any> {
+  const dane = await bajty(req);
+  if (dane.length === 0) return {};
+  return JSON.parse(dane.toString("utf-8"));
+}
+
+/**
+ * Wyciąga plan z pliku .xlsx w formacie 5.17/5.18.
+ * Ekstraktor siedzi w Pythonie, bo tylko openpyxl czyta ten format.
+ */
+function wczytajArkusz(zawartosc: Buffer): ZrzutArkusza {
+  const katalogTymczasowy = mkdtempSync(join(tmpdir(), "import-"));
+  const zrodlo = join(katalogTymczasowy, "plan.xlsx");
+  const cel = join(katalogTymczasowy, "zrzut.json");
+  try {
+    writeFileSync(zrodlo, zawartosc);
+    execFileSync(
+      "python3",
+      [join(KATALOG, "..", "silnik", "narzedzia", "zrzut-arkusza.py"), zrodlo, cel],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
+    return JSON.parse(readFileSync(cel, "utf-8")) as ZrzutArkusza;
+  } finally {
+    rmSync(katalogTymczasowy, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Nakłada zaimportowany plan na pusty szkielet 5 dni × 12 slotów.
+ *
+ * Import zwraca tylko sloty z ćwiczeniem; reszta musi zostać pusta, ale obecna,
+ * żeby w konsoli dało się dopisywać kolejne pozycje.
+ */
+function scalZPustym(pusty: Plan, zaimportowany: Plan): Plan {
+  const wgPozycji = new Map(zaimportowany.sloty.map((s) => [s.positionId, s]));
+  return {
+    ...zaimportowany,
+    sloty: pusty.sloty.map((s) => wgPozycji.get(s.positionId) ?? s),
+    topSety: pusty.topSety?.map((t) => {
+      const z = zaimportowany.topSety?.find((x) => x.dzien === t.dzien);
+      return z ? { ...t, wlaczony: z.wlaczony, rpe: z.rpe } : t;
+    }),
+  };
 }
 
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
@@ -106,6 +153,39 @@ const serwer = createServer(async (req, res) => {
         plan: magazyn.pustyPlan(klient.trim()),
       });
       return json(res, obrazPlanu(zapisany), 201);
+    }
+
+    // ── import z arkusza ─────────────────────────────────────────────
+    if (sciezka === "/api/import" && req.method === "POST") {
+      const klient = url.searchParams.get("klient")?.trim();
+      const wersja = Number(url.searchParams.get("wersja") ?? 1);
+      if (!klient) return blad(res, "Podaj nazwisko klienta");
+
+      const zawartosc = await bajty(req);
+      if (zawartosc.length === 0) return blad(res, "Pusty plik");
+
+      let zrzut: ZrzutArkusza;
+      try {
+        zrzut = wczytajArkusz(zawartosc);
+      } catch {
+        return blad(res, "Nie udało się odczytać pliku. Czy to arkusz w układzie 5.17/5.18?");
+      }
+
+      const id = magazyn.nowyId(klient, wersja);
+      if (magazyn.wczytaj(id)) return blad(res, `Plan „${id}" już istnieje`);
+
+      const zapisany = magazyn.zapisz({
+        id, klient, wersja, status: "szkic",
+        dataStartu: null, utworzony: "", zmieniony: "",
+        poprzedniId: url.searchParams.get("poprzedniId") || undefined,
+        // Szkielet pustych slotów musi zostać — import wypełnia tylko te z ćwiczeniem.
+        plan: scalZPustym(magazyn.pustyPlan(klient), planZArkusza(zrzut)),
+      });
+
+      return json(res, {
+        ...obrazPlanu(zapisany),
+        nierozpoznane: nierozpoznaneCwiczenia(zrzut),
+      }, 201);
     }
 
     // ── pojedynczy plan ──────────────────────────────────────────────
