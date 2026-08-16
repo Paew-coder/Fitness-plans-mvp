@@ -62,13 +62,24 @@ async function pokazListe() {
     const meta = el("div", "meta", `${p.cwiczen} ćwiczeń · ${p.zmieniony.slice(0, 10)}`);
     const otworz = el("button", "", "Otwórz");
     otworz.onclick = () => otworzPlan(p.id);
+    const kopiuj = el("button", "", "Nowa wersja");
+    kopiuj.title = "Kopiuje dobór ćwiczeń jako kolejną wersję i łączy z tym cyklem";
+    kopiuj.onclick = async () => {
+      try {
+        obraz = await api(`/api/plany/${p.id}/kopia`, { method: "POST", body: {} });
+        tydzien = 1;
+        rysujPlan();
+      } catch (err) {
+        alert(err.message);
+      }
+    };
     const usun = el("button", "link", "usuń");
     usun.onclick = async () => {
       if (!confirm(`Usunąć plan ${p.klient} ${p.wersja}.0?`)) return;
       await api(`/api/plany/${p.id}`, { method: "DELETE" });
       pokazListe();
     };
-    wiersz.append(nazwa, status, meta, otworz, usun);
+    wiersz.append(nazwa, status, meta, otworz, kopiuj, usun);
     lista.append(wiersz);
 
     const opcja = el("option", "", `${p.klient} ${p.wersja}.0`);
@@ -294,7 +305,28 @@ function rysujSlot(slot, pusty) {
   const litera = (slot.lp || "").charAt(0);
   const wiersz = el("tr", `${"BDbd".includes(litera) ? "grupa-b" : ""} ${pusty ? "pusty" : ""}`);
 
-  wiersz.append(el("td", "lp", slot.lp || "—"));
+  const komorkaLp = el("td", "lp");
+  komorkaLp.append(el("span", "", slot.lp || "—"));
+  if (!pusty) {
+    const strzalki = el("span", "strzalki");
+    for (const [kierunek, znak, tytul] of [
+      ["gora", "▲", "wyżej"], ["dol", "▼", "niżej"],
+    ]) {
+      const b = el("button", "mikro", znak);
+      b.title = `Przenieś ${tytul}`;
+      b.onclick = async () => {
+        obraz = await api(`/api/plany/${obraz.zapisany.id}/przenies`, {
+          method: "POST",
+          body: { positionId: slot.positionId, kierunek },
+        });
+        rysujDni();
+        rysujAnalize();
+      };
+      strzalki.append(b);
+    }
+    komorkaLp.append(strzalki);
+  }
+  wiersz.append(komorkaLp);
 
   // ── ćwiczenie: wybór z listy, nigdy wpisywanie ──
   const komorkaCwiczenia = el("td", "cwiczenie");
@@ -354,8 +386,6 @@ function rysujSlot(slot, pusty) {
   slot.tygodnie ??= {};
   slot.tygodnie[tydzien] ??= {};
   const parametry = slot.tygodnie[tydzien];
-  const bojGlowny = (slot.lp || "").toUpperCase().startsWith("A");
-
   const poleLiczbowe = (wartosc, przypisz, krok = "1", zastepczy = "") => {
     const komorka = el("td", "liczba");
     const input = el("input");
@@ -371,11 +401,12 @@ function rysujSlot(slot, pusty) {
   };
 
   wiersz.append(poleLiczbowe(parametry.serie, (v) => { parametry.serie = v; }, "1", "3"));
+  // Puste pole = licz automatem; podpowiedź pokazuje, co z tego wychodzi.
   wiersz.append(poleLiczbowe(
     parametry.powtorzenia,
     (v) => { parametry.powtorzenia = v; },
     "1",
-    bojGlowny ? "" : String(wyliczony?.powtorzenia ?? ""),
+    String(wyliczony?.powtorzenia ?? ""),
   ));
   wiersz.append(poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", "8"));
 
