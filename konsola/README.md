@@ -44,6 +44,21 @@ ciężaru, bez stresu, poza objętością — a w planie wygląda normalnie. Ża
 z 11 kontroli w zakładce Analiza tego nie łapie. Wybór z listy usuwa ten błąd
 z definicji.
 
+**Nowa wersja planu** — `Nowa wersja` na liście kopiuje dobór ćwiczeń, serie,
+powtórzenia i RPE jako kolejną wersję dla tego samego klienta. Znikają odczucia
+klienta (należą do wykonanego cyklu — nowy zaczyna od mnożnika 1) i ręczne
+nadpisania ciężaru. Kopia od razu wskazuje poprzedni cykl, więc ostrzeżenie
+o powtórkach działa bez ustawiania czegokolwiek.
+
+**Zmiana kolejności** — strzałki przy numerze pozycji, widoczne po najechaniu
+na wiersz. Zamieniają **treść** slotów, nie całe wiersze: `position_id` i `Lp.`
+należą do miejsca w planie, nie do ćwiczenia — dokładnie jak w arkuszu, gdzie
+przenosi się tylko widoczny zakres komórek, a kolumny techniczne zostają.
+
+> Skutek uboczny warty zapamiętania: przeniesienie ćwiczenia na pozycję **A1**
+> czyni je bojem głównym, więc powtórzenia przestaje liczyć automat akcesoriów.
+> Ciężar zmieni się od razu — to poprawne, bo A1 jest bojem głównym z definicji.
+
 ## Powtórki z poprzedniego cyklu
 
 Przy tworzeniu planu można wskazać poprzedni cykl klienta. Wtedy konsola ostrzega,
@@ -81,8 +96,6 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 
 ## Czego jeszcze nie ma
 
-- Przeciąganie slotów, żeby zmienić kolejność.
-- Kopiowanie planu jako nowej wersji dla tego samego klienta.
 - Aplikacja dla klienta na telefon — to faza 2.
 
 ## Jak to jest zbudowane
