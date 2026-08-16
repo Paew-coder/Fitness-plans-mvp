@@ -82,6 +82,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7,
      "feedback": null,
@@ -97,6 +98,7 @@
      "ocz_stres_p": 4
     },
     "T2": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7,
      "feedback": null,
@@ -112,6 +114,7 @@
      "ocz_stres_p": 4
     },
     "T3": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7,
      "feedback": null,
@@ -127,6 +130,7 @@
      "ocz_stres_p": 4
     },
     "T4": {
+     "powt_reczne": true,
      "serie": 4,
      "rpe": 7.5,
      "feedback": null,
@@ -142,6 +146,7 @@
      "ocz_stres_p": 3.6
     },
     "T5": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7.5,
      "feedback": null,
@@ -157,6 +162,7 @@
      "ocz_stres_p": 4
     },
     "T6": {
+     "powt_reczne": true,
      "serie": 6,
      "rpe": 7.5,
      "feedback": null,
@@ -184,6 +190,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": "za łatwe",
@@ -199,6 +206,7 @@
      "ocz_stres_p": 2.475
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": "za łatwe",
@@ -214,6 +222,7 @@
      "ocz_stres_p": 2.475
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -229,6 +238,7 @@
      "ocz_stres_p": 2.475
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -244,6 +254,7 @@
      "ocz_stres_p": 3.15
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -259,6 +270,7 @@
      "ocz_stres_p": 3.15
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -286,6 +298,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -301,6 +314,7 @@
      "ocz_stres_p": 0.825
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -316,6 +330,7 @@
      "ocz_stres_p": 0.825
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -331,6 +346,7 @@
      "ocz_stres_p": 0.75
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -346,6 +362,7 @@
      "ocz_stres_p": 1.05
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -361,6 +378,7 @@
      "ocz_stres_p": 1.05
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -388,6 +406,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -403,6 +422,7 @@
      "ocz_stres_p": 1.65
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -418,6 +438,7 @@
      "ocz_stres_p": 1.65
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -433,6 +454,7 @@
      "ocz_stres_p": 1.5
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -448,6 +470,7 @@
      "ocz_stres_p": 2.1
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -463,6 +486,7 @@
      "ocz_stres_p": 2.1
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -490,6 +514,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": true,
      "serie": 4,
      "rpe": 7.5,
      "feedback": null,
@@ -505,6 +530,7 @@
      "ocz_stres_p": 0
     },
     "T2": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7,
      "feedback": null,
@@ -520,6 +546,7 @@
      "ocz_stres_p": 0
     },
     "T3": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7,
      "feedback": null,
@@ -535,6 +562,7 @@
      "ocz_stres_p": 0
     },
     "T4": {
+     "powt_reczne": true,
      "serie": 4,
      "rpe": 7.5,
      "feedback": null,
@@ -550,6 +578,7 @@
      "ocz_stres_p": 0
     },
     "T5": {
+     "powt_reczne": true,
      "serie": 5,
      "rpe": 7.5,
      "feedback": null,
@@ -565,6 +594,7 @@
      "ocz_stres_p": 0
     },
     "T6": {
+     "powt_reczne": true,
      "serie": 6,
      "rpe": 7.5,
      "feedback": null,
@@ -592,6 +622,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": "za trudne",
@@ -607,6 +638,7 @@
      "ocz_stres_p": 1.65
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -622,6 +654,7 @@
      "ocz_stres_p": 1.65
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -637,6 +670,7 @@
      "ocz_stres_p": 1.5
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -652,6 +686,7 @@
      "ocz_stres_p": 2.1
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -667,6 +702,7 @@
      "ocz_stres_p": 2.1
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -694,6 +730,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -709,6 +746,7 @@
      "ocz_stres_p": 2.475
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -724,6 +762,7 @@
      "ocz_stres_p": 2.475
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -739,6 +778,7 @@
      "ocz_stres_p": 2.475
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -754,6 +794,7 @@
      "ocz_stres_p": 3.15
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -769,6 +810,7 @@
      "ocz_stres_p": 3.15
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -796,6 +838,7 @@
    "kategoria_szkieletu": null,
    "tygodnie": {
     "T1": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -811,6 +854,7 @@
      "ocz_stres_p": 1.05
     },
     "T2": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -826,6 +870,7 @@
      "ocz_stres_p": 0.825
     },
     "T3": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 8,
      "feedback": null,
@@ -841,6 +886,7 @@
      "ocz_stres_p": 0.75
     },
     "T4": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -856,6 +902,7 @@
      "ocz_stres_p": 1.05
     },
     "T5": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,
@@ -871,6 +918,7 @@
      "ocz_stres_p": 1.05
     },
     "T6": {
+     "powt_reczne": false,
      "serie": 3,
      "rpe": 9,
      "feedback": null,

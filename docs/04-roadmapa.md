@@ -29,10 +29,13 @@ Fazy są ułożone tak, że każda daje coś użytecznego sama z siebie i żadna
 
 *Pierwsza faza, która oszczędza czas — Twój.*
 
-1. Postgres, schemat z `03-architektura.md`, 164 ćwiczenia z `dane/baza-cwiczen.json`.
-2. Import istniejącego planu z `.xlsx` — mapowanie slotów po `position_id` (`D1-S01`), ćwiczeń po nazwie z ręcznym rozstrzyganiem niedopasowań.
-3. Kreator planu: 5 dni × 12 slotów, dobór z filtrem kategorii, analiza na żywo, 11 walidatorów.
-4. **Eksport do `.xlsx` w formacie 5.17.** Klient dalej dostaje arkusz i niczego nie zauważa.
+1. ~~Import istniejącego planu z `.xlsx`~~ — **zrobione**. `silnik/src/import-arkusza.ts`, mapowanie slotów po `position_id`, wykrywanie ćwiczeń spoza BAZY.
+2. ~~Walidacja planu z czytelnym raportem~~ — **zrobione**. `npm run sprawdz -- plan.xlsx`: co blokuje wysyłkę, co sprawdzić, obciążenie z normami, zgodność arkusza z silnikiem.
+3. Postgres, schemat z `03-architektura.md`, 164 ćwiczenia z `dane/baza-cwiczen.json`.
+4. Kreator planu: 5 dni × 12 slotów, dobór z filtrem kategorii, analiza na żywo.
+5. **Eksport do `.xlsx` w formacie 5.17.** Klient dalej dostaje arkusz i niczego nie zauważa.
+
+**Nowy walidator, którego nie było w planie** — `POZA_BAZA`. Ćwiczenie wpisane z literówką nie trafia do BAZY, więc arkusz pomija slot po cichu: bez ciężaru, bez stresu, poza objętością. Żadna z 11 kontroli w zakładce Analiza tego nie łapie.
 
 **Wyjście fazy:** plany powstają w aplikacji, wychodzą jako arkusz. Znika LISTY, znika ręczne pilnowanie kolejności wierszy, znika kopiowanie plików przy nowej wersji, pojawia się walidacja przed wysyłką.
 
