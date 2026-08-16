@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Konsola trenera — CraftMyPlan</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div id="ekran-lista" class="ekran">
+  <header class="naglowek-glowny">
+    <div>
+      <h1>Konsola trenera</h1>
+      <p class="podtytul">Plany powstają tutaj, do klienta idą jako arkusz.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Nowy plan</h2>
+    <form id="form-nowy" class="rzad-formularza">
+      <label>Klient
+        <input name="klient" required placeholder="np. Zuzanna C" autocomplete="off">
+      </label>
+      <label>Wersja
+        <input name="wersja" type="number" min="1" value="1" required>
+      </label>
+      <label>Poprzedni cykl
+        <select name="poprzedniId">
+          <option value="">— brak —</option>
+        </select>
+      </label>
+      <button type="submit" class="glowny">Utwórz</button>
+    </form>
+    <p class="wskazowka">
+      Wskazanie poprzedniego cyklu włącza ostrzeżenie o powtórkach ćwiczeń —
+      tego arkusz nie potrafi.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Plany</h2>
+    <div id="lista-planow" class="lista"></div>
+  </section>
+</div>
+
+<div id="ekran-plan" class="ekran ukryty">
+  <header class="naglowek-planu">
+    <button class="link" id="wroc">← plany</button>
+    <div class="tytul-planu">
+      <h1 id="nazwa-planu">—</h1>
+      <span id="status-planu" class="odznaka"></span>
+    </div>
+    <div class="akcje">
+      <span id="zapis" class="zapis"></span>
+      <button id="eksportuj" class="glowny">Eksportuj arkusz</button>
+    </div>
+  </header>
+
+  <div class="pasek-ustawien">
+    <label>Tydzień
+      <span id="taby-tygodni" class="taby"></span>
+    </label>
+    <label>Akcesoria
+      <select id="tryb-akcesoriow">
+        <option value="trzymaj z bloku">trzymaj z bloku</option>
+        <option value="licz z RPE">licz z RPE</option>
+      </select>
+    </label>
+    <label>Część planu
+      <select id="czesc-planu">
+        <option value="objętość">objętość</option>
+        <option value="intensywność">intensywność</option>
+      </select>
+    </label>
+    <label>Start
+      <input type="date" id="data-startu">
+    </label>
+  </div>
+
+  <div class="uklad">
+    <main class="dni" id="dni"></main>
+
+    <aside class="bok">
+      <section class="karta" id="karta-uwagi">
+        <h3>Kontrola planu</h3>
+        <div id="uwagi"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Obciążenie</h3>
+        <div id="obciazenie"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Wzorce ruchu</h3>
+        <div id="wzorce"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Serie maksymalne</h3>
+        <p class="wskazowka">1RM liczy się z jednej serii do odmowy.</p>
+        <div id="serie-max"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div id="modal" class="modal ukryty">
+  <div class="modal-tresc">
+    <h3 id="modal-tytul"></h3>
+    <div id="modal-body"></div>
+    <button id="modal-zamknij" class="glowny">Zamknij</button>
+  </div>
+</div>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>
