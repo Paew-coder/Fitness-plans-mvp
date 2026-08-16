@@ -91,6 +91,40 @@ export function cwiczeniaZPoprzedniegoCyklu(zapisany: ZapisanyPlan): string[] {
     .filter((id): id is string => id !== null);
 }
 
+/**
+ * Kopia planu jako nowa wersja dla tego samego klienta.
+ *
+ * Dobór ćwiczeń, serie, powtórzenia i RPE zostają — to punkt wyjścia, nie kopia
+ * pod klucz. Znikają odczucia klienta: należą do wykonanego cyklu, a nowy
+ * zaczyna się od mnożnika 1.
+ *
+ * Nowy plan wskazuje poprzedni, więc od razu działa ostrzeżenie o powtórkach.
+ */
+export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): ZapisanyPlan {
+  return {
+    id: nowyId(zrodlo.klient, wersja),
+    klient: zrodlo.klient,
+    wersja,
+    status: "szkic",
+    dataStartu: null,
+    utworzony: "",
+    zmieniony: "",
+    poprzedniId: zrodlo.id,
+    plan: {
+      ...zrodlo.plan,
+      sloty: zrodlo.plan.sloty.map((slot) => ({
+        ...slot,
+        tygodnie: Object.fromEntries(
+          Object.entries(slot.tygodnie ?? {}).map(([tydzien, parametry]) => {
+            const { feedback, ciezarOverride, ...reszta } = parametry ?? {};
+            return [tydzien, reszta];
+          }),
+        ),
+      })),
+    },
+  };
+}
+
 /** Pusty plan: 5 dni × 12 slotów z numeracją A1, B1/B2, C1/C2, D1/D2, E1/E2. */
 export function pustyPlan(klient: string): Plan {
   const LP = ["A1.", "B1.", "B2.", "C1.", "C2.", "D1.", "D2.", "E1.", "E2.", "", "", ""];

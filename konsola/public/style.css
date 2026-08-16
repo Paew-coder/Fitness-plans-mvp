@@ -159,7 +159,13 @@ table.sloty tr:last-child td { border-bottom: none; }
 table.sloty tr.grupa-b { background: color-mix(in srgb, var(--panel) 55%, transparent); }
 table.sloty tr.pusty td { opacity: .5; }
 
-td.lp { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); width: 3rem; }
+td.lp { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); width: 4.6rem;
+        display: flex; align-items: center; gap: .3rem; }
+.strzalki { display: inline-flex; flex-direction: column; gap: 1px; opacity: 0; transition: opacity .12s; }
+tr:hover .strzalki, .strzalki:focus-within { opacity: 1; }
+button.mikro { padding: 0 .2rem; font-size: .55rem; line-height: 1.05;
+               border-color: transparent; background: none; color: var(--tekst-blady); }
+button.mikro:hover { color: var(--akcent); border-color: var(--linia-mocna); }
 td.cwiczenie select { width: 100%; min-width: 12rem; }
 td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
 td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }

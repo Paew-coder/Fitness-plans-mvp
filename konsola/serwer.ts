@@ -208,6 +208,39 @@ const serwer = createServer(async (req, res) => {
         return json(res, { usuniety: id });
       }
 
+      if (akcja === "/kopia" && req.method === "POST") {
+        const { wersja } = await cialo(req);
+        const nowaWersja = Number(wersja) || zapisany.wersja + 1;
+        const kopia = magazyn.kopiaJakoNowaWersja(zapisany, nowaWersja);
+        if (magazyn.wczytaj(kopia.id)) {
+          return blad(res, `Plan „${kopia.id}" już istnieje`);
+        }
+        return json(res, obrazPlanu(magazyn.zapisz(kopia)), 201);
+      }
+
+      if (akcja === "/przenies" && req.method === "POST") {
+        const { positionId, kierunek } = await cialo(req);
+        const plan = zapisany.plan;
+        const indeks = plan.sloty.findIndex((s) => s.positionId === positionId);
+        if (indeks === -1) return blad(res, "Nie ma takiego slotu");
+
+        const slot = plan.sloty[indeks]!;
+        const wDniu = plan.sloty.filter((s) => s.dzien === slot.dzien);
+        const pozycjaWDniu = wDniu.indexOf(slot);
+        const cel = wDniu[pozycjaWDniu + (kierunek === "gora" ? -1 : 1)];
+        if (!cel) return blad(res, "Nie ma dokąd przenieść");
+
+        // Zamieniamy TREŚĆ slotów, nie całe wiersze — position_id i Lp. należą
+        // do miejsca w planie, nie do ćwiczenia. Dokładnie tak, jak w arkuszu
+        // przenosi się tylko widoczny zakres komórek.
+        const trescA = { cwiczenieId: slot.cwiczenieId, kategoriaSzkieletu: slot.kategoriaSzkieletu, tygodnie: slot.tygodnie };
+        const trescB = { cwiczenieId: cel.cwiczenieId, kategoriaSzkieletu: cel.kategoriaSzkieletu, tygodnie: cel.tygodnie };
+        Object.assign(slot, trescB);
+        Object.assign(cel, trescA);
+
+        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
+      }
+
       if (akcja === "/eksport" && req.method === "POST") {
         const plik = await eksportujDoArkusza(zapisany);
         return json(res, { plik });
