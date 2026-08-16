@@ -1,0 +1,221 @@
+/* Konsola trenera — arkusz przeniesiony na ekran, nie „aplikacja fitness". */
+
+:root {
+  --tlo: #FAFAFC;
+  --plaszczyzna: #FFFFFF;
+  --panel: #F1F3F8;
+  --tekst: #15171F;
+  --tekst-slaby: #5C6274;
+  --tekst-blady: #878DA0;
+  --linia: #DEE2EC;
+  --linia-mocna: #C3C9D8;
+  --akcent: #1F3FD8;
+  --akcent-tlo: #E8ECFD;
+  --dobrze: #0E7C4A;
+  --uwaga: #9A6100;
+  --zle: #B3261E;
+  --uwaga-tlo: #FDF6E7;
+  --zle-tlo: #FCEDEC;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tlo: #0F1117;
+    --plaszczyzna: #171A22;
+    --panel: #1C1F29;
+    --tekst: #E9EBF2;
+    --tekst-slaby: #969DB1;
+    --tekst-blady: #6E7688;
+    --linia: #2A2F3B;
+    --linia-mocna: #3A4152;
+    --akcent: #7B93FF;
+    --akcent-tlo: #1E2440;
+    --dobrze: #3FBE83;
+    --uwaga: #D19A3E;
+    --zle: #F2837B;
+    --uwaga-tlo: #2A2317;
+    --zle-tlo: #2B1A19;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1 { font-size: 1.4rem; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 1.05rem; margin: 0 0 .9rem; }
+h3 { font-size: .8rem; margin: 0 0 .7rem; text-transform: uppercase;
+     letter-spacing: .08em; color: var(--tekst-blady); font-family: var(--mono); font-weight: 500; }
+
+.ekran { max-width: 1500px; margin: 0 auto; padding: 1.5rem; }
+.ukryty { display: none !important; }
+
+/* ── formularze i przyciski ─────────────────────────────────────── */
+button {
+  font: inherit; cursor: pointer; border-radius: 4px;
+  border: 1px solid var(--linia-mocna); background: var(--plaszczyzna);
+  color: var(--tekst); padding: .42rem .85rem;
+}
+button:hover { border-color: var(--akcent); color: var(--akcent); }
+button.glowny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+button.glowny:hover { filter: brightness(1.1); color: #fff; }
+button.link { border: none; background: none; color: var(--tekst-slaby); padding: .3rem 0; }
+button.link:hover { color: var(--akcent); }
+button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--akcent); outline-offset: 1px;
+}
+
+input, select {
+  font: inherit; padding: .38rem .5rem; border-radius: 4px;
+  border: 1px solid var(--linia-mocna); background: var(--plaszczyzna); color: var(--tekst);
+}
+label { display: flex; flex-direction: column; gap: .3rem;
+        font-size: .76rem; color: var(--tekst-blady);
+        font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+
+.rzad-formularza { display: flex; gap: .9rem; align-items: flex-end; flex-wrap: wrap; }
+.wskazowka { font-size: .82rem; color: var(--tekst-blady); margin: .8rem 0 0; }
+
+.panel {
+  background: var(--plaszczyzna); border: 1px solid var(--linia);
+  border-radius: 6px; padding: 1.2rem; margin-bottom: 1.2rem;
+}
+
+.naglowek-glowny { margin-bottom: 1.5rem; }
+.podtytul { color: var(--tekst-slaby); margin: .3rem 0 0; }
+
+/* ── lista planów ───────────────────────────────────────────────── */
+.lista { display: flex; flex-direction: column; }
+.pozycja {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .75rem .2rem; border-bottom: 1px solid var(--linia);
+}
+.pozycja:last-child { border-bottom: none; }
+.pozycja .nazwa { font-weight: 600; flex: 1; }
+.pozycja .meta { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); }
+
+.odznaka {
+  font-family: var(--mono); font-size: .68rem; text-transform: uppercase;
+  letter-spacing: .07em; padding: .12rem .45rem; border-radius: 3px;
+  border: 1px solid currentColor;
+}
+.odznaka.szkic { color: var(--tekst-blady); }
+.odznaka.wyslany { color: var(--dobrze); }
+.odznaka.zakonczony { color: var(--tekst-blady); }
+
+/* ── nagłówek planu ─────────────────────────────────────────────── */
+.naglowek-planu {
+  display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+  padding-bottom: 1rem; border-bottom: 1px solid var(--linia-mocna); margin-bottom: 1rem;
+}
+.tytul-planu { display: flex; align-items: center; gap: .7rem; flex: 1; }
+.akcje { display: flex; align-items: center; gap: .8rem; }
+.zapis { font-family: var(--mono); font-size: .72rem; color: var(--tekst-blady); }
+
+.pasek-ustawien {
+  display: flex; gap: 1.4rem; align-items: flex-end; flex-wrap: wrap;
+  padding: .9rem 1rem; background: var(--panel);
+  border: 1px solid var(--linia); border-radius: 6px; margin-bottom: 1.2rem;
+}
+.taby { display: flex; gap: .25rem; }
+.taby button { padding: .3rem .6rem; font-family: var(--mono); font-size: .8rem; }
+.taby button.aktywny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+
+/* ── układ główny ───────────────────────────────────────────────── */
+.uklad { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 1.2rem; align-items: start; }
+@media (max-width: 1100px) { .uklad { grid-template-columns: 1fr; } }
+
+.dzien {
+  background: var(--plaszczyzna); border: 1px solid var(--linia);
+  border-radius: 6px; margin-bottom: 1rem; overflow: hidden;
+}
+.dzien-naglowek {
+  display: flex; align-items: center; gap: .8rem; padding: .6rem .9rem;
+  background: var(--panel); border-bottom: 1px solid var(--linia);
+}
+.dzien-naglowek .tytul { font-family: var(--mono); font-size: .78rem;
+  text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+.dzien-naglowek .suma { margin-left: auto; font-family: var(--mono);
+  font-size: .74rem; color: var(--tekst-blady); }
+
+table.sloty { width: 100%; border-collapse: collapse; font-size: .85rem; }
+table.sloty th {
+  font-family: var(--mono); font-size: .64rem; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--tekst-blady); font-weight: 500;
+  text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--linia);
+}
+table.sloty td { padding: .22rem .5rem; border-bottom: 1px solid var(--linia); vertical-align: middle; }
+table.sloty tr:last-child td { border-bottom: none; }
+table.sloty tr.grupa-b { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+table.sloty tr.pusty td { opacity: .5; }
+
+td.lp { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); width: 3rem; }
+td.cwiczenie select { width: 100%; min-width: 12rem; }
+td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
+td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
+td.ciezar { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+td.ciezar.brak { color: var(--uwaga); font-weight: 400; font-size: .8rem; }
+td.stres { font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady); white-space: nowrap; }
+.znacznik-jedn { color: var(--akcent); font-size: .8rem; }
+
+.topset {
+  display: flex; align-items: center; gap: .7rem; padding: .45rem .9rem;
+  background: var(--akcent-tlo); border-bottom: 1px solid var(--linia);
+  font-size: .82rem;
+}
+.topset .etykieta { font-family: var(--mono); font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--akcent); font-weight: 600; }
+.topset .wynik { margin-left: auto; font-family: var(--mono); font-weight: 600; }
+
+/* ── panel boczny ───────────────────────────────────────────────── */
+.bok { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+.karta { background: var(--plaszczyzna); border: 1px solid var(--linia);
+         border-radius: 6px; padding: 1rem; }
+
+.uwaga-wpis {
+  border-left: 3px solid var(--linia-mocna); padding: .45rem .7rem;
+  margin-bottom: .5rem; border-radius: 0 4px 4px 0; font-size: .84rem;
+}
+.uwaga-wpis.blad { border-color: var(--zle); background: var(--zle-tlo); }
+.uwaga-wpis.ostrzezenie { border-color: var(--uwaga); background: var(--uwaga-tlo); }
+.uwaga-wpis .opis { font-weight: 600; }
+.uwaga-wpis ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); font-size: .8rem; }
+
+.wiersz-miary {
+  display: flex; align-items: center; gap: .6rem; padding: .22rem 0;
+  font-family: var(--mono); font-size: .78rem;
+}
+.wiersz-miary .etykieta { width: 3.4rem; color: var(--tekst-blady); }
+.wiersz-miary .pasek { flex: 1; color: var(--akcent); letter-spacing: -1px; }
+.wiersz-miary .wartosc { width: 3.4rem; text-align: right; font-variant-numeric: tabular-nums; }
+.wiersz-miary .ocena { width: 5.6rem; font-size: .72rem; }
+.ocena.pod { color: var(--tekst-blady); }
+.ocena.ok { color: var(--dobrze); }
+.ocena.nad { color: var(--uwaga); }
+
+.serie-max-wiersz {
+  display: grid; grid-template-columns: 1fr 3.2rem 3.2rem 3.6rem;
+  gap: .35rem; align-items: center; padding: .18rem 0; font-size: .8rem;
+}
+.serie-max-wiersz .nazwa { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serie-max-wiersz input { width: 100%; text-align: center; font-family: var(--mono); padding: .25rem; }
+.serie-max-wiersz .rm { font-family: var(--mono); text-align: right; color: var(--akcent); font-weight: 600; }
+
+/* ── modal ──────────────────────────────────────────────────────── */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.45);
+         display: flex; align-items: center; justify-content: center; z-index: 20; }
+.modal-tresc { background: var(--plaszczyzna); border-radius: 8px; padding: 1.5rem;
+               max-width: 34rem; width: calc(100% - 2rem); max-height: 80vh; overflow: auto; }
+.modal-tresc code { font-family: var(--mono); font-size: .84rem;
+  background: var(--panel); padding: .15rem .4rem; border-radius: 3px;
+  display: block; margin: .6rem 0; word-break: break-all; }
