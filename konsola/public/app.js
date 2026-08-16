@@ -1,0 +1,508 @@
+/**
+ * Konsola trenera — logika interfejsu.
+ *
+ * Cała matematyka siedzi na serwerze w `silnik/`. Tutaj tylko wyświetlanie
+ * i zbieranie zmian: po każdej edycji plan leci do zapisu, wraca przeliczony
+ * i odrysowujemy analizę. Dokładnie tak, jak arkusz przelicza się sam.
+ */
+
+const KATEGORIE = [
+  "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
+  "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep",
+];
+const RZYMSKIE = ["I", "II", "III", "IV", "V"];
+
+let cwiczenia = [];
+let obraz = null;      // { zapisany, wynik, uwagi, gotowy, normy }
+let tydzien = 1;
+let czekaZapis = null;
+
+const $ = (s) => document.querySelector(s);
+const el = (tag, klasa, tekst) => {
+  const e = document.createElement(tag);
+  if (klasa) e.className = klasa;
+  if (tekst !== undefined) e.textContent = tekst;
+  return e;
+};
+const liczba = (n, m = 1) => Number(n).toFixed(m).replace(".", ",");
+
+async function api(sciezka, opcje = {}) {
+  const odp = await fetch(sciezka, {
+    headers: { "content-type": "application/json" },
+    ...opcje,
+    body: opcje.body ? JSON.stringify(opcje.body) : undefined,
+  });
+  const dane = await odp.json();
+  if (!odp.ok) throw new Error(dane.blad ?? "Błąd serwera");
+  return dane;
+}
+
+// ── lista planów ───────────────────────────────────────────────────
+async function pokazListe() {
+  $("#ekran-plan").classList.add("ukryty");
+  $("#ekran-lista").classList.remove("ukryty");
+
+  const plany = await api("/api/plany");
+  const lista = $("#lista-planow");
+  lista.replaceChildren();
+
+  const wybor = $('#form-nowy [name="poprzedniId"]');
+  wybor.replaceChildren(el("option", "", "— brak —"));
+  wybor.firstChild.value = "";
+
+  if (plany.length === 0) {
+    lista.append(el("p", "wskazowka", "Jeszcze nic tu nie ma. Utwórz pierwszy plan powyżej."));
+    return;
+  }
+
+  for (const p of plany) {
+    const wiersz = el("div", "pozycja");
+    const nazwa = el("div", "nazwa", `${p.klient} ${p.wersja}.0`);
+    const status = el("span", `odznaka ${p.status.replace(/[łą]/g, "l")}`, p.status);
+    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń · ${p.zmieniony.slice(0, 10)}`);
+    const otworz = el("button", "", "Otwórz");
+    otworz.onclick = () => otworzPlan(p.id);
+    const usun = el("button", "link", "usuń");
+    usun.onclick = async () => {
+      if (!confirm(`Usunąć plan ${p.klient} ${p.wersja}.0?`)) return;
+      await api(`/api/plany/${p.id}`, { method: "DELETE" });
+      pokazListe();
+    };
+    wiersz.append(nazwa, status, meta, otworz, usun);
+    lista.append(wiersz);
+
+    const opcja = el("option", "", `${p.klient} ${p.wersja}.0`);
+    opcja.value = p.id;
+    wybor.append(opcja);
+  }
+}
+
+$("#form-nowy").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try {
+    const nowy = await api("/api/plany", {
+      method: "POST",
+      body: {
+        klient: f.get("klient"),
+        wersja: Number(f.get("wersja")),
+        poprzedniId: f.get("poprzedniId") || undefined,
+      },
+    });
+    e.target.reset();
+    obraz = nowy;
+    tydzien = 1;
+    rysujPlan();
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+// ── otwieranie i zapis ─────────────────────────────────────────────
+async function otworzPlan(id) {
+  obraz = await api(`/api/plany/${id}`);
+  tydzien = 1;
+  rysujPlan();
+}
+
+function zapiszPozniej() {
+  $("#zapis").textContent = "zapisywanie…";
+  clearTimeout(czekaZapis);
+  czekaZapis = setTimeout(async () => {
+    try {
+      obraz = await api(`/api/plany/${obraz.zapisany.id}`, {
+        method: "PUT",
+        body: {
+          plan: obraz.zapisany.plan,
+          dataStartu: obraz.zapisany.dataStartu,
+          status: obraz.zapisany.status,
+        },
+      });
+      $("#zapis").textContent = "zapisano";
+      rysujAnalize();
+      rysujDni();
+    } catch (err) {
+      $("#zapis").textContent = `błąd: ${err.message}`;
+    }
+  }, 350);
+}
+
+$("#wroc").onclick = pokazListe;
+
+// ── rysowanie planu ────────────────────────────────────────────────
+function rysujPlan() {
+  $("#ekran-lista").classList.add("ukryty");
+  $("#ekran-plan").classList.remove("ukryty");
+
+  const z = obraz.zapisany;
+  $("#nazwa-planu").textContent = `${z.klient} ${z.wersja}.0`;
+  $("#status-planu").textContent = z.status;
+  $("#status-planu").className = `odznaka ${z.status.replace(/[łą]/g, "l")}`;
+  $("#tryb-akcesoriow").value = z.plan.trybAkcesoriow;
+  $("#czesc-planu").value = z.plan.czescPlanu;
+  $("#data-startu").value = z.dataStartu ?? "";
+
+  const taby = $("#taby-tygodni");
+  taby.replaceChildren();
+  for (const t of [1, 2, 3, 4, 5, 6]) {
+    const b = el("button", t === tydzien ? "aktywny" : "", `T${t}`);
+    b.onclick = () => { tydzien = t; rysujPlan(); };
+    taby.append(b);
+  }
+
+  rysujDni();
+  rysujAnalize();
+  rysujSerieMax();
+}
+
+$("#tryb-akcesoriow").onchange = (e) => {
+  obraz.zapisany.plan.trybAkcesoriow = e.target.value;
+  zapiszPozniej();
+};
+$("#czesc-planu").onchange = (e) => {
+  obraz.zapisany.plan.czescPlanu = e.target.value;
+  zapiszPozniej();
+};
+$("#data-startu").onchange = (e) => {
+  obraz.zapisany.dataStartu = e.target.value || null;
+  zapiszPozniej();
+};
+
+function slotPlanu(positionId) {
+  return obraz.zapisany.plan.sloty.find((s) => s.positionId === positionId);
+}
+function slotWyliczony(positionId) {
+  return obraz.wynik.tygodnie[tydzien - 1].sloty.find((s) => s.positionId === positionId);
+}
+
+function rysujDni() {
+  const kontener = $("#dni");
+  kontener.replaceChildren();
+  const wyliczonyTydzien = obraz.wynik.tygodnie[tydzien - 1];
+
+  for (let dzien = 1; dzien <= 5; dzien++) {
+    const sloty = obraz.zapisany.plan.sloty.filter((s) => s.dzien === dzien);
+    const maCwiczenia = sloty.some((s) => s.cwiczenieId);
+    const podsumowanie = wyliczonyTydzien.dni.find((d) => d.dzien === dzien);
+
+    const blok = el("section", "dzien");
+    const naglowek = el("div", "dzien-naglowek");
+    naglowek.append(el("span", "tytul", `Dzień ${RZYMSKIE[dzien - 1]}`));
+    if (maCwiczenia && podsumowanie) {
+      naglowek.append(el("span", "suma",
+        `${podsumowanie.serie} serii · ${podsumowanie.powtorzenia} powt. · stres ${liczba(podsumowanie.stresCalkowity)}`));
+    }
+    blok.append(naglowek);
+
+    // TOP SET
+    const top = (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
+    if (top && maCwiczenia) {
+      const wyliczony = wyliczonyTydzien.topSety.find((t) => t.dzien === dzien);
+      const pasek = el("div", "topset");
+      const przelacznik = el("input");
+      przelacznik.type = "checkbox";
+      przelacznik.checked = top.wlaczony;
+      przelacznik.onchange = () => { top.wlaczony = przelacznik.checked; zapiszPozniej(); };
+      const rpe = el("input");
+      rpe.type = "number"; rpe.step = "0.5"; rpe.min = "5"; rpe.max = "10";
+      rpe.value = top.rpe; rpe.style.width = "4rem";
+      rpe.onchange = () => { top.rpe = Number(rpe.value); zapiszPozniej(); };
+      pasek.append(przelacznik, el("span", "etykieta", "TOP SET"),
+        el("span", "", wyliczony?.cwiczenie?.nazwa ?? "—"),
+        el("span", "", "RPE"), rpe,
+        el("span", "wynik", typeof wyliczony?.ciezar === "number"
+          ? `${liczba(wyliczony.ciezar)} kg` : (wyliczony?.ciezar || "—")));
+      blok.append(pasek);
+    }
+
+    const tabela = el("table", "sloty");
+    const glowa = el("thead");
+    const wierszNaglowka = el("tr");
+    for (const [tekst, klasa] of [["Lp.", "lp"], ["Ćwiczenie", ""], ["Szkielet", ""],
+      ["Serie", ""], ["Powt.", ""], ["RPE", ""], ["Ciężar", ""], ["stres t/c/p", ""]]) {
+      wierszNaglowka.append(el("th", klasa, tekst));
+    }
+    glowa.append(wierszNaglowka);
+    tabela.append(glowa);
+
+    const cialo = el("tbody");
+    for (const slot of sloty) {
+      const pusty = !slot.cwiczenieId;
+      // Puste sloty po ostatnim wypełnionym chowamy — zapas ma nie zaśmiecać widoku.
+      const indeks = sloty.indexOf(slot);
+      const ostatniWypelniony = sloty.map((s) => !!s.cwiczenieId).lastIndexOf(true);
+      if (pusty && indeks > ostatniWypelniony + 1) continue;
+
+      cialo.append(rysujSlot(slot, pusty));
+    }
+    tabela.append(cialo);
+    blok.append(tabela);
+    kontener.append(blok);
+  }
+}
+
+function rysujSlot(slot, pusty) {
+  const wyliczony = slotWyliczony(slot.positionId);
+  const litera = (slot.lp || "").charAt(0);
+  const wiersz = el("tr", `${"BDbd".includes(litera) ? "grupa-b" : ""} ${pusty ? "pusty" : ""}`);
+
+  wiersz.append(el("td", "lp", slot.lp || "—"));
+
+  // ── ćwiczenie: wybór z listy, nigdy wpisywanie ──
+  const komorkaCwiczenia = el("td", "cwiczenie");
+  const wybor = el("select");
+  const pustaOpcja = el("option", "", "— wybierz —");
+  pustaOpcja.value = "";
+  wybor.append(pustaOpcja);
+  const dostepne = slot.kategoriaSzkieletu
+    ? cwiczenia.filter((c) => c.kategoria === slot.kategoriaSzkieletu)
+    : cwiczenia;
+  for (const c of dostepne) {
+    const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : ""));
+    o.value = c.id;
+    wybor.append(o);
+  }
+  // Ćwiczenie spoza filtra zostaje widoczne, żeby zmiana szkieletu go nie gubiła.
+  if (slot.cwiczenieId && !dostepne.some((c) => c.id === slot.cwiczenieId)) {
+    const c = cwiczenia.find((x) => x.id === slot.cwiczenieId);
+    if (c) {
+      const o = el("option", "", `${c.nazwa} (spoza szkieletu)`);
+      o.value = c.id;
+      wybor.append(o);
+    }
+  }
+  wybor.value = slot.cwiczenieId ?? "";
+  wybor.onchange = () => {
+    slot.cwiczenieId = wybor.value || null;
+    zapiszPozniej();
+  };
+  komorkaCwiczenia.append(wybor);
+  wiersz.append(komorkaCwiczenia);
+
+  // ── kategoria szkieletu ──
+  const komorkaSzkieletu = el("td", "szkielet");
+  const wyborSzkieletu = el("select");
+  const bezKategorii = el("option", "", "— pełna baza —");
+  bezKategorii.value = "";
+  wyborSzkieletu.append(bezKategorii);
+  for (const k of KATEGORIE) {
+    const o = el("option", "", k);
+    o.value = k;
+    wyborSzkieletu.append(o);
+  }
+  wyborSzkieletu.value = slot.kategoriaSzkieletu ?? "";
+  wyborSzkieletu.onchange = () => {
+    slot.kategoriaSzkieletu = wyborSzkieletu.value || null;
+    zapiszPozniej();
+  };
+  komorkaSzkieletu.append(wyborSzkieletu);
+  wiersz.append(komorkaSzkieletu);
+
+  if (pusty) {
+    wiersz.append(el("td", ""), el("td", ""), el("td", ""), el("td", ""), el("td", ""));
+    return wiersz;
+  }
+
+  slot.tygodnie ??= {};
+  slot.tygodnie[tydzien] ??= {};
+  const parametry = slot.tygodnie[tydzien];
+  const bojGlowny = (slot.lp || "").toUpperCase().startsWith("A");
+
+  const poleLiczbowe = (wartosc, przypisz, krok = "1", zastepczy = "") => {
+    const komorka = el("td", "liczba");
+    const input = el("input");
+    input.type = "number"; input.step = krok; input.min = "0";
+    input.value = wartosc ?? "";
+    input.placeholder = zastepczy;
+    input.onchange = () => {
+      przypisz(input.value === "" ? undefined : Number(input.value));
+      zapiszPozniej();
+    };
+    komorka.append(input);
+    return komorka;
+  };
+
+  wiersz.append(poleLiczbowe(parametry.serie, (v) => { parametry.serie = v; }, "1", "3"));
+  wiersz.append(poleLiczbowe(
+    parametry.powtorzenia,
+    (v) => { parametry.powtorzenia = v; },
+    "1",
+    bojGlowny ? "" : String(wyliczony?.powtorzenia ?? ""),
+  ));
+  wiersz.append(poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", "8"));
+
+  const ciezar = wyliczony?.ciezar;
+  const komorkaCiezaru = el("td", typeof ciezar === "number" ? "ciezar" : "ciezar brak",
+    typeof ciezar === "number" ? `${liczba(ciezar)} kg` : String(ciezar ?? "—"));
+  if (wyliczony?.cwiczenie?.jednostronne && typeof ciezar === "number") {
+    komorkaCiezaru.append(el("span", "znacznik-jedn", "  ↔ na stronę"));
+  }
+  wiersz.append(komorkaCiezaru);
+
+  const s = wyliczony?.stres;
+  wiersz.append(el("td", "stres", s
+    ? `${liczba(s.calkowity, 2)} / ${liczba(s.centralny, 2)} / ${liczba(s.obwodowy, 2)}`
+    : ""));
+
+  return wiersz;
+}
+
+// ── panel boczny ───────────────────────────────────────────────────
+function rysujAnalize() {
+  // uwagi
+  const kontener = $("#uwagi");
+  kontener.replaceChildren();
+  const bledy = obraz.uwagi.filter((u) => u.poziom === "blad");
+  const ostrzezenia = obraz.uwagi.filter((u) => u.poziom === "ostrzezenie");
+
+  if (bledy.length === 0 && ostrzezenia.length === 0) {
+    kontener.append(el("p", "wskazowka", "✓ Plan można wysłać klientowi."));
+  }
+  for (const u of [...bledy, ...ostrzezenia]) {
+    const wpis = el("div", `uwaga-wpis ${u.poziom}`);
+    wpis.append(el("div", "opis", `${u.poziom === "blad" ? "✗" : "⚠"} ${u.opis} (${u.pozycje.length})`));
+    const lista = el("ul");
+    for (const p of u.pozycje.slice(0, 5)) lista.append(el("li", "", p));
+    if (u.pozycje.length > 5) lista.append(el("li", "", `… i ${u.pozycje.length - 5} więcej`));
+    wpis.append(lista);
+    kontener.append(wpis);
+  }
+
+  // obciążenie tydzień po tygodniu
+  const obciazenie = $("#obciazenie");
+  obciazenie.replaceChildren();
+  const maks = Math.max(...obraz.wynik.tygodnie.map((t) => t.bilans.razem), 0.001);
+  const dni = obraz.wynik.dniTreningowe;
+  if (dni > 0) {
+    const [min, max] = obraz.normy.stresTygodniowy;
+    obciazenie.append(el("p", "wskazowka", `norma ${min * dni}–${max * dni} na tydzień`));
+  }
+  for (const t of obraz.wynik.tygodnie) {
+    obciazenie.append(wierszMiary(`T${t.tydzien}`, t.bilans.razem, maks, t.ocenaStresu));
+  }
+
+  // wzorce ruchu
+  const wzorce = $("#wzorce");
+  wzorce.replaceChildren();
+  const bilans = obraz.wynik.tygodnie[tydzien - 1].bilans;
+  const maksWzorca = Math.max(...bilans.wzorce.map((w) => w.calkowity), 0.001);
+  const SKROT_WZORCA = { s: "przysiad", d: "m. ciąg", b: "wycisk.", r: "wiosł.", c: "core" };
+  for (const w of bilans.wzorce) {
+    const ocena = obraz.wynik.ocenaObjetosci[w.part];
+    wzorce.append(wierszMiary(SKROT_WZORCA[w.part] ?? w.part, w.calkowity, maksWzorca, ocena?.ocena ?? ""));
+  }
+  if (bilans.razem > 0) {
+    const proc = (x) => Math.round((x / bilans.razem) * 100);
+    wzorce.append(el("p", "wskazowka",
+      `dolne/górne ${proc(bilans.dolne)}%/${proc(bilans.gorne)}% · ` +
+      `centr./obw. ${Math.round(bilans.centralny / (bilans.centralny + bilans.obwodowy) * 100) || 0}%/` +
+      `${Math.round(bilans.obwodowy / (bilans.centralny + bilans.obwodowy) * 100) || 0}%`));
+  }
+  const ile = obraz.jednostronne?.slotowJednostronnych ?? 0;
+  if (ile > 0) {
+    const rzeczownik = ile === 1 ? "ćwiczenie jednostronne" : "ćwiczenia jednostronne";
+    const slowo = ile === 1 ? rzeczownik : (ile < 5 ? rzeczownik : "ćwiczeń jednostronnych");
+    wzorce.append(el("p", "wskazowka",
+      `↔ ${ile} ${slowo} — licząc obie strony stres to ` +
+      `${liczba(obraz.jednostronne.stresRazemObieStrony)} zamiast ` +
+      `${liczba(obraz.jednostronne.stresRazemJakWArkuszu)}`));
+  }
+}
+
+function wierszMiary(etykieta, wartosc, maks, ocena) {
+  const wiersz = el("div", "wiersz-miary");
+  const pelne = Math.round((wartosc / maks) * 10);
+  wiersz.append(
+    el("span", "etykieta", etykieta),
+    el("span", "pasek", "█".repeat(pelne) + "░".repeat(Math.max(0, 10 - pelne))),
+    el("span", "wartosc", liczba(wartosc)),
+  );
+  const klasa = ocena.includes("poniżej") ? "pod" : ocena.includes("powyżej") ? "nad" : "ok";
+  wiersz.append(el("span", `ocena ${klasa}`, ocena));
+  return wiersz;
+}
+
+function rysujSerieMax() {
+  const kontener = $("#serie-max");
+  kontener.replaceChildren();
+
+  const uzyte = [...new Set(obraz.zapisany.plan.sloty
+    .map((s) => s.cwiczenieId).filter(Boolean))];
+  if (uzyte.length === 0) {
+    kontener.append(el("p", "wskazowka", "Najpierw dobierz ćwiczenia."));
+    return;
+  }
+
+  for (const id of uzyte) {
+    const c = cwiczenia.find((x) => x.id === id);
+    if (!c) continue;
+    const istniejaca = obraz.zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
+
+    const wiersz = el("div", "serie-max-wiersz");
+    wiersz.append(el("div", "nazwa", c.nazwa));
+
+    const zmien = (pole) => (e) => {
+      const wartosc = e.target.value === "" ? null : Number(e.target.value);
+      let wpis = obraz.zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
+      if (!wpis) {
+        wpis = { cwiczenieId: id, ciezar: 0, powtorzenia: 0 };
+        obraz.zapisany.plan.serieMaksymalne.push(wpis);
+      }
+      wpis[pole] = wartosc ?? 0;
+      if (!wpis.ciezar || !wpis.powtorzenia) {
+        obraz.zapisany.plan.serieMaksymalne =
+          obraz.zapisany.plan.serieMaksymalne.filter((s) => s !== wpis);
+      }
+      zapiszPozniej();
+    };
+
+    for (const [pole, wartosc, tytul] of [
+      ["ciezar", istniejaca?.ciezar, "kg"], ["powtorzenia", istniejaca?.powtorzenia, "powt."],
+    ]) {
+      const input = el("input");
+      input.type = "number"; input.min = "0"; input.placeholder = tytul;
+      input.title = tytul;
+      input.value = wartosc || "";
+      input.onchange = zmien(pole);
+      wiersz.append(input);
+    }
+
+    const wyliczony = obraz.wynik.tygodnie[0].sloty.find((s) => s.cwiczenie?.id === id);
+    wiersz.append(el("div", "rm", wyliczony?.oneRM ? `${liczba(wyliczony.oneRM)}` : "—"));
+    kontener.append(wiersz);
+  }
+}
+
+// ── eksport ────────────────────────────────────────────────────────
+$("#eksportuj").onclick = async () => {
+  const przycisk = $("#eksportuj");
+  przycisk.disabled = true;
+  przycisk.textContent = "Eksportuję…";
+  try {
+    const { plik } = await api(`/api/plany/${obraz.zapisany.id}/eksport`, { method: "POST" });
+    $("#modal-tytul").textContent = "Arkusz gotowy";
+    $("#modal-body").replaceChildren();
+    $("#modal-body").append(
+      el("p", "", "Plik zapisany na dysku:"),
+      el("code", "", plik),
+      el("p", "wskazowka",
+        obraz.gotowy
+          ? "Plan przeszedł kontrolę — można wysyłać."
+          : "Uwaga: plan ma otwarte błędy. Sprawdź panel „Kontrola planu” przed wysyłką."),
+    );
+    $("#modal").classList.remove("ukryty");
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    przycisk.disabled = false;
+    przycisk.textContent = "Eksportuj arkusz";
+  }
+};
+$("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
+
+// ── start ──────────────────────────────────────────────────────────
+(async () => {
+  cwiczenia = await api("/api/cwiczenia");
+  cwiczenia.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  await pokazListe();
+})();

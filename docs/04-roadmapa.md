@@ -31,9 +31,12 @@ Fazy są ułożone tak, że każda daje coś użytecznego sama z siebie i żadna
 
 1. ~~Import istniejącego planu z `.xlsx`~~ — **zrobione**. `silnik/src/import-arkusza.ts`, mapowanie slotów po `position_id`, wykrywanie ćwiczeń spoza BAZY.
 2. ~~Walidacja planu z czytelnym raportem~~ — **zrobione**. `npm run sprawdz -- plan.xlsx`: co blokuje wysyłkę, co sprawdzić, obciążenie z normami, zgodność arkusza z silnikiem.
-3. Postgres, schemat z `03-architektura.md`, 164 ćwiczenia z `dane/baza-cwiczen.json`.
-4. Kreator planu: 5 dni × 12 slotów, dobór z filtrem kategorii, analiza na żywo.
-5. **Eksport do `.xlsx` w formacie 5.17.** Klient dalej dostaje arkusz i niczego nie zauważa.
+3. ~~Kreator planu: 5 dni × 12 slotów, dobór z filtrem kategorii, analiza na żywo~~ — **zrobione**. [`konsola/`](../konsola/README.md).
+4. ~~Eksport do `.xlsx` w formacie 5.18~~ — **zrobione**. Klient dostaje arkusz z żywymi formułami i niczego nie zauważa. Sprawdzone: plan z konsoli → arkusz → przeliczenie → 500 wartości zgodnych.
+5. Import istniejącego planu do konsoli — silnik potrafi, brakuje przycisku.
+6. Przenoszenie slotów, żeby zmienić kolejność.
+
+**Postgres odłożony.** Konsola zapisuje plany do plików JSON i chodzi u trenera na komputerze bez stawiania serwera. Schemat z `03-architektura.md` zostaje aktualny — silnik nie wie, skąd biorą się dane, więc podmiana magazynu na bazę to zmiana jednego pliku. Bazy potrzeba dopiero przy fazie 2, gdy klient loguje się z telefonu.
 
 **Nowy walidator, którego nie było w planie** — `POZA_BAZA`. Ćwiczenie wpisane z literówką nie trafia do BAZY, więc arkusz pomija slot po cichu: bez ciężaru, bez stresu, poza objętością. Żadna z 11 kontroli w zakładce Analiza tego nie łapie.
 

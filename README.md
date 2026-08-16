@@ -57,6 +57,19 @@ npm run policz -- kontrola                      # listy robocze z BAZY
 
 Szczegóły i sposób dokładania własnych planów do testów: [`silnik/README.md`](silnik/README.md).
 
+## Konsola trenera — faza 1 w toku
+
+```bash
+cd konsola
+npm start          # → http://localhost:4173
+```
+
+Układasz plan (5 dni × 12 slotów), widzisz ciężary i analizę na żywo, kontrola
+pokazuje co blokuje wysyłkę, przycisk eksportuje arkusz w formacie 5.18.
+Sprawdzone: plan z konsoli → arkusz → przeliczenie → **500 wartości zgodnych**.
+
+Szczegóły: [`konsola/README.md`](konsola/README.md).
+
 ## Poprawki do arkusza
 
 [`arkusz/`](arkusz/README.md) robi z 5.17 plik **5.18** z trzema poprawkami:

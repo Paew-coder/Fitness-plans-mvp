@@ -1,0 +1,12 @@
+{
+  "name": "@craftmyplan/konsola",
+  "version": "0.1.0",
+  "description": "Konsola trenera — plany powstaja tutaj, do klienta ida jako arkusz",
+  "type": "module",
+  "engines": { "node": ">=22.6" },
+  "scripts": {
+    "start": "node serwer.ts"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
