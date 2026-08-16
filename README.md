@@ -70,6 +70,15 @@ Sprawdzone: plan z konsoli → arkusz → przeliczenie → **500 wartości zgodn
 
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 
+## Aplikacja klienta — faza 2 w toku
+
+W konsoli: **Link dla klienta** → wysyłasz adres → klient otwiera na telefonie.
+Widzi dzisiejszy trening z policzonymi ciężarami, ocenia jednym dotknięciem,
+działa bez zasięgu.
+
+Pętla się domyka: ocena klienta zmienia ciężar w kolejnym tygodniu, bez
+odsyłania arkusza. Szczegóły i uwagi o bezpieczeństwie: [`klient/README.md`](klient/README.md).
+
 ## Poprawki do arkusza
 
 [`arkusz/`](arkusz/README.md) robi z 5.17 plik **5.18** z trzema poprawkami:

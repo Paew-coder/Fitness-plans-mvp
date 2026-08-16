@@ -113,6 +113,66 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   };
 }
 
+/**
+ * Plan widziany oczami klienta — tylko to, co potrzebne na siłowni.
+ * Bez analizy stresu, bez norm, bez nazwisk innych klientów.
+ */
+function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
+  const wynik = przeliczPlan(zapisany.plan);
+  const ukonczone = zapisany.ukonczoneDni ?? [];
+
+  const tygodnie = wynik.tygodnie.map((t) => ({
+    tydzien: t.tydzien,
+    dni: [...new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien))]
+      .sort((a, b) => a - b)
+      .map((dzien) => ({
+        dzien,
+        ukonczony: ukonczone.some((u) => u.dzien === dzien && u.tydzien === t.tydzien),
+        topSet: t.topSety.find((x) => x.dzien === dzien) ?? null,
+        cwiczenia: t.sloty
+          .filter((s) => s.dzien === dzien && s.cwiczenie)
+          .map((s) => ({
+            positionId: s.positionId,
+            lp: s.lp,
+            grupa: (s.lp || "").charAt(0),
+            nazwa: s.cwiczenie!.nazwa,
+            film: s.cwiczenie!.film ?? null,
+            jednostronne: s.cwiczenie!.jednostronne ?? false,
+            serie: s.serie,
+            powtorzenia: s.powtorzenia,
+            rpe: s.rpe,
+            ciezar: s.ciezar,
+            feedback: zapisany.plan.sloty.find((x) => x.positionId === s.positionId)
+              ?.tygodnie?.[t.tydzien]?.feedback ?? null,
+          })),
+      })),
+  }));
+
+  // Ćwiczenia bez 1RM — klient musi je zmierzyć, zanim ruszy plan.
+  const doZmierzenia = [...new Set(zapisany.plan.sloty
+    .filter((s) => s.cwiczenieId).map((s) => s.cwiczenieId!))]
+    .map((id) => {
+      const slot = wynik.tygodnie[0]!.sloty.find((s) => s.cwiczenie?.id === id);
+      const seria = zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
+      return {
+        cwiczenieId: id,
+        nazwa: slot?.cwiczenie?.nazwa ?? id,
+        film: slot?.cwiczenie?.film ?? null,
+        ciezar: seria?.ciezar ?? null,
+        powtorzenia: seria?.powtorzenia ?? null,
+        oneRM: slot?.oneRM || null,
+      };
+    });
+
+  return {
+    klient: zapisany.klient,
+    wersja: zapisany.wersja,
+    dataStartu: zapisany.dataStartu,
+    tygodnie,
+    doZmierzenia,
+  };
+}
+
 function plikStatyczny(sciezkaUrl: string, res: ServerResponse): boolean {
   const wzgledna = normalize(sciezkaUrl === "/" ? "/index.html" : sciezkaUrl).replace(/^(\.\.[/\\])+/, "");
   const pelna = join(PUBLIC, wzgledna);
@@ -241,10 +301,88 @@ const serwer = createServer(async (req, res) => {
         return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
       }
 
+      if (akcja === "/link" && req.method === "POST") {
+        const token = zapisany.token ?? magazyn.nowyToken();
+        const zaktualizowany = magazyn.zapisz({ ...zapisany, token });
+        return json(res, { token: zaktualizowany.token, sciezka: `/k/${zaktualizowany.token}` });
+      }
+
+      if (akcja === "/link" && req.method === "DELETE") {
+        magazyn.zapisz({ ...zapisany, token: undefined });
+        return json(res, { uniewazniony: true });
+      }
+
       if (akcja === "/eksport" && req.method === "POST") {
         const plik = await eksportujDoArkusza(zapisany);
         return json(res, { plik });
       }
+    }
+
+    // ── aplikacja klienta ────────────────────────────────────────────
+    const klientowy = sciezka.match(/^\/api\/klient\/([A-Za-z0-9_-]{16,})(\/[a-z]+)?$/);
+    if (klientowy) {
+      const [, token, akcja] = klientowy;
+      const zapisany = magazyn.wczytajPoTokenie(token!);
+      if (!zapisany) return blad(res, "Link nieaktualny. Poproś trenera o nowy.", 404);
+
+      if (!akcja && req.method === "GET") {
+        return json(res, widokKlienta(zapisany));
+      }
+
+      // Odczucie po ćwiczeniu — to samo pole, które w arkuszu jest kolumną H.
+      if (akcja === "/odczucie" && req.method === "POST") {
+        const { positionId, tydzien, feedback, ciezarWykonany, powtorzeniaWykonane } = await cialo(req);
+        const slot = zapisany.plan.sloty.find((s) => s.positionId === positionId);
+        if (!slot) return blad(res, "Nie ma takiego ćwiczenia");
+
+        slot.tygodnie ??= {};
+        slot.tygodnie[tydzien as 1] ??= {};
+        slot.tygodnie[tydzien as 1]!.feedback = feedback || undefined;
+
+        // Historia wykonań — czego arkusz nie ma w ogóle.
+        const wykonania = (zapisany.wykonania ?? [])
+          .filter((w) => !(w.positionId === positionId && w.tydzien === tydzien));
+        wykonania.push({
+          positionId, tydzien, data: new Date().toISOString(),
+          feedback: feedback || undefined,
+          ciezarWykonany: ciezarWykonany ?? undefined,
+          powtorzeniaWykonane: powtorzeniaWykonane ?? undefined,
+        });
+
+        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, wykonania })));
+      }
+
+      if (akcja === "/dzien" && req.method === "POST") {
+        const { dzien, tydzien } = await cialo(req);
+        const ukonczoneDni = (zapisany.ukonczoneDni ?? [])
+          .filter((d) => !(d.dzien === dzien && d.tydzien === tydzien));
+        ukonczoneDni.push({ dzien, tydzien, data: new Date().toISOString() });
+
+        // Arkusz robi to samo: brak odczucia w ukończonym dniu znaczy "OK".
+        for (const slot of zapisany.plan.sloty) {
+          if (slot.dzien !== dzien || !slot.cwiczenieId) continue;
+          slot.tygodnie ??= {};
+          slot.tygodnie[tydzien as 1] ??= {};
+          slot.tygodnie[tydzien as 1]!.feedback ??= "OK";
+        }
+
+        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, ukonczoneDni })));
+      }
+
+      if (akcja === "/serie" && req.method === "POST") {
+        const { cwiczenieId, ciezar, powtorzenia } = await cialo(req);
+        const serieMaksymalne = zapisany.plan.serieMaksymalne
+          .filter((s) => s.cwiczenieId !== cwiczenieId);
+        if (ciezar > 0 && powtorzenia > 0) {
+          serieMaksymalne.push({ cwiczenieId, ciezar, powtorzenia });
+        }
+        zapisany.plan.serieMaksymalne = serieMaksymalne;
+        return json(res, widokKlienta(magazyn.zapisz(zapisany)));
+      }
+    }
+
+    if (sciezka.startsWith("/k/")) {
+      if (plikStatyczny("/klient/index.html", res)) return;
     }
 
     // ── 1RM z serii maksymalnej (podgląd na żywo) ────────────────────

@@ -577,6 +577,45 @@ $("#eksportuj").onclick = async () => {
     przycisk.textContent = "Eksportuj arkusz";
   }
 };
+$("#link-klienta").onclick = async () => {
+  try {
+    const { sciezka } = await api(`/api/plany/${obraz.zapisany.id}/link`, { method: "POST", body: {} });
+    const adres = `${location.origin}${sciezka}`;
+
+    $("#modal-tytul").textContent = "Link dla klienta";
+    $("#modal-body").replaceChildren();
+    const pole = el("code", "", adres);
+    const kopiuj = el("button", "glowny", "Kopiuj link");
+    kopiuj.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(adres);
+        kopiuj.textContent = "Skopiowane ✓";
+      } catch {
+        kopiuj.textContent = "Zaznacz i skopiuj ręcznie";
+      }
+    };
+    const uniewaznij = el("button", "", "Unieważnij link");
+    uniewaznij.style.marginLeft = ".5rem";
+    uniewaznij.onclick = async () => {
+      if (!confirm("Stary link przestanie działać. Na pewno?")) return;
+      await api(`/api/plany/${obraz.zapisany.id}/link`, { method: "DELETE" });
+      $("#modal").classList.add("ukryty");
+    };
+
+    $("#modal-body").append(
+      el("p", "", "Wyślij klientowi. Otworzy się na telefonie, działa też bez zasięgu."),
+      pole,
+      el("p", "wskazowka",
+        "Kto ma link, ten widzi plan — bez hasła. Przy kilkunastu klientach to " +
+        "proporcjonalne. Gdyby link wyciekł, unieważnij go i wygeneruj nowy."),
+      kopiuj, uniewaznij,
+    );
+    $("#modal").classList.remove("ukryty");
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 
 // ── start ──────────────────────────────────────────────────────────

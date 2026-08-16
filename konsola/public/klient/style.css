@@ -1,0 +1,166 @@
+/* Aplikacja klienta — jedna ręka, kciuk, sala z kiepskim światłem. */
+
+:root {
+  --tlo: #0F1117;
+  --karta: #171A22;
+  --karta-2: #1C1F29;
+  --tekst: #E9EBF2;
+  --tekst-slaby: #969DB1;
+  --tekst-blady: #6E7688;
+  --linia: #2A2F3B;
+  --akcent: #7B93FF;
+  --akcent-tlo: #1E2440;
+  --ok: #3FBE83;
+  --latwe: #D19A3E;
+  --trudne: #F2837B;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --tlo: #FAFAFC; --karta: #FFFFFF; --karta-2: #F1F3F8;
+    --tekst: #15171F; --tekst-slaby: #5C6274; --tekst-blady: #878DA0;
+    --linia: #DEE2EC; --akcent: #1F3FD8; --akcent-tlo: #E8ECFD;
+    --ok: #0E7C4A; --latwe: #9A6100; --trudne: #B3261E;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.45;
+  padding: 0 1rem calc(2rem + env(safe-area-inset-bottom));
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+.ekran { padding-top: .5rem; }
+.ukryty { display: none !important; }
+h1 { font-size: 1.3rem; margin: 0; letter-spacing: -.01em; }
+.drobne { font-size: .82rem; color: var(--tekst-blady); margin: .2rem 0 0; }
+.srodek { text-align: center; }
+
+.gora { display: flex; align-items: center; gap: .8rem; padding: 1rem 0 .8rem; }
+.gora.sticky {
+  position: sticky; top: 0; z-index: 5; background: var(--tlo);
+  border-bottom: 1px solid var(--linia); margin-bottom: .8rem;
+  padding-top: calc(.8rem + env(safe-area-inset-top));
+}
+.wstecz {
+  border: none; background: var(--karta-2); color: var(--tekst);
+  font-size: 1.3rem; width: 2.6rem; height: 2.6rem; border-radius: 50%;
+  flex: none; cursor: pointer;
+}
+
+button { font: inherit; cursor: pointer; }
+.glowny {
+  background: var(--akcent); color: #fff; border: none;
+  border-radius: 10px; padding: .95rem 1.2rem; font-weight: 600; font-size: 1rem;
+}
+.poboczny {
+  background: var(--karta); color: var(--tekst); border: 1px solid var(--linia);
+  border-radius: 10px; padding: .85rem 1.2rem;
+}
+.szeroki { display: block; width: 100%; margin-top: 1.2rem; }
+
+.offline {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--latwe); color: #1a1300;
+  text-align: center; padding: .5rem; font-size: .85rem; font-weight: 600;
+}
+
+.baner {
+  background: var(--akcent-tlo); border: 1px solid var(--akcent);
+  border-radius: 12px; padding: 1rem; margin-bottom: 1.2rem;
+}
+.baner p { margin: .4rem 0 .9rem; font-size: .88rem; color: var(--tekst-slaby); }
+
+/* ── tygodnie i dni ─────────────────────────────────────────────── */
+.tydzien { margin-bottom: 1.4rem; }
+.tydzien-tytul {
+  font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--tekst-blady); margin-bottom: .5rem;
+}
+.dzien-kafel {
+  display: flex; align-items: center; gap: .8rem; width: 100%;
+  background: var(--karta); border: 1px solid var(--linia); border-radius: 12px;
+  padding: .95rem 1rem; margin-bottom: .5rem; text-align: left; color: inherit;
+}
+.dzien-kafel:disabled { opacity: .5; }
+.dzien-kafel .nazwa { font-weight: 600; flex: 1; }
+.dzien-kafel .ile { font-size: .82rem; color: var(--tekst-blady); }
+.dzien-kafel .ptaszek { color: var(--ok); font-size: 1.2rem; }
+.dzien-kafel.zrobiony { background: var(--karta-2); }
+
+/* ── ćwiczenia ──────────────────────────────────────────────────── */
+.cwiczenie {
+  background: var(--karta); border: 1px solid var(--linia);
+  border-radius: 12px; padding: .9rem 1rem; margin-bottom: .7rem;
+}
+.cwiczenie.grupa { border-left: 3px solid var(--akcent); }
+.cwiczenie-gora { display: flex; align-items: baseline; gap: .55rem; }
+.cwiczenie .lp {
+  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); flex: none;
+}
+.cwiczenie .nazwa { font-weight: 600; flex: 1; }
+.cwiczenie .film {
+  color: var(--akcent); text-decoration: none; font-size: .82rem; flex: none;
+}
+.zadanie {
+  display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
+  margin: .55rem 0 .1rem; font-family: var(--mono);
+}
+.zadanie .ciezar { font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; }
+.zadanie .schemat { color: var(--tekst-slaby); font-size: .92rem; }
+.zadanie .na-strone { color: var(--akcent); font-size: .78rem; }
+.zadanie .brak { color: var(--latwe); font-size: .92rem; font-weight: 600; }
+
+.oceny { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; margin-top: .75rem; }
+.ocena-przycisk {
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst-slaby);
+  border-radius: 9px; padding: .7rem .3rem; font-size: .86rem; font-weight: 600;
+}
+.ocena-przycisk.wybrana { color: #fff; border-color: transparent; }
+.ocena-przycisk.wybrana.ok { background: var(--ok); }
+.ocena-przycisk.wybrana.latwe { background: var(--latwe); color: #1a1300; }
+.ocena-przycisk.wybrana.trudne { background: var(--trudne); color: #2b0f0d; }
+
+/* ── TOP SET ────────────────────────────────────────────────────── */
+.topset {
+  background: var(--akcent-tlo); border: 1px solid var(--akcent);
+  border-radius: 12px; padding: .85rem 1rem; margin-bottom: .9rem;
+}
+.topset .etykieta {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--akcent); font-weight: 700;
+}
+.topset .wiersz { display: flex; align-items: baseline; gap: .6rem; margin-top: .3rem; }
+.topset .ciezar { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; margin-left: auto; }
+
+/* ── serie maksymalne ───────────────────────────────────────────── */
+.pomiar {
+  background: var(--karta); border: 1px solid var(--linia);
+  border-radius: 12px; padding: .9rem 1rem; margin-bottom: .7rem;
+}
+.pomiar .nazwa { font-weight: 600; margin-bottom: .6rem; }
+.pomiar .pola { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; align-items: center; }
+.pomiar input {
+  font: inherit; font-family: var(--mono); text-align: center;
+  padding: .7rem .4rem; border-radius: 9px; width: 100%;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.pomiar .rm {
+  font-family: var(--mono); font-weight: 700; color: var(--akcent);
+  white-space: nowrap; font-size: .95rem;
+}
+.pomiar .etykiety {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem;
+  font-size: .7rem; color: var(--tekst-blady); font-family: var(--mono);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: .25rem;
+}
