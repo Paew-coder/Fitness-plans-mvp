@@ -62,8 +62,16 @@ def tekst(v):
     return s or None
 
 
+def ma_formule(v) -> bool:
+    """Czy komorka zawiera formule (a nie liczbe wpisana recznie)."""
+    tekst_formuly = getattr(v, "text", v)
+    return isinstance(tekst_formuly, str) and tekst_formuly.startswith("=")
+
+
 def zrzut(sciezka_xlsx: str) -> dict:
     wb = openpyxl.load_workbook(sciezka_xlsx, data_only=True)
+    # Drugi raz bez data_only — zeby zobaczyc, gdzie stoi formula, a gdzie wpis reczny.
+    wbf = openpyxl.load_workbook(sciezka_xlsx, data_only=False)
     braki = {"komorek_bez_wartosci": 0}
 
     analiza = wb["Analiza"]
@@ -112,9 +120,13 @@ def zrzut(sciezka_xlsx: str) -> dict:
 
     for skrot in TYGODNIE:
         ws = wb[skrot]
+        wsf = wbf[skrot]
         for pid, slot in sloty.items():
             r = slot["wiersz"]
+            # Powtorzenia: formula = automat akcesoriow, liczba = wpis trenera.
+            powt_reczne = not ma_formule(wsf.cell(row=r, column=KOL["powt"]).value)
             pole = {
+                "powt_reczne": powt_reczne,
                 "serie": liczba(ws.cell(row=r, column=KOL["serie"]).value),
                 "rpe": liczba(ws.cell(row=r, column=KOL["rpe"]).value),
                 "feedback": tekst(ws.cell(row=r, column=KOL["feedback"]).value),
