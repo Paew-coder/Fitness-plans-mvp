@@ -28,6 +28,11 @@ nagrania, niezgodne ze szkieletem, powtórka z poprzedniego cyklu).
 z żywymi formułami, walidacjami i zakładkami ODDECH/BIEG. Ląduje w
 `konsola/dane/eksport/`.
 
+**Wczytanie istniejącego planu** — `Wczytaj plan z arkusza` bierze plik `.xlsx`
+w układzie 5.17/5.18 i przenosi go do konsoli. Ćwiczenia, których nie ma w BAZIE
+(literówki, pozycje jeszcze niedodane), wypisuje osobno — te sloty zostają puste
+i trzeba je dobrać ręcznie.
+
 ## Dlaczego wybór z listy, a nie wpisywanie
 
 Ćwiczenie zawsze wybiera się z rozwijanej listy. To nie jest wygoda — to
@@ -47,9 +52,15 @@ jeśli ćwiczenie już w nim było — realizacja zasady „sprawdzać poprzedni
 
 ## Sprawdzone
 
-Pełna droga: plan ułożony w konsoli → eksport do `.xlsx` → przeliczenie arkusza →
-porównanie z silnikiem. **500 wartości, wszystkie zgodne.** Arkusz liczy dokładnie
-to, co pokazywała konsola.
+Pełne kółko: plan ułożony w konsoli → eksport do `.xlsx` → przeliczenie arkusza →
+porównanie z silnikiem (**500 wartości, wszystkie zgodne**) → wczytanie tego samego
+pliku z powrotem do konsoli → **te same ciężary co na starcie**.
+
+Arkusz liczy dokładnie to, co pokazywała konsola, a konsola czyta z powrotem
+dokładnie to, co arkusz.
+
+To sprawdzenie wymaga LibreOffice do przeliczenia pliku, więc nie chodzi
+automatycznie w testach — trzeba je powtórzyć ręcznie po zmianach w eksporcie.
 
 Powtórzenie tej kontroli na dowolnym pliku:
 
@@ -70,9 +81,8 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 
 ## Czego jeszcze nie ma
 
-- Import istniejącego planu z `.xlsx` do konsoli (silnik już to potrafi —
-  `silnik/src/import-arkusza.ts` — brakuje przycisku).
 - Przeciąganie slotów, żeby zmienić kolejność.
+- Kopiowanie planu jako nowej wersji dla tego samego klienta.
 - Aplikacja dla klienta na telefon — to faza 2.
 
 ## Jak to jest zbudowane
