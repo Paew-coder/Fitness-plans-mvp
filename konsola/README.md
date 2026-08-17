@@ -157,6 +157,17 @@ dwanaście ocen wysłanych równocześnie, wszystkie na miejscu.
 `node:sqlite` jest wbudowane w Node 22, więc dalej zero zależności i zero
 instalowania czegokolwiek.
 
+**Kopia zapasowa**
+
+```bash
+npm run kopia                    # do konsola/dane/kopie/
+npm run kopia -- /sciezka/gdzies # np. na Dysk
+```
+
+Nie kopiuj pliku `.db` ręcznie w trakcie pracy konsoli: baza chodzi w trybie
+WAL, więc część świeżych zapisów siedzi w pliku obok. `npm run kopia` robi to
+poprawnie na działającej bazie i trzyma 30 ostatnich kopii.
+
 **Masz plany z poprzedniej wersji?**
 
 ```bash

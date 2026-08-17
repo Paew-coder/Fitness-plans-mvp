@@ -531,6 +531,12 @@ const serwer = createServer(async (req, res) => {
   const sciezka = url.pathname;
 
   try {
+    // Sprawdzenie życia — dla Dockera i monitoringu. Nie mówi nic o danych.
+    if (sciezka === "/zdrowie") {
+      res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+      return res.end("ok");
+    }
+
     // ── logowanie ────────────────────────────────────────────────────
     if (sciezka === "/api/logowanie" && req.method === "POST") {
       const { email, haslo } = await cialo(req);
