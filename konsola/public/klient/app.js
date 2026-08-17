@@ -12,7 +12,8 @@ const KLUCZ_WIDOKU = `widok-${TOKEN}`;
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let widok = null;
-let biezacy = null;   // { tydzien, dzien }
+let biezacy = null;            // { tydzien, dzien }
+const otwarteWykonania = new Set();   // positionId z rozwiniętymi polami „co poszło"
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, klasa, tekst) => {
@@ -63,22 +64,26 @@ function pokazStanPolaczenia(online) {
   $("#stan-polaczenia").classList.toggle("ukryty", online);
 }
 
-async function synchronizuj() {
+async function synchronizuj(odswiez = true) {
   const udalo = await kolejka.wyslij();
   pokazStanPolaczenia(udalo);
-  if (udalo) rysuj();
+  if (udalo && odswiez) rysuj();
 }
 
 addEventListener("online", synchronizuj);
 addEventListener("offline", () => pokazStanPolaczenia(false));
 
 // ── wysyłanie z natychmiastowym efektem lokalnym ───────────────────
-async function wyslij(sciezka, dane, zmienLokalnie) {
+//
+// `odswiez: false` zostawia ekran w spokoju. Potrzebne tam, gdzie klient
+// właśnie pisze: przerysowanie podmieniłoby pole pod palcem i na telefonie
+// zamknęłoby klawiaturę w połowie wpisywania.
+async function wyslij(sciezka, dane, zmienLokalnie, { odswiez = true } = {}) {
   zmienLokalnie();
   zapiszWidokLokalnie();
-  rysuj();
+  if (odswiez) rysuj();
   kolejka.dodaj({ sciezka, dane });
-  await synchronizuj();
+  await synchronizuj(odswiez);
 }
 
 // ── ekrany ─────────────────────────────────────────────────────────
@@ -88,7 +93,8 @@ function pokazEkran(id) {
   scrollTo(0, 0);
 }
 
-function rysuj() {
+/** `pomiary: false` zostawia pola serii maksymalnych w spokoju — patrz `zapisz` niżej. */
+function rysuj({ pomiary = true } = {}) {
   if (!widok) return;
   $("#tytul").textContent = `${widok.klient} ${widok.wersja}.0`;
 
@@ -100,7 +106,7 @@ function rysuj() {
 
   rysujTygodnie();
   if (biezacy) rysujTrening();
-  rysujPomiary();
+  if (pomiary) rysujPomiary();
 }
 
 function rysujTygodnie() {
@@ -204,11 +210,64 @@ function rysujTrening() {
       oceny.append(b);
     }
     karta.append(oceny);
+    karta.append(polaWykonania(c));
     kontener.append(karta);
   }
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
+}
+
+/**
+ * Co faktycznie poszło na sztandze. Ocena mówi „jak było", to mówi „ile było" —
+ * i dopiero z tego da się policzyć nowe 1RM bez proszenia o serię maksymalną.
+ *
+ * Pola są zwinięte, bo na siłowni nikt nie chce wypełniać formularza. Kto chce,
+ * dotyka „zapisz ciężar" i wpisuje; kto nie chce, ocenia i idzie dalej.
+ */
+function polaWykonania(c) {
+  const blok = el("div", "wykonanie");
+  const maDane = c.ciezarWykonany != null || c.powtorzeniaWykonane != null;
+  const otwarte = maDane || otwarteWykonania.has(c.positionId);
+
+  const przelacz = el("button", "wykonanie-przelacz",
+    maDane ? "✎ zmień, co poszło" : "+ zapisz, co poszło");
+  const pola = el("div", `wykonanie-pola ${otwarte ? "" : "ukryty"}`);
+
+  przelacz.onclick = () => {
+    const zwiniete = pola.classList.toggle("ukryty");
+    if (zwiniete) otwarteWykonania.delete(c.positionId);
+    else { otwarteWykonania.add(c.positionId); pola.querySelector("input").focus(); }
+  };
+
+  const wCiezar = el("input");
+  wCiezar.placeholder = typeof c.ciezar === "number" ? liczba(c.ciezar) : "kg";
+  wCiezar.value = c.ciezarWykonany ?? "";
+  const wPowt = el("input");
+  wPowt.placeholder = String(c.powtorzenia ?? "powt.");
+  wPowt.value = c.powtorzeniaWykonane ?? "";
+  for (const i of [wCiezar, wPowt]) {
+    i.type = "number";
+    i.inputMode = "decimal";
+    i.min = "0";
+  }
+
+  const zapisz = () => {
+    const ciezarWykonany = Number(wCiezar.value) || null;
+    const powtorzeniaWykonane = Number(wPowt.value) || null;
+    if (ciezarWykonany === c.ciezarWykonany && powtorzeniaWykonane === c.powtorzeniaWykonane) return;
+    wyslij("/odczucie",
+      { positionId: c.positionId, tydzien: biezacy.tydzien, ciezarWykonany, powtorzeniaWykonane },
+      () => { c.ciezarWykonany = ciezarWykonany; c.powtorzeniaWykonane = powtorzeniaWykonane; },
+      { odswiez: false });
+    przelacz.textContent = "✎ zmień, co poszło";
+  };
+  wCiezar.onchange = zapisz;
+  wPowt.onchange = zapisz;
+
+  pola.append(wCiezar, el("span", "razy", "kg ×"), wPowt, el("span", "razy", "powt."));
+  blok.append(przelacz, pola);
+  return blok;
 }
 
 function rysujPomiary() {
@@ -242,13 +301,22 @@ function rysujPomiary() {
     }
     const rm = el("span", "rm", p.oneRM ? `${liczba(p.oneRM)} kg` : "—");
 
-    const zapisz = () => {
+    // Bez przerysowania — inaczej po wpisaniu ciężaru znika pole powtórzeń
+    // spod palca. 1RM aktualizujemy punktowo, gdy wróci z serwera.
+    const zapisz = async () => {
       const ciezar = Number(wCiezar.value) || 0;
       const powtorzenia = Number(wPowt.value) || 0;
-      wyslij("/serie", { cwiczenieId: p.cwiczenieId, ciezar, powtorzenia }, () => {
+      if (ciezar === (p.ciezar ?? 0) && powtorzenia === (p.powtorzenia ?? 0)) return;
+      await wyslij("/serie", { cwiczenieId: p.cwiczenieId, ciezar, powtorzenia }, () => {
         p.ciezar = ciezar || null;
         p.powtorzenia = powtorzenia || null;
-      });
+      }, { odswiez: false });
+      const swiezy = widok?.doZmierzenia.find((x) => x.cwiczenieId === p.cwiczenieId);
+      if (swiezy) {
+        p.oneRM = swiezy.oneRM;
+        rm.textContent = swiezy.oneRM ? `${liczba(swiezy.oneRM)} kg` : "—";
+      }
+      rysuj({ pomiary: false });   // baner „uzupełnij 1RM" i ciężary w planie
     };
     wCiezar.onchange = zapisz;
     wPowt.onchange = zapisz;

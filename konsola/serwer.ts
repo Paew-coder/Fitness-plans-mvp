@@ -177,6 +177,8 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
 function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
   const wynik = przeliczPlan(zapisany.plan);
   const ukonczone = zapisany.ukonczoneDni ?? [];
+  const wykonanie = (positionId: string, tydzien: number) =>
+    (zapisany.wykonania ?? []).find((w) => w.positionId === positionId && w.tydzien === tydzien);
 
   const tygodnie = wynik.tygodnie.map((t) => ({
     tydzien: t.tydzien,
@@ -201,6 +203,8 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             ciezar: s.ciezar,
             feedback: zapisany.plan.sloty.find((x) => x.positionId === s.positionId)
               ?.tygodnie?.[t.tydzien]?.feedback ?? null,
+            ciezarWykonany: wykonanie(s.positionId, t.tydzien)?.ciezarWykonany ?? null,
+            powtorzeniaWykonane: wykonanie(s.positionId, t.tydzien)?.powtorzeniaWykonane ?? null,
           })),
       })),
   }));
@@ -391,25 +395,35 @@ const serwer = createServer(async (req, res) => {
       }
 
       // Odczucie po ćwiczeniu — to samo pole, które w arkuszu jest kolumną H.
+      // Aktualizacja jest cząstkowa: klient wysyła osobne wiadomości za ocenę
+      // i za wpisany ciężar, a kolejka offline może je odtworzyć w dowolnej
+      // kolejności. Nadpisanie całego wpisu gubiłoby to, czego nie przysłano.
       if (akcja === "/odczucie" && req.method === "POST") {
-        const { positionId, tydzien, feedback, ciezarWykonany, powtorzeniaWykonane } = await cialo(req);
+        const cialoZadania = await cialo(req);
+        const { positionId, tydzien } = cialoZadania;
         const slot = zapisany.plan.sloty.find((s) => s.positionId === positionId);
         if (!slot) return blad(res, "Nie ma takiego ćwiczenia");
 
-        slot.tygodnie ??= {};
-        slot.tygodnie[tydzien as 1] ??= {};
-        slot.tygodnie[tydzien as 1]!.feedback = feedback || undefined;
-
         // Historia wykonań — czego arkusz nie ma w ogóle.
-        const wykonania = (zapisany.wykonania ?? [])
-          .filter((w) => !(w.positionId === positionId && w.tydzien === tydzien));
-        wykonania.push({
-          positionId, tydzien, data: new Date().toISOString(),
-          feedback: feedback || undefined,
-          ciezarWykonany: ciezarWykonany ?? undefined,
-          powtorzeniaWykonane: powtorzeniaWykonane ?? undefined,
-        });
+        const wykonania = [...(zapisany.wykonania ?? [])];
+        const i = wykonania.findIndex((w) => w.positionId === positionId && w.tydzien === tydzien);
+        const wpis = { ...(i >= 0 ? wykonania[i]! : { positionId, tydzien }) };
+        wpis.data = new Date().toISOString();
 
+        if ("feedback" in cialoZadania) {
+          wpis.feedback = cialoZadania.feedback || undefined;
+          slot.tygodnie ??= {};
+          slot.tygodnie[tydzien as 1] ??= {};
+          slot.tygodnie[tydzien as 1]!.feedback = cialoZadania.feedback || undefined;
+        }
+        if ("ciezarWykonany" in cialoZadania) {
+          wpis.ciezarWykonany = cialoZadania.ciezarWykonany || undefined;
+        }
+        if ("powtorzeniaWykonane" in cialoZadania) {
+          wpis.powtorzeniaWykonane = cialoZadania.powtorzeniaWykonane || undefined;
+        }
+
+        if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);
         return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, wykonania })));
       }
 
