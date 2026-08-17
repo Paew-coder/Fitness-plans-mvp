@@ -79,6 +79,21 @@ Kolejność wg tego, co najczęściej boli dziś:
 
 ---
 
+## Faza 3,5 — Wersja produkcyjna dla trenera
+
+*Decyzja podjęta: najpierw narzędzie dla Pawła i jego klientów, SaaS dla innych trenerów później. A jest warunkiem koniecznym dla B, więc nic z tej fazy się nie marnuje.*
+
+1. ~~**Baza danych zamiast plików JSON**~~ — **zrobione.** SQLite (`node:sqlite`, wbudowane w Node 22, dalej zero zależności). Powód: klient odhacza trening z telefonu w tej samej chwili, w której trener otwiera jego plan — pliki nie znoszą dwóch zapisów naraz. Zapis idzie w transakcji. **Każdy wiersz od początku nosi `trener_id`**, choć trener jest jeden; to jedyna rzecz, której nie da się dołożyć później bez przepisywania wszystkiego. 11 testów magazynu, `npm run migruj` przenosi stare pliki.
+2. **Logowanie trenera** — dziś konsola nie ma żadnego. Na komputerze trenera to zaleta; na serwerze to blokada. Konto z hasłem, sesja w ciasteczku. Instalacja lokalna zostaje bez hasła (`hash_hasla IS NULL`).
+3. **Wdrożenie** — instrukcja i konfiguracja, żeby postawić to na małym serwerze pod własną domeną. HTTPS obowiązkowe: token klienta leci w adresie.
+4. **Kopie zapasowe** — jeden plik, ale trzeba go gdzieś odkładać automatycznie.
+
+**Czego ta faza świadomie nie robi:** płatności w aplikacji. Rozliczenia z klientami zostają tak, jak są. Płatności mają sens dopiero przy SaaS dla innych trenerów.
+
+**Dane zdrowotne — decyzja odłożona.** Aplikacja celowo nie przechowuje kontuzji ani historii leczenia, więc dostęp przez link bez hasła zostaje proporcjonalny. Gdy to się zmieni, wchodzą dane szczególnej kategorii wg RODO: prawdziwe konta klientów, szyfrowanie, umowy powierzenia. Schemat jest na to przygotowany — notatki wrażliwe pójdą do osobnej tabeli, nie do dokumentu planu.
+
+---
+
 ## Faza 4 — Warstwa AI
 
 Dopiero gdy jądro jest sprawdzone, a dane historyczne istnieją. Trzy zadania, żadne nie dotyka liczb (`03-architektura.md` §6): propozycja szkieletu, dobór ćwiczeń w ramach kategorii, odczytanie analizy słowami. Zawsze do akceptacji trenera.

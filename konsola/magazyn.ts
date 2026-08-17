@@ -1,19 +1,21 @@
 /**
- * Przechowywanie planów — pliki JSON na dysku.
+ * Przechowywanie planów — SQLite.
  *
- * Świadomie bez bazy danych. Konsola ma działać u trenera na komputerze bez
- * stawiania serwera; jeden plik = jeden plan, czytelny i łatwy do skopiowania.
- * Schemat Postgres z `docs/03-architektura.md` zostaje aktualny na później —
- * silnik i tak nie wie, skąd biorą się dane.
+ * Wcześniej były to pliki JSON i przez całą fazę 1 wystarczały. Baza wchodzi
+ * w momencie, w którym konsola ma stanąć na serwerze: pliki nie znoszą dwóch
+ * zapisów naraz (trener zmienia plan, klient odhacza trening), nie mają
+ * transakcji i nie dają się sensownie odpytać przez wielu klientów.
+ *
+ * Interfejs został ten sam, z jedną zmianą: każda funkcja pyta o `trenerId`.
+ * To wygląda na nadmiar przy jednym trenerze — i jest, dokładnie do dnia,
+ * w którym trenerów zrobi się dwóch. Wtedy okaże się, że nie ma czego zmieniać.
  */
-import { mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync, existsSync } from "node:fs";
 import { randomBytes } from "node:crypto";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { Plan } from "../silnik/src/plan.ts";
 import type { DaneBiegowe } from "../silnik/src/bieg.ts";
+import { baza } from "./baza/polaczenie.ts";
 
-const KORZEN = join(dirname(fileURLToPath(import.meta.url)), "dane", "plany");
+export { trenerDomyslny } from "./baza/polaczenie.ts";
 
 export type StatusPlanu = "szkic" | "wysłany" | "zakończony";
 
@@ -45,6 +47,8 @@ export type PomiarWagi = {
 /** Plan razem z tym, czego silnik nie potrzebuje, a trener tak. */
 export type ZapisanyPlan = {
   id: string;
+  /** Właściciel. Dopisywany przy odczycie, żeby zapis wiedział, gdzie wrócić. */
+  trenerId: number;
   klient: string;
   wersja: number;
   status: StatusPlanu;
@@ -56,7 +60,7 @@ export type ZapisanyPlan = {
   /**
    * Klucz dostępu dla klienta. Kto ma link, ten widzi plan — bez hasła.
    * Przy kilkunastu klientach to proporcjonalne; przy setkach trzeba by kont.
-   * Token da się unieważnić (`odswiezToken`), gdy link wycieknie.
+   * Token da się unieważnić, gdy link wycieknie.
    */
   token?: string;
   wykonania?: Wykonanie[];
@@ -75,15 +79,6 @@ export function nowyToken(): string {
   return randomBytes(24).toString("base64url");
 }
 
-function upewnijKatalog(): void {
-  mkdirSync(KORZEN, { recursive: true });
-}
-
-function sciezka(id: string): string {
-  if (!/^[a-z0-9-]+$/i.test(id)) throw new Error(`Niedozwolone id planu: ${id}`);
-  return join(KORZEN, `${id}.json`);
-}
-
 export function nowyId(klient: string, wersja: number): string {
   const bezPolskich = klient
     .toLocaleLowerCase("pl")
@@ -93,42 +88,185 @@ export function nowyId(klient: string, wersja: number): string {
   return `${podstawa}-${wersja}`;
 }
 
-export function lista(): ZapisanyPlan[] {
-  upewnijKatalog();
-  return readdirSync(KORZEN)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(readFileSync(join(KORZEN, f), "utf-8")) as ZapisanyPlan)
-    .sort((a, b) => b.zmieniony.localeCompare(a.zmieniony));
+// ── odczyt ───────────────────────────────────────────────────────────
+
+type WierszPlanu = {
+  trener_id: number;
+  id: string;
+  klient: string;
+  wersja: number;
+  status: StatusPlanu;
+  data_startu: string | null;
+  utworzony: string;
+  zmieniony: string;
+  poprzedni_id: string | null;
+  token: string | null;
+  oddech_json: string | null;
+  bieg_json: string | null;
+  plan_json: string;
+};
+
+/** Wiersz z bazy → obiekt, którego oczekuje reszta aplikacji. */
+function zWiersza(w: WierszPlanu): ZapisanyPlan {
+  const d = baza();
+  const wykonania = d.prepare(
+    `SELECT position_id, tydzien, data, ciezar_wykonany, powtorzenia_wykonane, feedback
+       FROM wykonanie WHERE trener_id = ? AND plan_id = ? ORDER BY data`,
+  ).all(w.trener_id, w.id) as {
+    position_id: string; tydzien: number; data: string;
+    ciezar_wykonany: number | null; powtorzenia_wykonane: number | null;
+    feedback: Wykonanie["feedback"] | null;
+  }[];
+
+  // Wiersze z `node:sqlite` mają pusty prototyp — przepisujemy je na zwykłe
+  // obiekty, żeby `JSON.stringify` i porównania w testach zachowywały się
+  // tak samo jak dla danych z pamięci.
+  const ukonczoneDni = (d.prepare(
+    `SELECT dzien, tydzien, data FROM ukonczony_dzien
+      WHERE trener_id = ? AND plan_id = ? ORDER BY tydzien, dzien`,
+  ).all(w.trener_id, w.id) as UkonczonyDzien[])
+    .map((x) => ({ dzien: x.dzien, tydzien: x.tydzien, data: x.data }));
+
+  const waga = (d.prepare(
+    "SELECT data, kg FROM pomiar_wagi WHERE trener_id = ? AND plan_id = ? ORDER BY data",
+  ).all(w.trener_id, w.id) as PomiarWagi[])
+    .map((x) => ({ data: x.data, kg: x.kg }));
+
+  return {
+    id: w.id,
+    trenerId: w.trener_id,
+    klient: w.klient,
+    wersja: w.wersja,
+    status: w.status,
+    dataStartu: w.data_startu,
+    utworzony: w.utworzony,
+    zmieniony: w.zmieniony,
+    poprzedniId: w.poprzedni_id ?? undefined,
+    token: w.token ?? undefined,
+    wykonania: wykonania.map((x) => ({
+      positionId: x.position_id,
+      tydzien: x.tydzien,
+      data: x.data,
+      ciezarWykonany: x.ciezar_wykonany ?? undefined,
+      powtorzeniaWykonane: x.powtorzenia_wykonane ?? undefined,
+      feedback: x.feedback ?? undefined,
+    })),
+    ukonczoneDni,
+    waga,
+    oddech: w.oddech_json ? JSON.parse(w.oddech_json) : undefined,
+    bieg: w.bieg_json ? JSON.parse(w.bieg_json) : undefined,
+    plan: JSON.parse(w.plan_json) as Plan,
+  };
 }
 
-export function wczytaj(id: string): ZapisanyPlan | null {
-  const p = sciezka(id);
-  if (!existsSync(p)) return null;
-  return JSON.parse(readFileSync(p, "utf-8")) as ZapisanyPlan;
+export function lista(trenerId: number): ZapisanyPlan[] {
+  const wiersze = baza().prepare(
+    "SELECT * FROM plan WHERE trener_id = ? ORDER BY zmieniony DESC",
+  ).all(trenerId) as WierszPlanu[];
+  return wiersze.map(zWiersza);
 }
 
+export function wczytaj(trenerId: number, id: string): ZapisanyPlan | null {
+  const w = baza().prepare(
+    "SELECT * FROM plan WHERE trener_id = ? AND id = ?",
+  ).get(trenerId, id) as WierszPlanu | undefined;
+  return w ? zWiersza(w) : null;
+}
+
+/**
+ * Plan po kluczu dostępu klienta. Zwraca null, gdy token nieznany.
+ * Szuka po wszystkich trenerach — klient nie wie, czyim jest klientem.
+ */
+export function wczytajPoTokenie(token: string): ZapisanyPlan | null {
+  if (!token || token.length < 16) return null;
+  const w = baza().prepare("SELECT * FROM plan WHERE token = ?").get(token) as WierszPlanu | undefined;
+  return w ? zWiersza(w) : null;
+}
+
+// ── zapis ────────────────────────────────────────────────────────────
+
+/**
+ * Zapisuje plan w całości: nagłówek, dokument planu i wszystkie wpisy klienta.
+ *
+ * Wszystko w jednej transakcji. Bez tego przerwany zapis mógłby zostawić plan
+ * z nowymi ćwiczeniami, ale ze starymi odczuciami — a to są liczby, które
+ * potem lecą na sztangę.
+ */
 export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
-  upewnijKatalog();
+  const d = baza();
   const teraz = new Date().toISOString();
   const pelny: ZapisanyPlan = {
     ...zapisany,
     utworzony: zapisany.utworzony || teraz,
     zmieniony: teraz,
   };
-  writeFileSync(sciezka(pelny.id), JSON.stringify(pelny, null, 1), "utf-8");
+
+  d.exec("BEGIN");
+  try {
+    d.prepare(`
+      INSERT INTO plan (trener_id, id, klient, wersja, status, data_startu,
+                        utworzony, zmieniony, poprzedni_id, token,
+                        oddech_json, bieg_json, plan_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (trener_id, id) DO UPDATE SET
+        klient = excluded.klient, wersja = excluded.wersja, status = excluded.status,
+        data_startu = excluded.data_startu, zmieniony = excluded.zmieniony,
+        poprzedni_id = excluded.poprzedni_id, token = excluded.token,
+        oddech_json = excluded.oddech_json, bieg_json = excluded.bieg_json,
+        plan_json = excluded.plan_json
+    `).run(
+      pelny.trenerId, pelny.id, pelny.klient, pelny.wersja, pelny.status,
+      pelny.dataStartu, pelny.utworzony, pelny.zmieniony,
+      pelny.poprzedniId ?? null, pelny.token ?? null,
+      pelny.oddech ? JSON.stringify(pelny.oddech) : null,
+      pelny.bieg ? JSON.stringify(pelny.bieg) : null,
+      JSON.stringify(pelny.plan),
+    );
+
+    // Wpisy klienta podmieniamy w całości — lista w obiekcie jest źródłem prawdy.
+    d.prepare("DELETE FROM wykonanie WHERE trener_id = ? AND plan_id = ?").run(pelny.trenerId, pelny.id);
+    const wstawWykonanie = d.prepare(`
+      INSERT INTO wykonanie (trener_id, plan_id, position_id, tydzien, data,
+                             ciezar_wykonany, powtorzenia_wykonane, feedback)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const w of pelny.wykonania ?? []) {
+      wstawWykonanie.run(
+        pelny.trenerId, pelny.id, w.positionId, w.tydzien, w.data,
+        w.ciezarWykonany ?? null, w.powtorzeniaWykonane ?? null, w.feedback ?? null,
+      );
+    }
+
+    d.prepare("DELETE FROM ukonczony_dzien WHERE trener_id = ? AND plan_id = ?").run(pelny.trenerId, pelny.id);
+    const wstawDzien = d.prepare(
+      "INSERT INTO ukonczony_dzien (trener_id, plan_id, tydzien, dzien, data) VALUES (?, ?, ?, ?, ?)",
+    );
+    for (const u of pelny.ukonczoneDni ?? []) {
+      wstawDzien.run(pelny.trenerId, pelny.id, u.tydzien, u.dzien, u.data);
+    }
+
+    d.prepare("DELETE FROM pomiar_wagi WHERE trener_id = ? AND plan_id = ?").run(pelny.trenerId, pelny.id);
+    const wstawWage = d.prepare(
+      "INSERT INTO pomiar_wagi (trener_id, plan_id, data, kg) VALUES (?, ?, ?, ?)",
+    );
+    for (const p of pelny.waga ?? []) {
+      wstawWage.run(pelny.trenerId, pelny.id, p.data, p.kg);
+    }
+
+    d.exec("COMMIT");
+  } catch (blad) {
+    d.exec("ROLLBACK");
+    throw blad;
+  }
+
   return pelny;
 }
 
-/** Plan po kluczu dostępu klienta. Zwraca null, gdy token nieznany. */
-export function wczytajPoTokenie(token: string): ZapisanyPlan | null {
-  if (!token || token.length < 16) return null;
-  return lista().find((p) => p.token === token) ?? null;
+export function usun(trenerId: number, id: string): void {
+  baza().prepare("DELETE FROM plan WHERE trener_id = ? AND id = ?").run(trenerId, id);
 }
 
-export function usun(id: string): void {
-  const p = sciezka(id);
-  if (existsSync(p)) unlinkSync(p);
-}
+// ── pomocnicze dla konsoli ───────────────────────────────────────────
 
 /**
  * Ćwiczenia z poprzedniego cyklu klienta — wejście dla walidatora powtórek.
@@ -136,7 +274,7 @@ export function usun(id: string): void {
  */
 export function cwiczeniaZPoprzedniegoCyklu(zapisany: ZapisanyPlan): string[] {
   if (!zapisany.poprzedniId) return [];
-  const poprzedni = wczytaj(zapisany.poprzedniId);
+  const poprzedni = wczytaj(zapisany.trenerId, zapisany.poprzedniId);
   if (!poprzedni) return [];
   return poprzedni.plan.sloty
     .map((s) => s.cwiczenieId)
@@ -155,6 +293,7 @@ export function cwiczeniaZPoprzedniegoCyklu(zapisany: ZapisanyPlan): string[] {
 export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): ZapisanyPlan {
   return {
     id: nowyId(zrodlo.klient, wersja),
+    trenerId: zrodlo.trenerId,
     klient: zrodlo.klient,
     wersja,
     status: "szkic",

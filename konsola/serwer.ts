@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 /**
- * Konsola trenera — serwer lokalny.
+ * Konsola trenera.
  *
  *   npm start          → http://localhost:4173
  *
- * Bez frameworka i bez bazy danych. Chodzi u trenera na komputerze, dane leżą
- * w plikach JSON obok. Cała matematyka to `silnik/` — serwer tylko podaje dane
- * i zwraca wynik przeliczenia.
+ * Bez frameworka. Dane w jednym pliku SQLite obok, cała matematyka w `silnik/` —
+ * serwer tylko podaje dane i zwraca wynik przeliczenia.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { execFileSync } from "node:child_process";
@@ -26,11 +25,22 @@ import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTe
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import * as magazyn from "./magazyn.ts";
+import { trenerDomyslny } from "./baza/polaczenie.ts";
 import { eksportujDoArkusza } from "./eksport-xlsx.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(KATALOG, "public");
 const PORT = Number(process.env.PORT ?? 4173);
+
+/**
+ * Trener, do którego należą dane w tej instalacji.
+ *
+ * Dziś jest jeden i konsola nie ma logowania — chodzi na komputerze trenera,
+ * gdzie hasło byłoby tylko przeszkodą. Wszystkie zapytania do magazynu i tak
+ * przechodzą przez tę wartość, więc dołożenie logowania i kolejnych trenerów
+ * jest podmianą tej jednej linii na odczyt z sesji.
+ */
+const TRENER = trenerDomyslny();
 
 const TYPY: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -487,7 +497,7 @@ const serwer = createServer(async (req, res) => {
 
     // ── lista planów ─────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "GET") {
-      const plany = magazyn.lista().map((zapisany) => {
+      const plany = magazyn.lista(TRENER).map((zapisany) => {
         const { plan, token, wykonania, ukonczoneDni, ...reszta } = zapisany;
         return {
           ...reszta,
@@ -501,7 +511,7 @@ const serwer = createServer(async (req, res) => {
 
     /** Krótka lista tego, na co trener powinien dziś spojrzeć. */
     if (sciezka === "/api/uwaga" && req.method === "GET") {
-      return json(res, wymagajaUwagi(magazyn.lista()));
+      return json(res, wymagajaUwagi(magazyn.lista(TRENER)));
     }
 
     // ── nowy plan ────────────────────────────────────────────────────
@@ -509,9 +519,9 @@ const serwer = createServer(async (req, res) => {
       const { klient, wersja = 1, poprzedniId } = await cialo(req);
       if (!klient?.trim()) return blad(res, "Podaj nazwisko klienta");
       const id = magazyn.nowyId(klient, wersja);
-      if (magazyn.wczytaj(id)) return blad(res, `Plan „${id}" już istnieje`);
+      if (magazyn.wczytaj(TRENER, id)) return blad(res, `Plan „${id}" już istnieje`);
       const zapisany = magazyn.zapisz({
-        id, klient: klient.trim(), wersja, status: "szkic",
+        id, trenerId: TRENER, klient: klient.trim(), wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: poprzedniId || undefined,
         plan: magazyn.pustyPlan(klient.trim()),
@@ -536,10 +546,10 @@ const serwer = createServer(async (req, res) => {
       }
 
       const id = magazyn.nowyId(klient, wersja);
-      if (magazyn.wczytaj(id)) return blad(res, `Plan „${id}" już istnieje`);
+      if (magazyn.wczytaj(TRENER, id)) return blad(res, `Plan „${id}" już istnieje`);
 
       const zapisany = magazyn.zapisz({
-        id, klient, wersja, status: "szkic",
+        id, trenerId: TRENER, klient, wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: url.searchParams.get("poprzedniId") || undefined,
         // Szkielet pustych slotów musi zostać — import wypełnia tylko te z ćwiczeniem.
@@ -556,7 +566,7 @@ const serwer = createServer(async (req, res) => {
     const dopasowanie = sciezka.match(/^\/api\/plany\/([a-z0-9-]+)(\/[a-z0-9]+)?$/i);
     if (dopasowanie) {
       const [, id, akcja] = dopasowanie;
-      const zapisany = magazyn.wczytaj(id!);
+      const zapisany = magazyn.wczytaj(TRENER, id!);
       if (!zapisany) return blad(res, "Nie ma takiego planu", 404);
 
       if (!akcja && req.method === "GET") return json(res, obrazPlanu(zapisany));
@@ -568,7 +578,7 @@ const serwer = createServer(async (req, res) => {
       }
 
       if (!akcja && req.method === "DELETE") {
-        magazyn.usun(id!);
+        magazyn.usun(TRENER, id!);
         return json(res, { usuniety: id });
       }
 
@@ -576,7 +586,7 @@ const serwer = createServer(async (req, res) => {
         const { wersja } = await cialo(req);
         const nowaWersja = Number(wersja) || zapisany.wersja + 1;
         const kopia = magazyn.kopiaJakoNowaWersja(zapisany, nowaWersja);
-        if (magazyn.wczytaj(kopia.id)) {
+        if (magazyn.wczytaj(TRENER, kopia.id)) {
           return blad(res, `Plan „${kopia.id}" już istnieje`);
         }
         return json(res, obrazPlanu(magazyn.zapisz(kopia)), 201);
@@ -763,5 +773,5 @@ const serwer = createServer(async (req, res) => {
 serwer.listen(PORT, () => {
   console.log(`\n  Konsola trenera CraftMyPlan`);
   console.log(`  → http://localhost:${PORT}\n`);
-  console.log(`  ${katalog.wszystkie.length} ćwiczeń w bazie · ${magazyn.lista().length} planów\n`);
+  console.log(`  ${katalog.wszystkie.length} ćwiczeń w bazie · ${magazyn.lista(TRENER).length} planów\n`);
 });
