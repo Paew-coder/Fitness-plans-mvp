@@ -29,6 +29,17 @@ CREATE TABLE IF NOT EXISTS trener (
   utworzony  TEXT    NOT NULL
 );
 
+-- Sesje trenera. W tabeli, nie w podpisanym ciasteczku, bo tak da się wylogować
+-- z cudzego urządzenia: kasujemy wiersz i sesja przestaje istnieć natychmiast.
+CREATE TABLE IF NOT EXISTS sesja (
+  token      TEXT    PRIMARY KEY,
+  trener_id  INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
+  utworzona  TEXT    NOT NULL,
+  wygasa     TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS sesja_trenera ON sesja (trener_id);
+
 CREATE TABLE IF NOT EXISTS plan (
   trener_id    INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
   id           TEXT    NOT NULL,

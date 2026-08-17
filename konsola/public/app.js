@@ -37,6 +37,21 @@ async function api(sciezka, opcje = {}) {
   return dane;
 }
 
+// ── kto tu jest ────────────────────────────────────────────────────
+// Wylogowanie ma sens tylko wtedy, gdy w ogóle było logowanie. W instalacji
+// lokalnej bez hasła przycisk byłby ozdobą, która nic nie robi.
+(async () => {
+  const ja = await api("/api/ja");
+  if (ja.tryb !== "hasło") return;
+  const przycisk = $("#wyloguj");
+  przycisk.textContent = `Wyloguj (${ja.email ?? ja.nazwa})`;
+  przycisk.classList.remove("ukryty");
+  przycisk.onclick = async () => {
+    await fetch("/api/wylogowanie", { method: "POST" });
+    location.reload();
+  };
+})();
+
 // ── lista planów ───────────────────────────────────────────────────
 async function pokazListe() {
   $("#ekran-plan").classList.add("ukryty");
@@ -171,10 +186,6 @@ $("#form-import").onsubmit = async (e) => {
 };
 
 /**
- * Jednym spojrzeniem: czy ten klient ćwiczy.
- * Tego arkusz nie mówił nigdy — trzeba było otworzyć plik i zgadywać.
- */
-/**
  * Kto dziś wymaga uwagi. Przy kilkunastu klientach arkusz wymagał otwarcia
  * kilkunastu plików, żeby zauważyć, że ktoś zniknął — tu widać to od razu.
  */
@@ -206,6 +217,10 @@ function rysujUwage(pozycje) {
   }
 }
 
+/**
+ * Jednym spojrzeniem: czy ten klient ćwiczy.
+ * Tego arkusz nie mówił nigdy — trzeba było otworzyć plik i zgadywać.
+ */
 function sygnalAktywnosci(r) {
   if (!r) return el("span", "");
   if (!r.maDostep) return el("span", "sygnal brak", "bez linku");
