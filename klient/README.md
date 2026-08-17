@@ -24,6 +24,10 @@ to superseria, jak w arkuszu. Przy ćwiczeniu jednostronnym widnieje **na stron�
 **Ocena jednym dotknięciem** — `Za trudne` / `OK` / `Za łatwe`. To dokładnie
 kolumna `H` z arkusza, tylko że kciukiem.
 
+**Co poszło** — pod oceną jest zwinięte `+ zapisz, co poszło`. Kto chce, wpisuje
+faktyczny ciężar i powtórzenia; kto nie chce, ocenia i idzie dalej. Nic nie jest
+obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
+
 **Serie maksymalne** — na start cyklu. Wpisuje ciężar i powtórzenia, 1RM liczy
 się od razu.
 
@@ -81,8 +85,6 @@ danych z `docs/03-architektura.md`.
 
 ## Czego jeszcze nie ma
 
-- Wpisywania faktycznie wykonanego ciężaru i powtórzeń (dziś klient tylko ocenia
-  odczucie; miejsce w danych już jest — `Wykonanie.ciezarWykonany`).
 - Ekranu postępu: 1RM w czasie, frekwencja, waga.
 - Modułów ODDECH i BIEG.
 - Powiadomień o zaplanowanym treningu.
