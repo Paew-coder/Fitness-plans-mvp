@@ -84,7 +84,7 @@ Kolejność wg tego, co najczęściej boli dziś:
 *Decyzja podjęta: najpierw narzędzie dla Pawła i jego klientów, SaaS dla innych trenerów później. A jest warunkiem koniecznym dla B, więc nic z tej fazy się nie marnuje.*
 
 1. ~~**Baza danych zamiast plików JSON**~~ — **zrobione.** SQLite (`node:sqlite`, wbudowane w Node 22, dalej zero zależności). Powód: klient odhacza trening z telefonu w tej samej chwili, w której trener otwiera jego plan — pliki nie znoszą dwóch zapisów naraz. Zapis idzie w transakcji. **Każdy wiersz od początku nosi `trener_id`**, choć trener jest jeden; to jedyna rzecz, której nie da się dołożyć później bez przepisywania wszystkiego. 11 testów magazynu, `npm run migruj` przenosi stare pliki.
-2. **Logowanie trenera** — dziś konsola nie ma żadnego. Na komputerze trenera to zaleta; na serwerze to blokada. Konto z hasłem, sesja w ciasteczku. Instalacja lokalna zostaje bez hasła (`hash_hasla IS NULL`).
+2. ~~**Logowanie trenera**~~ — **zrobione.** Dwa tryby rozpoznawane automatycznie, bez przełącznika w konfiguracji: bez hasła konsola przyjmuje połączenia tylko z tej samej maszyny, z hasłem wymaga logowania zawsze. `scrypt` z `node:crypto`, sesje w bazie (unieważnialne), ciasteczko `HttpOnly` + `SameSite=Lax` + `Secure` za HTTPS. `npm run haslo`. 15 testów.
 3. **Wdrożenie** — instrukcja i konfiguracja, żeby postawić to na małym serwerze pod własną domeną. HTTPS obowiązkowe: token klienta leci w adresie.
 4. **Kopie zapasowe** — jeden plik, ale trzeba go gdzieś odkładać automatycznie.
 

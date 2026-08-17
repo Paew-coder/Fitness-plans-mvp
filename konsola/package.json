@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node --no-warnings serwer.ts",
     "test": "node --no-warnings --test \"testy/*.test.ts\"",
-    "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts"
+    "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts",
+    "haslo": "node --no-warnings narzedzia/haslo.ts"
   },
   "license": "UNLICENSED",
   "private": true
