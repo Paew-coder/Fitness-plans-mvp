@@ -26,6 +26,7 @@ import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
+import * as auth from "./uwierzytelnianie.ts";
 import { eksportujDoArkusza } from "./eksport-xlsx.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
@@ -33,14 +34,41 @@ const PUBLIC = join(KATALOG, "public");
 const PORT = Number(process.env.PORT ?? 4173);
 
 /**
- * Trener, do którego należą dane w tej instalacji.
+ * Właściciel danych w tej instalacji.
  *
- * Dziś jest jeden i konsola nie ma logowania — chodzi na komputerze trenera,
- * gdzie hasło byłoby tylko przeszkodą. Wszystkie zapytania do magazynu i tak
- * przechodzą przez tę wartość, więc dołożenie logowania i kolejnych trenerów
- * jest podmianą tej jednej linii na odczyt z sesji.
+ * Trener jest dziś jeden, więc to stała. Gdy dojdą kolejni, `rozpoznajTrenera`
+ * poniżej już zwraca id z sesji — zmieni się tylko to, że przestanie mieć
+ * awaryjny tryb lokalny.
  */
 const TRENER = trenerDomyslny();
+
+/** Czy odpowiedzi mogą oznaczać ciasteczko jako `Secure`. */
+const ZA_HTTPS = process.env.ZA_HTTPS === "1";
+
+/**
+ * Kto pyta.
+ *
+ * Zwraca id trenera albo powód odmowy. W trybie lokalnym (konto bez hasła)
+ * przepuszcza tylko połączenia z tej samej maszyny — dzięki temu wystawienie
+ * konsoli na świat bez ustawienia hasła nie kończy się otwartym dostępem,
+ * tylko czytelnym komunikatem.
+ */
+function rozpoznajTrenera(req: IncomingMessage): { trenerId: number } | { odmowa: string; kod: number } {
+  const token = auth.ciastkoZNaglowka(req.headers.cookie);
+  const zSesji = auth.trenerZSesji(token);
+  if (zSesji !== null) return { trenerId: zSesji };
+
+  const tryb = auth.trybDostepu(TRENER);
+  if (tryb.tryb === "lokalny") {
+    if (auth.zLokalnejMaszyny(req.socket.remoteAddress)) return { trenerId: tryb.trenerId };
+    return {
+      kod: 403,
+      odmowa: "Ta konsola nie ma ustawionego hasła, więc działa tylko lokalnie. "
+        + "Ustaw hasło komendą `npm run haslo`, zanim wystawisz ją na zewnątrz.",
+    };
+  }
+  return { kod: 401, odmowa: "Zaloguj się." };
+}
 
 const TYPY: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -485,19 +513,89 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse): boolean {
   return true;
 }
 
+/** Adresy, do których klient dostaje się samym tokenem — bez konta trenera. */
+function dlaKlienta(sciezka: string): boolean {
+  return sciezka.startsWith("/api/klient/")
+    || sciezka.startsWith("/k/")
+    || sciezka.startsWith("/klient/");
+}
+
+/**
+ * To, czego potrzebuje sam ekran logowania. Bez tego bramka odcina mu arkusz
+ * stylów i niezalogowany widzi gołe HTML.
+ */
+const PUBLICZNE = new Set(["/logowanie.html", "/style.css"]);
+
 const serwer = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
   const sciezka = url.pathname;
 
   try {
+    // ── logowanie ────────────────────────────────────────────────────
+    if (sciezka === "/api/logowanie" && req.method === "POST") {
+      const { email, haslo } = await cialo(req);
+      const trener = auth.trenerPoEmailu(String(email ?? ""));
+
+      // Ten sam komunikat przy złym mailu i przy złym haśle — inaczej dałoby
+      // się sprawdzać, które konta istnieją.
+      if (!trener?.hashHasla || !auth.pasuje(String(haslo ?? ""), trener.hashHasla)) {
+        return blad(res, "Nieprawidłowy e-mail albo hasło.", 401);
+      }
+
+      const token = auth.zaloguj(trener.id);
+      res.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "set-cookie": auth.ciastkoSesji(token, ZA_HTTPS),
+      });
+      return res.end(JSON.stringify({ nazwa: trener.nazwa }));
+    }
+
+    if (sciezka === "/api/wylogowanie" && req.method === "POST") {
+      const token = auth.ciastkoZNaglowka(req.headers.cookie);
+      if (token) auth.wyloguj(token);
+      res.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "set-cookie": auth.ciastkoSesji(null, ZA_HTTPS),
+      });
+      return res.end(JSON.stringify({ wylogowany: true }));
+    }
+
+    // Kto tu jest — pyta się raz, przed wszystkim, co należy do trenera.
+    // Aplikacja klienta idzie obok: jej kluczem jest token w adresie.
+    let trenerId = TRENER;
+    if (!dlaKlienta(sciezka) && !PUBLICZNE.has(sciezka)) {
+      const kto = rozpoznajTrenera(req);
+      if ("odmowa" in kto) {
+        if (sciezka.startsWith("/api/")) return blad(res, kto.odmowa, kto.kod);
+        // Wejście na stronę → ekran logowania. Pozostałe zasoby (skrypty,
+        // dane) → zwykła odmowa, żeby nie odsyłać HTML-a tam, gdzie
+        // przeglądarka spodziewa się czegoś innego.
+        if (kto.kod === 401 && (sciezka === "/" || sciezka === "/index.html")) {
+          if (plikStatyczny("/logowanie.html", res)) return;
+        }
+        res.writeHead(kto.kod, { "content-type": "text/plain; charset=utf-8" });
+        return res.end(kto.odmowa);
+      }
+      trenerId = kto.trenerId;
+    }
+
     // ── katalog ćwiczeń ──────────────────────────────────────────────
     if (sciezka === "/api/cwiczenia") {
       return json(res, katalog.wszystkie);
     }
 
+    if (sciezka === "/api/ja" && req.method === "GET") {
+      const trener = auth.trenerPoId(trenerId);
+      return json(res, {
+        nazwa: trener?.nazwa ?? "Trener",
+        email: trener?.email ?? null,
+        tryb: auth.trybDostepu(TRENER).tryb,
+      });
+    }
+
     // ── lista planów ─────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "GET") {
-      const plany = magazyn.lista(TRENER).map((zapisany) => {
+      const plany = magazyn.lista(trenerId).map((zapisany) => {
         const { plan, token, wykonania, ukonczoneDni, ...reszta } = zapisany;
         return {
           ...reszta,
@@ -511,7 +609,7 @@ const serwer = createServer(async (req, res) => {
 
     /** Krótka lista tego, na co trener powinien dziś spojrzeć. */
     if (sciezka === "/api/uwaga" && req.method === "GET") {
-      return json(res, wymagajaUwagi(magazyn.lista(TRENER)));
+      return json(res, wymagajaUwagi(magazyn.lista(trenerId)));
     }
 
     // ── nowy plan ────────────────────────────────────────────────────
@@ -519,9 +617,9 @@ const serwer = createServer(async (req, res) => {
       const { klient, wersja = 1, poprzedniId } = await cialo(req);
       if (!klient?.trim()) return blad(res, "Podaj nazwisko klienta");
       const id = magazyn.nowyId(klient, wersja);
-      if (magazyn.wczytaj(TRENER, id)) return blad(res, `Plan „${id}" już istnieje`);
+      if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
       const zapisany = magazyn.zapisz({
-        id, trenerId: TRENER, klient: klient.trim(), wersja, status: "szkic",
+        id, trenerId, klient: klient.trim(), wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: poprzedniId || undefined,
         plan: magazyn.pustyPlan(klient.trim()),
@@ -546,10 +644,10 @@ const serwer = createServer(async (req, res) => {
       }
 
       const id = magazyn.nowyId(klient, wersja);
-      if (magazyn.wczytaj(TRENER, id)) return blad(res, `Plan „${id}" już istnieje`);
+      if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
 
       const zapisany = magazyn.zapisz({
-        id, trenerId: TRENER, klient, wersja, status: "szkic",
+        id, trenerId, klient, wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: url.searchParams.get("poprzedniId") || undefined,
         // Szkielet pustych slotów musi zostać — import wypełnia tylko te z ćwiczeniem.
@@ -566,7 +664,7 @@ const serwer = createServer(async (req, res) => {
     const dopasowanie = sciezka.match(/^\/api\/plany\/([a-z0-9-]+)(\/[a-z0-9]+)?$/i);
     if (dopasowanie) {
       const [, id, akcja] = dopasowanie;
-      const zapisany = magazyn.wczytaj(TRENER, id!);
+      const zapisany = magazyn.wczytaj(trenerId, id!);
       if (!zapisany) return blad(res, "Nie ma takiego planu", 404);
 
       if (!akcja && req.method === "GET") return json(res, obrazPlanu(zapisany));
@@ -578,7 +676,7 @@ const serwer = createServer(async (req, res) => {
       }
 
       if (!akcja && req.method === "DELETE") {
-        magazyn.usun(TRENER, id!);
+        magazyn.usun(trenerId, id!);
         return json(res, { usuniety: id });
       }
 
@@ -586,7 +684,7 @@ const serwer = createServer(async (req, res) => {
         const { wersja } = await cialo(req);
         const nowaWersja = Number(wersja) || zapisany.wersja + 1;
         const kopia = magazyn.kopiaJakoNowaWersja(zapisany, nowaWersja);
-        if (magazyn.wczytaj(TRENER, kopia.id)) {
+        if (magazyn.wczytaj(trenerId, kopia.id)) {
           return blad(res, `Plan „${kopia.id}" już istnieje`);
         }
         return json(res, obrazPlanu(magazyn.zapisz(kopia)), 201);
@@ -771,7 +869,12 @@ const serwer = createServer(async (req, res) => {
 });
 
 serwer.listen(PORT, () => {
+  const tryb = auth.trybDostepu(TRENER);
   console.log(`\n  Konsola trenera CraftMyPlan`);
   console.log(`  → http://localhost:${PORT}\n`);
-  console.log(`  ${katalog.wszystkie.length} ćwiczeń w bazie · ${magazyn.lista(TRENER).length} planów\n`);
+  console.log(`  ${katalog.wszystkie.length} ćwiczeń w bazie · ${magazyn.lista(TRENER).length} planów`);
+  console.log(tryb.tryb === "hasło"
+    ? "  Dostęp: hasło wymagane.\n"
+    : "  Dostęp: tryb lokalny, bez hasła — połączenia tylko z tego komputera.\n"
+      + "  Zanim wystawisz konsolę na zewnątrz: npm run haslo\n");
 });

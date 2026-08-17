@@ -106,6 +106,37 @@ cd ../silnik
 npm run sprawdz -- "../konsola/dane/eksport/Zuzanna C 4.0.xlsx"
 ```
 
+## Dostęp — dwa tryby
+
+Konsola sama rozpoznaje, w którym trybie chodzi. Nie ma przełącznika
+w konfiguracji, bo przełącznik dałoby się zostawić w złej pozycji przy
+wdrożeniu — a to jest dokładnie ta pomyłka, po której cudze plany treningowe
+leżą w internecie.
+
+**Lokalny (domyślny).** Konto bez hasła. Konsola przyjmuje połączenia
+**wyłącznie z tego komputera**; zapytanie z zewnątrz dostaje odmowę
+z wyjaśnieniem. Tak ma być, dopóki konsola stoi u Ciebie na biurku.
+
+**Z hasłem.** Gdy ustawisz hasło, logowanie jest wymagane zawsze — także
+lokalnie. To jedyny tryb, w którym wolno wystawić konsolę na świat.
+
+```bash
+npm run haslo              # ustaw albo zmień hasło
+npm run haslo -- --usun    # wróć do trybu lokalnego
+```
+
+Ustawienie albo zmiana hasła **wylogowuje wszystkie urządzenia** — również
+zgubiony telefon. Sesja trwa 30 dni i siedzi w bazie, nie w podpisanym
+ciasteczku, właśnie po to, żeby dało się ją unieważnić natychmiast.
+
+Wystawiając konsolę na zewnątrz, postaw ją za HTTPS i ustaw `ZA_HTTPS=1` —
+ciasteczko sesji dostanie wtedy flagę `Secure`. HTTPS nie jest tu ozdobą:
+link klienta zawiera token w adresie.
+
+**Aplikacja klienta chodzi obok tego wszystkiego.** Jej kluczem jest token
+w linku i logowanie trenera jej nie dotyczy — klient nie ma i nie potrzebuje
+konta.
+
 ## Gdzie leżą dane
 
 ```
@@ -149,7 +180,8 @@ dopóki robi się ją od razu.
 | `baza/schemat.sql` | tabele; każda z `trener_id` |
 | `baza/polaczenie.ts` | otwarcie bazy, wersja schematu |
 | `magazyn.ts` | zapis i odczyt planów |
-| `testy/magazyn.test.ts` | 11 testów magazynu (`npm test`) |
+| `uwierzytelnianie.ts` | hasło, sesje, tryb dostępu |
+| `testy/` | 26 testów magazynu i logowania (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
