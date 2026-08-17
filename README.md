@@ -86,7 +86,7 @@ działa bez zasięgu.
 
 Pętla się domyka: ocena klienta zmienia ciężar w kolejnym tygodniu, bez
 odsyłania arkusza. Kto chce, dopisuje jeszcze, ile faktycznie podniósł — i z
-tego wychodzi nowe 1RM. Szczegóły i uwagi o bezpieczeństwie:
+tego wychodzi nowe 1RM oraz jego własny ekran postępu. Szczegóły i uwagi o bezpieczeństwie:
 [`klient/README.md`](klient/README.md).
 
 ## Poprawki do arkusza

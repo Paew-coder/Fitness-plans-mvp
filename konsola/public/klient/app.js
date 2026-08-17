@@ -108,7 +108,93 @@ function rysuj({ pomiary = true } = {}) {
   if (biezacy) rysujTrening();
   if (pomiary) rysujPomiary();
   rysujModuly();
+  if (pomiary) rysujPostep();
 }
+
+/**
+ * Postęp klienta. Wszystko liczy się z tego, co sam wpisał przy ćwiczeniach —
+ * nie ma tu osobnego formularza do wypełniania poza wagą.
+ */
+function rysujPostep() {
+  const p = widok.postep;
+  const kontener = $("#postep");
+  kontener.replaceChildren();
+  if (!p) return;
+
+  // frekwencja
+  const f = el("div", "cwiczenie");
+  f.append(el("div", "modul-tytul", "Frekwencja"));
+  f.append(el("div", "modul-poziom",
+    `${p.frekwencja.ukonczonych} z ${p.frekwencja.zaplanowanych} treningów`));
+  for (const t of p.frekwencja.tygodnie) {
+    const w = el("div", "modul-blok");
+    w.append(el("span", "nazwa", `Tydzień ${t.tydzien}`));
+    const kropki = el("span", "tresc kropki");
+    for (let i = 0; i < t.zDnia; i++) {
+      kropki.append(el("span", `kropka ${i < t.ukonczonych ? "zrobiona" : ""}`, "●"));
+    }
+    w.append(kropki);
+    f.append(w);
+  }
+  kontener.append(f);
+
+  // waga
+  const waga = el("div", "cwiczenie");
+  waga.append(el("div", "modul-tytul", "Waga"));
+  const ostatnia = p.waga.punkty.at(-1);
+  waga.append(el("div", "modul-poziom", ostatnia
+    ? `${liczba(ostatnia.kg)} kg${p.waga.zmianaKg ? `  (${zeZnakiem(p.waga.zmianaKg)} kg)` : ""}`
+    : "—"));
+  const poleWagi = el("div", "wykonanie-pola");
+  const wKg = el("input");
+  wKg.type = "number";
+  wKg.inputMode = "decimal";
+  wKg.min = "0";
+  wKg.step = "0.1";
+  wKg.placeholder = "kg";
+  wKg.onchange = () => {
+    const kg = Number(wKg.value) || 0;
+    if (kg <= 0) return;
+    wyslij("/waga", { kg }, () => {
+      const dzisiaj = new Date().toISOString().slice(0, 10);
+      p.waga.punkty = [...p.waga.punkty.filter((x) => x.data !== dzisiaj), { data: dzisiaj, kg }];
+    }, { odswiez: false });
+    wKg.value = "";
+  };
+  poleWagi.append(wKg, el("span", "razy", "dziś"));
+  waga.append(poleWagi);
+  if (p.waga.punkty.length > 1) {
+    waga.append(el("p", "brama", p.waga.punkty
+      .slice(-6)
+      .map((x) => `${x.data.slice(5)} ${liczba(x.kg)}`)
+      .join("  ·  ")));
+  }
+  kontener.append(waga);
+
+  // ćwiczenia
+  if (p.cwiczenia.length === 0) {
+    kontener.append(el("p", "drobne srodek",
+      "Wpisuj przy ćwiczeniach, ile faktycznie podniosłeś — tutaj zobaczysz, jak to rośnie."));
+    return;
+  }
+  for (const c of p.cwiczenia) {
+    const karta = el("div", "cwiczenie");
+    karta.append(el("div", "modul-tytul", c.nazwa));
+    karta.append(el("div", "modul-poziom", c.zmianaKg === 0
+      ? "bez zmiany"
+      : `${zeZnakiem(c.zmianaKg)} kg${c.zmianaProc ? `  (${zeZnakiem(c.zmianaProc)}%)` : ""}`));
+    for (const punkt of c.punkty) {
+      const w = el("div", "modul-blok");
+      w.append(el("span", "nazwa", `Tydzień ${punkt.tydzien}`));
+      w.append(el("span", "tresc",
+        `${liczba(punkt.ciezar)} kg × ${punkt.powtorzenia}  ·  1RM ≈ ${liczba(punkt.oneRM)} kg`));
+      karta.append(w);
+    }
+    kontener.append(karta);
+  }
+}
+
+const zeZnakiem = (n) => `${n > 0 ? "+" : ""}${liczba(n)}`;
 
 /**
  * Oddech i bieg — to, co klient robi między treningami na siłowni.
@@ -387,6 +473,8 @@ $("#do-pomiarow").onclick = () => pokazEkran("#ekran-pomiary");
 $("#pokaz-pomiary").onclick = () => pokazEkran("#ekran-pomiary");
 $("#pokaz-moduly").onclick = () => pokazEkran("#ekran-moduly");
 $("#wroc-z-modulow").onclick = () => pokazEkran("#ekran-tygodnie");
+$("#pokaz-postep").onclick = () => pokazEkran("#ekran-postep");
+$("#wroc-z-postepu").onclick = () => pokazEkran("#ekran-tygodnie");
 
 $("#zakoncz").onclick = () => {
   const d = dzienBiezacy();

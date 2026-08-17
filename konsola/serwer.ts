@@ -19,7 +19,8 @@ import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../siln
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM } from "../silnik/src/rpe.ts";
-import { propozycja1RM, ocenPropozycje, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
+import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
+import { zaokraglij } from "../silnik/src/pomocnicze.ts";
 import { dawkaOddechowa } from "../silnik/src/oddech.ts";
 import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
@@ -278,6 +279,84 @@ function wymagajaUwagi(plany: readonly magazyn.ZapisanyPlan[]) {
 }
 
 /**
+ * Postęp klienta w cyklu — do pokazania jemu, nie trenerowi.
+ *
+ * Trzy rzeczy, których arkusz nie umiał: co ćwiczenie robi w czasie, ile
+ * treningów odhaczonych i jak idzie waga. Wszystkie trzy liczą się z historii
+ * wykonań, która powstaje sama przy odhaczaniu.
+ */
+function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof przeliczPlan>) {
+  const wykonania = zapisany.wykonania ?? [];
+  const ukonczone = zapisany.ukonczoneDni ?? [];
+  const dniWPlanie = new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien));
+
+  // Co ćwiczenie zrobiło w czasie — tylko tam, gdzie klient wpisał ciężar.
+  const wgCwiczenia = new Map<string, {
+    nazwa: string;
+    punkty: { tydzien: number; ciezar: number; powtorzenia: number; oneRM: number }[];
+  }>();
+  for (const w of wykonania) {
+    if (!w.ciezarWykonany || !w.powtorzeniaWykonane) continue;
+    const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
+    if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
+    const e = oneRMzSerii({
+      ciezar: w.ciezarWykonany,
+      powtorzenia: w.powtorzeniaWykonane,
+      rpePlanowane: slot.rpe,
+      feedback: w.feedback ?? null,
+    });
+    if (!e) continue;
+    const wpis = wgCwiczenia.get(slot.cwiczenie.id)
+      ?? { nazwa: slot.cwiczenie.nazwa, punkty: [] };
+    wpis.punkty.push({
+      tydzien: w.tydzien,
+      ciezar: w.ciezarWykonany,
+      powtorzenia: w.powtorzeniaWykonane,
+      oneRM: e.oneRM,
+    });
+    wgCwiczenia.set(slot.cwiczenie.id, wpis);
+  }
+
+  const cwiczenia = [...wgCwiczenia]
+    .map(([cwiczenieId, w]) => {
+      const punkty = w.punkty.sort((a, b) => a.tydzien - b.tydzien);
+      const pierwszy = punkty[0]!;
+      const ostatni = punkty.at(-1)!;
+      return {
+        cwiczenieId,
+        nazwa: w.nazwa,
+        punkty,
+        zmianaKg: zaokraglij(ostatni.ciezar - pierwszy.ciezar, 1),
+        zmianaProc: pierwszy.ciezar > 0
+          ? zaokraglij(((ostatni.ciezar - pierwszy.ciezar) / pierwszy.ciezar) * 100, 1)
+          : null,
+      };
+    })
+    .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+
+  const waga = [...(zapisany.waga ?? [])].sort((a, b) => a.data.localeCompare(b.data));
+
+  return {
+    frekwencja: {
+      ukonczonych: ukonczone.length,
+      zaplanowanych: dniWPlanie.size * 6,
+      tygodnie: [1, 2, 3, 4, 5, 6].map((tydzien) => ({
+        tydzien,
+        ukonczonych: ukonczone.filter((u) => u.tydzien === tydzien).length,
+        zDnia: dniWPlanie.size,
+      })),
+    },
+    cwiczenia,
+    waga: {
+      punkty: waga,
+      zmianaKg: waga.length >= 2
+        ? zaokraglij(waga.at(-1)!.kg - waga[0]!.kg, 1)
+        : null,
+    },
+  };
+}
+
+/**
  * Moduły towarzyszące planowi siłowemu: oddech i bieg.
  * Oba są niezależne od reszty — liczą się z własnych pól i niczego nie zmieniają
  * w planie. Jeśli trener ich nie wypełni, po prostu ich nie ma.
@@ -383,6 +462,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     tygodnie,
     doZmierzenia,
     moduly: moduly(zapisany),
+    postep: postepKlienta(zapisany, wynik),
   };
 }
 
@@ -637,6 +717,16 @@ const serwer = createServer(async (req, res) => {
         }
 
         return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, ukonczoneDni, wykonania })));
+      }
+
+      // Waga ciała. Jeden wpis na dzień — kolejny tego samego dnia nadpisuje
+      // poprzedni, bo waży się rano, a nie co godzinę.
+      if (akcja === "/waga" && req.method === "POST") {
+        const { kg } = await cialo(req);
+        const dzisiaj = new Date().toISOString().slice(0, 10);
+        const waga = (zapisany.waga ?? []).filter((w) => w.data !== dzisiaj);
+        if (kg > 0) waga.push({ data: dzisiaj, kg });
+        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, waga })));
       }
 
       if (akcja === "/serie" && req.method === "POST") {

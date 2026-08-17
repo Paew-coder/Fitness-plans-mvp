@@ -154,6 +154,8 @@ button { font: inherit; cursor: pointer; }
   margin: .7rem 0 0; font-size: .8rem; color: var(--tekst-blady);
   border-left: 2px solid var(--linia); padding-left: .6rem;
 }
+.modul-blok .tresc.kropki { letter-spacing: .15em; color: var(--linia); }
+.kropka.zrobiona { color: var(--ok); }
 
 /* ── co faktycznie poszło ───────────────────────────────────────── */
 .wykonanie { margin-top: .55rem; }
