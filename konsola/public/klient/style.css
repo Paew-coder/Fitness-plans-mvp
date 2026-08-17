@@ -131,6 +131,25 @@ button { font: inherit; cursor: pointer; }
 .ocena-przycisk.wybrana.latwe { background: var(--latwe); color: #1a1300; }
 .ocena-przycisk.wybrana.trudne { background: var(--trudne); color: #2b0f0d; }
 
+/* ── co faktycznie poszło ───────────────────────────────────────── */
+.wykonanie { margin-top: .55rem; }
+.wykonanie-przelacz {
+  background: none; border: none; padding: .2rem 0;
+  color: var(--tekst-blady); font-size: .78rem; font-family: var(--mono);
+}
+.wykonanie-pola {
+  display: flex; align-items: center; gap: .4rem; margin-top: .45rem;
+}
+.wykonanie-pola input {
+  font: inherit; font-family: var(--mono); text-align: center;
+  padding: .55rem .3rem; border-radius: 9px; width: 100%; min-width: 0;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.wykonanie-pola .razy {
+  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady);
+  white-space: nowrap;
+}
+
 /* ── TOP SET ────────────────────────────────────────────────────── */
 .topset {
   background: var(--akcent-tlo); border: 1px solid var(--akcent);
