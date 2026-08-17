@@ -316,33 +316,5 @@ export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): Zapis
   };
 }
 
-/** Pusty plan: 5 dni × 12 slotów z numeracją A1, B1/B2, C1/C2, D1/D2, E1/E2. */
-export function pustyPlan(klient: string): Plan {
-  const LP = ["A1.", "B1.", "B2.", "C1.", "C2.", "D1.", "D2.", "E1.", "E2.", "", "", ""];
-  const sloty = [];
-  for (let dzien = 1; dzien <= 5; dzien++) {
-    for (let poz = 1; poz <= 12; poz++) {
-      sloty.push({
-        positionId: `D${dzien}-S${String(poz).padStart(2, "0")}`,
-        dzien,
-        lp: LP[poz - 1] ?? "",
-        cwiczenieId: null,
-        kategoriaSzkieletu: null,
-        tygodnie: {},
-      });
-    }
-  }
-  return {
-    nazwa: klient,
-    trybAkcesoriow: "trzymaj z bloku",
-    czescPlanu: "objętość",
-    serieMaksymalne: [],
-    sloty,
-    topSety: [1, 2, 3, 4, 5].map((dzien) => ({
-      dzien,
-      wlaczony: true,
-      rpe: 7,
-      slotPositionId: `D${dzien}-S01`,
-    })),
-  };
-}
+/** Układ pustego planu mieszka w `uklad-planu.ts` — dzieli go z asystentem AI. */
+export { LP_SLOTU, SLOTOW_W_DNIU, DNI_W_PLANIE, pustyPlan } from "./uklad-planu.ts";

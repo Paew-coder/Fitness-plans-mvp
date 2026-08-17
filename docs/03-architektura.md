@@ -314,3 +314,5 @@ Cel z `STAN-PROJEKTU.md` to trener AI-native. Kolejność ma znaczenie: **AI nie
 3. **Odczytanie analizy słowami** — „obwodowy 68% przy dwóch tygodniach z rzędu powyżej normy w wyciskaniu; rozważ ścięcie serii b w T3". Interpretacja liczb policzonych przez jądro, nigdy ich zastępowanie.
 
 Czego AI nie robi nigdy: nie liczy ciężaru, nie zmienia RPE, nie decyduje przy sygnale kontuzji. Sygnał bólu / przeciwwskazania → oznaczenie i propozycja konsultacji, zgodnie z zasadą bezpieczeństwa z `CLAUDE.md`.
+
+**Zrobione** — `konsola/ai/`. Zadania 1 i 2 zeszły się w jedno (kategoria bez ćwiczenia to pusty slot), doszedł deterministyczny wykrywacz sygnałów zdrowotnych: listę słów sprawdza kod, nie model, bo model może przeoczyć. Odpowiedź modelu przechodzi weryfikację katalogiem, zanim trener ją zobaczy, i wchodzi do planu dopiero po kliknięciu. Szczegóły: [`konsola/README.md`](../konsola/README.md) → *Asystent*.
