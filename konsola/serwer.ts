@@ -97,6 +97,62 @@ function scalZPustym(pusty: Plan, zaimportowany: Plan): Plan {
   };
 }
 
+/**
+ * Realizacja planu — co klient faktycznie zrobił.
+ *
+ * Tego arkusz nie potrafi w ogóle: przechowuje plan, nie wykonanie. Dopiero
+ * odkąd klient odhacza treningi w telefonie, da się odpowiedzieć na pytanie
+ * „czy on w ogóle ćwiczy".
+ */
+function realizacja(zapisany: magazyn.ZapisanyPlan) {
+  const ukonczone = zapisany.ukonczoneDni ?? [];
+  const wykonania = zapisany.wykonania ?? [];
+  const dniWPlanie = new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien));
+
+  const daty = [...ukonczone.map((u) => u.data), ...wykonania.map((w) => w.data)].sort();
+  const ostatniaAktywnosc = daty.at(-1) ?? null;
+
+  const dniOdOstatniej = ostatniaAktywnosc
+    ? Math.floor((Date.now() - Date.parse(ostatniaAktywnosc)) / 86_400_000)
+    : null;
+
+  // Dzień „rozpoczęty" to taki, w którym klient cokolwiek ocenił — nawet jeśli
+  // zapomniał kliknąć „Zakończ trening". Na siłowni to się zdarza notorycznie,
+  // a licząc tylko domknięte dni widzielibyśmy zero przy klientach, którzy ćwiczą.
+  // Wykonanie zna tylko slot, więc dzień trzeba odczytać z planu.
+  const dzienSlotu = new Map(zapisany.plan.sloty.map((s) => [s.positionId, s.dzien]));
+  const kluczDnia = (tydzien: number, dzien: number | undefined) => `${tydzien}/${dzien}`;
+  const domkniete = new Set(ukonczone.map((u) => kluczDnia(u.tydzien, u.dzien)));
+  const rozpoczete = new Set(
+    wykonania
+      .map((w) => kluczDnia(w.tydzien, dzienSlotu.get(w.positionId)))
+      .filter((k) => !k.endsWith("/undefined") && !domkniete.has(k)),
+  );
+  const wTygodniu = (zbior: Set<string>, tydzien: number) =>
+    [...zbior].filter((k) => k.startsWith(`${tydzien}/`)).length;
+
+  return {
+    maDostep: Boolean(zapisany.token),
+    trenowaneDni: dniWPlanie.size,
+    zaplanowanych: dniWPlanie.size * 6,
+    ukonczonych: domkniete.size,
+    rozpoczetych: rozpoczete.size,
+    ostatniaAktywnosc,
+    dniOdOstatniej,
+    odczucia: {
+      latwe: wykonania.filter((w) => w.feedback === "za łatwe").length,
+      ok: wykonania.filter((w) => w.feedback === "OK").length,
+      trudne: wykonania.filter((w) => w.feedback === "za trudne").length,
+    },
+    tygodnie: [1, 2, 3, 4, 5, 6].map((tydzien) => ({
+      tydzien,
+      ukonczonych: wTygodniu(domkniete, tydzien),
+      rozpoczetych: wTygodniu(rozpoczete, tydzien),
+      zDnia: dniWPlanie.size,
+    })),
+  };
+}
+
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
 function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   const wynik = przeliczPlan(zapisany.plan);
@@ -109,6 +165,7 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     uwagi,
     gotowy: planGotowyDoWyslania(uwagi),
     jednostronne: porownajLiczenieJednostronnych(zapisany.plan),
+    realizacja: realizacja(zapisany),
     normy: NORMY,
   };
 }
@@ -194,10 +251,14 @@ const serwer = createServer(async (req, res) => {
 
     // ── lista planów ─────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "GET") {
-      return json(res, magazyn.lista().map(({ plan, ...reszta }) => ({
-        ...reszta,
-        cwiczen: plan.sloty.filter((s) => s.cwiczenieId).length,
-      })));
+      return json(res, magazyn.lista().map((zapisany) => {
+        const { plan, token, wykonania, ukonczoneDni, ...reszta } = zapisany;
+        return {
+          ...reszta,
+          cwiczen: plan.sloty.filter((s) => s.cwiczenieId).length,
+          realizacja: realizacja(zapisany),
+        };
+      }));
     }
 
     // ── nowy plan ────────────────────────────────────────────────────
@@ -359,14 +420,26 @@ const serwer = createServer(async (req, res) => {
         ukonczoneDni.push({ dzien, tydzien, data: new Date().toISOString() });
 
         // Arkusz robi to samo: brak odczucia w ukończonym dniu znaczy "OK".
+        // Domknięcie dnia dopisuje też brakujące wpisy do historii — inaczej
+        // podsumowanie odczuć w konsoli liczyłoby tylko te wciśnięte ręcznie.
+        const wykonania = [...(zapisany.wykonania ?? [])];
+        const teraz = new Date().toISOString();
         for (const slot of zapisany.plan.sloty) {
           if (slot.dzien !== dzien || !slot.cwiczenieId) continue;
           slot.tygodnie ??= {};
           slot.tygodnie[tydzien as 1] ??= {};
           slot.tygodnie[tydzien as 1]!.feedback ??= "OK";
+          const juzJest = wykonania.some(
+            (w) => w.positionId === slot.positionId && w.tydzien === tydzien,
+          );
+          if (!juzJest) {
+            wykonania.push({
+              positionId: slot.positionId, tydzien, data: teraz, feedback: "OK",
+            });
+          }
         }
 
-        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, ukonczoneDni })));
+        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, ukonczoneDni, wykonania })));
       }
 
       if (akcja === "/serie" && req.method === "POST") {

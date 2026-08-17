@@ -113,6 +113,19 @@ label { display: flex; flex-direction: column; gap: .3rem;
 .odznaka.wyslany { color: var(--dobrze); }
 .odznaka.zakonczony { color: var(--tekst-blady); }
 
+.sygnal {
+  font-family: var(--mono); font-size: .74rem; white-space: nowrap;
+  padding: .1rem .4rem; border-radius: 3px;
+}
+.sygnal.aktywny { color: var(--dobrze); }
+.sygnal.zwolnil { color: var(--tekst-blady); }
+.sygnal.stanal  { color: var(--uwaga); background: var(--uwaga-tlo); font-weight: 600; }
+.sygnal.brak, .sygnal.czeka { color: var(--tekst-blady); opacity: .7; }
+
+.kropka { color: var(--linia-mocna); letter-spacing: .1em; }
+.kropka.zrobiona { color: var(--dobrze); }
+.kropka.zaczeta { color: var(--dobrze); opacity: .45; }
+
 /* ── nagłówek planu ─────────────────────────────────────────────── */
 .naglowek-planu {
   display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
