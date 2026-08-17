@@ -31,6 +31,11 @@ obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
 **Serie maksymalne** — na start cyklu. Wpisuje ciężar i powtórzenia, 1RM liczy
 się od razu.
 
+**Twój postęp** — osobny ekran: frekwencja tydzień po tygodniu, waga i to,
+jak rosną ciężary w każdym ćwiczeniu (razem z szacowanym 1RM). Wszystko liczy
+się z tego, co klient sam wpisał przy ćwiczeniach — jedyne dodatkowe pole to
+waga, jeden wpis na dzień.
+
 **Oddech i bieg** — osobny ekran, gdy trener wypełni te moduły w konsoli.
 Dawka oddechowa z testu TWOT i sześć tygodni jednostek biegowych: czas, tempo,
 tętno, szacowany dystans.
@@ -89,5 +94,4 @@ danych z `docs/03-architektura.md`.
 
 ## Czego jeszcze nie ma
 
-- Ekranu postępu: 1RM w czasie, frekwencja, waga.
 - Powiadomień o zaplanowanym treningu.
