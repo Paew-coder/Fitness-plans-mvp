@@ -18,6 +18,10 @@ services:
     environment:
       PORT: 4173
       ZA_HTTPS: "1"
+      # Asystent AI. Bez tego klucza konsola działa normalnie, tylko dwa
+      # przyciski są nieaktywne — dlatego nie ma tu `:?` i braku nie traktujemy
+      # jak błędu. Klucz wpisuje się w pliku .env obok.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
       # Plany klientów. Jedyna rzecz, której nie da się odtworzyć z repozytorium.
       - dane:/app/konsola/dane

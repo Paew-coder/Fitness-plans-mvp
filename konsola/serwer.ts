@@ -29,6 +29,13 @@ import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
 import { eksportujDoArkusza } from "./eksport-xlsx.ts";
+import { BladAI, stan as stanAI } from "./ai/klient.ts";
+import {
+  iluNadpisze, przeliczPropozycje, zaproponujSzkielet, zastosujPropozycje,
+  type Propozycja, type WejscieSzkieletu,
+} from "./ai/szkielet.ts";
+import { odczytajAnalize } from "./ai/analiza.ts";
+import { KOMUNIKAT_ZDROWOTNY } from "./ai/sygnaly.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(KATALOG, "public");
@@ -694,8 +701,15 @@ const serwer = createServer(async (req, res) => {
       }, 201);
     }
 
+    // ── asystent AI ──────────────────────────────────────────────────
+    // Bez klucza do API funkcja jest po prostu wyłączona: konsola startuje,
+    // plany się liczą, znika jeden przycisk.
+    if (sciezka === "/api/ai/stan" && req.method === "GET") {
+      return json(res, stanAI());
+    }
+
     // ── pojedynczy plan ──────────────────────────────────────────────
-    const dopasowanie = sciezka.match(/^\/api\/plany\/([a-z0-9-]+)(\/[a-z0-9]+)?$/i);
+    const dopasowanie = sciezka.match(/^\/api\/plany\/([a-z0-9-]+)(\/[a-z0-9-]+)?$/i);
     if (dopasowanie) {
       const [, id, akcja] = dopasowanie;
       const zapisany = magazyn.wczytaj(trenerId, id!);
@@ -785,6 +799,59 @@ const serwer = createServer(async (req, res) => {
           { cwiczenieId, ciezar: oneRM, powtorzenia: 1 },
         ];
         return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
+      }
+
+      // ── asystent: propozycja szkieletu ─────────────────────────────
+      // Nic tu nie zapisujemy. Odpowiedź modelu wraca na ekran jako propozycja;
+      // do planu trafia dopiero przez `/ai-wstaw`, po kliknięciu trenera.
+      // Notatka z formularza nie ląduje w bazie — leci do API i znika.
+      if (akcja === "/ai-szkielet" && req.method === "POST") {
+        const c = await cialo(req);
+        const wejscie: WejscieSzkieletu = {
+          cel: String(c.cel ?? ""),
+          staz: String(c.staz ?? ""),
+          sprzet: String(c.sprzet ?? ""),
+          notatka: String(c.notatka ?? ""),
+          dniWTygodniu: Number(c.dniWTygodniu ?? 3),
+        };
+        const kontekst = { poprzednieCwiczenia: magazyn.cwiczeniaZPoprzedniegoCyklu(zapisany) };
+        const { propozycja, uzycie } = await zaproponujSzkielet(wejscie, kontekst);
+        return json(res, {
+          propozycja,
+          uzycie,
+          nadpisze: iluNadpisze(zapisany.plan, propozycja),
+          // Komunikat idzie z serwera, a nie z modelu i nie z przeglądarki —
+          // ma się pokazać zawsze, gdy padło słowo o zdrowiu.
+          komunikatZdrowotny: propozycja.sygnal.wykryty ? KOMUNIKAT_ZDROWOTNY : null,
+        });
+      }
+
+      if (akcja === "/ai-wstaw" && req.method === "POST") {
+        const { propozycja } = await cialo(req) as { propozycja: Propozycja };
+        if (!propozycja?.dni?.length) return blad(res, "Pusta propozycja");
+        const sprawdzona = przeliczPropozycje(propozycja, {
+          poprzednieCwiczenia: magazyn.cwiczeniaZPoprzedniegoCyklu(zapisany),
+        });
+        if (sprawdzona.dni.length === 0) return blad(res, "Po weryfikacji nie zostało nic do wstawienia");
+        const plan = zastosujPropozycje(zapisany.plan, sprawdzona);
+        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
+      }
+
+      // ── asystent: odczytanie analizy ───────────────────────────────
+      if (akcja === "/ai-analiza" && req.method === "POST") {
+        const wynik = przeliczPlan(zapisany.plan);
+        const uwagi = sprawdzPlan(zapisany.plan, wynik, {
+          cwiczeniaZPoprzedniegoCyklu: magazyn.cwiczeniaZPoprzedniegoCyklu(zapisany),
+        });
+        const r = realizacja(zapisany);
+        const porownanie = porownanieZPoprzednim(zapisany, wynik);
+        const { odczyt, uzycie } = await odczytajAnalize({
+          wynik,
+          realizacja: r.maDostep ? r : null,
+          porownanie: porownanie?.podsumowanie ?? null,
+          uwagi: uwagi.map((u) => ({ poziom: u.poziom, opis: u.opis })),
+        });
+        return json(res, { odczyt, uzycie });
       }
     }
 
@@ -897,6 +964,9 @@ const serwer = createServer(async (req, res) => {
     if (plikStatyczny(sciezka, res)) return;
     blad(res, "Nie znaleziono", 404);
   } catch (e) {
+    // Błędy asystenta są już po polsku i niosą własny kod — brak klucza to 503,
+    // nie 500. Reszta idzie do logu, bo to znaczy, że coś jest zepsute tutaj.
+    if (e instanceof BladAI) return blad(res, e.message, Math.min(Math.max(e.kod, 400), 599));
     console.error(e);
     blad(res, e instanceof Error ? e.message : String(e), 500);
   }
