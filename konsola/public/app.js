@@ -42,7 +42,9 @@ async function pokazListe() {
   $("#ekran-plan").classList.add("ukryty");
   $("#ekran-lista").classList.remove("ukryty");
 
-  const plany = await api("/api/plany");
+  const [plany, uwaga] = await Promise.all([api("/api/plany"), api("/api/uwaga")]);
+  rysujUwage(uwaga);
+
   const lista = $("#lista-planow");
   lista.replaceChildren();
 
@@ -59,7 +61,16 @@ async function pokazListe() {
     const wiersz = el("div", "pozycja");
     const nazwa = el("div", "nazwa", `${p.klient} ${p.wersja}.0`);
     const status = el("span", `odznaka ${p.status.replace(/[łą]/g, "l")}`, p.status);
-    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń`);
+    const opisCyklu = p.cykl.doStartu !== null ? ` · start za ${p.cykl.doStartu} dni`
+      : p.cykl.tydzien === null ? ""
+        : p.cykl.poCyklu ? " · po cyklu"
+          : ` · T${p.cykl.tydzien}/6`;
+    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń${opisCyklu}`);
+    if (p.cykl.doKonca !== null) {
+      meta.title = p.cykl.poCyklu
+        ? `Cykl skończył się ${-p.cykl.doKonca} dni temu`
+        : `Do końca cyklu ${p.cykl.doKonca} dni`;
+    }
     wiersz.append(sygnalAktywnosci(p.realizacja));
     const otworz = el("button", "", "Otwórz");
     otworz.onclick = () => otworzPlan(p.id);
@@ -163,6 +174,38 @@ $("#form-import").onsubmit = async (e) => {
  * Jednym spojrzeniem: czy ten klient ćwiczy.
  * Tego arkusz nie mówił nigdy — trzeba było otworzyć plik i zgadywać.
  */
+/**
+ * Kto dziś wymaga uwagi. Przy kilkunastu klientach arkusz wymagał otwarcia
+ * kilkunastu plików, żeby zauważyć, że ktoś zniknął — tu widać to od razu.
+ */
+function rysujUwage(pozycje) {
+  const panel = $("#panel-uwaga");
+  const lista = $("#uwaga-lista");
+  lista.replaceChildren();
+  panel.classList.toggle("ukryty", pozycje.length === 0);
+  if (pozycje.length === 0) return;
+
+  const opisPowodu = (p) => ({
+    "stanal": `${p.dni} dni bez treningu`,
+    "nie zaczal": `plan wysłany ${p.dni} dni temu, klient jeszcze nie zaczął`,
+    "bez linku": "wysłany, ale klient nie ma linku",
+    "koniec cyklu": p.doKonca <= 0
+      ? "cykl kończy się dziś"
+      : `cykl kończy się za ${p.doKonca} dni`,
+    "po cyklu": `cykl skończył się ${p.dni} dni temu — czas na nową wersję`,
+  }[p.rodzaj] ?? p.rodzaj);
+
+  for (const w of pozycje) {
+    const wiersz = el("div", "pozycja");
+    wiersz.append(el("div", "nazwa", `${w.klient} ${w.wersja}.0`));
+    wiersz.append(el("span", "meta powody", w.powody.map(opisPowodu).join(" · ")));
+    const otworz = el("button", "", "Otwórz");
+    otworz.onclick = () => otworzPlan(w.id);
+    wiersz.append(otworz);
+    lista.append(wiersz);
+  }
+}
+
 function sygnalAktywnosci(r) {
   if (!r) return el("span", "");
   if (!r.maDostep) return el("span", "sygnal brak", "bez linku");

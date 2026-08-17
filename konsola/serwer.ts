@@ -198,6 +198,85 @@ function propozycje1RM(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
   }).sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
 }
 
+/** Ile dni od `data`. `null`, gdy daty nie ma. */
+function dniOd(data: string | null | undefined): number | null {
+  if (!data) return null;
+  return Math.floor((Date.now() - Date.parse(data)) / 86_400_000);
+}
+
+/**
+ * Gdzie w cyklu jest klient, licząc od daty startu.
+ * Cykl to sześć tygodni; po ostatnim czas na nową wersję planu.
+ */
+function cyklWCzasie(zapisany: magazyn.ZapisanyPlan) {
+  const dni = dniOd(zapisany.dataStartu);
+  if (dni === null) return { tydzien: null, doStartu: null, doKonca: null, poCyklu: false };
+  // Data startu w przyszłości — plan czeka, cykl jeszcze się nie zaczął.
+  if (dni < 0) {
+    return { tydzien: null, doStartu: -dni, doKonca: 42 - dni, poCyklu: false };
+  }
+  return {
+    tydzien: Math.min(Math.floor(dni / 7) + 1, 6),
+    doStartu: null,
+    doKonca: 42 - dni,
+    poCyklu: dni >= 42,
+  };
+}
+
+/** Ile dni bez treningu znaczy „stanął". Tyle samo, co próg sygnału na liście. */
+export const PROG_STANAL = 10;
+
+export type Powod =
+  | { rodzaj: "stanal"; dni: number }
+  | { rodzaj: "koniec cyklu"; doKonca: number }
+  | { rodzaj: "po cyklu"; dni: number }
+  | { rodzaj: "bez linku" }
+  | { rodzaj: "nie zaczal"; dni: number };
+
+/**
+ * Kto dziś wymaga uwagi trenera.
+ *
+ * To jest odpowiedź na pytanie, którego arkusz nie umiał zadać: przy kilkunastu
+ * klientach trzeba było otwierać kilkanaście plików, żeby zauważyć, że ktoś
+ * zniknął. Bierzemy tylko plany wysłane — szkice to jeszcze nie zobowiązanie.
+ */
+function wymagajaUwagi(plany: readonly magazyn.ZapisanyPlan[]) {
+  const wynik: { id: string; klient: string; wersja: number; powody: Powod[] }[] = [];
+
+  for (const zapisany of plany) {
+    if (zapisany.status !== "wysłany") continue;
+    const r = realizacja(zapisany);
+    const c = cyklWCzasie(zapisany);
+    const powody: Powod[] = [];
+
+    if (!r.maDostep) {
+      powody.push({ rodzaj: "bez linku" });
+    } else if (r.dniOdOstatniej === null) {
+      const odWyslania = dniOd(zapisany.zmieniony);
+      if (odWyslania !== null && odWyslania >= 3) {
+        powody.push({ rodzaj: "nie zaczal", dni: odWyslania });
+      }
+    } else if (r.dniOdOstatniej > PROG_STANAL) {
+      powody.push({ rodzaj: "stanal", dni: r.dniOdOstatniej });
+    }
+
+    if (c.poCyklu) powody.push({ rodzaj: "po cyklu", dni: -c.doKonca! });
+    else if (c.doKonca !== null && c.doKonca <= 7) {
+      powody.push({ rodzaj: "koniec cyklu", doKonca: c.doKonca });
+    }
+
+    if (powody.length > 0) {
+      wynik.push({ id: zapisany.id, klient: zapisany.klient, wersja: zapisany.wersja, powody });
+    }
+  }
+
+  // Najpierw ci, którzy zniknęli — reszta poczeka.
+  const waga = (p: Powod) =>
+    p.rodzaj === "stanal" ? 0 : p.rodzaj === "nie zaczal" ? 1
+      : p.rodzaj === "bez linku" ? 2 : p.rodzaj === "po cyklu" ? 3 : 4;
+  return wynik.sort((a, b) => Math.min(...a.powody.map(waga)) - Math.min(...b.powody.map(waga)));
+}
+
 /**
  * Moduły towarzyszące planowi siłowemu: oddech i bieg.
  * Oba są niezależne od reszty — liczą się z własnych pól i niczego nie zmieniają
@@ -328,14 +407,21 @@ const serwer = createServer(async (req, res) => {
 
     // ── lista planów ─────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "GET") {
-      return json(res, magazyn.lista().map((zapisany) => {
+      const plany = magazyn.lista().map((zapisany) => {
         const { plan, token, wykonania, ukonczoneDni, ...reszta } = zapisany;
         return {
           ...reszta,
           cwiczen: plan.sloty.filter((s) => s.cwiczenieId).length,
           realizacja: realizacja(zapisany),
+          cykl: cyklWCzasie(zapisany),
         };
-      }));
+      });
+      return json(res, plany);
+    }
+
+    /** Krótka lista tego, na co trener powinien dziś spojrzeć. */
+    if (sciezka === "/api/uwaga" && req.method === "GET") {
+      return json(res, wymagajaUwagi(magazyn.lista()));
     }
 
     // ── nowy plan ────────────────────────────────────────────────────

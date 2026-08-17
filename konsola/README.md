@@ -44,6 +44,12 @@ proponuje nowe 1RM policzone z tych serii — zamiast wysyłać go na kolejną s
 maksymalną. Przy każdej propozycji widać, z czego wyszła i czy można jej ufać.
 Przyjmujesz kliknięciem; bez kliknięcia nic się nie zmienia.
 
+**Wymaga uwagi.** Panel na górze listy: kto stanął (ponad 10 dni bez treningu),
+komu wysłałeś plan, a on nie zaczął, kto nie dostał linku, komu kończy się cykl.
+Liczy się tylko z planów oznaczonych jako *wysłany* — szkice to jeszcze nie
+zobowiązanie. Przy kilkunastu klientach arkusz wymagał otwarcia kilkunastu
+plików, żeby to zauważyć.
+
 **Oddech i bieg.** Dwa kalkulatory z zakładek ODDECH i BIEG, te same liczby.
 Wpisujesz wynik testu TWOT — wychodzi dawka oddechowa. Wpisujesz wiek i bieg
 testowy — wychodzi sześć tygodni jednostek z czasem, tempem i tętnem. Klient
@@ -113,7 +119,6 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 ## Czego jeszcze nie ma
 
 - Porównania cykli — obciążenie i wzorce klienta przez kilka planów wstecz.
-- Przeglądu wszystkich klientów naraz — kto ćwiczy, komu kończy się cykl.
 
 ## Jak to jest zbudowane
 
