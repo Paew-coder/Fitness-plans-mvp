@@ -15,6 +15,7 @@ export * from "./powtorzenia.ts";
 export * from "./ciezar.ts";
 export * from "./stres.ts";
 export * from "./katalog.ts";
+export * from "./porownanie-cykli.ts";
 export * from "./oddech.ts";
 export * from "./bieg.ts";
 export * from "./plan.ts";

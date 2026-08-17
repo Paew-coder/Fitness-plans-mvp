@@ -101,6 +101,7 @@ Każdy zestaw zawiera jednocześnie **wejście** (co wpisał trener) i **wynik**
 | `plan.ts` | przeliczenie sześciu tygodni naraz | `T1`–`T6` |
 | `walidacja.ts` | 11 kontroli + powtórki z poprzedniego cyklu | `Analiza!A66:C76` |
 | `odczyt-1rm.ts` | 1RM czytane z serii roboczych | **poza arkuszem** |
+| `porownanie-cykli.ts` | różnice między cyklami klienta | **poza arkuszem** |
 | `oddech.ts` | progi TWOT → dawka oddechowa | `ODDECH`, `TABELE!A66:I70` |
 | `bieg.ts` | HR max, strefy, tempa, 6 tygodni jednostek | `BIEG` |
 
@@ -176,6 +177,22 @@ wskazują na wiersze „Strefa 1"/„Strefa 2"/„Strefa 3" z tabeli stref. Proc
 (60–70% HR max dla biegu spokojnego) zgadzają się z klasycznym modelem
 pięciostrefowym, więc przesunięte są **nazwy w tabeli**, nie przypisania
 jednostek. Silnik odwzorowuje plik; poprawka nazw to decyzja trenera.
+
+## Porównanie cykli
+
+Arkusz widzi jeden plan naraz. Pytanie „czy w tym cyklu robi więcej niż
+w poprzednim" wymagało otwarcia dwóch plików obok siebie — przy czwartej
+wersji planu to przestaje działać.
+
+```ts
+porownajCykle(poprzedni, obecny)   // objętość, wzorce, ćwiczenia, 1RM
+podsumujPorownanie(porownanie)     // jedno zdanie
+```
+
+**Opisuje, nie ocenia.** Wzrost objętości o 20% może być planowaną progresją
+albo błędem; mniej przy powrocie po kontuzji to dokładnie to, co trzeba.
+O tym decyduje trener, patrząc na klienta, nie na liczbę — dlatego w wyniku
+nie ma słowa „lepiej" ani „gorzej", i jest na to test.
 
 ## Trzy rzeczy, które łatwo zepsuć
 
