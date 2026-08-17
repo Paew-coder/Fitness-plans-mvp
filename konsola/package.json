@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "description": "Konsola trenera — plany powstaja tutaj, do klienta ida jako arkusz",
   "type": "module",
-  "engines": { "node": ">=22.6" },
+  "engines": {
+    "node": ">=22.6"
+  },
   "scripts": {
-    "start": "node serwer.ts"
+    "start": "node --no-warnings serwer.ts",
+    "test": "node --no-warnings --test \"testy/*.test.ts\"",
+    "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts"
   },
   "license": "UNLICENSED",
   "private": true

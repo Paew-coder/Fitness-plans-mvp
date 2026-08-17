@@ -109,12 +109,33 @@ npm run sprawdz -- "../konsola/dane/eksport/Zuzanna C 4.0.xlsx"
 ## Gdzie leżą dane
 
 ```
-konsola/dane/plany/<klient>-<wersja>.json   jeden plik = jeden plan
+konsola/dane/craftmyplan.db                 baza SQLite — wszystkie plany
 konsola/dane/eksport/<Klient> <wersja>.0.xlsx
 ```
 
-Zwykłe pliki tekstowe — można je skopiować, wrzucić na Dysk, otworzyć w notatniku.
-Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
+Jeden plik. Kopia zapasowa to skopiowanie go na Dysk; przeniesienie na inny
+komputer albo na serwer — to samo. Katalog `dane/` jest poza repozytorium,
+plany klientów nie trafiają na GitHub.
+
+**Dlaczego baza, skoro wcześniej wystarczały pliki JSON.** Bo klient odhacza
+trening z telefonu w tej samej chwili, w której Ty otwierasz jego plan.
+Pliki nie znoszą dwóch zapisów naraz — jeden po cichu wygrywa, drugi znika.
+Baza zapisuje wszystko w transakcji: albo cały plan, albo nic. Sprawdzone:
+dwanaście ocen wysłanych równocześnie, wszystkie na miejscu.
+
+`node:sqlite` jest wbudowane w Node 22, więc dalej zero zależności i zero
+instalowania czegokolwiek.
+
+**Masz plany z poprzedniej wersji?**
+
+```bash
+npm run migruj     # pliki JSON → baza; pliki zostają nietknięte
+```
+
+**Wielu trenerów.** Każdy wiersz w bazie od początku nosi `trener_id`, choć
+dziś trener jest jeden i konsola nie ma logowania. To jedyna rzecz, której
+nie da się dołożyć później bez przepisywania wszystkiego — a jest darmowa,
+dopóki robi się ją od razu.
 
 ## Czego jeszcze nie ma
 
@@ -125,7 +146,10 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 | Plik | Odpowiada za |
 |---|---|
 | `serwer.ts` | HTTP + API, bez frameworka |
-| `magazyn.ts` | zapis planów do plików JSON |
+| `baza/schemat.sql` | tabele; każda z `trener_id` |
+| `baza/polaczenie.ts` | otwarcie bazy, wersja schematu |
+| `magazyn.ts` | zapis i odczyt planów |
+| `testy/magazyn.test.ts` | 11 testów magazynu (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
