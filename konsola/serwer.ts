@@ -20,6 +20,8 @@ import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
+import { dawkaOddechowa } from "../silnik/src/oddech.ts";
+import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import * as magazyn from "./magazyn.ts";
@@ -196,6 +198,31 @@ function propozycje1RM(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
   }).sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
 }
 
+/**
+ * Moduły towarzyszące planowi siłowemu: oddech i bieg.
+ * Oba są niezależne od reszty — liczą się z własnych pól i niczego nie zmieniają
+ * w planie. Jeśli trener ich nie wypełni, po prostu ich nie ma.
+ */
+function moduly(zapisany: magazyn.ZapisanyPlan) {
+  const o = zapisany.oddech;
+  const b = zapisany.bieg;
+  const tempoBazowe = b ? tempoTestowe(b) : null;
+  return {
+    oddech: {
+      wejscie: o ?? { twot: null, przeciwwskazania: false },
+      dawka: o?.twot != null ? dawkaOddechowa(o.twot, o.przeciwwskazania) : null,
+    },
+    bieg: {
+      wejscie: b ?? {},
+      hrMax: b ? hrMax(b) : null,
+      tempoTestowe: tempoBazowe === null ? null : tempoTekst(tempoBazowe),
+      strefy: b ? strefyTetna(b) : [],
+      tempa: b ? tempaTreningowe(b) : [],
+      tygodnie: b ? planBiegowy(b) : [],
+    },
+  };
+}
+
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
 function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   const wynik = przeliczPlan(zapisany.plan);
@@ -210,6 +237,7 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     jednostronne: porownajLiczenieJednostronnych(zapisany.plan),
     realizacja: realizacja(zapisany),
     propozycje1RM: propozycje1RM(zapisany, wynik),
+    moduly: moduly(zapisany),
     normy: NORMY,
   };
 }
@@ -275,6 +303,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     dataStartu: zapisany.dataStartu,
     tygodnie,
     doZmierzenia,
+    moduly: moduly(zapisany),
   };
 }
 
@@ -424,6 +453,15 @@ const serwer = createServer(async (req, res) => {
       if (akcja === "/eksport" && req.method === "POST") {
         const plik = await eksportujDoArkusza(zapisany);
         return json(res, { plik });
+      }
+
+      if (akcja === "/moduly" && req.method === "PUT") {
+        const { oddech, bieg } = await cialo(req);
+        return json(res, obrazPlanu(magazyn.zapisz({
+          ...zapisany,
+          oddech: oddech ?? zapisany.oddech,
+          bieg: bieg ?? zapisany.bieg,
+        })));
       }
 
       // Trener przyjmuje propozycję 1RM. Zapisujemy ją jako serię 1 × ciężar:

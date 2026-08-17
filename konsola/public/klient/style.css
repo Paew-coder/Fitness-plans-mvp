@@ -131,6 +131,30 @@ button { font: inherit; cursor: pointer; }
 .ocena-przycisk.wybrana.latwe { background: var(--latwe); color: #1a1300; }
 .ocena-przycisk.wybrana.trudne { background: var(--trudne); color: #2b0f0d; }
 
+/* ── oddech i bieg ──────────────────────────────────────────────── */
+.modul-tytul {
+  font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--tekst-blady); margin-bottom: .5rem;
+}
+.modul-poziom { font-weight: 600; font-size: 1.05rem; margin-bottom: .6rem; }
+.modul-blok { display: flex; gap: .6rem; padding: .3rem 0; font-size: .88rem; }
+.modul-blok .nazwa {
+  flex: 0 0 6.5rem; font-family: var(--mono); font-size: .72rem;
+  color: var(--tekst-blady);
+}
+.modul-blok .tresc { flex: 1; color: var(--tekst-slaby); }
+.modul-jednostka { padding: .45rem 0; border-top: 1px solid var(--linia); }
+.modul-jednostka:first-of-type { border-top: none; }
+.modul-jednostka .nazwa { display: block; font-size: .92rem; }
+.modul-jednostka .dane {
+  display: block; margin-top: .2rem;
+  font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady);
+}
+.brama {
+  margin: .7rem 0 0; font-size: .8rem; color: var(--tekst-blady);
+  border-left: 2px solid var(--linia); padding-left: .6rem;
+}
+
 /* ── co faktycznie poszło ───────────────────────────────────────── */
 .wykonanie { margin-top: .55rem; }
 .wykonanie-przelacz {
