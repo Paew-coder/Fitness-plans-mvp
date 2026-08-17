@@ -35,6 +35,13 @@ export type UkonczonyDzien = {
   data: string;
 };
 
+/** Wpis wagi ciała. Jeden na dzień — kolejny tego samego dnia nadpisuje poprzedni. */
+export type PomiarWagi = {
+  /** `RRRR-MM-DD`, nie ISO z godziną — waży się raz dziennie, nie co godzinę. */
+  data: string;
+  kg: number;
+};
+
 /** Plan razem z tym, czego silnik nie potrzebuje, a trener tak. */
 export type ZapisanyPlan = {
   id: string;
@@ -54,6 +61,8 @@ export type ZapisanyPlan = {
   token?: string;
   wykonania?: Wykonanie[];
   ukonczoneDni?: UkonczonyDzien[];
+  /** Log wagi ciała — klient wpisuje z telefonu. */
+  waga?: PomiarWagi[];
   /** Moduł oddechowy — wynik testu TWOT i flaga przeciwwskazań. */
   oddech?: { twot: number | null; przeciwwskazania: boolean };
   /** Moduł biegowy — pięć pól z zakładki BIEG. */
