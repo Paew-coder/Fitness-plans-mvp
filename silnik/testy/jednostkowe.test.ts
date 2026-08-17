@@ -16,6 +16,7 @@ import { mround } from "../src/pomocnicze.ts";
 import { katalog } from "../src/katalog.ts";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../src/walidacja.ts";
+import { porownajCykle, podsumujPorownanie } from "../src/porownanie-cykli.ts";
 
 describe("tabela RPE (TABELE!B4:J18)", () => {
   test("wartości brzegowe", () => {
@@ -614,5 +615,98 @@ describe("1RM odczytane z serii roboczych (poza arkuszem)", () => {
     const skok = ocenPropozycje(propozycja1RM([s(100), s(100), s(101)], 100)!);
     assert.equal(skok.zaufanie, "niskie");
     assert.match(skok.powod!, /skok o \+2[0-9](,|\.)/);
+  });
+});
+
+describe("porównanie cykli (poza arkuszem)", () => {
+  const plan = (nazwa: string, sloty: Plan["sloty"], serie: Plan["serieMaksymalne"]): Plan => ({
+    nazwa, trybAkcesoriow: "trzymaj z bloku", czescPlanu: "objętość",
+    serieMaksymalne: serie, sloty, topSety: [],
+  });
+  const slot = (positionId: string, cwiczenieId: string, serie: number, powtorzenia: number, rpe: number) => ({
+    positionId, dzien: 1, lp: "A1.", cwiczenieId, kategoriaSzkieletu: null,
+    tygodnie: Object.fromEntries([1, 2, 3, 4, 5, 6].map((t) => [t, { serie, powtorzenia, rpe }])),
+  });
+
+  const stary = przeliczPlan(plan("Zuzanna 1.0",
+    [slot("D1-S01", "EX-0011", 3, 5, 7), slot("D1-S02", "EX-0016", 3, 8, 8)],
+    [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 5 },
+     { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 8 }]));
+
+  const nowy = przeliczPlan(plan("Zuzanna 2.0",
+    [slot("D1-S01", "EX-0011", 5, 5, 7), slot("D1-S02", "EX-0184", 4, 6, 7)],
+    [{ cwiczenieId: "EX-0011", ciezar: 110, powtorzenia: 5 },
+     { cwiczenieId: "EX-0184", ciezar: 60, powtorzenia: 8 }]));
+
+  test("liczy zmianę objętości jako średnią tygodniową", () => {
+    const p = porownajCykle(stary, nowy);
+    assert.equal(p.serieRazem.poprzednio, 6);   // 3 + 3
+    assert.equal(p.serieRazem.teraz, 9);        // 5 + 4
+    assert.equal(p.serieRazem.roznica, 3);
+    assert.equal(p.serieRazem.procent, 50);
+  });
+
+  test("rozdziela ćwiczenia na powtórki, nowe i usunięte", () => {
+    const p = porownajCykle(stary, nowy);
+    const wg = Object.fromEntries(p.cwiczenia.map((c) => [c.cwiczenieId, c.stan]));
+    assert.equal(wg["EX-0011"], "powtórka");
+    assert.equal(wg["EX-0184"], "nowe");
+    assert.equal(wg["EX-0016"], "usunięte");
+    assert.equal(p.powtorzonych, 1);
+    assert.equal(p.wszystkichTeraz, 2);
+  });
+
+  test("powtórki idą pierwsze — tam widać progresję", () => {
+    assert.equal(porownajCykle(stary, nowy).cwiczenia[0]!.stan, "powtórka");
+  });
+
+  test("pokazuje zmianę 1RM tylko tam, gdzie da się ją policzyć", () => {
+    const p = porownajCykle(stary, nowy);
+    const wycisk = p.cwiczenia.find((c) => c.cwiczenieId === "EX-0011")!;
+    assert.equal(wycisk.oneRMPoprzednio, 113);
+    assert.equal(wycisk.oneRMTeraz, 124.3);
+    assert.equal(wycisk.zmianaOneRM!.procent, 10);
+
+    // Nowe ćwiczenie nie ma z czym porównać — null, nie zero.
+    assert.equal(p.cwiczenia.find((c) => c.cwiczenieId === "EX-0184")!.zmianaOneRM, null);
+    assert.equal(p.cwiczenia.find((c) => c.cwiczenieId === "EX-0016")!.oneRMTeraz, null);
+  });
+
+  test("wzorce ruchu pokazują, co przybyło, a co zniknęło", () => {
+    const p = porownajCykle(stary, nowy);
+    const wyciskanie = p.wzorce.find((w) => w.part === "b")!;
+    assert.equal(wyciskanie.serie.poprzednio, 3);
+    assert.equal(wyciskanie.serie.teraz, 5);
+
+    const wioslowanie = p.wzorce.find((w) => w.part === "r")!;
+    assert.equal(wioslowanie.serie.teraz, 0, "wiosłowanie wypadło z planu");
+    assert.equal(wioslowanie.serie.procent, -100);
+
+    const przysiad = p.wzorce.find((w) => w.part === "s")!;
+    assert.equal(przysiad.serie.poprzednio, 0);
+    assert.equal(przysiad.serie.procent, null, "z zera nie ma jak policzyć procentu");
+  });
+
+  test("podsumowanie opisuje, nie ocenia", () => {
+    const tekst = podsumujPorownanie(porownajCykle(stary, nowy));
+    assert.match(tekst, /\+50%/);
+    assert.match(tekst, /1 z 2 ćwiczeń/);
+    assert.ok(!/lepiej|gorzej|źle|dobrze/i.test(tekst), "bez oceny — o tym decyduje trener");
+  });
+
+  test("drobna zmiana nie robi hałasu", () => {
+    const prawie = przeliczPlan(plan("Zuzanna 1.1",
+      [slot("D1-S01", "EX-0011", 3, 5, 7), slot("D1-S02", "EX-0016", 3, 8, 8)],
+      [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 5 },
+       { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 8 }]));
+    assert.match(podsumujPorownanie(porownajCykle(stary, prawie)), /bez większej zmiany/);
+  });
+
+  test("pusty poprzedni cykl nie wywraca porównania", () => {
+    const pusty = przeliczPlan(plan("nowy klient", [], []));
+    const p = porownajCykle(pusty, nowy);
+    assert.equal(p.serieRazem.procent, null);
+    assert.equal(p.powtorzonych, 0);
+    assert.equal(p.cwiczenia.every((c) => c.stan === "nowe"), true);
   });
 });

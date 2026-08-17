@@ -299,6 +299,7 @@ function rysujPlan() {
   rysujAnalize();
   rysujRealizacje();
   rysujPropozycje1RM();
+  rysujPorownanie();
   rysujModuly();
   rysujSerieMax();
 }
@@ -420,6 +421,73 @@ for (const id of [
   "#bieg-dystans", "#bieg-czas", "#bieg-jednostek",
 ]) {
   $(id).onchange = zapiszModuly;
+}
+
+/**
+ * Co się zmieniło wobec poprzedniego cyklu.
+ *
+ * Arkusz widzi jeden plan naraz — to porównanie wymagało otwarcia dwóch
+ * plików obok siebie. Karta pokazuje różnice, ale ich nie ocenia: mniej
+ * objętości przy powrocie po kontuzji to dokładnie to, co trzeba.
+ */
+function rysujPorownanie() {
+  const karta = $("#karta-porownanie");
+  const kontener = $("#porownanie");
+  kontener.replaceChildren();
+
+  const p = obraz.porownanie;
+  karta.classList.toggle("ukryty", !p);
+  if (!p) return;
+
+  kontener.append(el("p", "wskazowka", `Wobec ${p.nazwaPoprzednia}`));
+
+  const zeZnakiem = (z) => z.procent === null ? "—"
+    : `${z.procent > 0 ? "+" : ""}${String(z.procent).replace(".", ",")}%`;
+  const klasaZmiany = (z) => z.procent === null || Math.abs(z.procent) < 5 ? ""
+    : z.procent > 0 ? "wzrost" : "spadek";
+
+  for (const [etykieta, z] of [
+    ["obciążenie", p.obciazenie], ["serie", p.serieRazem], ["powtórzenia", p.powtorzeniaRazem],
+  ]) {
+    const w = el("div", "wiersz-miary");
+    w.append(el("span", "etykieta", etykieta));
+    w.append(el("span", "tresc mono", `${liczba(z.poprzednio)} → ${liczba(z.teraz)}`));
+    w.append(el("span", `wartosc ${klasaZmiany(z)}`, zeZnakiem(z)));
+    kontener.append(w);
+  }
+
+  // Wzorce pokazujemy tylko te, które się ruszyły — reszta to szum.
+  const ruszone = p.wzorce.filter((w) => Math.abs(w.serie.roznica) >= 0.5);
+  if (ruszone.length > 0) {
+    kontener.append(el("p", "wskazowka", "wzorce ruchu (serie na tydzień)"));
+    for (const w of ruszone) {
+      const wiersz = el("div", "wiersz-miary");
+      wiersz.append(el("span", "etykieta", w.nazwa));
+      wiersz.append(el("span", "tresc mono", `${liczba(w.serie.poprzednio)} → ${liczba(w.serie.teraz)}`));
+      wiersz.append(el("span", `wartosc ${klasaZmiany(w.serie)}`, zeZnakiem(w.serie)));
+      kontener.append(wiersz);
+    }
+  }
+
+  // Tylko te 1RM, które faktycznie drgnęły — reszta to wiersze bez treści.
+  const zmiany1RM = p.cwiczenia.filter((c) => c.zmianaOneRM && c.zmianaOneRM.roznica !== 0);
+  if (zmiany1RM.length > 0) {
+    kontener.append(el("p", "wskazowka", "1RM na wejściu w cykl"));
+    for (const c of zmiany1RM) {
+      const wiersz = el("div", "wiersz-miary");
+      wiersz.append(el("span", "etykieta-szeroka", c.nazwa));
+      wiersz.append(el("span", `wartosc szeroka ${klasaZmiany(c.zmianaOneRM)}`,
+        `${liczba(c.oneRMPoprzednio)} → ${liczba(c.oneRMTeraz)} kg`));
+      kontener.append(wiersz);
+    }
+  }
+
+  const nowe = p.cwiczenia.filter((c) => c.stan === "nowe").map((c) => c.nazwa);
+  const usuniete = p.cwiczenia.filter((c) => c.stan === "usunięte").map((c) => c.nazwa);
+  kontener.append(el("p", "wskazowka",
+    `${p.powtorzonych} z ${p.wszystkichTeraz} ćwiczeń wraca z poprzedniego cyklu.`));
+  if (nowe.length) kontener.append(el("p", "wskazowka", `nowe: ${nowe.join(", ")}`));
+  if (usuniete.length) kontener.append(el("p", "wskazowka", `wypadły: ${usuniete.join(", ")}`));
 }
 
 /**
