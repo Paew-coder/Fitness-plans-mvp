@@ -31,6 +31,10 @@ obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
 **Serie maksymalne** — na start cyklu. Wpisuje ciężar i powtórzenia, 1RM liczy
 się od razu.
 
+**Oddech i bieg** — osobny ekran, gdy trener wypełni te moduły w konsoli.
+Dawka oddechowa z testu TWOT i sześć tygodni jednostek biegowych: czas, tempo,
+tętno, szacowany dystans.
+
 ## Pętla się domyka
 
 To jest sedno fazy 2. Ocena klienta wraca do silnika i zmienia ciężar
@@ -86,5 +90,4 @@ danych z `docs/03-architektura.md`.
 ## Czego jeszcze nie ma
 
 - Ekranu postępu: 1RM w czasie, frekwencja, waga.
-- Modułów ODDECH i BIEG.
 - Powiadomień o zaplanowanym treningu.

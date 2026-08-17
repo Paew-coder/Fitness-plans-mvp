@@ -210,6 +210,39 @@ td.stres { font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady
 .uwaga-wpis .opis { font-weight: 600; }
 .uwaga-wpis ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); font-size: .8rem; }
 
+/* ── moduły ODDECH i BIEG ───────────────────────────────────────── */
+.pola-modulu { display: grid; gap: .5rem; margin-bottom: .8rem; }
+.pola-modulu label {
+  display: flex; flex-direction: row; align-items: center; gap: .5rem;
+  font-size: .74rem; color: var(--tekst-blady);
+  font-family: var(--mono); text-transform: none; letter-spacing: 0;
+}
+.pola-modulu label input[type="number"] {
+  margin-left: auto; width: 6.5rem; text-align: right;
+  font-family: var(--mono); font-size: .8rem;
+  padding: .35rem .5rem; border-radius: 5px;
+  border: 1px solid var(--linia); background: var(--tlo); color: var(--tekst);
+}
+.pola-modulu label.ptaszek { gap: .45rem; }
+.pola-modulu label.ptaszek input { margin: 0; }
+
+.poziom-modulu {
+  font-family: var(--mono); font-size: .82rem; font-weight: 600;
+  color: var(--akcent); margin: 0 0 .5rem;
+}
+.wiersz-modulu { display: flex; gap: .6rem; padding: .2rem 0; font-size: .78rem; }
+.wiersz-modulu .etykieta {
+  flex: 0 0 9rem; font-family: var(--mono); font-size: .72rem;
+  color: var(--tekst-blady);
+}
+.wiersz-modulu .tresc { flex: 1; color: var(--tekst-slaby); }
+.wiersz-modulu .tresc.mono { font-family: var(--mono); }
+
+table.sloty.bieg { margin-top: .8rem; font-size: .72rem; }
+table.sloty.bieg td, table.sloty.bieg th { padding: .22rem .3rem; white-space: nowrap; }
+table.sloty.bieg td:nth-child(2) { color: var(--tekst-slaby); white-space: normal; }
+table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
+
 /* ── propozycje 1RM ─────────────────────────────────────────────── */
 .propozycja { padding: .7rem 0; border-bottom: 1px solid var(--linia); }
 .propozycja:last-child { border-bottom: none; padding-bottom: 0; }

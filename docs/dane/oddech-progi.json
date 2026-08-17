@@ -1,50 +1,60 @@
 {
- "opis": "Progi TWOT -> dawka oddechowa (TABELE!A66:H70).",
+ "opis": "Progi TWOT -> dawka oddechowa (TABELE!A66:I70).",
  "poziomy": [
   {
    "twot_od": 0.0,
+   "twot_do": 9.999,
    "poziom": "Bardzo niski",
    "czestotliwosc": "3×/tydz · 8 min",
    "blok_a": "4 min Breathe Light, głód powietrza 2/10",
    "blok_b": "bez bezdechów",
    "blok_c": "4 min oddech swobodny nosem, kadencja 4–6",
-   "uwaga": "Wynik poniżej 10 s. Zacznij od samego oddechu nosowego w spoczynku; bezdechy dopiero po wzroście TWOT."
+   "brama": "Wynik poniżej 10 s. Zacznij od samego oddechu nosowego w spoczynku; bezdechy dopiero po wzroście TWOT.",
+   "procent_twot": 0.0
   },
   {
    "twot_od": 10.0,
+   "twot_do": 19.999,
    "poziom": "Niski",
    "czestotliwosc": "4×/tydz · 12 min",
    "blok_a": "5 min Breathe Light, głód powietrza 2–3/10",
    "blok_b": "8 × bezdech 40% TWOT w marszu, przerwa 60 s",
    "blok_c": "4 min kadencja 4–6 nosem",
-   "uwaga": "Dozwolone tylko krótkie zatrzymania w marszu, do 40% TWOT. Jeśli po serii łapiesz oddech ustami — skróć zatrzymanie."
+   "brama": "Dozwolone tylko krótkie zatrzymania w marszu, do 40% TWOT. Jeśli po serii łapiesz oddech ustami — skróć zatrzymanie.",
+   "procent_twot": 0.4
   },
   {
    "twot_od": 20.0,
+   "twot_do": 24.999,
    "poziom": "Średni",
    "czestotliwosc": "4×/tydz · 14 min",
    "blok_a": "5 min Breathe Light, głód powietrza 3/10",
    "blok_b": "10 × bezdech 50% TWOT w marszu, przerwa 60 s",
    "blok_c": "5 min kadencja 4–6 nosem",
-   "uwaga": "Bezdechy tylko marszowe, do 50% TWOT. Maksymalne zatrzymania odblokowują się dopiero od TWOT ≥ 25 s."
+   "brama": "Bezdechy tylko marszowe, do 50% TWOT. Maksymalne zatrzymania odblokowują się dopiero od TWOT ≥ 25 s.",
+   "procent_twot": 0.5
   },
   {
    "twot_od": 25.0,
+   "twot_do": 29.999,
    "poziom": "Dobry",
    "czestotliwosc": "5×/tydz · 15 min",
    "blok_a": "5 min Breathe Light, głód powietrza 3–4/10",
    "blok_b": "10 × bezdech 60% TWOT w marszu + 1 × maksymalna liczba kroków",
    "blok_c": "5 min kadencja 4–6 nosem",
-   "uwaga": "Pełne bezdechy odblokowane. Nigdy w wodzie ani za kierownicą."
+   "brama": "Pełne bezdechy odblokowane. Nigdy w wodzie ani za kierownicą.",
+   "procent_twot": 0.6
   },
   {
    "twot_od": 30.0,
+   "twot_do": 999.0,
    "poziom": "Wysoki",
    "czestotliwosc": "5×/tydz · 18 min",
    "blok_a": "8 min ciągłego Breathe Light, głód powietrza 3–4/10",
    "blok_b": "10 × bezdech 60–70% TWOT w truchcie + 2 × maks. liczba kroków",
    "blok_c": "5 min kadencja 4–6 nosem",
-   "uwaga": "Pełny zakres. Przerwij przy zawrotach głowy, bólu w klatce, mrowieniu lub narastającym lęku."
+   "brama": "Pełny zakres. Przerwij przy zawrotach głowy, bólu w klatce, mrowieniu lub narastającym lęku.",
+   "procent_twot": 0.65
   }
  ]
 }

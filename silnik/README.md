@@ -101,6 +101,8 @@ Każdy zestaw zawiera jednocześnie **wejście** (co wpisał trener) i **wynik**
 | `plan.ts` | przeliczenie sześciu tygodni naraz | `T1`–`T6` |
 | `walidacja.ts` | 11 kontroli + powtórki z poprzedniego cyklu | `Analiza!A66:C76` |
 | `odczyt-1rm.ts` | 1RM czytane z serii roboczych | **poza arkuszem** |
+| `oddech.ts` | progi TWOT → dawka oddechowa | `ODDECH`, `TABELE!A66:I70` |
+| `bieg.ts` | HR max, strefy, tempa, 6 tygodni jednostek | `BIEG` |
 
 Dane referencyjne (`src/dane/`) są **generowane**, nie pisane ręcznie:
 
@@ -146,6 +148,34 @@ ocenPropozycje(propozycja)        // "wysokie" / "niskie" + powód
 (90 zamiast 9) zawyżyłaby maksimum i przesunęła średnią; mediany nie ruszy.
 
 Wynik to zawsze propozycja — w konsoli trener przyjmuje ją kliknięciem albo nie.
+
+## Oddech i bieg
+
+Dwa niezależne kalkulatory z zakładek `ODDECH` i `BIEG`. Nie dotykają ciężarów
+ani stresu — liczą się z własnych pól.
+
+```ts
+dawkaOddechowa(22)             // próg TWOT → poziom, częstotliwość, trzy bloki
+dawkaOddechowa(22, true)       // przeciwwskazanie → twarde zatrzymanie
+planBiegowy({ wiek: 35, dystansTestowy: 5, czasTestowy: 25, jednostekWTygodniu: 3 })
+```
+
+**Przeciwwskazanie jest zatrzymaniem, nie ostrzeżeniem.** Arkusz podmienia
+wtedy wszystkie pola na „ustal indywidualnie" i tak samo robi silnik — nie da
+się tego przeklikać.
+
+W biegu: **czas jest zadaniem, tempo celem, dystans szacunkiem.** Tydzień 4 ma
+mnożnik 0,9 — to odciążenie wpisane w arkusz, nie błąd.
+
+Oba moduły mają złoty test przeciwko 5.18 przeliczonemu w LibreOffice —
+262 wartości, w tym wszystkie 30 jednostek biegowych przy pięciu treningach
+w tygodniu.
+
+**Rozbieżność w arkuszu, warta wiedzy:** jednostki opisane jako `Z2`/`Z3`/`Z4`
+wskazują na wiersze „Strefa 1"/„Strefa 2"/„Strefa 3" z tabeli stref. Procenty
+(60–70% HR max dla biegu spokojnego) zgadzają się z klasycznym modelem
+pięciostrefowym, więc przesunięte są **nazwy w tabeli**, nie przypisania
+jednostek. Silnik odwzorowuje plik; poprawka nazw to decyzja trenera.
 
 ## Trzy rzeczy, które łatwo zepsuć
 

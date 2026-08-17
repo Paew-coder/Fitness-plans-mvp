@@ -107,6 +107,59 @@ function rysuj({ pomiary = true } = {}) {
   rysujTygodnie();
   if (biezacy) rysujTrening();
   if (pomiary) rysujPomiary();
+  rysujModuly();
+}
+
+/**
+ * Oddech i bieg — to, co klient robi między treningami na siłowni.
+ * Trener wypełnia dane w konsoli; tutaj są tylko do czytania.
+ */
+function rysujModuly() {
+  const m = widok.moduly;
+  const dawka = m?.oddech?.dawka ?? null;
+  const tygodnie = m?.bieg?.tygodnie ?? [];
+  const jest = Boolean(dawka) || tygodnie.length > 0;
+
+  $("#pokaz-moduly").classList.toggle("ukryty", !jest);
+  const kontener = $("#moduly");
+  kontener.replaceChildren();
+  if (!jest) return;
+
+  if (dawka) {
+    const karta = el("div", "cwiczenie");
+    karta.append(el("div", "modul-tytul", "Oddech"));
+    if (dawka.zatrzymane) {
+      karta.append(el("p", "brama", dawka.brama));
+    } else {
+      karta.append(el("div", "modul-poziom", `${dawka.poziom} · ${dawka.czestotliwosc}`));
+      for (const [nazwa, tresc] of [
+        ["A — rozgrzewka", dawka.blokA], ["B — praca", dawka.blokB], ["C — wyciszenie", dawka.blokC],
+      ]) {
+        const w = el("div", "modul-blok");
+        w.append(el("span", "nazwa", nazwa), el("span", "tresc", tresc));
+        karta.append(w);
+      }
+      karta.append(el("p", "brama", dawka.brama));
+    }
+    kontener.append(karta);
+  }
+
+  for (const t of tygodnie) {
+    const karta = el("div", "cwiczenie");
+    karta.append(el("div", "modul-tytul",
+      `Bieg · tydzień ${t.tydzien}${t.tydzien === 4 ? " (lżejszy)" : ""}`));
+    for (const j of t.jednostki) {
+      const w = el("div", "modul-jednostka");
+      w.append(el("span", "nazwa", j.opis));
+      const dane = [`${j.minutRazem} min`];
+      if (j.tempoTekst) dane.push(`${j.tempoTekst} min/km`);
+      if (j.strefa) dane.push(`${j.strefa.odUd}–${j.strefa.doUd} ud/min`);
+      if (j.dystansKm !== null) dane.push(`≈ ${liczba(j.dystansKm)} km`);
+      w.append(el("span", "dane", dane.join("  ·  ")));
+      karta.append(w);
+    }
+    kontener.append(karta);
+  }
 }
 
 function rysujTygodnie() {
@@ -332,6 +385,8 @@ $("#wroc-z-treningu").onclick = () => { biezacy = null; pokazEkran("#ekran-tygod
 $("#wroc-z-pomiarow").onclick = () => pokazEkran("#ekran-tygodnie");
 $("#do-pomiarow").onclick = () => pokazEkran("#ekran-pomiary");
 $("#pokaz-pomiary").onclick = () => pokazEkran("#ekran-pomiary");
+$("#pokaz-moduly").onclick = () => pokazEkran("#ekran-moduly");
+$("#wroc-z-modulow").onclick = () => pokazEkran("#ekran-tygodnie");
 
 $("#zakoncz").onclick = () => {
   const d = dzienBiezacy();

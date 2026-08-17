@@ -119,6 +119,32 @@
         <div id="propozycje-1rm"></div>
       </section>
 
+      <section class="karta" id="karta-oddech">
+        <h3>Oddech</h3>
+        <div class="pola-modulu">
+          <label>Wynik TWOT (s)
+            <input type="number" id="oddech-twot" min="0" step="1" placeholder="np. 22">
+          </label>
+          <label class="ptaszek">
+            <input type="checkbox" id="oddech-przeciwwskazania">
+            <span>Któreś z przeciwwskazań</span>
+          </label>
+        </div>
+        <div id="oddech-wynik"></div>
+      </section>
+
+      <section class="karta" id="karta-bieg">
+        <h3>Bieg</h3>
+        <div class="pola-modulu">
+          <label>Wiek <input type="number" id="bieg-wiek" min="0" step="1" placeholder="lata"></label>
+          <label>HR max <input type="number" id="bieg-hrmax" min="0" step="1" placeholder="jeśli znasz"></label>
+          <label>Bieg testowy — dystans <input type="number" id="bieg-dystans" min="0" step="0.1" placeholder="km"></label>
+          <label>Bieg testowy — czas <input type="number" id="bieg-czas" min="0" step="0.1" placeholder="minuty"></label>
+          <label>Jednostek w tygodniu <input type="number" id="bieg-jednostek" min="0" max="5" step="1" placeholder="1–5"></label>
+        </div>
+        <div id="bieg-wynik"></div>
+      </section>
+
       <section class="karta">
         <h3>Obciążenie</h3>
         <div id="obciazenie"></div>
