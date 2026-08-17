@@ -89,6 +89,15 @@ odsyłania arkusza. Kto chce, dopisuje jeszcze, ile faktycznie podniósł — i 
 tego wychodzi nowe 1RM oraz jego własny ekran postępu. Szczegóły i uwagi o bezpieczeństwie:
 [`klient/README.md`](klient/README.md).
 
+## Postawienie na serwerze
+
+Konsola domyślnie chodzi na Twoim komputerze i wtedy nic więcej nie trzeba.
+Gdy ma być dostępna z telefonu i z drugiego komputera — a klienci mają
+otwierać linki niezależnie od tego, czy Twój laptop jest włączony:
+
+**[`WDROZENIE.md`](WDROZENIE.md)** — instrukcja od zera. Serwer, domena,
+HTTPS z automatycznym certyfikatem, kopie zapasowe raz na dobę.
+
 ## Poprawki do arkusza
 
 [`arkusz/`](arkusz/README.md) robi z 5.17 plik **5.18** z trzema poprawkami:
