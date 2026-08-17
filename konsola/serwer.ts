@@ -18,7 +18,8 @@ import { fileURLToPath } from "node:url";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { katalog } from "../silnik/src/katalog.ts";
-import { oblicz1RM } from "../silnik/src/rpe.ts";
+import { oblicz1RM, rozwiaz1RM } from "../silnik/src/rpe.ts";
+import { propozycja1RM, ocenPropozycje, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import * as magazyn from "./magazyn.ts";
@@ -153,6 +154,48 @@ function realizacja(zapisany: magazyn.ZapisanyPlan) {
   };
 }
 
+/**
+ * Propozycje nowego 1RM odczytane z serii roboczych.
+ *
+ * Arkusz umie tylko jedno: seria maksymalna na starcie cyklu. Tu zamiast tego
+ * czytamy, co klient faktycznie podnosił przez sześć tygodni. Trener dostaje
+ * propozycję i decyduje — nic nie zmienia się samo.
+ */
+function propozycje1RM(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof przeliczPlan>) {
+  const wykonania = (zapisany.wykonania ?? [])
+    .filter((w) => w.ciezarWykonany && w.powtorzeniaWykonane)
+    .sort((a, b) => a.data.localeCompare(b.data));
+  if (wykonania.length === 0) return [];
+
+  // Sloty grupujemy po ćwiczeniu — to samo ćwiczenie może stać w kilku dniach.
+  const wgCwiczenia = new Map<string, SeriaRobocza[]>();
+  for (const w of wykonania) {
+    const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
+    if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
+    const lista = wgCwiczenia.get(slot.cwiczenie.id) ?? [];
+    lista.push({
+      ciezar: w.ciezarWykonany!,
+      powtorzenia: w.powtorzeniaWykonane!,
+      rpePlanowane: slot.rpe,
+      feedback: w.feedback ?? null,
+    });
+    wgCwiczenia.set(slot.cwiczenie.id, lista);
+  }
+
+  return [...wgCwiczenia].flatMap(([cwiczenieId, serie]) => {
+    const obecne = rozwiaz1RM(cwiczenieId, zapisany.plan.serieMaksymalne);
+    const p = propozycja1RM(serie, obecne);
+    if (!p || p.oneRM === obecne) return [];   // przyjęte albo bez zmiany — nie ma o czym mówić
+    return [{
+      cwiczenieId,
+      nazwa: katalog.poId(cwiczenieId)?.nazwa ?? cwiczenieId,
+      obecne1RM: obecne || null,
+      ...p,
+      ocena: ocenPropozycje(p),
+    }];
+  }).sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+}
+
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
 function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   const wynik = przeliczPlan(zapisany.plan);
@@ -166,6 +209,7 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     gotowy: planGotowyDoWyslania(uwagi),
     jednostronne: porownajLiczenieJednostronnych(zapisany.plan),
     realizacja: realizacja(zapisany),
+    propozycje1RM: propozycje1RM(zapisany, wynik),
     normy: NORMY,
   };
 }
@@ -314,7 +358,7 @@ const serwer = createServer(async (req, res) => {
     }
 
     // ── pojedynczy plan ──────────────────────────────────────────────
-    const dopasowanie = sciezka.match(/^\/api\/plany\/([a-z0-9-]+)(\/[a-z]+)?$/i);
+    const dopasowanie = sciezka.match(/^\/api\/plany\/([a-z0-9-]+)(\/[a-z0-9]+)?$/i);
     if (dopasowanie) {
       const [, id, akcja] = dopasowanie;
       const zapisany = magazyn.wczytaj(id!);
@@ -380,6 +424,21 @@ const serwer = createServer(async (req, res) => {
       if (akcja === "/eksport" && req.method === "POST") {
         const plik = await eksportujDoArkusza(zapisany);
         return json(res, { plik });
+      }
+
+      // Trener przyjmuje propozycję 1RM. Zapisujemy ją jako serię 1 × ciężar:
+      // przy jednym powtórzeniu do odmowy %1RM wynosi 100, więc taki wpis
+      // znaczy dokładnie „tyle wynosi 1RM" i przechodzi tą samą drogą,
+      // co seria maksymalna z arkusza.
+      if (akcja === "/1rm" && req.method === "POST") {
+        const { cwiczenieId, oneRM } = await cialo(req);
+        if (!cwiczenieId || !(oneRM > 0)) return blad(res, "Brakuje ćwiczenia albo wartości");
+        const plan = structuredClone(zapisany.plan);
+        plan.serieMaksymalne = [
+          ...plan.serieMaksymalne.filter((s) => s.cwiczenieId !== cwiczenieId),
+          { cwiczenieId, ciezar: oneRM, powtorzenia: 1 },
+        ];
+        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
       }
     }
 

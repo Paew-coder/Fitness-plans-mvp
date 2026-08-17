@@ -48,7 +48,7 @@ Zero zależności, Node 22 uruchamia je wprost.
 
 ```bash
 cd silnik
-npm test                                        # 62 testy, 650 wartości zgodnych z arkuszem
+npm test                                        # 70 testów, 650 wartości zgodnych z arkuszem
 npm run sprawdz -- "Plan klienta.xlsx"          # co jest nie tak z planem
 npm run policz -- 1rm 80 5                      # 1RM z serii maksymalnej
 npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz
@@ -68,6 +68,11 @@ Układasz plan (5 dni × 12 slotów), widzisz ciężary i analizę na żywo, kon
 pokazuje co blokuje wysyłkę, przycisk eksportuje arkusz w formacie 5.18.
 Sprawdzone: plan z konsoli → arkusz → przeliczenie → **500 wartości zgodnych**.
 
+Dwie rzeczy, których arkusz nie miał: karta **Realizacja** (czy klient w ogóle
+ćwiczy — domknięte i zaczęte treningi tydzień po tygodniu) i **1RM z serii
+roboczych** (propozycja nowego 1RM policzona z tego, co klient faktycznie
+podnosił, zamiast kolejnej serii maksymalnej).
+
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 
 ## Aplikacja klienta — faza 2 w toku
@@ -77,7 +82,9 @@ Widzi dzisiejszy trening z policzonymi ciężarami, ocenia jednym dotknięciem,
 działa bez zasięgu.
 
 Pętla się domyka: ocena klienta zmienia ciężar w kolejnym tygodniu, bez
-odsyłania arkusza. Szczegóły i uwagi o bezpieczeństwie: [`klient/README.md`](klient/README.md).
+odsyłania arkusza. Kto chce, dopisuje jeszcze, ile faktycznie podniósł — i z
+tego wychodzi nowe 1RM. Szczegóły i uwagi o bezpieczeństwie:
+[`klient/README.md`](klient/README.md).
 
 ## Poprawki do arkusza
 
@@ -88,6 +95,6 @@ każda poprawka jest do pominięcia osobno.
 
 ## Następny krok
 
-`04-roadmapa.md`, faza 1: konsola trenera na tym silniku, klient dalej dostaje
-wyeksportowany arkusz. Pięć decyzji, które to blokowały, jest już podjętych —
+`04-roadmapa.md`, faza 3: porównanie cykli, moduły ODDECH i BIEG, przegląd
+wszystkich klientów naraz. Pięć decyzji, które blokowały fazę 1, jest podjętych —
 zapisane na końcu roadmapy.
