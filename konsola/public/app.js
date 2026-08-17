@@ -240,7 +240,61 @@ function rysujPlan() {
   rysujDni();
   rysujAnalize();
   rysujRealizacje();
+  rysujPropozycje1RM();
   rysujSerieMax();
+}
+
+/**
+ * 1RM odczytane z tego, co klient faktycznie podnosił.
+ *
+ * Arkusz umie tylko jedno: seria maksymalna na starcie cyklu — osobny trening,
+ * zmęczenie, i po sześciu tygodniach liczba już nieaktualna. Tutaj ta sama
+ * liczba wychodzi z serii roboczych. Ale to propozycja: klikasz albo nie.
+ */
+function rysujPropozycje1RM() {
+  const karta = $("#karta-1rm");
+  const kontener = $("#propozycje-1rm");
+  kontener.replaceChildren();
+
+  const lista = obraz.propozycje1RM ?? [];
+  karta.classList.toggle("ukryty", lista.length === 0);
+  if (lista.length === 0) return;
+
+  kontener.append(el("p", "wskazowka",
+    "Policzone z ciężarów wpisanych przez klienta. Nic nie zmienia się samo."));
+
+  for (const p of lista) {
+    const wiersz = el("div", "propozycja");
+    const gora = el("div", "propozycja-gora");
+    gora.append(el("span", "nazwa", p.nazwa));
+
+    const zmiana = p.zmianaProc === null ? ""
+      : ` (${p.zmianaProc > 0 ? "+" : ""}${String(p.zmianaProc).replace(".", ",")}%)`;
+    gora.append(el("span", "wartosc",
+      `${p.obecne1RM ? `${liczba(p.obecne1RM)} → ` : ""}${liczba(p.oneRM)} kg${zmiana}`));
+    wiersz.append(gora);
+
+    const bezZera = (n) => liczba(n).replace(",0", "");
+    const zrodlo = p.estymaty
+      .map((e) => `${bezZera(e.seria.ciezar)}×${e.seria.powtorzenia} @RPE ${bezZera(e.rpeEfektywne)}`)
+      .join(" · ");
+    wiersz.append(el("p", "wskazowka", zrodlo));
+
+    if (p.ocena.zaufanie === "niskie") {
+      wiersz.append(el("p", "wskazowka ostrzezenie", `⚠ ${p.ocena.powod}`));
+    }
+
+    const przyjmij = el("button", "", "Przyjmij");
+    przyjmij.onclick = async () => {
+      obraz = await api(`/api/plany/${obraz.zapisany.id}/1rm`, {
+        method: "POST",
+        body: { cwiczenieId: p.cwiczenieId, oneRM: p.oneRM },
+      });
+      rysujPlan();
+    };
+    wiersz.append(przyjmij);
+    kontener.append(wiersz);
+  }
 }
 
 function rysujRealizacje() {

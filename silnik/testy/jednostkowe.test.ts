@@ -7,6 +7,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
 import { oblicz1RM, procent1RM, rozwiaz1RM, konfliktSeriiMaksymalnych } from "../src/rpe.ts";
+import { oneRMzSerii, propozycja1RM, ocenPropozycje } from "../src/odczyt-1rm.ts";
 import { mnoznikAdaptacji, mnoznikNaTydzien, korektaPowtorzen } from "../src/adaptacja.ts";
 import { powtorzeniaAkcesorium, powtorzeniaBazowe, offsetTygodnia } from "../src/powtorzenia.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "../src/ciezar.ts";
@@ -533,5 +534,85 @@ describe("przeliczenie planu i walidacja", () => {
     const wyciskanie = p.wzorce.find((w) => w.part === "b")!;
     assert.equal(wyciskanie.serieObieStrony, wyciskanie.serieJakWArkuszu);
     assert.equal(wyciskanie.ocenaSieZmienia, false);
+  });
+});
+
+describe("1RM odczytane z serii roboczych (poza arkuszem)", () => {
+  test("odwraca wzór arkusza — %1RM z tabeli, tylko w drugą stronę", () => {
+    // TABELE: 5 powtórzeń przy RPE 8 to 80,5% 1RM.
+    const e = oneRMzSerii({ ciezar: 80.5, powtorzenia: 5, rpePlanowane: 8 })!;
+    assert.equal(e.rpeEfektywne, 8);
+    assert.equal(e.oneRM, 100);
+  });
+
+  test("odczucie przesuwa RPE o stopień w każdą stronę", () => {
+    const wspolne = { ciezar: 80.5, powtorzenia: 5, rpePlanowane: 8 } as const;
+    assert.equal(oneRMzSerii({ ...wspolne, feedback: "OK" })!.rpeEfektywne, 8);
+    assert.equal(oneRMzSerii({ ...wspolne, feedback: "za trudne" })!.rpeEfektywne, 9);
+    assert.equal(oneRMzSerii({ ...wspolne, feedback: "za łatwe" })!.rpeEfektywne, 7);
+
+    // „za trudne" znaczy wyższe RPE, czyli wyższy %1RM, czyli niższe 1RM.
+    const trudne = oneRMzSerii({ ...wspolne, feedback: "za trudne" })!;
+    const latwe = oneRMzSerii({ ...wspolne, feedback: "za łatwe" })!;
+    assert.ok(trudne.oneRM < 100 && latwe.oneRM > 100);
+    assert.equal(trudne.oneRM, 95.3);   // 80,5 / 0,845
+    assert.equal(latwe.oneRM, 108.1);   // 80,5 / 0,745
+  });
+
+  test("nie wychodzi poza tabelę", () => {
+    // RPE 10 + „za trudne" nie robi się 11 — obcinamy do 10.
+    const e = oneRMzSerii({ ciezar: 100, powtorzenia: 1, rpePlanowane: 10, feedback: "za trudne" })!;
+    assert.equal(e.rpeEfektywne, 10);
+    assert.equal(e.oneRM, 100);
+    assert.equal(oneRMzSerii({ ciezar: 60, powtorzenia: 16, rpePlanowane: 8 }), null);
+    assert.equal(oneRMzSerii({ ciezar: 0, powtorzenia: 5, rpePlanowane: 8 }), null, "bez ciężaru");
+    assert.equal(oneRMzSerii({ ciezar: 60, powtorzenia: 0, rpePlanowane: 8 }), null);
+  });
+
+  test("propozycja to mediana z ostatnich trzech, nie maksimum", () => {
+    const s = (ciezar: number) => ({ ciezar, powtorzenia: 5, rpePlanowane: 8 });
+    // 80,5 → 100 kg; 84,5 → 105 kg; 402,5 → 500 kg (ktoś się pomylił przy wpisywaniu)
+    const p = propozycja1RM([s(80.5), s(84.5), s(402.5)], 100)!;
+    assert.equal(p.oneRM, 105, "pomyłka nie rusza mediany");
+    assert.equal(p.estymaty.length, 3);
+    assert.equal(p.rozrzut, 400);
+    assert.equal(p.zmianaProc, 5);
+  });
+
+  test("bierze tylko ostatnie trzy serie", () => {
+    const s = (ciezar: number) => ({ ciezar, powtorzenia: 5, rpePlanowane: 8 });
+    const p = propozycja1RM([s(40), s(40), s(80.5), s(80.5), s(84.5)])!;
+    assert.equal(p.estymaty.length, 3);
+    assert.equal(p.oneRM, 100, "stare serie z lżejszym ciężarem nie ciągną w dół");
+    assert.equal(p.zmianaProc, null, "bez obecnego 1RM nie ma czego porównać");
+  });
+
+  test("mediana z dwóch to średnia", () => {
+    const s = (ciezar: number) => ({ ciezar, powtorzenia: 5, rpePlanowane: 8 });
+    assert.equal(propozycja1RM([s(80.5), s(84.5)])!.oneRM, 102.5);
+  });
+
+  test("nie ma z czego liczyć — null, nie zero", () => {
+    assert.equal(propozycja1RM([]), null);
+    assert.equal(propozycja1RM([{ ciezar: 60, powtorzenia: 20, rpePlanowane: 8 }]), null);
+  });
+
+  test("ocena mówi, kiedy propozycji nie ufać", () => {
+    const s = (ciezar: number) => ({ ciezar, powtorzenia: 5, rpePlanowane: 8 });
+
+    assert.deepEqual(ocenPropozycje(propozycja1RM([s(80.5), s(80.5), s(81)], 100)!),
+      { zaufanie: "wysokie" });
+
+    const jedna = ocenPropozycje(propozycja1RM([s(80.5)], 100)!);
+    assert.equal(jedna.zaufanie, "niskie");
+    assert.match(jedna.powod!, /jedna seria/);
+
+    const rozstrzelone = ocenPropozycje(propozycja1RM([s(60), s(80.5), s(100)], 100)!);
+    assert.equal(rozstrzelone.zaufanie, "niskie");
+    assert.match(rozstrzelone.powod!, /rozbieżne/);
+
+    const skok = ocenPropozycje(propozycja1RM([s(100), s(100), s(101)], 100)!);
+    assert.equal(skok.zaufanie, "niskie");
+    assert.match(skok.powod!, /skok o \+2[0-9](,|\.)/);
   });
 });

@@ -9,6 +9,7 @@
 export * from "./typy.ts";
 export * from "./pomocnicze.ts";
 export * from "./rpe.ts";
+export * from "./odczyt-1rm.ts";
 export * from "./adaptacja.ts";
 export * from "./powtorzenia.ts";
 export * from "./ciezar.ts";

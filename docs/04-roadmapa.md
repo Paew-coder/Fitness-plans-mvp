@@ -71,8 +71,8 @@ Fazy są ułożone tak, że każda daje coś użytecznego sama z siebie i żadna
 
 Kolejność wg tego, co najczęściej boli dziś:
 
-1. **Walidator powtórek między cyklami** — `POWTORKA_Z_POPRZEDNIEGO`. Wprost realizuje zasadę „sprawdzać poprzednie plany klienta". Otwarty temat Maćka Tabakowskiego (nakładanie się ćwiczeń) rozwiązuje się sam.
-2. **Automatyczna aktualizacja 1RM z wykonań** — zamiast czekać na ponowne serie maksymalne. Dane już są w `wykonania`.
+1. ~~**Walidator powtórek między cyklami**~~ — `POWTORKA_Z_POPRZEDNIEGO`. **Zrobione.** Otwarty temat Maćka Tabakowskiego (nakładanie się ćwiczeń) rozwiązał się sam.
+2. ~~**Automatyczna aktualizacja 1RM z wykonań**~~ — **zrobione.** `silnik/src/odczyt-1rm.ts` odwraca wzór arkusza: `1RM = ciężar / (%1RM z tabeli)`, gdzie RPE bierze się z planu skorygowanego odczuciem (±1 stopień). Mediana z ostatnich trzech serii, żeby jedna pomyłka przy wpisywaniu nie zawyżyła wyniku. W konsoli karta **1RM z serii roboczych** — propozycja z oceną zaufania, przyjmowana kliknięciem. Nic nie zmienia się samo.
 3. **Porównanie cykli** — obciążenie i wzorce klienta przez kilka planów wstecz.
 4. **Moduły ODDECH i BIEG** — kalkulatory są proste, mają w pełni opisane wzory, dokładają się do widoku tygodnia.
 5. **Przegląd wszystkich klientów** — kto ćwiczy, kto przestał, komu kończy się cykl.
