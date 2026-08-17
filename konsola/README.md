@@ -7,8 +7,9 @@ cd konsola
 npm start          # → http://localhost:4173
 ```
 
-Nic nie trzeba instalować ani stawiać. Node 22, zero zależności, dane w plikach
-JSON obok. Chodzi na Twoim komputerze — nic nie wychodzi na zewnątrz.
+Nic nie trzeba instalować ani stawiać. Node 22, zero zależności, dane w jednym
+pliku SQLite obok. Chodzi na Twoim komputerze i nic nie wychodzi na zewnątrz —
+z jednym wyjątkiem, który sam włączasz kluczem do API: [asystent](#asystent-co-robi-a-czego-nie).
 
 ## Co robi
 
@@ -54,6 +55,11 @@ plików, żeby to zauważyć.
 różnice: objętość, wzorce ruchu, 1RM na wejściu, które ćwiczenia wróciły,
 które są nowe, a które wypadły. Arkusz widzi jeden plan naraz — to porównanie
 wymagało otwarcia dwóch plików obok siebie.
+
+**Asystent.** Dwa przyciski w panelu bocznym. *Zaproponuj szkielet* — podajesz
+cel, staż, sprzęt i liczbę dni, dostajesz układ dni z konkretnymi ćwiczeniami
+z BAZY, z uzasadnieniem przy każdej pozycji. *Odczytaj analizę* — model czyta
+policzone liczby i mówi, co z nich wynika. Szczegóły niżej: [Asystent](#asystent-co-robi-a-czego-nie).
 
 **Oddech i bieg.** Dwa kalkulatory z zakładek ODDECH i BIEG, te same liczby.
 Wpisujesz wynik testu TWOT — wychodzi dawka oddechowa. Wpisujesz wiek i bieg
@@ -110,6 +116,63 @@ Powtórzenie tej kontroli na dowolnym pliku:
 cd ../silnik
 npm run sprawdz -- "../konsola/dane/eksport/Zuzanna C 4.0.xlsx"
 ```
+
+## Asystent — co robi, a czego nie
+
+Asystent ma trzy zadania i ani jedno z nich nie polega na liczeniu.
+
+**Czego nie robi nigdy:** nie podaje ciężaru, RPE, serii ani powtórzeń.
+Te liczy silnik — deterministycznie, z 93 testami przeciwko arkuszowi.
+Model dobiera ćwiczenia i opisuje policzone liczby słowami. Gdyby liczył
+sam, straciłbyś jedyną rzecz, która w tej aplikacji jest pewna.
+
+**Propozycja szkieletu.** Podajesz cel, staż, sprzęt, liczbę dni i notatkę.
+Dostajesz układ dni: A1 bój główny, pary B1/B2 jako superserie, wszystko
+z ID-ków, które naprawdę są w BAZIE. Model zna rozkład wzorców ruchu i normy
+objętości, więc równoważy plan po `part`, nie po nazwach ćwiczeń. Jeśli plan
+wskazuje poprzedni cykl, wie, czego nie powtarzać.
+
+Zanim propozycja pokaże się na ekranie, przechodzi weryfikację katalogiem:
+- ID spoza BAZY **wypada** (z wypisaniem, co i dlaczego),
+- kategoria bierze się z BAZY, nie z odpowiedzi modelu,
+- to samo ćwiczenie dwa razy w dniu zostaje raz,
+- nadmiar pozycji i nadmiar dni jest przycinany do tego, co mieści się w planie,
+- powtórka z poprzedniego cyklu, brak filmu i „DO WERYFIKACJI" dostają znacznik,
+- brakujące wzorce ruchu są wypisane po nazwie.
+
+Do planu nic nie trafia samo. Klikasz *Wstaw do planu* — a jeśli w tych dniach
+coś już stoi, przycisk mówi wprost, ile pozycji zniknie. Wstawienie wymienia
+dzień w całości razem z seriami i RPE: należały do poprzednich ćwiczeń,
+a przeniesione na nowe byłyby cudzymi liczbami pod cudzą nazwą.
+
+**Odczytanie analizy.** Model dostaje gotowy raport — stres tygodniowy na trzech
+osiach, serie per wzorzec, oceny względem norm, realizację, odczucia klienta —
+i mówi, co w nim widzi. Może wskazać kierunek („rozważ mniej objętości
+w wyciskaniu w T3"); wartość ustala trener.
+
+**Sygnał zdrowotny.** Jeśli w notatce padnie słowo o bólu, kontuzji czy leczeniu,
+nad propozycją pojawia się ostrzeżenie i przypomnienie, czyja to decyzja.
+Wykrywa to deterministyczna lista rdzeni słów, a **nie** model — bo model może
+przeoczyć, a to jest ta jedna rzecz, której przeoczyć nie wolno.
+
+**Notatka nigdzie się nie zapisuje.** Leci do API przy tym jednym zapytaniu
+i znika razem z odpowiedzią. Baza nie przechowuje żadnych danych o zdrowiu —
+tak długo, jak ich nie ma, tak długo nie trzeba ich chronić. Do modelu nie
+idzie też nazwisko klienta: do dobrania ćwiczeń jest niepotrzebne.
+
+### Włączenie
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."     # klucz z console.anthropic.com
+npm start
+```
+
+Bez klucza konsola startuje normalnie i wszystko poza asystentem działa tak
+samo — dwa przyciski są po prostu nieaktywne, z wyjaśnieniem dlaczego.
+
+Każde zapytanie kosztuje ułamek dolara i konsola pokazuje ile, pod odpowiedzią.
+Katalog 164 ćwiczeń jest oznaczony do cache, więc drugie i kolejne zapytanie
+w ciągu paru minut płaci za niego dziesiątą część ceny.
 
 ## Dostęp — dwa tryby
 
@@ -186,7 +249,9 @@ dopóki robi się ją od razu.
 
 ## Czego jeszcze nie ma
 
-- Porównania cykli — obciążenie i wzorce klienta przez kilka planów wstecz.
+- Kont dla klientów — dziś dostęp daje token w linku.
+- Rejestracji kolejnych trenerów i płatności. Baza jest na to gotowa
+  (`trener_id` w każdej tabeli), interfejsu jeszcze nie ma.
 
 ## Jak to jest zbudowane
 
@@ -196,8 +261,13 @@ dopóki robi się ją od razu.
 | `baza/schemat.sql` | tabele; każda z `trener_id` |
 | `baza/polaczenie.ts` | otwarcie bazy, wersja schematu |
 | `magazyn.ts` | zapis i odczyt planów |
+| `uklad-planu.ts` | szablon 5 dni × 12 slotów i numeracja Lp. |
 | `uwierzytelnianie.ts` | hasło, sesje, tryb dostępu |
-| `testy/` | 26 testów magazynu i logowania (`npm test`) |
+| `ai/klient.ts` | jedyne miejsce, które wychodzi do internetu |
+| `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
+| `ai/analiza.ts` | odczytanie policzonych liczb słowami |
+| `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
+| `testy/` | 66 testów magazynu, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |

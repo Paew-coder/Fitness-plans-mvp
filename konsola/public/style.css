@@ -308,6 +308,51 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .naglowek-glowny { display: flex; align-items: flex-start; gap: 1rem; }
 .naglowek-glowny > div { flex: 1; }
 
+/* ── asystent AI ────────────────────────────────────────────────── */
+.akcje-asystenta { display: flex; gap: .5rem; flex-wrap: wrap; }
+.akcje-asystenta button { font-size: .82rem; padding: .35rem .7rem; }
+.akcje-asystenta button:disabled { opacity: .5; cursor: default; border-color: var(--linia); color: var(--tekst-blady); }
+
+.podsumowanie-ai { margin: .7rem 0 0; font-size: .88rem; font-weight: 600; }
+
+/* Waga spostrzeżenia widać kolorem paska, nie wykrzyknikiem — to jest opis
+   liczb, a nie alarm. Alarmy ma „Kontrola planu" obok. */
+.spostrzezenie {
+  border-left: 3px solid var(--linia-mocna); padding: .1rem .7rem;
+  margin: .7rem 0; font-size: .84rem;
+}
+.spostrzezenie.waga-wysoka { border-color: var(--akcent); }
+.spostrzezenie.waga-srednia { border-color: var(--linia-mocna); }
+.spostrzezenie.waga-niska { border-color: var(--linia); }
+.spostrzezenie .nazwa { font-weight: 600; font-size: .82rem; }
+.spostrzezenie p { margin: .2rem 0 0; color: var(--tekst-slaby); }
+
+.akcje-modala { display: flex; gap: .5rem; margin-top: .9rem; }
+.lista-uwag { margin: .3rem 0 0; padding-left: 1.1rem; }
+.lista-uwag li { margin: .2rem 0; }
+
+/* Formularz asystenta stoi w modalu, gdzie jest miejsce — pola idą pod etykietą,
+   inaczej niż w wąskich kartach ODDECH/BIEG. */
+.modal-tresc .pola-modulu label { flex-direction: column; align-items: stretch; gap: .25rem; }
+.modal-tresc .pola-modulu label input,
+.modal-tresc .pola-modulu label textarea {
+  font: inherit; font-size: .88rem; width: 100%; margin-left: 0; text-align: left;
+  padding: .4rem .55rem; border-radius: 5px;
+  border: 1px solid var(--linia-mocna); background: var(--tlo); color: var(--tekst);
+}
+.modal-tresc .pola-modulu label textarea { resize: vertical; font-family: inherit; }
+
+.propozycja-szkieletu h4 {
+  font-family: var(--mono); font-size: .74rem; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--tekst-blady); font-weight: 500;
+  margin: 1.1rem 0 .2rem;
+}
+.propozycja-szkieletu table.sloty td { vertical-align: top; padding: .35rem .5rem .35rem 0; }
+.propozycja-szkieletu td.mono { font-family: var(--mono); color: var(--tekst-blady); width: 2.6rem; }
+.propozycja-szkieletu .nazwa { font-weight: 600; }
+.propozycja-szkieletu .wskazowka { margin: .1rem 0 0; font-size: .78rem; }
+.propozycja-szkieletu td:last-child { text-align: right; white-space: nowrap; }
+
 /* ── porównanie cykli ───────────────────────────────────────────── */
 #porownanie .wiersz-miary .etykieta { flex: 0 0 6rem; }
 #porownanie .wiersz-miary .etykieta-szeroka {

@@ -76,6 +76,17 @@ KONIEC
 E-mail jest potrzebny do certyfikatu HTTPS — dostaniesz na niego
 powiadomienie, gdyby coś było nie tak z odnowieniem.
 
+**Opcjonalnie — asystent AI.** Jeśli chcesz, żeby konsola proponowała szkielet
+planu i czytała analizę słowami, dopisz do `.env` trzecią linijkę:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Klucz zakładasz sam na `console.anthropic.com`; płacisz za zapytania, a konsola
+pokazuje koszt pod każdą odpowiedzią (rząd wielkości: kilka centów). Bez tej
+linijki wszystko inne działa tak samo — dwa przyciski są nieaktywne.
+
 ## Krok 6 — uruchomienie
 
 ```bash
@@ -202,6 +213,15 @@ umowy powierzenia z hostingodawcą i rejestru czynności przetwarzania.
 
 Nie jest to zaporowe, ale musi być decyzją świadomą — nie skutkiem ubocznym
 dodania pola „uwagi".
+
+**Asystent AI a te same zasady.** Notatka, którą wpisujesz asystentowi przy
+propozycji szkieletu, **nigdzie się nie zapisuje** — leci do API przy tym jednym
+zapytaniu i znika razem z odpowiedzią. Nazwisko klienta w ogóle nie opuszcza
+Twojego serwera: model dostaje cel, staż, sprzęt i listę ćwiczeń, nic więcej.
+To była świadoma decyzja projektowa, ale ma jeden warunek po Twojej stronie:
+**nie wpisuj w notatce nazwiska ani danych, których nie chcesz wysłać na
+zewnątrz**. Gdy wpiszesz tam coś o zdrowiu, konsola pokaże ostrzeżenie i
+przypomni, czyja to decyzja — ale wysłać już wysłała.
 
 ---
 

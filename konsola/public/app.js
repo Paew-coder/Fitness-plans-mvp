@@ -295,6 +295,13 @@ function rysujPlan() {
     taby.append(b);
   }
 
+  // Odczyt asystenta dotyczy konkretnego planu — przy zmianie planu znika,
+  // żeby nikt nie czytał spostrzeżeń o cudzym cyklu.
+  if (ostatniOdczytAI !== z.id) {
+    ostatniOdczytAI = null;
+    if (asystent?.dostepna) $("#ai-wynik").replaceChildren();
+  }
+
   rysujDni();
   rysujAnalize();
   rysujRealizacje();
@@ -934,6 +941,219 @@ function rysujSerieMax() {
   }
 }
 
+// ── asystent AI ────────────────────────────────────────────────────
+// Trzy zasady widać wprost w tym kodzie: asystent nie podaje żadnej liczby
+// treningowej, nic nie zapisuje się bez kliknięcia, a bez klucza do API
+// konsola działa dokładnie tak samo — tylko przyciski są nieaktywne.
+let asystent = null;
+let ostatniOdczytAI = null;   // id planu, którego dotyczy to, co wisi na ekranie
+
+function pokazModal(tytul, ...dzieci) {
+  $("#modal-tytul").textContent = tytul;
+  $("#modal-body").replaceChildren(...dzieci);
+  $("#modal-zamknij").classList.remove("ukryty");
+  $("#modal").classList.remove("ukryty");
+}
+
+function zamknijModal() {
+  $("#modal").classList.add("ukryty");
+}
+
+async function wczytajStanAsystenta() {
+  try {
+    asystent = await api("/api/ai/stan");
+  } catch {
+    asystent = { dostepna: false, powod: "Nie udało się sprawdzić stanu asystenta." };
+  }
+  $("#ai-szkielet").disabled = !asystent.dostepna;
+  $("#ai-analiza").disabled = !asystent.dostepna;
+  if (!asystent.dostepna) {
+    $("#ai-wynik").replaceChildren(el("p", "wskazowka", asystent.powod));
+  }
+}
+
+/** Koszt zapytania — żeby nie było niespodzianek na rachunku. */
+function kosztem(uzycie) {
+  const centy = Math.round(uzycie.koszt * 100);
+  return el("p", "wskazowka", centy < 1
+    ? "Koszt zapytania: poniżej centa."
+    : `Koszt zapytania: ok. ${centy} ${centy === 1 ? "cent" : "centów"}.`);
+}
+
+function poleTekstowe(etykieta, nazwa, wartosc = "", podpowiedz = "") {
+  const l = el("label", "", `${etykieta} `);
+  const i = el("input");
+  i.name = nazwa;
+  i.value = wartosc;
+  i.placeholder = podpowiedz;
+  i.autocomplete = "off";
+  l.append(i);
+  return l;
+}
+
+$("#ai-szkielet").onclick = () => {
+  const dniWPlanie = new Set(
+    obraz.zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien),
+  ).size;
+
+  const form = el("form", "pola-modulu");
+  form.append(
+    poleTekstowe("Cel", "cel", "", "np. siła w przysiadzie, powrót do formy"),
+    poleTekstowe("Staż", "staz", "", "np. rok regularnie"),
+    poleTekstowe("Sprzęt", "sprzet", "", "np. sztanga, hantle, wyciąg"),
+  );
+
+  const dni = el("label", "", "Dni w tygodniu ");
+  const dniPole = el("input");
+  Object.assign(dniPole, { name: "dniWTygodniu", type: "number", min: 1, max: 5, value: dniWPlanie || 3 });
+  dni.append(dniPole);
+  form.append(dni);
+
+  const notatka = el("label", "", "Notatka ");
+  const obszar = el("textarea");
+  obszar.name = "notatka";
+  obszar.rows = 3;
+  obszar.placeholder = "Wszystko, co jeszcze warto wiedzieć.";
+  notatka.append(obszar);
+  form.append(notatka);
+
+  // Przycisk musi stać wewnątrz formularza — poza nim `type="submit"` nic nie robi.
+  const wyslij = el("button", "glowny", "Zaproponuj");
+  wyslij.type = "submit";
+  form.append(wyslij);
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    wyslij.disabled = true;
+    wyslij.textContent = "Myślę…";
+    try {
+      const f = new FormData(form);
+      const odp = await api(`/api/plany/${obraz.zapisany.id}/ai-szkielet`, {
+        method: "POST",
+        body: {
+          cel: f.get("cel"), staz: f.get("staz"), sprzet: f.get("sprzet"),
+          notatka: f.get("notatka"), dniWTygodniu: Number(f.get("dniWTygodniu")),
+        },
+      });
+      pokazPropozycje(odp);
+    } catch (err) {
+      alert(err.message);
+      wyslij.disabled = false;
+      wyslij.textContent = "Zaproponuj";
+    }
+  };
+
+  pokazModal("Propozycja szkieletu",
+    el("p", "wskazowka",
+      "Asystent dobiera kategorie i ćwiczenia. Serii, powtórzeń, RPE i ciężarów " +
+      "nie dotyka — te liczy silnik, a ustawiasz Ty."),
+    form,
+    el("p", "wskazowka",
+      "Notatka nigdzie się nie zapisuje: leci do modelu przy tym jednym zapytaniu " +
+      "i znika razem z odpowiedzią."),
+  );
+};
+
+function pokazPropozycje({ propozycja, uzycie, nadpisze, komunikatZdrowotny }) {
+  const tresc = el("div", "propozycja-szkieletu");
+
+  if (komunikatZdrowotny) {
+    tresc.append(el("p", "wskazowka ostrzezenie", `⚠ ${komunikatZdrowotny}`));
+  }
+  if (propozycja.uzasadnienie) tresc.append(el("p", "", propozycja.uzasadnienie));
+
+  for (const dzien of propozycja.dni) {
+    tresc.append(el("h4", "", `Dzień ${RZYMSKIE[dzien.dzien - 1]} — ${dzien.nazwa}`));
+    const tabela = el("table", "sloty");
+    const cialo = el("tbody");
+    for (const c of dzien.cwiczenia) {
+      const w = el("tr");
+      w.append(el("td", "mono", c.lp));
+      const nazwa = el("td");
+      nazwa.append(el("div", "nazwa", c.nazwa));
+      nazwa.append(el("div", "wskazowka", c.powod));
+      if (c.znaczniki.length) nazwa.append(el("div", "wskazowka ostrzezenie", c.znaczniki.join(" · ")));
+      w.append(nazwa);
+      w.append(el("td", "wskazowka", c.kategoria));
+      cialo.append(w);
+    }
+    tabela.append(cialo);
+    tresc.append(tabela);
+  }
+
+  if (propozycja.uwagi.length) {
+    tresc.append(el("p", "wskazowka", "Co poprawiliśmy w odpowiedzi modelu:"));
+    const lista = el("ul", "lista-uwag");
+    for (const u of propozycja.uwagi) lista.append(el("li", "wskazowka", u));
+    tresc.append(lista);
+  }
+
+  const wstaw = el("button", "glowny", nadpisze > 0
+    ? `Wstaw do planu (nadpisze ${nadpisze})`
+    : "Wstaw do planu");
+  wstaw.onclick = async () => {
+    if (nadpisze > 0 && !confirm(
+      `W tych dniach stoi już ${nadpisze} ćwiczeń razem z seriami i RPE. ` +
+      "Wstawienie propozycji je zastąpi. Na pewno?")) return;
+    wstaw.disabled = true;
+    try {
+      obraz = await api(`/api/plany/${obraz.zapisany.id}/ai-wstaw`, {
+        method: "POST",
+        body: { propozycja },
+      });
+      zamknijModal();
+      rysujPlan();
+    } catch (err) {
+      alert(err.message);
+      wstaw.disabled = false;
+    }
+  };
+
+  const odrzuc = el("button", "", "Odrzuć");
+  odrzuc.onclick = zamknijModal;
+
+  const akcje = el("div", "akcje-modala");
+  akcje.append(wstaw, odrzuc);
+
+  pokazModal("Propozycja szkieletu", tresc, kosztem(uzycie), akcje);
+  // „Odrzuć" mówi to samo co „Zamknij", a wyraźniej: propozycja nigdzie
+  // nie została zapisana. Dwa przyciski o tym samym znaczeniu to jeden za dużo.
+  $("#modal-zamknij").classList.add("ukryty");
+}
+
+$("#ai-analiza").onclick = async () => {
+  const przycisk = $("#ai-analiza");
+  const kontener = $("#ai-wynik");
+  przycisk.disabled = true;
+  przycisk.textContent = "Czytam…";
+  kontener.replaceChildren(el("p", "wskazowka", "Czytam analizę…"));
+  try {
+    const { odczyt, uzycie } = await api(`/api/plany/${obraz.zapisany.id}/ai-analiza`, {
+      method: "POST", body: {},
+    });
+    kontener.replaceChildren();
+    if (odczyt.podsumowanie) kontener.append(el("p", "podsumowanie-ai", odczyt.podsumowanie));
+    for (const s of odczyt.spostrzezenia) {
+      const blok = el("div", `spostrzezenie waga-${s.waga.replace("ś", "s")}`);
+      blok.append(el("div", "nazwa", s.tytul), el("p", "", s.tresc));
+      kontener.append(blok);
+    }
+    if (odczyt.doSprawdzenia.length) {
+      kontener.append(el("p", "wskazowka", "Do rozstrzygnięcia przez Ciebie:"));
+      const lista = el("ul", "lista-uwag");
+      for (const p of odczyt.doSprawdzenia) lista.append(el("li", "wskazowka", p));
+      kontener.append(lista);
+    }
+    kontener.append(kosztem(uzycie));
+    ostatniOdczytAI = obraz.zapisany.id;
+  } catch (err) {
+    kontener.replaceChildren(el("p", "wskazowka ostrzezenie", err.message));
+  } finally {
+    przycisk.disabled = false;
+    przycisk.textContent = "Odczytaj analizę";
+  }
+};
+
 // ── eksport ────────────────────────────────────────────────────────
 $("#eksportuj").onclick = async () => {
   const przycisk = $("#eksportuj");
@@ -1004,5 +1224,6 @@ $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 (async () => {
   cwiczenia = await api("/api/cwiczenia");
   cwiczenia.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  await wczytajStanAsystenta();
   await pokazListe();
 })();

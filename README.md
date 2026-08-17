@@ -76,6 +76,12 @@ podnosił, zamiast kolejnej serii maksymalnej). Do tego moduły **Oddech** i
 **Bieg** — te same kalkulatory co w zakładkach ODDECH i BIEG, sprawdzone
 wartość po wartości.
 
+**Asystent AI** — dwa przyciski: *Zaproponuj szkielet* (układ dni z konkretnymi
+ćwiczeniami z BAZY, pod cel, staż i sprzęt) i *Odczytaj analizę* (co wynika
+z policzonych liczb, słowami). Granica jest ostra i pilnowana testami: **AI nie
+liczy ciężaru, RPE ani serii** — od tego jest silnik. Bez klucza do API funkcja
+jest wyłączona, a cała reszta konsoli działa tak samo.
+
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 
 ## Aplikacja klienta — faza 2 w toku
@@ -105,7 +111,14 @@ TOP SET czytający bój główny zamiast pierwszego slotu, plus dwie brakujące 
 (`START!B7` i `T1!G8`), które wyszły przy testowaniu. Oryginał zostaje nietknięty,
 każda poprawka jest do pominięcia osobno.
 
-## Następny krok
+## Gdzie to jest
 
-`04-roadmapa.md`, faza 3: porównanie cykli i przegląd wszystkich klientów naraz. Pięć decyzji, które blokowały fazę 1, jest podjętych —
-zapisane na końcu roadmapy.
+Fazy 0–4 z [`04-roadmapa.md`](docs/04-roadmapa.md) są domknięte: jądro
+sprawdzone przeciwko arkuszowi, konsola trenera, aplikacja klienta, to czego
+arkusz nie umiał, wersja produkcyjna (baza, logowanie, wdrożenie, kopie)
+i warstwa AI.
+
+Otwarte decyzje — liczenie ćwiczeń jednostronnych i to, czy aplikacja ma kiedyś
+przechowywać dane o zdrowiu — są zapisane na końcu roadmapy. Model SaaS dla
+innych trenerów (rejestracja, subskrypcje) jest świadomie odłożony: najpierw
+narzędzie ma być używane na co dzień.
