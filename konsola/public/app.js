@@ -59,7 +59,8 @@ async function pokazListe() {
     const wiersz = el("div", "pozycja");
     const nazwa = el("div", "nazwa", `${p.klient} ${p.wersja}.0`);
     const status = el("span", `odznaka ${p.status.replace(/[łą]/g, "l")}`, p.status);
-    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń · ${p.zmieniony.slice(0, 10)}`);
+    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń`);
+    wiersz.append(sygnalAktywnosci(p.realizacja));
     const otworz = el("button", "", "Otwórz");
     otworz.onclick = () => otworzPlan(p.id);
     const kopiuj = el("button", "", "Nowa wersja");
@@ -79,7 +80,8 @@ async function pokazListe() {
       await api(`/api/plany/${p.id}`, { method: "DELETE" });
       pokazListe();
     };
-    wiersz.append(nazwa, status, meta, otworz, kopiuj, usun);
+    wiersz.append(otworz, kopiuj, usun);
+    wiersz.prepend(nazwa, status, meta);
     lista.append(wiersz);
 
     const opcja = el("option", "", `${p.klient} ${p.wersja}.0`);
@@ -144,7 +146,7 @@ $("#form-import").onsubmit = async (e) => {
           `te sloty są puste i trzeba je dobrać ręcznie:`),
       );
       const lista = el("ul");
-      for (const n of dane.nierozpoznane) lista.append(el("li", "", `${n.positionId} — „${n.nazwa}"`));
+      for (const n of dane.nierozpoznane) lista.append(el("li", "", `${n.positionId} — „${n.nazwa}”`));
       $("#modal-body").append(lista,
         el("p", "wskazowka", "Najczęściej to literówka albo ćwiczenie, którego jeszcze nie ma w bazie."));
       $("#modal").classList.remove("ukryty");
@@ -156,6 +158,32 @@ $("#form-import").onsubmit = async (e) => {
     przycisk.textContent = "Wczytaj";
   }
 };
+
+/**
+ * Jednym spojrzeniem: czy ten klient ćwiczy.
+ * Tego arkusz nie mówił nigdy — trzeba było otworzyć plik i zgadywać.
+ */
+function sygnalAktywnosci(r) {
+  if (!r) return el("span", "");
+  if (!r.maDostep) return el("span", "sygnal brak", "bez linku");
+
+  const dni = r.dniOdOstatniej;
+  if (dni === null) return el("span", "sygnal czeka", "nie zaczął");
+
+  const opis = dni === 0 ? "dziś" : dni === 1 ? "wczoraj" : `${dni} dni temu`;
+  const klasa = dni <= 3 ? "aktywny" : dni <= 10 ? "zwolnil" : "stanal";
+  const znak = { aktywny: "●", zwolnil: "●", stanal: "▲" }[klasa];
+  const licznik = r.rozpoczetych
+    ? `${r.ukonczonych}+${r.rozpoczetych}/${r.zaplanowanych}`
+    : `${r.ukonczonych}/${r.zaplanowanych}`;
+  const s = el("span", `sygnal ${klasa}`, `${znak} ${licznik} · ${opis}`);
+  s.title = klasa === "stanal"
+    ? "Ponad 10 dni bez treningu — warto zapytać, co się dzieje"
+    : r.rozpoczetych
+      ? `Ostatnia aktywność ${opis}; ${r.rozpoczetych} treningów zaczętych bez domknięcia`
+      : `Ostatni trening ${opis}`;
+  return s;
+}
 
 // ── otwieranie i zapis ─────────────────────────────────────────────
 async function otworzPlan(id) {
@@ -211,7 +239,61 @@ function rysujPlan() {
 
   rysujDni();
   rysujAnalize();
+  rysujRealizacje();
   rysujSerieMax();
+}
+
+function rysujRealizacje() {
+  const kontener = $("#realizacja");
+  kontener.replaceChildren();
+  const r = obraz.realizacja;
+
+  if (!r.maDostep) {
+    kontener.append(el("p", "wskazowka",
+      "Klient nie ma jeszcze linku. Kliknij „Link dla klienta” u góry."));
+    return;
+  }
+  if (r.ukonczonych + r.rozpoczetych === 0) {
+    kontener.append(el("p", "wskazowka", "Link wygenerowany, ale klient jeszcze nie ruszył."));
+    return;
+  }
+
+  const opisCzasu = r.dniOdOstatniej === 0 ? "dziś"
+    : r.dniOdOstatniej === 1 ? "wczoraj" : `${r.dniOdOstatniej} dni temu`;
+  kontener.append(el("p", "wskazowka",
+    `${r.ukonczonych} z ${r.zaplanowanych} treningów domkniętych · ostatnia aktywność ${opisCzasu}`));
+
+  for (const t of r.tygodnie) {
+    const wiersz = el("div", "wiersz-miary");
+    wiersz.append(el("span", "etykieta", `T${t.tydzien}`));
+    const kropki = el("span", "pasek");
+    for (let i = 0; i < t.zDnia; i++) {
+      const stan = i < t.ukonczonych ? "zrobiona"
+        : i < t.ukonczonych + t.rozpoczetych ? "zaczeta" : "";
+      const k = el("span", `kropka ${stan}`, "●");
+      k.title = stan === "zrobiona" ? "trening domknięty"
+        : stan === "zaczeta" ? "klient oceniał ćwiczenia, ale nie kliknął „Zakończ trening”"
+        : "brak śladu";
+      kropki.append(k);
+    }
+    wiersz.append(kropki);
+    const podpis = t.rozpoczetych
+      ? `${t.ukonczonych}+${t.rozpoczetych}/${t.zDnia}`
+      : `${t.ukonczonych}/${t.zDnia}`;
+    wiersz.append(el("span", "wartosc", podpis));
+    kontener.append(wiersz);
+  }
+
+  if (r.rozpoczetych) {
+    kontener.append(el("p", "wskazowka",
+      `${r.rozpoczetych} × trening zaczęty, ale nie domknięty — oceny i tak liczą się do adaptacji.`));
+  }
+
+  const o = r.odczucia;
+  if (o.latwe + o.ok + o.trudne > 0) {
+    kontener.append(el("p", "wskazowka",
+      `odczucia: ${o.trudne} × za trudne · ${o.ok} × OK · ${o.latwe} × za łatwe`));
+  }
 }
 
 $("#tryb-akcesoriow").onchange = (e) => {
