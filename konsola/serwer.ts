@@ -24,6 +24,7 @@ import { dawkaOddechowa } from "../silnik/src/oddech.ts";
 import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
+import { porownajCykle, podsumujPorownanie } from "../silnik/src/porownanie-cykli.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
@@ -419,6 +420,32 @@ function moduly(zapisany: magazyn.ZapisanyPlan) {
   };
 }
 
+/**
+ * Porównanie z poprzednim cyklem klienta.
+ *
+ * Arkusz widzi jeden plan naraz — żeby odpowiedzieć na pytanie „czy w tym
+ * cyklu robi więcej", trzeba było otworzyć dwa pliki obok siebie. Przy
+ * czwartej wersji planu to przestaje działać.
+ *
+ * `null`, gdy plan nie wskazuje poprzedniego cyklu albo poprzedni zniknął.
+ */
+function porownanieZPoprzednim(
+  zapisany: magazyn.ZapisanyPlan,
+  wynik: ReturnType<typeof przeliczPlan>,
+) {
+  if (!zapisany.poprzedniId) return null;
+  const poprzedni = magazyn.wczytaj(zapisany.trenerId, zapisany.poprzedniId);
+  if (!poprzedni) return null;
+
+  const porownanie = porownajCykle(przeliczPlan(poprzedni.plan), wynik);
+  return {
+    ...porownanie,
+    nazwaPoprzednia: `${poprzedni.klient} ${poprzedni.wersja}.0`,
+    nazwaObecna: `${zapisany.klient} ${zapisany.wersja}.0`,
+    podsumowanie: podsumujPorownanie(porownanie),
+  };
+}
+
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
 function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   const wynik = przeliczPlan(zapisany.plan);
@@ -433,6 +460,7 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     jednostronne: porownajLiczenieJednostronnych(zapisany.plan),
     realizacja: realizacja(zapisany),
     propozycje1RM: propozycje1RM(zapisany, wynik),
+    porownanie: porownanieZPoprzednim(zapisany, wynik),
     moduly: moduly(zapisany),
     normy: NORMY,
   };

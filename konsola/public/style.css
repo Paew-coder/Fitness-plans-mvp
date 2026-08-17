@@ -307,3 +307,15 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .ekran-logowania button.szeroki { display: block; width: 100%; padding: .6rem; }
 .naglowek-glowny { display: flex; align-items: flex-start; gap: 1rem; }
 .naglowek-glowny > div { flex: 1; }
+
+/* ── porównanie cykli ───────────────────────────────────────────── */
+#porownanie .wiersz-miary .etykieta { flex: 0 0 6rem; }
+#porownanie .wiersz-miary .etykieta-szeroka {
+  flex: 1; font-size: .78rem; color: var(--tekst-slaby);
+}
+#porownanie .wiersz-miary .tresc { flex: 1; text-align: right; color: var(--tekst-blady); }
+#porownanie .wiersz-miary .wartosc { width: 5.4rem; white-space: nowrap; }
+#porownanie .wiersz-miary .wartosc.szeroka { width: auto; }
+#porownanie .wartosc.wzrost { color: var(--dobrze); }
+#porownanie .wartosc.spadek { color: var(--uwaga); }
+#porownanie .wskazowka { margin-top: .9rem; }

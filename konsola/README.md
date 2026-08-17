@@ -50,6 +50,11 @@ Liczy się tylko z planów oznaczonych jako *wysłany* — szkice to jeszcze nie
 zobowiązanie. Przy kilkunastu klientach arkusz wymagał otwarcia kilkunastu
 plików, żeby to zauważyć.
 
+**Wobec poprzedniego cyklu.** Gdy plan wskazuje poprzedni cykl, karta pokazuje
+różnice: objętość, wzorce ruchu, 1RM na wejściu, które ćwiczenia wróciły,
+które są nowe, a które wypadły. Arkusz widzi jeden plan naraz — to porównanie
+wymagało otwarcia dwóch plików obok siebie.
+
 **Oddech i bieg.** Dwa kalkulatory z zakładek ODDECH i BIEG, te same liczby.
 Wpisujesz wynik testu TWOT — wychodzi dawka oddechowa. Wpisujesz wiek i bieg
 testowy — wychodzi sześć tygodni jednostek z czasem, tempem i tętnem. Klient
