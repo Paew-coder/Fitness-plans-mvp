@@ -210,6 +210,10 @@ td.stres { font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady
 .uwaga-wpis .opis { font-weight: 600; }
 .uwaga-wpis ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); font-size: .8rem; }
 
+/* ── wymaga uwagi ───────────────────────────────────────────────── */
+#panel-uwaga { border-left: 3px solid var(--uwaga); }
+.pozycja .meta.powody { flex: 1; text-align: right; color: var(--uwaga); }
+
 /* ── moduły ODDECH i BIEG ───────────────────────────────────────── */
 .pola-modulu { display: grid; gap: .5rem; margin-bottom: .8rem; }
 .pola-modulu label {
