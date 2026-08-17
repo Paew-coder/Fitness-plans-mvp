@@ -100,6 +100,7 @@ Każdy zestaw zawiera jednocześnie **wejście** (co wpisał trener) i **wynik**
 | `katalog.ts` | 164 ćwiczenia, filtrowanie po kategorii, oznaczenie jednostronnych | `BAZA`, zastępuje `LISTY` |
 | `plan.ts` | przeliczenie sześciu tygodni naraz | `T1`–`T6` |
 | `walidacja.ts` | 11 kontroli + powtórki z poprzedniego cyklu | `Analiza!A66:C76` |
+| `odczyt-1rm.ts` | 1RM czytane z serii roboczych | **poza arkuszem** |
 
 Dane referencyjne (`src/dane/`) są **generowane**, nie pisane ręcznie:
 
@@ -119,6 +120,32 @@ porownajLiczenieJednostronnych(plan)   // co się zmienia i gdzie wypada z normy
 
 **Domyślnie `"jak w arkuszu"`** — normy objętości w zakładce Analiza powstały na
 starym liczeniu, więc przełączenie wymaga ich przeliczenia. Decyzja przy fazie 1.
+
+## 1RM z serii roboczych
+
+Arkusz zna jedną drogę do 1RM: seria maksymalna do odmowy na starcie cyklu.
+Kosztuje trening, męczy klienta i po sześciu tygodniach już nie jest prawdziwa.
+
+`odczyt-1rm.ts` odwraca wzór, którym arkusz liczy ciężar:
+
+```
+1RM = ciężar_wykonany / (%1RM[powtórzenia_wykonane][RPE] / 100)
+```
+
+RPE bierze się z planu, skorygowane odczuciem klienta o jeden stopień:
+`za trudne` +1, `OK` 0, `za łatwe` −1. Klient nie podaje RPE — podaje odczucie,
+a jeden stopień to ostrożny przelicznik: lepiej nie doszacować 1RM niż wysłać
+kogoś na ciężar, którego nie udźwignie.
+
+```ts
+propozycja1RM(serie, obecne1RM)   // mediana z ostatnich 3, rozrzut, zmiana %
+ocenPropozycje(propozycja)        // "wysokie" / "niskie" + powód
+```
+
+**Mediana, nie maksimum i nie średnia.** Jedna pomylona cyfra przy wpisywaniu
+(90 zamiast 9) zawyżyłaby maksimum i przesunęła średnią; mediany nie ruszy.
+
+Wynik to zawsze propozycja — w konsoli trener przyjmuje ją kliknięciem albo nie.
 
 ## Trzy rzeczy, które łatwo zepsuć
 

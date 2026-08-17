@@ -33,6 +33,17 @@ w układzie 5.17/5.18 i przenosi go do konsoli. Ćwiczenia, których nie ma w BA
 (literówki, pozycje jeszcze niedodane), wypisuje osobno — te sloty zostają puste
 i trzeba je dobrać ręcznie.
 
+**Widzisz, czy klient ćwiczy.** Karta *Realizacja* pokazuje treningi tydzień
+po tygodniu: kropka pełna to trening domknięty, blada to zaczęty (klient oceniał
+ćwiczenia, ale nie kliknął „Zakończ trening" — na siłowni zdarza się to
+notorycznie). Na liście planów każdy klient ma sygnał: *aktywny* / *zwolnił* /
+*stanął*. Arkusz nie odpowiadał na to pytanie w ogóle.
+
+**1RM z serii roboczych.** Jeśli klient wpisuje, ile faktycznie podniósł, konsola
+proponuje nowe 1RM policzone z tych serii — zamiast wysyłać go na kolejną serię
+maksymalną. Przy każdej propozycji widać, z czego wyszła i czy można jej ufać.
+Przyjmujesz kliknięciem; bez kliknięcia nic się nie zmienia.
+
 ## Dlaczego wybór z listy, a nie wpisywanie
 
 Ćwiczenie zawsze wybiera się z rozwijanej listy. To nie jest wygoda — to
@@ -96,7 +107,9 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 
 ## Czego jeszcze nie ma
 
-- Aplikacja dla klienta na telefon — to faza 2.
+- Porównania cykli — obciążenie i wzorce klienta przez kilka planów wstecz.
+- Modułów ODDECH i BIEG (w eksporcie do arkusza są, w konsoli jeszcze nie).
+- Przeglądu wszystkich klientów naraz — kto ćwiczy, komu kończy się cykl.
 
 ## Jak to jest zbudowane
 
@@ -107,6 +120,7 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
+| `public/klient/` | aplikacja klienta na telefon (PWA) |
 
 Cała matematyka to [`../silnik/`](../silnik/README.md). Konsola niczego nie
 liczy sama — gdyby liczyła, mielibyśmy dwa źródła prawdy i jedno z nich
