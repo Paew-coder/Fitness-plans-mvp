@@ -241,7 +241,127 @@ function rysujPlan() {
   rysujAnalize();
   rysujRealizacje();
   rysujPropozycje1RM();
+  rysujModuly();
   rysujSerieMax();
+}
+
+/**
+ * ODDECH i BIEG — dwa kalkulatory towarzyszące planowi siłowemu.
+ * Nie dotykają ciężarów ani stresu; liczą się z własnych pól i tyle.
+ */
+function rysujModuly() {
+  const m = obraz.moduly;
+
+  $("#oddech-twot").value = m.oddech.wejscie.twot ?? "";
+  $("#oddech-przeciwwskazania").checked = Boolean(m.oddech.wejscie.przeciwwskazania);
+
+  const wyOddech = $("#oddech-wynik");
+  wyOddech.replaceChildren();
+  const d = m.oddech.dawka;
+  if (!d) {
+    wyOddech.append(el("p", "wskazowka",
+      "Wpisz wynik testu TWOT — dawka policzy się sama."));
+  } else if (d.zatrzymane) {
+    wyOddech.append(el("p", "wskazowka ostrzezenie", `⚠ ${d.brama}`));
+  } else {
+    wyOddech.append(el("p", "poziom-modulu", `${d.poziom} · ${d.czestotliwosc}`));
+    for (const [etykieta, tresc] of [
+      ["A — rozgrzewka", d.blokA], ["B — praca", d.blokB], ["C — wyciszenie", d.blokC],
+    ]) {
+      const w = el("div", "wiersz-modulu");
+      w.append(el("span", "etykieta", etykieta), el("span", "tresc", tresc));
+      wyOddech.append(w);
+    }
+    wyOddech.append(el("p", "wskazowka", d.brama));
+  }
+
+  const b = m.bieg.wejscie;
+  $("#bieg-wiek").value = b.wiek ?? "";
+  $("#bieg-hrmax").value = b.hrMaxZmierzone ?? "";
+  $("#bieg-dystans").value = b.dystansTestowy ?? "";
+  $("#bieg-czas").value = b.czasTestowy ?? "";
+  $("#bieg-jednostek").value = b.jednostekWTygodniu ?? "";
+
+  const wyBieg = $("#bieg-wynik");
+  wyBieg.replaceChildren();
+  if (m.bieg.tygodnie.length === 0) {
+    wyBieg.append(el("p", "wskazowka",
+      "Podaj liczbę jednostek w tygodniu — reszta wyliczy się sama."));
+    return;
+  }
+
+  if (m.bieg.hrMax) {
+    wyBieg.append(el("p", "poziom-modulu",
+      `HR max ${m.bieg.hrMax} ud/min${m.bieg.tempoTestowe ? ` · test ${m.bieg.tempoTestowe} min/km` : ""}`));
+  }
+  for (const t of m.bieg.tempa) {
+    const w = el("div", "wiersz-modulu");
+    w.append(el("span", "etykieta", t.nazwa), el("span", "tresc mono", `${t.tekst} min/km`));
+    wyBieg.append(w);
+  }
+
+  const tabela = el("table", "sloty bieg");
+  const glowa = el("tr");
+  for (const n of ["", "typ", "czas", "dystans", "tempo", "tętno"]) glowa.append(el("th", "", n));
+  const glowica = el("thead");
+  glowica.append(glowa);
+  tabela.append(glowica);
+  const cialo = el("tbody");
+  // W tabeli krótka nazwa; pełny opis siedzi w tooltipie, bo w wąskiej kolumnie
+  // „Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki" zawija się na pięć linii.
+  const krotko = { 1: "spokojny", 2: "spokojny", 3: "ciągły", 4: "długie wybieganie", 5: "interwał" };
+  for (const t of m.bieg.tygodnie) {
+    for (const [i, j] of t.jednostki.entries()) {
+      const w = el("tr", t.tydzien === 4 ? "odciazenie" : "");
+      w.append(el("td", "mono", i === 0 ? `T${t.tydzien}` : ""));
+      const typ = el("td", "", j.powtorzen
+        ? `${krotko[j.nr]} ${j.powtorzen}×4′`
+        : krotko[j.nr] ?? j.typ);
+      typ.title = j.opis;
+      w.append(typ);
+      w.append(el("td", "mono", `${j.minutRazem} min`));
+      w.append(el("td", "mono", j.dystansKm === null ? "—" : `≈ ${liczba(j.dystansKm)} km`));
+      w.append(el("td", "mono", j.tempoTekst ?? "—"));
+      w.append(el("td", "mono", j.strefa ? `${j.strefa.odUd}–${j.strefa.doUd}` : "—"));
+      cialo.append(w);
+    }
+  }
+  tabela.append(cialo);
+  wyBieg.append(tabela);
+  wyBieg.append(el("p", "wskazowka",
+    "Tydzień 4 jest celowo lżejszy — to odciążenie, nie błąd. Czas jest zadaniem, " +
+    "tempo celem, dystans szacunkiem."));
+}
+
+async function zapiszModuly() {
+  const liczbaLubNull = (id) => {
+    const v = $(id).value.trim();
+    return v === "" ? null : Number(v);
+  };
+  obraz = await api(`/api/plany/${obraz.zapisany.id}/moduly`, {
+    method: "PUT",
+    body: {
+      oddech: {
+        twot: liczbaLubNull("#oddech-twot"),
+        przeciwwskazania: $("#oddech-przeciwwskazania").checked,
+      },
+      bieg: {
+        wiek: liczbaLubNull("#bieg-wiek"),
+        hrMaxZmierzone: liczbaLubNull("#bieg-hrmax"),
+        dystansTestowy: liczbaLubNull("#bieg-dystans"),
+        czasTestowy: liczbaLubNull("#bieg-czas"),
+        jednostekWTygodniu: liczbaLubNull("#bieg-jednostek"),
+      },
+    },
+  });
+  rysujModuly();
+}
+
+for (const id of [
+  "#oddech-twot", "#oddech-przeciwwskazania", "#bieg-wiek", "#bieg-hrmax",
+  "#bieg-dystans", "#bieg-czas", "#bieg-jednostek",
+]) {
+  $(id).onchange = zapiszModuly;
 }
 
 /**

@@ -25,6 +25,7 @@ Wyciągnięte z 5.17 i sprawdzone przeciwko komórkom arkusza:
 | [`dane/tabele-przeliczeniowe.json`](docs/dane/tabele-przeliczeniowe.json) | RPE → %1RM (powt. 1–15 × RPE 6–10) + 3 tabele stresu |
 | [`dane/baza-cwiczen.json`](docs/dane/baza-cwiczen.json) | 164 ćwiczenia: kategoria, part, coeff, skok kg, progresja, film, uwagi |
 | [`dane/oddech-progi.json`](docs/dane/oddech-progi.json) | 5 progów TWOT → dawka oddechowa |
+| [`dane/bieg-parametry.json`](docs/dane/bieg-parametry.json) | strefy tętna, tempa, wzory jednostek biegowych |
 | [`dane/jednostronne.json`](docs/dane/jednostronne.json) | 30 ćwiczeń jednostronnych |
 
 ## Trzy rzeczy, które trzeba wiedzieć przed czytaniem
@@ -48,7 +49,7 @@ Zero zależności, Node 22 uruchamia je wprost.
 
 ```bash
 cd silnik
-npm test                                        # 70 testów, 650 wartości zgodnych z arkuszem
+npm test                                        # 85 testów, 912 wartości zgodnych z arkuszem
 npm run sprawdz -- "Plan klienta.xlsx"          # co jest nie tak z planem
 npm run policz -- 1rm 80 5                      # 1RM z serii maksymalnej
 npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz
@@ -71,7 +72,9 @@ Sprawdzone: plan z konsoli → arkusz → przeliczenie → **500 wartości zgodn
 Dwie rzeczy, których arkusz nie miał: karta **Realizacja** (czy klient w ogóle
 ćwiczy — domknięte i zaczęte treningi tydzień po tygodniu) i **1RM z serii
 roboczych** (propozycja nowego 1RM policzona z tego, co klient faktycznie
-podnosił, zamiast kolejnej serii maksymalnej).
+podnosił, zamiast kolejnej serii maksymalnej). Do tego moduły **Oddech** i
+**Bieg** — te same kalkulatory co w zakładkach ODDECH i BIEG, sprawdzone
+wartość po wartości.
 
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 
@@ -95,6 +98,5 @@ każda poprawka jest do pominięcia osobno.
 
 ## Następny krok
 
-`04-roadmapa.md`, faza 3: porównanie cykli, moduły ODDECH i BIEG, przegląd
-wszystkich klientów naraz. Pięć decyzji, które blokowały fazę 1, jest podjętych —
+`04-roadmapa.md`, faza 3: porównanie cykli i przegląd wszystkich klientów naraz. Pięć decyzji, które blokowały fazę 1, jest podjętych —
 zapisane na końcu roadmapy.

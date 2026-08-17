@@ -11,6 +11,7 @@ import { randomBytes } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plan } from "../silnik/src/plan.ts";
+import type { DaneBiegowe } from "../silnik/src/bieg.ts";
 
 const KORZEN = join(dirname(fileURLToPath(import.meta.url)), "dane", "plany");
 
@@ -53,6 +54,10 @@ export type ZapisanyPlan = {
   token?: string;
   wykonania?: Wykonanie[];
   ukonczoneDni?: UkonczonyDzien[];
+  /** Moduł oddechowy — wynik testu TWOT i flaga przeciwwskazań. */
+  oddech?: { twot: number | null; przeciwwskazania: boolean };
+  /** Moduł biegowy — pięć pól z zakładki BIEG. */
+  bieg?: DaneBiegowe;
   plan: Plan;
 };
 

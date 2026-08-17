@@ -44,6 +44,11 @@ proponuje nowe 1RM policzone z tych serii — zamiast wysyłać go na kolejną s
 maksymalną. Przy każdej propozycji widać, z czego wyszła i czy można jej ufać.
 Przyjmujesz kliknięciem; bez kliknięcia nic się nie zmienia.
 
+**Oddech i bieg.** Dwa kalkulatory z zakładek ODDECH i BIEG, te same liczby.
+Wpisujesz wynik testu TWOT — wychodzi dawka oddechowa. Wpisujesz wiek i bieg
+testowy — wychodzi sześć tygodni jednostek z czasem, tempem i tętnem. Klient
+widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
+
 ## Dlaczego wybór z listy, a nie wpisywanie
 
 Ćwiczenie zawsze wybiera się z rozwijanej listy. To nie jest wygoda — to
@@ -108,7 +113,6 @@ Katalog `dane/` jest poza repozytorium; plany klientów nie trafiają na GitHub.
 ## Czego jeszcze nie ma
 
 - Porównania cykli — obciążenie i wzorce klienta przez kilka planów wstecz.
-- Modułów ODDECH i BIEG (w eksporcie do arkusza są, w konsoli jeszcze nie).
 - Przeglądu wszystkich klientów naraz — kto ćwiczy, komu kończy się cykl.
 
 ## Jak to jest zbudowane

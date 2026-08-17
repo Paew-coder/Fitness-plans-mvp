@@ -62,3 +62,63 @@ for e in b["cwiczenia"]:
 lin += ["];", ""]
 (out / "cwiczenia.ts").write_text("\n".join(lin), encoding="utf-8")
 print("tabele.ts + cwiczenia.ts wygenerowane;", b["liczba"], "cwiczen")
+
+# ── ODDECH ────────────────────────────────────────────────────────────
+o = json.load(open(dane / "oddech-progi.json", encoding="utf-8"))
+lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
+       "// Zrodlo: docs/dane/oddech-progi.json (MasterTemplate 5.17, TABELE!A66:I70)",
+       "// Regeneracja: python3 silnik/narzedzia/generuj-dane.py",
+       "",
+       'import type { ProgTWOT } from "../oddech.ts";',
+       "",
+       "/** Piec progow TWOT -> dawka oddechowa. */",
+       "export const PROGI_TWOT: readonly ProgTWOT[] = ["]
+for p in o["poziomy"]:
+    lin.append("  {")
+    lin.append(f'    od: {p["twot_od"]}, do: {p["twot_do"]}, procentTWOT: {p["procent_twot"]},')
+    lin.append(f'    poziom: {json.dumps(p["poziom"], ensure_ascii=False)},')
+    lin.append(f'    czestotliwosc: {json.dumps(p["czestotliwosc"], ensure_ascii=False)},')
+    lin.append(f'    blokA: {json.dumps(p["blok_a"], ensure_ascii=False)},')
+    lin.append(f'    blokB: {json.dumps(p["blok_b"], ensure_ascii=False)},')
+    lin.append(f'    blokC: {json.dumps(p["blok_c"], ensure_ascii=False)},')
+    lin.append(f'    brama: {json.dumps(p["brama"], ensure_ascii=False)},')
+    lin.append("  },")
+lin += ["];", ""]
+(out / "oddech.ts").write_text("\n".join(lin), encoding="utf-8")
+
+# ── BIEG ──────────────────────────────────────────────────────────────
+g = json.load(open(dane / "bieg-parametry.json", encoding="utf-8"))
+lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
+       "// Zrodlo: docs/dane/bieg-parametry.json (MasterTemplate 5.17, zakladka BIEG)",
+       "// Regeneracja: python3 silnik/narzedzia/generuj-dane.py",
+       "",
+       'import type { StrefaTetna, TempoBiegowe, WzorJednostki } from "../bieg.ts";',
+       "",
+       "/** Piec stref tetna jako ulamek HR max (BIEG!B18:B22). */",
+       "export const STREFY_TETNA: readonly StrefaTetna[] = ["]
+for s in g["strefy"]:
+    lin.append(f'  {{ nazwa: {json.dumps(s["nazwa"], ensure_ascii=False)}, od: {s["od"]}, do: {s["do"]} }},')
+lin += ["];", "",
+        "/** Cztery tempa jako offset w min/km od tempa testowego (BIEG!B25:B28). */",
+        "export const TEMPA: readonly TempoBiegowe[] = ["]
+for t_ in g["tempa"]:
+    lin.append(f'  {{ klucz: {json.dumps(t_["klucz"], ensure_ascii=False)}, '
+               f'nazwa: {json.dumps(t_["nazwa"], ensure_ascii=False)}, '
+               f'offset: {t_["offset_min_km"]} }},')
+lin += ["];", "",
+        "/** Piec typow jednostek (BIEG!B32:O36 i kolejne bloki tygodni). */",
+        "export const WZORY_JEDNOSTEK: readonly WzorJednostki[] = ["]
+for j in g["jednostki"]:
+    lin.append(f'  {{ nr: {j["nr"]}, typ: {json.dumps(j["typ"], ensure_ascii=False)}, '
+               f'bazaMin: {j["bazaMin"]}, tempo: {json.dumps(j["tempo"], ensure_ascii=False)}, '
+               f'strefa: {j["strefa"]}, etykieta: {json.dumps(j["etykieta"], ensure_ascii=False)}, '
+               f'dodatkoweMin: {j["dodatkoweMin"]} }},')
+lin += ["];", "",
+        "/** Mnoznik objetosci na tydzien; T4 celowo lzejszy. */",
+        f'export const MNOZNIK_TYGODNIA: readonly number[] = {json.dumps(g["mnoznik_tygodnia"])};',
+        "",
+        "/** Skalowanie objetosci liczba jednostek w tygodniu (CHOOSE w arkuszu). */",
+        f'export const MNOZNIK_LICZBY_JEDNOSTEK: readonly number[] = {json.dumps(g["mnoznik_liczby_jednostek"])};',
+        ""]
+(out / "bieg.ts").write_text("\n".join(lin), encoding="utf-8")
+print("oddech.ts + bieg.ts wygenerowane")
