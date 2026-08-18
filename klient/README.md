@@ -7,9 +7,15 @@ serwerze co konsola trenera.
 
 ## Jak to działa u Ciebie
 
-1. W konsoli otwórz plan → **Link dla klienta** → skopiuj adres.
-2. Wyślij go klientowi.
+1. W konsoli otwórz kartotekę klienta → **Link dla klienta** → skopiuj adres.
+2. Wyślij go klientowi. **Raz** — ten sam adres działa przez kolejne cykle.
 3. Klient otwiera na telefonie, może dodać do ekranu głównego jak zwykłą aplikację.
+
+Link należy do klienta, nie do planu: gdy oznaczysz nowy cykl jako *wysłany*,
+klient zobaczy go pod tym samym adresem. Szkic nie jest widoczny — do czasu
+wysyłki klient widzi „trener przygotowuje Twój plan". Wcześniej token wisiał
+przy planie, więc każdy cykl znaczył nowy link, a stary zamrażał klienta
+na poprzednim planie.
 
 Link wygląda tak: `http://…/k/Zvy1GXQUGwM4wLdCqXC-Xh0Jno1V5Zed`
 

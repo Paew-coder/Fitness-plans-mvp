@@ -25,6 +25,7 @@ import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTe
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import { porownajCykle, podsumujPorownanie } from "../silnik/src/porownanie-cykli.ts";
+import { historiaKlienta, podsumujHistorie } from "../silnik/src/historia-klienta.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
@@ -154,7 +155,7 @@ function scalZPustym(pusty: Plan, zaimportowany: Plan): Plan {
  * odkąd klient odhacza treningi w telefonie, da się odpowiedzieć na pytanie
  * „czy on w ogóle ćwiczy".
  */
-function realizacja(zapisany: magazyn.ZapisanyPlan) {
+function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | null) {
   const ukonczone = zapisany.ukonczoneDni ?? [];
   const wykonania = zapisany.wykonania ?? [];
   const dniWPlanie = new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien));
@@ -182,7 +183,8 @@ function realizacja(zapisany: magazyn.ZapisanyPlan) {
     [...zbior].filter((k) => k.startsWith(`${tydzien}/`)).length;
 
   return {
-    maDostep: Boolean(zapisany.token),
+    // Link jest jeden na klienta i przeżywa cykle, więc pytamy o klienta.
+    maDostep: Boolean((klient ?? magazyn.wczytajKlienta(zapisany.trenerId, zapisany.klientId))?.token),
     trenowaneDni: dniWPlanie.size,
     zaplanowanych: dniWPlanie.size * 6,
     ukonczonych: domkniete.size,
@@ -285,14 +287,21 @@ export type Powod =
  *
  * To jest odpowiedź na pytanie, którego arkusz nie umiał zadać: przy kilkunastu
  * klientach trzeba było otwierać kilkanaście plików, żeby zauważyć, że ktoś
- * zniknął. Bierzemy tylko plany wysłane — szkice to jeszcze nie zobowiązanie.
+ * zniknął.
+ *
+ * Jeden wiersz na **klienta**, nie na plan. Wcześniej lista liczyła każdy
+ * wysłany plan osobno, więc klient z trzema zamkniętymi cyklami wołał o uwagę
+ * trzy razy — a wołać ma o niego jego bieżący plan, ten sam, który widzi
+ * pod swoim linkiem.
  */
-function wymagajaUwagi(plany: readonly magazyn.ZapisanyPlan[]) {
-  const wynik: { id: string; klient: string; wersja: number; powody: Powod[] }[] = [];
+function wymagajaUwagi(trenerId: number) {
+  const wynik: { id: string; klientId: string; klient: string; wersja: number; powody: Powod[] }[] = [];
 
-  for (const zapisany of plany) {
-    if (zapisany.status !== "wysłany") continue;
-    const r = realizacja(zapisany);
+  for (const klient of magazyn.listaKlientow(trenerId)) {
+    const zapisany = magazyn.aktywnyPlan(trenerId, klient.id);
+    if (!zapisany || zapisany.status !== "wysłany") continue;
+
+    const r = realizacja(zapisany, klient);
     const c = cyklWCzasie(zapisany);
     const powody: Powod[] = [];
 
@@ -313,7 +322,10 @@ function wymagajaUwagi(plany: readonly magazyn.ZapisanyPlan[]) {
     }
 
     if (powody.length > 0) {
-      wynik.push({ id: zapisany.id, klient: zapisany.klient, wersja: zapisany.wersja, powody });
+      wynik.push({
+        id: zapisany.id, klientId: klient.id,
+        klient: klient.nazwa, wersja: zapisany.wersja, powody,
+      });
     }
   }
 
@@ -453,19 +465,85 @@ function porownanieZPoprzednim(
   };
 }
 
+/**
+ * Kartoteka klienta — wszystkie jego cykle naraz.
+ *
+ * Konsola przez pierwsze fazy myślała planami: lista planów, ekran planu,
+ * porównanie z poprzednim. Trener myśli ludźmi. Przy czwartej wersji planu
+ * płaska lista przestaje odpowiadać na pytanie „jak idzie Zuzannie" —
+ * odpowiada na nie dopiero cała seria cykli obok siebie.
+ */
+function kartotekaKlienta(trenerId: number, klientId: string) {
+  const klient = magazyn.wczytajKlienta(trenerId, klientId);
+  if (!klient) return null;
+
+  const plany = magazyn.planyKlienta(trenerId, klientId);
+  const historia = historiaKlienta(plany.map((zapisany) => {
+    const r = realizacja(zapisany, klient);
+    return {
+      wersja: zapisany.wersja,
+      status: zapisany.status,
+      dataStartu: zapisany.dataStartu,
+      wynik: przeliczPlan(zapisany.plan),
+      ukonczonych: r.ukonczonych,
+      zaplanowanych: r.zaplanowanych,
+    };
+  }));
+
+  const aktywny = magazyn.aktywnyPlan(trenerId, klientId);
+  return {
+    klient,
+    historia,
+    podsumowanie: podsumujHistorie(historia),
+    waga: magazyn.wagaKlienta(trenerId, klientId),
+    aktywnyPlanId: aktywny?.id ?? null,
+    plany: plany.map((zapisany) => ({
+      id: zapisany.id,
+      wersja: zapisany.wersja,
+      status: zapisany.status,
+      dataStartu: zapisany.dataStartu,
+      zmieniony: zapisany.zmieniony,
+      cwiczen: zapisany.plan.sloty.filter((slot) => slot.cwiczenieId).length,
+      cykl: cyklWCzasie(zapisany),
+      realizacja: realizacja(zapisany, klient),
+    })),
+  };
+}
+
+/** Wiersz listy klientów: kto to, ile cykli, co się z nim dzieje teraz. */
+function pozycjaListyKlientow(trenerId: number, klient: magazyn.Klient) {
+  const plany = magazyn.planyKlienta(trenerId, klient.id);
+  const aktywny = magazyn.aktywnyPlan(trenerId, klient.id);
+  const najnowszy = plany.at(-1) ?? null;
+  return {
+    id: klient.id,
+    nazwa: klient.nazwa,
+    maLink: Boolean(klient.token),
+    cykli: plany.length,
+    najnowszaWersja: najnowszy?.wersja ?? null,
+    statusNajnowszego: najnowszy?.status ?? null,
+    aktywnyPlanId: aktywny?.id ?? null,
+    // Sygnał i tydzień cyklu bierzemy z planu, po którym klient dziś trenuje.
+    realizacja: aktywny ? realizacja(aktywny, klient) : null,
+    cykl: aktywny ? cyklWCzasie(aktywny) : null,
+  };
+}
+
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
 function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
+  const klient = magazyn.wczytajKlienta(zapisany.trenerId, zapisany.klientId);
   const wynik = przeliczPlan(zapisany.plan);
   const uwagi = sprawdzPlan(zapisany.plan, wynik, {
     cwiczeniaZPoprzedniegoCyklu: magazyn.cwiczeniaZPoprzedniegoCyklu(zapisany),
   });
   return {
     zapisany,
+    klient,
     wynik,
     uwagi,
     gotowy: planGotowyDoWyslania(uwagi),
     jednostronne: porownajLiczenieJednostronnych(zapisany.plan),
-    realizacja: realizacja(zapisany),
+    realizacja: realizacja(zapisany, klient),
     propozycje1RM: propozycje1RM(zapisany, wynik),
     porownanie: porownanieZPoprzednim(zapisany, wynik),
     moduly: moduly(zapisany),
@@ -637,7 +715,7 @@ const serwer = createServer(async (req, res) => {
     // ── lista planów ─────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "GET") {
       const plany = magazyn.lista(trenerId).map((zapisany) => {
-        const { plan, token, wykonania, ukonczoneDni, ...reszta } = zapisany;
+        const { plan, wykonania, ukonczoneDni, waga, ...reszta } = zapisany;
         return {
           ...reszta,
           cwiczen: plan.sloty.filter((s) => s.cwiczenieId).length,
@@ -648,9 +726,55 @@ const serwer = createServer(async (req, res) => {
       return json(res, plany);
     }
 
+    // ── klienci ──────────────────────────────────────────────────────
+    if (sciezka === "/api/klienci" && req.method === "GET") {
+      return json(res, magazyn.listaKlientow(trenerId)
+        .map((k) => pozycjaListyKlientow(trenerId, k)));
+    }
+
+    const klientTrenera = sciezka.match(/^\/api\/klienci\/([a-z0-9-]+)(\/[a-z-]+)?$/i);
+    if (klientTrenera) {
+      const [, klientId, akcja] = klientTrenera;
+      const klient = magazyn.wczytajKlienta(trenerId, klientId!);
+      if (!klient) return blad(res, "Nie ma takiego klienta", 404);
+
+      if (!akcja && req.method === "GET") {
+        return json(res, kartotekaKlienta(trenerId, klientId!));
+      }
+
+      // Zmiana nazwy nie rusza identyfikatora — inaczej poprawienie literówki
+      // rozdzieliłoby historię klienta na dwie osoby.
+      if (!akcja && req.method === "PUT") {
+        const { nazwa } = await cialo(req);
+        if (!nazwa?.trim()) return blad(res, "Podaj nazwę klienta");
+        magazyn.zapiszKlienta({ ...klient, nazwa: nazwa.trim() });
+        return json(res, kartotekaKlienta(trenerId, klientId!));
+      }
+
+      if (!akcja && req.method === "DELETE") {
+        magazyn.usunKlienta(trenerId, klientId!);
+        return json(res, { usuniety: klientId });
+      }
+
+      if (akcja === "/link" && req.method === "POST") {
+        const token = klient.token ?? magazyn.nowyToken();
+        magazyn.zapiszKlienta({ ...klient, token });
+        return json(res, {
+          token,
+          sciezka: `/k/${token}`,
+          widocznyPlan: magazyn.aktywnyPlan(trenerId, klientId!)?.id ?? null,
+        });
+      }
+
+      if (akcja === "/link" && req.method === "DELETE") {
+        magazyn.zapiszKlienta({ ...klient, token: undefined });
+        return json(res, { uniewazniony: true });
+      }
+    }
+
     /** Krótka lista tego, na co trener powinien dziś spojrzeć. */
     if (sciezka === "/api/uwaga" && req.method === "GET") {
-      return json(res, wymagajaUwagi(magazyn.lista(trenerId)));
+      return json(res, wymagajaUwagi(trenerId));
     }
 
     // ── nowy plan ────────────────────────────────────────────────────
@@ -659,11 +783,15 @@ const serwer = createServer(async (req, res) => {
       if (!klient?.trim()) return blad(res, "Podaj nazwisko klienta");
       const id = magazyn.nowyId(klient, wersja);
       if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
+
+      // Ten sam klient przy drugim cyklu nie powstaje drugi raz — dopasowanie
+      // idzie po slugu, więc „Zuzanna C" i „zuzanna c." to jedna osoba.
+      const osoba = magazyn.zapewnijKlienta(trenerId, klient.trim());
       const zapisany = magazyn.zapisz({
-        id, trenerId, klient: klient.trim(), wersja, status: "szkic",
+        id, trenerId, klientId: osoba.id, klient: osoba.nazwa, wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: poprzedniId || undefined,
-        plan: magazyn.pustyPlan(klient.trim()),
+        plan: magazyn.pustyPlan(osoba.nazwa),
       });
       return json(res, obrazPlanu(zapisany), 201);
     }
@@ -687,12 +815,13 @@ const serwer = createServer(async (req, res) => {
       const id = magazyn.nowyId(klient, wersja);
       if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
 
+      const osoba = magazyn.zapewnijKlienta(trenerId, klient);
       const zapisany = magazyn.zapisz({
-        id, trenerId, klient, wersja, status: "szkic",
+        id, trenerId, klientId: osoba.id, klient: osoba.nazwa, wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: url.searchParams.get("poprzedniId") || undefined,
         // Szkielet pustych slotów musi zostać — import wypełnia tylko te z ćwiczeniem.
-        plan: scalZPustym(magazyn.pustyPlan(klient), planZArkusza(zrzut)),
+        plan: scalZPustym(magazyn.pustyPlan(osoba.nazwa), planZArkusza(zrzut)),
       });
 
       return json(res, {
@@ -761,14 +890,26 @@ const serwer = createServer(async (req, res) => {
         return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
       }
 
+      // Link należy do klienta, nie do planu — raz wysłany działa przez
+      // kolejne cykle i sam pokazuje aktualny. Ten adres zostaje przy planie,
+      // bo trener klika go z ekranu planu; działa na jego kliencie.
       if (akcja === "/link" && req.method === "POST") {
-        const token = zapisany.token ?? magazyn.nowyToken();
-        const zaktualizowany = magazyn.zapisz({ ...zapisany, token });
-        return json(res, { token: zaktualizowany.token, sciezka: `/k/${zaktualizowany.token}` });
+        const osoba = magazyn.wczytajKlienta(trenerId, zapisany.klientId);
+        if (!osoba) return blad(res, "Nie ma takiego klienta", 404);
+        const token = osoba.token ?? magazyn.nowyToken();
+        magazyn.zapiszKlienta({ ...osoba, token });
+        return json(res, {
+          token,
+          sciezka: `/k/${token}`,
+          // Szkic nie pokazuje się klientowi — o tym trzeba powiedzieć od razu,
+          // bo inaczej trener wysyła link do pustej strony.
+          widocznyPlan: magazyn.aktywnyPlan(trenerId, zapisany.klientId)?.id ?? null,
+        });
       }
 
       if (akcja === "/link" && req.method === "DELETE") {
-        magazyn.zapisz({ ...zapisany, token: undefined });
+        const osoba = magazyn.wczytajKlienta(trenerId, zapisany.klientId);
+        if (osoba) magazyn.zapiszKlienta({ ...osoba, token: undefined });
         return json(res, { uniewazniony: true });
       }
 
@@ -859,8 +1000,21 @@ const serwer = createServer(async (req, res) => {
     const klientowy = sciezka.match(/^\/api\/klient\/([A-Za-z0-9_-]{16,})(\/[a-z]+)?$/);
     if (klientowy) {
       const [, token, akcja] = klientowy;
-      const zapisany = magazyn.wczytajPoTokenie(token!);
-      if (!zapisany) return blad(res, "Link nieaktualny. Poproś trenera o nowy.", 404);
+
+      // Token prowadzi do klienta, a klient do swojego aktualnego planu.
+      // Dzięki temu ten sam link działa przez kolejne cykle — trener oznacza
+      // nowy plan jako wysłany i klient widzi go bez wymiany adresu.
+      const osoba = magazyn.klientPoTokenie(token!);
+      if (!osoba) return blad(res, "Link nieaktualny. Poproś trenera o nowy.", 404);
+
+      const zapisany = magazyn.aktywnyPlan(osoba.trenerId, osoba.id);
+      if (!zapisany) {
+        // Link działa, planu jeszcze nie ma — szkiców klientowi nie pokazujemy.
+        if (req.method === "GET") {
+          return json(res, { klient: osoba.nazwa, czekaNaPlan: true });
+        }
+        return blad(res, "Nie masz jeszcze aktywnego planu.", 409);
+      }
 
       if (!akcja && req.method === "GET") {
         return json(res, widokKlienta(zapisany));
@@ -929,13 +1083,13 @@ const serwer = createServer(async (req, res) => {
       }
 
       // Waga ciała. Jeden wpis na dzień — kolejny tego samego dnia nadpisuje
-      // poprzedni, bo waży się rano, a nie co godzinę.
+      // poprzedni, bo waży się rano, a nie co godzinę. Wpis idzie do klienta,
+      // nie do planu: historia ma być ciągła przez kolejne cykle.
       if (akcja === "/waga" && req.method === "POST") {
         const { kg } = await cialo(req);
         const dzisiaj = new Date().toISOString().slice(0, 10);
-        const waga = (zapisany.waga ?? []).filter((w) => w.data !== dzisiaj);
-        if (kg > 0) waga.push({ data: dzisiaj, kg });
-        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, waga })));
+        magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj, Number(kg));
+        return json(res, widokKlienta(magazyn.wczytaj(zapisany.trenerId, zapisany.id)!));
       }
 
       if (akcja === "/serie" && req.method === "POST") {

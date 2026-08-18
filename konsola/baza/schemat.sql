@@ -13,6 +13,12 @@
 --
 --    Wyjątek: wykonania, ukończone dni i waga MAJĄ własne tabele. One rosną
 --    w czasie, dopisują się pojedynczo i to po nich liczymy postęp.
+--
+-- 3. KLIENT jest osobną encją, a plan do niego należy. Przez pierwsze fazy
+--    klient był kolumną tekstową w planie i to wystarczało — dopóki nie
+--    okazało się, że trzy rzeczy nie mają gdzie mieszkać: link dostępowy
+--    (nowy cykl = nowy link do wysłania), waga ciała (wykres zerował się co
+--    sześć tygodni) i historia dłuższa niż jeden cykl.
 
 CREATE TABLE IF NOT EXISTS wersja_schematu (
   wersja  INTEGER NOT NULL,
@@ -40,26 +46,40 @@ CREATE TABLE IF NOT EXISTS sesja (
 
 CREATE INDEX IF NOT EXISTS sesja_trenera ON sesja (trener_id);
 
+-- Klient trenera. Plany do niego należą; on sam trwa dłużej niż każdy z nich.
+CREATE TABLE IF NOT EXISTS klient (
+  trener_id INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
+  -- Slug z nazwy: „Zuzanna C" → `zuzanna-c`. Ten sam sposób, co identyfikatory
+  -- planów, więc `zuzanna-c-4` czyta się jako „czwarty cykl Zuzanny".
+  id        TEXT    NOT NULL,
+  nazwa     TEXT    NOT NULL,
+  utworzony TEXT    NOT NULL,
+  -- Stały klucz dostępu — jeden na klienta, nie na plan. Link raz wysłany
+  -- działa przez kolejne cykle i sam pokazuje aktualny plan. Wcześniej token
+  -- siedział przy planie, więc co sześć tygodni trzeba było wysyłać nowy.
+  token     TEXT    UNIQUE,
+  PRIMARY KEY (trener_id, id)
+);
+
 CREATE TABLE IF NOT EXISTS plan (
   trener_id    INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
   id           TEXT    NOT NULL,
-  klient       TEXT    NOT NULL,
+  klient_id    TEXT    NOT NULL,
   wersja       INTEGER NOT NULL,
   status       TEXT    NOT NULL CHECK (status IN ('szkic', 'wysłany', 'zakończony')),
   data_startu  TEXT,
   utworzony    TEXT    NOT NULL,
   zmieniony    TEXT    NOT NULL,
   poprzedni_id TEXT,
-  -- Klucz dostępu klienta. Unikalny globalnie, bo szukamy po samym tokenie,
-  -- bez wiedzy, czyj to plan.
-  token        TEXT    UNIQUE,
   oddech_json  TEXT,
   bieg_json    TEXT,
   plan_json    TEXT    NOT NULL,
-  PRIMARY KEY (trener_id, id)
+  PRIMARY KEY (trener_id, id),
+  FOREIGN KEY (trener_id, klient_id) REFERENCES klient(trener_id, id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS plan_zmieniony ON plan (trener_id, zmieniony DESC);
+CREATE INDEX IF NOT EXISTS plan_klienta ON plan (trener_id, klient_id, wersja DESC);
 
 CREATE TABLE IF NOT EXISTS wykonanie (
   trener_id            INTEGER NOT NULL,
@@ -84,12 +104,14 @@ CREATE TABLE IF NOT EXISTS ukonczony_dzien (
   FOREIGN KEY (trener_id, plan_id) REFERENCES plan(trener_id, id) ON DELETE CASCADE
 );
 
+-- Waga ciała należy do klienta, nie do sześciotygodniowego planu — inaczej
+-- wykres zerowałby się przy każdym nowym cyklu.
 CREATE TABLE IF NOT EXISTS pomiar_wagi (
   trener_id INTEGER NOT NULL,
-  plan_id   TEXT    NOT NULL,
+  klient_id TEXT    NOT NULL,
   -- `RRRR-MM-DD`. Jeden wpis na dzień; kolejny tego samego dnia nadpisuje.
   data      TEXT    NOT NULL,
   kg        REAL    NOT NULL,
-  PRIMARY KEY (trener_id, plan_id, data),
-  FOREIGN KEY (trener_id, plan_id) REFERENCES plan(trener_id, id) ON DELETE CASCADE
+  PRIMARY KEY (trener_id, klient_id, data),
+  FOREIGN KEY (trener_id, klient_id) REFERENCES klient(trener_id, id) ON DELETE CASCADE
 );

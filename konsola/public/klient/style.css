@@ -209,3 +209,12 @@ button { font: inherit; cursor: pointer; }
   font-size: .7rem; color: var(--tekst-blady); font-family: var(--mono);
   text-transform: uppercase; letter-spacing: .06em; margin-bottom: .25rem;
 }
+
+/* Ekran bez planu: między cyklami albo przy nieaktualnym linku. */
+.komunikat-pelny {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .5rem;
+  padding: 2rem; text-align: center;
+}
+.komunikat-pelny h1 { font-size: 1.2rem; margin: 0; }
+.komunikat-pelny p { margin: 0; color: var(--tekst-slaby, #666); max-width: 22rem; }
