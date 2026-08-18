@@ -526,6 +526,7 @@ function rysujPlan() {
   $("#nazwa-planu").textContent = `${z.klient} ${z.wersja}.0`;
   $("#status-planu").textContent = z.status;
   $("#status-planu").className = `odznaka ${z.status.replace(/[łą]/g, "l")}`;
+  $("#status-wybor").value = z.status;
   $("#tryb-akcesoriow").value = z.plan.trybAkcesoriow;
   $("#czesc-planu").value = z.plan.czescPlanu;
   $("#data-startu").value = z.dataStartu ?? "";
@@ -1394,6 +1395,46 @@ $("#ai-analiza").onclick = async () => {
   } finally {
     przycisk.disabled = false;
     przycisk.textContent = "Odczytaj analizę";
+  }
+};
+
+/**
+ * Status planu — jedyne miejsce, w którym się go zmienia.
+ *
+ * To nie jest ozdoba: klient widzi pod swoim linkiem **tylko plan oznaczony
+ * jako wysłany**. Szkic zostaje u trenera, więc dopóki nie przestawisz tego
+ * pola, klient widzi komunikat, że plan jest w przygotowaniu.
+ */
+$("#status-wybor").onchange = async (e) => {
+  const nowy = e.target.value;
+  const poprzedni = obraz.zapisany.status;
+
+  // Kontrola planu nie blokuje wysyłki — to decyzja trenera. Ale musi paść
+  // wprost, bo klient zobaczy plan dokładnie takim, jaki jest.
+  if (nowy === "wysłany" && !obraz.gotowy) {
+    const uwagi = obraz.uwagi.filter((u) => u.poziom === "blad").map((u) => u.opis);
+    const potwierdzone = confirm(
+      `Kontrola planu zgłasza błędy:\n\n${uwagi.join("\n")}\n\n` +
+      "Klient zobaczy plan takim, jaki jest. Wysłać mimo to?");
+    if (!potwierdzone) {
+      e.target.value = poprzedni;
+      return;
+    }
+  }
+
+  try {
+    obraz = await api(`/api/plany/${obraz.zapisany.id}`, { method: "PUT", body: { status: nowy } });
+    rysujPlan();
+  } catch (err) {
+    alert(err.message);
+    e.target.value = poprzedni;
+    return;
+  }
+
+  // Wysłany plan bez linku to plan, którego nikt nie zobaczy — pokazujemy
+  // link od razu, zamiast czekać, aż trener sam się zorientuje.
+  if (nowy === "wysłany" && !obraz.klient?.token) {
+    pokazLinkKlienta(obraz.zapisany.klientId);
   }
 };
 
