@@ -400,3 +400,68 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 #porownanie .wartosc.wzrost { color: var(--dobrze); }
 #porownanie .wartosc.spadek { color: var(--uwaga); }
 #porownanie .wskazowka { margin-top: .9rem; }
+
+
+/* ── telefon ────────────────────────────────────────────────────────
+   Trener nie siedzi przy biurku — między klientami zagląda tu z telefonu.
+   Zasada jest jedna: **strona nigdy nie jedzie w bok**. Co jest za szerokie
+   (tabela slotów), przewija się we własnym pudełku, nie całą stroną. */
+
+/* Tabela dnia jest z natury szeroka: osiem kolumn z polami do wpisywania.
+   Zamiast ją zgniatać, pozwalamy jej przewijać się wewnątrz karty dnia —
+   Lp. i ćwiczenie zostają na widoku, reszta dojeżdża palcem. */
+.dzien { overflow-x: auto; }
+
+@media (max-width: 760px) {
+  html, body { overflow-x: hidden; }
+  .ekran { padding: 1rem .8rem; }
+  .panel { padding: 1rem .9rem; }
+
+  /* Nagłówki układają się w kolumnę zamiast walczyć o szerokość. */
+  .naglowek-glowny, .naglowek-planu { flex-direction: column; align-items: stretch; gap: .7rem; }
+  .naglowek-planu .akcje { flex-wrap: wrap; }
+  .naglowek-planu .akcje button { flex: 1 1 auto; }
+  .tytul-planu { flex-wrap: wrap; }
+
+  /* Wiersz listy: nazwa w jednej linii, opis w drugiej, przyciski w trzeciej.
+     Inaczej „Nowa wersja" wypycha wiersz poza ekran. */
+  .pozycja { flex-wrap: wrap; gap: .5rem .7rem; padding: .9rem .1rem; }
+  .pozycja .nazwa { flex: 1 0 100%; }
+  .pozycja .meta, .pozycja .meta.powody { flex: 1 1 auto; text-align: left; }
+  .pozycja button { flex: 1 1 auto; }
+  .pozycja button.link { flex: 0 0 auto; }
+  #lista-cykli .pozycja .nazwa { min-width: 0; }
+
+  /* Formularze: pole na całą szerokość, bo na 390 px trzy w rzędzie to nic. */
+  .rzad-formularza { flex-direction: column; align-items: stretch; }
+  .rzad-formularza label, .rzad-formularza button { width: 100%; }
+  .pasek-ustawien { gap: .8rem 1rem; padding: .8rem; }
+
+  /* Panel boczny przestaje być przyklejony — na telefonie stoi po prostu
+     pod planem, a `sticky` zamrażałby go w połowie przewijania. */
+  .bok { position: static; }
+
+  /* Tabela slotów dostaje własną, minimalną szerokość i przewija się
+     wewnątrz karty dnia. Bez tego kolumny zlepiłyby się w kaszę. */
+  table.sloty { min-width: 44rem; }
+  table.sloty.bieg { min-width: 0; }
+
+  .wiersz-sciezki { flex-wrap: wrap; gap: .2rem .8rem; }
+  .wiersz-sciezki .etykieta-szeroka { flex: 1 0 100%; }
+  .wiersz-sciezki .tresc.mono { flex: 1; }
+  .wiersz-sciezki .wartosc { width: auto; }
+
+  /* Kolejność na telefonie: kto wymaga uwagi, potem klienci, a formularze
+     na końcu. Z telefonu się zagląda, a nie zakłada nowe plany — dwa duże
+     formularze na wejściu spychały listę klientów poniżej ekranu. */
+  #ekran-lista { display: flex; flex-direction: column; }
+  #ekran-lista > .naglowek-glowny { order: 0; }
+  #ekran-lista > #panel-uwaga { order: 1; }
+  #ekran-lista > #panel-klienci { order: 2; }
+  #ekran-lista > .panel { order: 3; }
+
+  .modal-tresc { width: calc(100% - 1rem); padding: 1.1rem; max-height: 88vh; }
+  .modal-tresc code { font-size: .76rem; }
+  .akcje-modala { flex-wrap: wrap; }
+  .akcje-modala button { flex: 1 1 auto; }
+}

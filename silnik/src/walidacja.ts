@@ -30,6 +30,17 @@ export function sprawdzPlan(
   ]);
   dodaj("DNI_TRENINGOWE", "info", "Dni treningowe w planie", [String(wynik.dniTreningowe)]);
 
+  // Arkusz nie potrzebował tej kontroli: plik z planem zawsze miał treść, bo
+  // powstawał przez wypełnianie. W aplikacji pusty plan da się utworzyć jednym
+  // kliknięciem i — odkąd „wysłany" znaczy „widoczny dla klienta" — dałoby się
+  // go wysłać. Klient zobaczyłby pusty ekran.
+  dodaj(
+    "PLAN_PUSTY",
+    "blad",
+    "Plan nie ma ani jednego ćwiczenia",
+    zCwiczeniem.length === 0 ? ["cały plan"] : [],
+  );
+
   dodaj(
     "SLOT_PUSTY_MIMO_SZKIELETU",
     "blad",

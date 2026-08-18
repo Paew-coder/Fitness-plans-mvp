@@ -472,6 +472,25 @@ describe("przeliczenie planu i walidacja", () => {
     assert.equal(planGotowyDoWyslania(uwagi), false);
   });
 
+  test("pusty plan nie nadaje się do wysłania", () => {
+    // Arkusz nie potrzebował tej kontroli — plik z planem zawsze miał treść.
+    // W aplikacji pusty plan powstaje jednym kliknięciem, a „wysłany" znaczy
+    // „widoczny dla klienta", więc pustka doszłaby do niego jako plan.
+    const pusty: Plan = {
+      ...planTestowy(),
+      serieMaksymalne: [],
+      sloty: planTestowy().sloty.map((s) => ({ ...s, cwiczenieId: null, kategoriaSzkieletu: null })),
+    };
+    const uwagi = sprawdzPlan(pusty, przeliczPlan(pusty));
+    assert.deepEqual(uwagi.find((u) => u.kod === "PLAN_PUSTY")?.pozycje, ["cały plan"]);
+    assert.equal(planGotowyDoWyslania(uwagi), false);
+  });
+
+  test("plan z choćby jednym ćwiczeniem nie jest pusty", () => {
+    const uwagi = sprawdzPlan(planTestowy(), przeliczPlan(planTestowy()));
+    assert.equal(uwagi.find((u) => u.kod === "PLAN_PUSTY"), undefined);
+  });
+
   test("walidator wykrywa niezgodność ze szkieletem", () => {
     const plan = planTestowy();
     plan.sloty[1]!.kategoriaSzkieletu = "Bicep"; // EX-0003 to Core
