@@ -27,7 +27,7 @@
     <h2>Nowy plan</h2>
     <form id="form-nowy" class="rzad-formularza">
       <label>Klient
-        <input name="klient" required placeholder="np. Zuzanna C" autocomplete="off">
+        <input name="klient" required placeholder="np. Zuzanna C" autocomplete="off" list="klienci-podpowiedzi">
       </label>
       <label>Wersja
         <input name="wersja" type="number" min="1" value="1" required>
@@ -40,8 +40,9 @@
       <button type="submit" class="glowny">Utwórz</button>
     </form>
     <p class="wskazowka">
-      Wskazanie poprzedniego cyklu włącza ostrzeżenie o powtórkach ćwiczeń —
-      tego arkusz nie potrafi.
+      Nazwa istniejącego klienta dopisuje cykl do jego kartoteki — nie zakłada
+      drugiej osoby. Wskazanie poprzedniego cyklu włącza ostrzeżenie
+      o powtórkach ćwiczeń.
     </p>
   </section>
 
@@ -49,7 +50,7 @@
     <h2>Wczytaj plan z arkusza</h2>
     <form id="form-import" class="rzad-formularza">
       <label>Klient
-        <input name="klient" required placeholder="np. Maciek Tabakowski" autocomplete="off">
+        <input name="klient" required placeholder="np. Maciek Tabakowski" autocomplete="off" list="klienci-podpowiedzi">
       </label>
       <label>Wersja
         <input name="wersja" type="number" min="1" value="1" required>
@@ -66,14 +67,67 @@
   </section>
 
   <section class="panel">
-    <h2>Plany</h2>
-    <div id="lista-planow" class="lista"></div>
+    <h2>Klienci</h2>
+    <div id="lista-klientow" class="lista"></div>
   </section>
+</div>
+
+<div id="ekran-klient" class="ekran ukryty">
+  <header class="naglowek-planu">
+    <button class="link" id="wroc-do-klientow">← klienci</button>
+    <div class="tytul-planu">
+      <h1 id="nazwa-klienta">—</h1>
+      <span id="cykli-klienta" class="odznaka"></span>
+    </div>
+    <div class="akcje">
+      <button id="zmien-nazwe" class="link">zmień nazwę</button>
+      <button id="link-klienta-karta">Link dla klienta</button>
+      <button id="nowy-cykl" class="glowny">Nowy cykl</button>
+    </div>
+  </header>
+
+  <p class="podsumowanie-klienta" id="podsumowanie-klienta"></p>
+
+  <div class="uklad">
+    <main class="dni">
+      <section class="panel">
+        <h2>Cykle</h2>
+        <div id="lista-cykli" class="lista"></div>
+      </section>
+
+      <section class="panel">
+        <h2>1RM przez cykle</h2>
+        <div id="sciezki-1rm"></div>
+      </section>
+    </main>
+
+    <aside class="bok">
+      <section class="karta">
+        <h3>Obciążenie cykl po cyklu</h3>
+        <div id="historia-obciazenia"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Wzorce ruchu</h3>
+        <div id="historia-wzorcow"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Frekwencja</h3>
+        <div id="historia-frekwencji"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Waga ciała</h3>
+        <div id="historia-wagi"></div>
+      </section>
+    </aside>
+  </div>
 </div>
 
 <div id="ekran-plan" class="ekran ukryty">
   <header class="naglowek-planu">
-    <button class="link" id="wroc">← plany</button>
+    <button class="link" id="wroc">← klient</button>
     <div class="tytul-planu">
       <h1 id="nazwa-planu">—</h1>
       <span id="status-planu" class="odznaka"></span>
@@ -183,6 +237,8 @@
     </aside>
   </div>
 </div>
+
+<datalist id="klienci-podpowiedzi"></datalist>
 
 <div id="modal" class="modal ukryty">
   <div class="modal-tresc">

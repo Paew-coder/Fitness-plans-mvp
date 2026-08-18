@@ -134,6 +134,22 @@ Wejdź na `https://twojadomena.pl` i sprawdź, czy plany są.
 
 ---
 
+## Aktualizacja działającej instalacji
+
+Gdy pobierasz nowszą wersję aplikacji, baza może wymagać przebudowy — tak jest
+przy wersji, która wprowadza kartotekę klienta. Aplikacja robi to sama przy
+starcie i wypisuje w logu, co przenosi. **Najpierw jednak kopia:**
+
+```bash
+docker compose exec konsola npm run kopia
+docker compose pull && docker compose up -d --build
+docker compose logs konsola | head -20      # zobaczysz „Migracja bazy → wersja 2"
+```
+
+Migracja niczego nie kasuje: przenosi dane i sprawdza, czy po przeniesieniu nic
+nie zostało osierocone. Linki, które klienci mają już w telefonach, działają
+dalej — po aktualizacji same pokazują aktualny cykl zamiast zamrożonego starego.
+
 ## Codzienne życie
 
 **Sprawdzenie, czy działa**

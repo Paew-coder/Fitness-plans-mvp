@@ -29,19 +29,38 @@ if (pliki.length === 0) {
 
 const trener = trenerDomyslny();
 let przeniesionych = 0;
+/** Data ostatniego planu, z którego wzięliśmy token dla danego klienta. */
+const najswiezszy = new Map<string, string>();
 
 for (const plik of pliki) {
   const stary = JSON.parse(readFileSync(join(KATALOG_JSON, plik), "utf-8"));
-  magazyn.zapisz({
+
+  // W plikach JSON klient był tekstem, a token i waga wisiały przy planie.
+  // Dziś klient jest encją i to do niego należy jedno i drugie.
+  const klient = magazyn.zapewnijKlienta(trener, stary.klient);
+  const zapisany = magazyn.zapisz({
     ...stary,
     trenerId: trener,
+    klientId: klient.id,
+    klient: klient.nazwa,
     // Daty z pliku muszą przetrwać — inaczej „ostatnia aktywność" i tydzień
     // cyklu policzyłyby się od dnia migracji.
     utworzony: stary.utworzony,
     zmieniony: stary.zmieniony,
   });
+
+  // Token z najnowszego planu wygrywa — to ten link klient ma w telefonie.
+  if (stary.token && (!klient.token || stary.zmieniony >= (najswiezszy.get(klient.id) ?? ""))) {
+    magazyn.zapiszKlienta({ ...klient, token: stary.token });
+    najswiezszy.set(klient.id, stary.zmieniony);
+  }
+
+  for (const pomiar of stary.waga ?? []) {
+    magazyn.zapiszWage(trener, klient.id, pomiar.data, pomiar.kg);
+  }
+
   przeniesionych++;
-  console.log(`  ${stary.klient} ${stary.wersja}.0`);
+  console.log(`  ${zapisany.klient} ${zapisany.wersja}.0`);
 }
 
 // Zmienione daty: zapisz() zawsze stempluje `zmieniony` na teraz, więc

@@ -14,7 +14,7 @@ nie z pamięci) i **jak przenieść go do aplikacji** bez utraty ani jednej licz
 | [`01-analiza-zrodel.md`](docs/01-analiza-zrodel.md) | Co robi arkusz 5.17, rozbieżności instrukcja ↔ plik, gdzie jest Base44 |
 | [`02-silnik-obliczeniowy.md`](docs/02-silnik-obliczeniowy.md) | Jądro rozłożone na funkcje czyste — wzory, sygnatury, plan testów |
 | [`03-architektura.md`](docs/03-architektura.md) | Warstwy, schemat bazy, ekrany, rekomendacja stacku, miejsce dla AI |
-| [`04-roadmapa.md`](docs/04-roadmapa.md) | Pięć faz, migracja danych, otwarte decyzje |
+| [`04-roadmapa.md`](docs/04-roadmapa.md) | Sześć faz, migracja danych, otwarte decyzje |
 
 ## Dane referencyjne
 
@@ -42,14 +42,14 @@ razem z dwoma nieznanymi wcześniej brakami formuł.
 Nie ma tabeli RPE, tabel stresu, skoku kg, pętli feedbacku ani reguł ciężaru per tydzień.
 To prototyp UI, nie aplikacja do dokończenia.
 
-## Silnik — faza 0 zrobiona
+## Silnik
 
 W [`silnik/`](silnik/) leży działające jądro: ciężary, stres, bilans, walidacja.
 Zero zależności, Node 22 uruchamia je wprost.
 
 ```bash
 cd silnik
-npm test                                        # 93 testy, 912 wartości zgodnych z arkuszem
+npm test                                        # 106 testów, 912 wartości zgodnych z arkuszem
 npm run sprawdz -- "Plan klienta.xlsx"          # co jest nie tak z planem
 npm run policz -- 1rm 80 5                      # 1RM z serii maksymalnej
 npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz
@@ -58,7 +58,7 @@ npm run policz -- kontrola                      # listy robocze z BAZY
 
 Szczegóły i sposób dokładania własnych planów do testów: [`silnik/README.md`](silnik/README.md).
 
-## Konsola trenera — faza 1 w toku
+## Konsola trenera
 
 ```bash
 cd konsola
@@ -76,6 +76,12 @@ podnosił, zamiast kolejnej serii maksymalnej). Do tego moduły **Oddech** i
 **Bieg** — te same kalkulatory co w zakładkach ODDECH i BIEG, sprawdzone
 wartość po wartości.
 
+**Kartoteka klienta** — konsola myśli ludźmi, nie dokumentami. Lista klientów
+na wejściu, a w kartotece każdego z nich: wszystkie cykle po kolei, 1RM przez
+kolejne cykle, obciążenie i wzorce ruchu cykl po cyklu, frekwencja i waga.
+Link dla klienta jest jeden i na stałe — nowy cykl nie wymaga wysyłania nowego
+adresu.
+
 **Asystent AI** — dwa przyciski: *Zaproponuj szkielet* (układ dni z konkretnymi
 ćwiczeniami z BAZY, pod cel, staż i sprzęt) i *Odczytaj analizę* (co wynika
 z policzonych liczb, słowami). Granica jest ostra i pilnowana testami: **AI nie
@@ -84,7 +90,7 @@ jest wyłączona, a cała reszta konsoli działa tak samo.
 
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 
-## Aplikacja klienta — faza 2 w toku
+## Aplikacja klienta
 
 W konsoli: **Link dla klienta** → wysyłasz adres → klient otwiera na telefonie.
 Widzi dzisiejszy trening z policzonymi ciężarami, ocenia jednym dotknięciem,
@@ -113,10 +119,10 @@ każda poprawka jest do pominięcia osobno.
 
 ## Gdzie to jest
 
-Fazy 0–4 z [`04-roadmapa.md`](docs/04-roadmapa.md) są domknięte: jądro
+Fazy 0–5 z [`04-roadmapa.md`](docs/04-roadmapa.md) są domknięte: jądro
 sprawdzone przeciwko arkuszowi, konsola trenera, aplikacja klienta, to czego
-arkusz nie umiał, wersja produkcyjna (baza, logowanie, wdrożenie, kopie)
-i warstwa AI.
+arkusz nie umiał, wersja produkcyjna (baza, logowanie, wdrożenie, kopie),
+warstwa AI i kartoteka klienta.
 
 Otwarte decyzje — liczenie ćwiczeń jednostronnych i to, czy aplikacja ma kiedyś
 przechowywać dane o zdrowiu — są zapisane na końcu roadmapy. Model SaaS dla

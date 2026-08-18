@@ -4,7 +4,7 @@
  * Trzymamy tylko szkielet (HTML, CSS, JS). Dane planu idą przez localStorage
  * w app.js, bo muszą przetrwać także wtedy, gdy przeglądarka wyczyści cache.
  */
-const CACHE = "trening-v4";
+const CACHE = "trening-v5";
 const SZKIELET = ["/klient/style.css", "/klient/app.js", "/klient/manifest.json"];
 
 self.addEventListener("install", (e) => {

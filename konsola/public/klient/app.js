@@ -486,6 +486,14 @@ $("#zakoncz").onclick = () => {
   pokazEkran("#ekran-tygodnie");
 };
 
+/** Cały ekran zastąpiony jednym komunikatem — bez planu nie ma czego rysować. */
+function komunikat(tytul, tresc) {
+  document.body.replaceChildren();
+  const blok = el("div", "komunikat-pelny");
+  blok.append(el("h1", "", tytul), el("p", "", tresc));
+  document.body.append(blok);
+}
+
 // ── start ──────────────────────────────────────────────────────────
 (async () => {
   // Najpierw to, co mamy lokalnie — żeby aplikacja otworzyła się bez sieci.
@@ -498,20 +506,30 @@ $("#zakoncz").onclick = () => {
   try {
     const odp = await fetch(`/api/klient/${TOKEN}`);
     if (odp.ok) {
-      widok = await odp.json();
+      const swiezy = await odp.json();
+
+      // Link działa, ale trener nie wysłał jeszcze planu. To normalny stan
+      // między cyklami: link jest stały, plan się zmienia. Nie kasujemy tego,
+      // co zapisane lokalnie — poprzedni cykl zostaje do wglądu offline.
+      if (swiezy.czekaNaPlan) {
+        komunikat(`Cześć ${swiezy.klient}!`,
+          "Trener przygotowuje Twój plan. Ten link zostaje ten sam — "
+          + "otwórz go ponownie, gdy dostaniesz wiadomość.");
+        return;
+      }
+
+      widok = swiezy;
       zapiszWidokLokalnie();
       pokazStanPolaczenia(true);
       rysuj();
     } else if (!zapamietany) {
-      document.body.innerHTML =
-        '<p style="padding:2rem;text-align:center">Link nieaktualny.<br>Poproś trenera o nowy.</p>';
+      komunikat("Link nieaktualny", "Poproś trenera o nowy.");
       return;
     }
   } catch {
     pokazStanPolaczenia(false);
     if (!zapamietany) {
-      document.body.innerHTML =
-        '<p style="padding:2rem;text-align:center">Brak połączenia i nic zapisanego.<br>Otwórz raz z zasięgiem.</p>';
+      komunikat("Brak połączenia i nic zapisanego", "Otwórz raz z zasięgiem.");
       return;
     }
   }

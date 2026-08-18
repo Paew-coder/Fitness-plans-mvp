@@ -308,6 +308,42 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .naglowek-glowny { display: flex; align-items: flex-start; gap: 1rem; }
 .naglowek-glowny > div { flex: 1; }
 
+/* ── kartoteka klienta ──────────────────────────────────────────── */
+.podsumowanie-klienta {
+  margin: 0 0 1.2rem; color: var(--tekst-slaby); font-size: .92rem;
+}
+
+.pozycja .znacznik-aktywny {
+  margin-left: .6rem; font-family: var(--mono); font-size: .68rem;
+  font-weight: 400; color: var(--akcent); white-space: nowrap;
+}
+
+#lista-cykli .pozycja .nazwa { flex: 0 0 auto; min-width: 8rem; font-family: var(--mono); }
+
+.wiersz-sciezki {
+  display: flex; align-items: baseline; gap: .8rem;
+  padding: .3rem 0; border-bottom: 1px solid var(--linia); font-size: .86rem;
+}
+.wiersz-sciezki:last-child { border-bottom: none; }
+.wiersz-sciezki .etykieta-szeroka { flex: 1; }
+.wiersz-sciezki .tresc.mono { font-family: var(--mono); color: var(--tekst-slaby); white-space: nowrap; }
+.wiersz-sciezki .wartosc {
+  width: 4.4rem; text-align: right; font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Karty historii mają etykiety słowami („wiosłowanie"), a nie krótkie „T3" —
+   domyślne 3,4 rem z panelu planu jest tu za wąskie i wartości zawijają się. */
+#historia-obciazenia .wiersz-miary .etykieta { width: 2.6rem; }
+#historia-obciazenia .wiersz-miary .tresc { flex: 1; }
+#historia-obciazenia .wiersz-miary .wartosc { width: 4.6rem; }
+#historia-wzorcow .wiersz-miary .etykieta { width: 6.2rem; }
+#historia-wzorcow .wiersz-miary .tresc { flex: 1; text-align: right; }
+#historia-frekwencji .wiersz-miary .etykieta { width: 2.6rem; }
+#historia-frekwencji .wiersz-miary .tresc { flex: 1; }
+.wartosc.wzrost { color: var(--dobrze); }
+.wartosc.spadek { color: var(--uwaga); }
+
 /* ── asystent AI ────────────────────────────────────────────────── */
 .akcje-asystenta { display: flex; gap: .5rem; flex-wrap: wrap; }
 .akcje-asystenta button { font-size: .82rem; padding: .35rem .7rem; }

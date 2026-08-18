@@ -22,7 +22,7 @@ after(() => { zamknij(); rmSync(KATALOG, { recursive: true, force: true }); });
 
 function planTestowy(id: string, klient = "Testowy Klient"): magazyn.ZapisanyPlan {
   return {
-    id, trenerId: TRENER, klient, wersja: 1, status: "szkic",
+    id, trenerId: TRENER, klientId: magazyn.idKlienta(klient), klient, wersja: 1, status: "szkic",
     dataStartu: "2026-09-01", utworzony: "", zmieniony: "",
     plan: magazyn.pustyPlan(klient),
   };
@@ -54,7 +54,6 @@ describe("magazyn — plan tam i z powrotem", () => {
       },
     ];
     plan.ukonczoneDni = [{ dzien: 1, tydzien: 1, data: "2026-09-02T10:30:00.000Z" }];
-    plan.waga = [{ data: "2026-09-01", kg: 78.4 }, { data: "2026-09-08", kg: 78 }];
 
     magazyn.zapisz(plan);
     const w = magazyn.wczytaj(TRENER, "wpisy")!;
@@ -62,7 +61,6 @@ describe("magazyn — plan tam i z powrotem", () => {
     assert.equal(w.wykonania!.length, 2);
     assert.deepEqual(w.wykonania!.find((x) => x.positionId === "D1-S02"), plan.wykonania[1]);
     assert.deepEqual(w.ukonczoneDni, plan.ukonczoneDni);
-    assert.deepEqual(w.waga, plan.waga);
   });
 
   test("moduły oddechu i biegu przeżywają zapis", () => {
@@ -99,24 +97,112 @@ describe("magazyn — plan tam i z powrotem", () => {
 });
 
 describe("magazyn — dostęp klienta", () => {
-  test("token prowadzi do planu, byle token nie", () => {
-    const plan = planTestowy("token");
-    plan.token = magazyn.nowyToken();
-    magazyn.zapisz(plan);
+  test("token prowadzi do klienta, byle token nie", () => {
+    const plan = magazyn.zapisz(planTestowy("token", "Klient Z Linkiem"));
+    const token = magazyn.nowyToken();
+    magazyn.zapiszKlienta({ ...magazyn.wczytajKlienta(TRENER, plan.klientId)!, token });
 
-    assert.equal(magazyn.wczytajPoTokenie(plan.token)!.id, "token");
-    assert.equal(magazyn.wczytajPoTokenie("nieistniejacy-token-1234"), null);
-    assert.equal(magazyn.wczytajPoTokenie(""), null, "pusty token nie może niczego otworzyć");
-    assert.equal(magazyn.wczytajPoTokenie("krotki"), null);
+    assert.equal(magazyn.klientPoTokenie(token)!.id, plan.klientId);
+    assert.equal(magazyn.klientPoTokenie("nieistniejacy-token-1234"), null);
+    assert.equal(magazyn.klientPoTokenie(""), null, "pusty token nie może niczego otworzyć");
+    assert.equal(magazyn.klientPoTokenie("krotki"), null);
   });
 
   test("unieważnienie tokenu zamyka dostęp natychmiast", () => {
-    const plan = planTestowy("uniewaznienie");
-    plan.token = magazyn.nowyToken();
-    const zapisany = magazyn.zapisz(plan);
+    const plan = magazyn.zapisz(planTestowy("uniewaznienie", "Klient Do Odciecia"));
+    const token = magazyn.nowyToken();
+    const klient = magazyn.wczytajKlienta(TRENER, plan.klientId)!;
+    magazyn.zapiszKlienta({ ...klient, token });
 
-    magazyn.zapisz({ ...zapisany, token: undefined });
-    assert.equal(magazyn.wczytajPoTokenie(plan.token), null);
+    magazyn.zapiszKlienta({ ...klient, token: undefined });
+    assert.equal(magazyn.klientPoTokenie(token), null);
+  });
+
+  test("link przeżywa zmianę cyklu i pokazuje aktualny plan", () => {
+    const pierwszy = magazyn.zapisz({
+      ...planTestowy("ciaglosc-1", "Klient Wielocyklowy"), status: "zakończony",
+    });
+    const token = magazyn.nowyToken();
+    magazyn.zapiszKlienta({ ...magazyn.wczytajKlienta(TRENER, pierwszy.klientId)!, token });
+
+    // Klient ma link w telefonie i widzi cykl pierwszy.
+    assert.equal(magazyn.aktywnyPlan(TRENER, pierwszy.klientId)!.id, "ciaglosc-1");
+
+    // Trener układa drugi cykl. Dopóki jest szkicem, klient go nie widzi.
+    const drugi = magazyn.zapisz({
+      ...magazyn.kopiaJakoNowaWersja(pierwszy, 2), id: "ciaglosc-2",
+    });
+    assert.equal(magazyn.aktywnyPlan(TRENER, pierwszy.klientId)!.id, "ciaglosc-1",
+      "szkic to jeszcze nie plan do trenowania");
+
+    // Po wysłaniu ten sam link pokazuje nowy cykl — bez wymiany adresu.
+    magazyn.zapisz({ ...drugi, status: "wysłany" });
+    assert.equal(magazyn.klientPoTokenie(token)!.id, pierwszy.klientId);
+    assert.equal(magazyn.aktywnyPlan(TRENER, pierwszy.klientId)!.id, "ciaglosc-2");
+  });
+
+  test("bez wysłanego planu klient nie widzi nic", () => {
+    const szkic = magazyn.zapisz(planTestowy("sam-szkic", "Klient Bez Planu"));
+    assert.equal(magazyn.aktywnyPlan(TRENER, szkic.klientId), null);
+  });
+});
+
+describe("magazyn — waga należy do klienta", () => {
+  test("wpisy z dwóch cykli składają się na jedną historię", () => {
+    const cykl1 = magazyn.zapisz(planTestowy("waga-1", "Klient Wazacy Sie"));
+    magazyn.zapisz({ ...magazyn.kopiaJakoNowaWersja(cykl1, 2), id: "waga-2" });
+
+    magazyn.zapiszWage(TRENER, cykl1.klientId, "2026-09-01", 78.4);
+    magazyn.zapiszWage(TRENER, cykl1.klientId, "2026-10-20", 77.1);
+
+    // Obie wersje planu widzą tę samą, pełną historię.
+    assert.deepEqual(magazyn.wczytaj(TRENER, "waga-1")!.waga, magazyn.wczytaj(TRENER, "waga-2")!.waga);
+    assert.deepEqual(magazyn.wagaKlienta(TRENER, cykl1.klientId).map((w) => w.kg), [78.4, 77.1]);
+  });
+
+  test("drugi pomiar tego samego dnia nadpisuje, zero kasuje", () => {
+    const plan = magazyn.zapisz(planTestowy("waga-nadpis", "Klient Poprawiajacy"));
+    magazyn.zapiszWage(TRENER, plan.klientId, "2026-09-01", 80);
+    magazyn.zapiszWage(TRENER, plan.klientId, "2026-09-01", 79.5);
+    assert.deepEqual(magazyn.wagaKlienta(TRENER, plan.klientId), [{ data: "2026-09-01", kg: 79.5 }]);
+
+    magazyn.zapiszWage(TRENER, plan.klientId, "2026-09-01", 0);
+    assert.deepEqual(magazyn.wagaKlienta(TRENER, plan.klientId), []);
+  });
+
+  test("usunięcie klienta zabiera jego plany i wagę", () => {
+    const plan = magazyn.zapisz(planTestowy("kaskada-klienta", "Klient Do Usuniecia"));
+    magazyn.zapiszWage(TRENER, plan.klientId, "2026-09-01", 75);
+
+    magazyn.usunKlienta(TRENER, plan.klientId);
+    assert.equal(magazyn.wczytaj(TRENER, "kaskada-klienta"), null);
+    assert.deepEqual(magazyn.wagaKlienta(TRENER, plan.klientId), []);
+    assert.equal(magazyn.wczytajKlienta(TRENER, plan.klientId), null);
+  });
+
+  test("zmiana nazwy nie rozdziela historii", () => {
+    const plan = magazyn.zapisz(planTestowy("nazwa-1", "Zuzanna C"));
+    const klient = magazyn.wczytajKlienta(TRENER, plan.klientId)!;
+
+    // Trener poprawia nazwisko. Identyfikator zostaje ten sam, więc plany
+    // dalej należą do tej samej osoby — inaczej cała historia by się rozjechała.
+    magazyn.zapiszKlienta({ ...klient, nazwa: "Zuzanna Chmielewska" });
+    const drugiCykl = magazyn.zapisz({
+      ...magazyn.kopiaJakoNowaWersja(magazyn.wczytaj(TRENER, "nazwa-1")!, 2), id: "nazwa-2",
+    });
+
+    assert.equal(drugiCykl.klientId, klient.id);
+    assert.equal(drugiCykl.klient, "Zuzanna Chmielewska", "plan pokazuje aktualną nazwę");
+    assert.deepEqual(magazyn.planyKlienta(TRENER, klient.id).map((p) => p.id), ["nazwa-1", "nazwa-2"]);
+    assert.equal(magazyn.wczytajKlienta(TRENER, "zuzanna-chmielewska"), null,
+      "poprawka nazwy nie zakłada drugiej osoby");
+  });
+
+  test("ten sam człowiek zapisany inaczej to dalej jeden klient", () => {
+    const a = magazyn.zapewnijKlienta(TRENER, "Zuzanna C");
+    const b = magazyn.zapewnijKlienta(TRENER, "zuzanna c.");
+    assert.equal(a.id, b.id);
+    assert.equal(magazyn.listaKlientow(TRENER).filter((k) => k.id === "zuzanna-c").length, 1);
   });
 });
 
@@ -127,8 +213,8 @@ describe("magazyn — rozdzielenie trenerów", () => {
     ).run("drugi@localhost", "Drugi", new Date().toISOString()).lastInsertRowid);
 
     // Ten sam identyfikator planu u obu trenerów — musi być dozwolony.
-    magazyn.zapisz({ ...planTestowy("wspolne-id"), klient: "Pierwszy klient" });
-    magazyn.zapisz({ ...planTestowy("wspolne-id"), trenerId: drugi, klient: "Drugi klient" });
+    magazyn.zapisz({ ...planTestowy("wspolne-id", "Pierwszy klient") });
+    magazyn.zapisz({ ...planTestowy("wspolne-id", "Drugi klient"), trenerId: drugi });
 
     assert.equal(magazyn.wczytaj(TRENER, "wspolne-id")!.klient, "Pierwszy klient");
     assert.equal(magazyn.wczytaj(drugi, "wspolne-id")!.klient, "Drugi klient");
@@ -144,12 +230,11 @@ describe("magazyn — rozdzielenie trenerów", () => {
     const plan = planTestowy("kaskada");
     plan.wykonania = [{ positionId: "D1-S01", tydzien: 1, data: "2026-09-02T10:00:00.000Z", feedback: "OK" }];
     plan.ukonczoneDni = [{ dzien: 1, tydzien: 1, data: "2026-09-02T10:30:00.000Z" }];
-    plan.waga = [{ data: "2026-09-01", kg: 80 }];
     magazyn.zapisz(plan);
 
     magazyn.usun(TRENER, "kaskada");
     assert.equal(magazyn.wczytaj(TRENER, "kaskada"), null);
-    for (const tabela of ["wykonanie", "ukonczony_dzien", "pomiar_wagi"]) {
+    for (const tabela of ["wykonanie", "ukonczony_dzien"]) {
       const { c } = baza().prepare(
         `SELECT COUNT(*) AS c FROM ${tabela} WHERE plan_id = 'kaskada'`,
       ).get() as { c: number };
