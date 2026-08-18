@@ -21,9 +21,9 @@ z sześciu tygodni.
 obciążenie tydzień po tygodniu z oceną normy — wszystko przelicza się przy każdej
 zmianie, tak jak w arkuszu.
 
-**Kontrola przed wysyłką.** Panel po prawej pokazuje, co blokuje wysyłkę (brak
-serii maksymalnej, powtórzenia poza tabelą) i co warto sprawdzić (ćwiczenie bez
-nagrania, niezgodne ze szkieletem, powtórka z poprzedniego cyklu).
+**Kontrola przed wysyłką.** Panel po prawej pokazuje, co blokuje wysyłkę (pusty
+plan, brak serii maksymalnej, powtórzenia poza tabelą) i co warto sprawdzić
+(ćwiczenie bez nagrania, niezgodne ze szkieletem, powtórka z poprzedniego cyklu).
 
 **Eksport do arkusza** — `Eksportuj arkusz` tworzy plik w formacie 5.18
 z żywymi formułami, walidacjami i zakładkami ODDECH/BIEG. Ląduje w
@@ -63,6 +63,18 @@ planie, więc każdy nowy cykl znaczył nowy adres do wysłania, a stary link
 zamrażał klienta na poprzednim planie. Teraz link należy do klienta: oznaczasz
 nowy plan jako *wysłany* i klient widzi go pod tym samym adresem. Szkice nie są
 widoczne — do czasu wysyłki klient widzi „trener przygotowuje Twój plan".
+
+**Status planu** ustawiasz w pasku nad planem: *szkic → wysłany → zakończony*.
+To nie jest etykieta, tylko przełącznik widoczności: klient widzi wyłącznie plan
+oznaczony jako wysłany. Gdy przestawiasz na *wysłany* przy otwartych błędach
+kontroli, konsola wypisuje je i pyta wprost — decyzja jest Twoja, ale musi paść
+świadomie. Jeśli klient nie ma jeszcze linku, dostajesz go od razu po wysłaniu.
+
+**Działa na telefonie.** Trener nie siedzi przy biurku — między klientami
+zagląda tu z telefonu. Lista, panel *Wymaga uwagi* i kartoteka układają się
+w jedną kolumnę; tabela slotów, która ma osiem kolumn z polami, przewija się
+we własnej ramce, a nie całą stroną. Układanie planu jest wygodniejsze na
+dużym ekranie, ale zajrzenie do klienta działa wszędzie.
 
 **Wobec poprzedniego cyklu.** Gdy plan wskazuje poprzedni cykl, karta pokazuje
 różnice: objętość, wzorce ruchu, 1RM na wejściu, które ćwiczenia wróciły,
@@ -296,7 +308,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 82 testy magazynu, migracji, logowania i asystenta (`npm test`) |
+| `testy/` | 83 testy magazynu, migracji, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
