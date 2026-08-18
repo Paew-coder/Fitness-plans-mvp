@@ -37,7 +37,7 @@ i trzeba je dobrać ręcznie.
 **Widzisz, czy klient ćwiczy.** Karta *Realizacja* pokazuje treningi tydzień
 po tygodniu: kropka pełna to trening domknięty, blada to zaczęty (klient oceniał
 ćwiczenia, ale nie kliknął „Zakończ trening" — na siłowni zdarza się to
-notorycznie). Na liście planów każdy klient ma sygnał: *aktywny* / *zwolnił* /
+notorycznie). Na liście klientów każdy ma sygnał: *aktywny* / *zwolnił* /
 *stanął*. Arkusz nie odpowiadał na to pytanie w ogóle.
 
 **1RM z serii roboczych.** Jeśli klient wpisuje, ile faktycznie podniósł, konsola
@@ -47,9 +47,22 @@ Przyjmujesz kliknięciem; bez kliknięcia nic się nie zmienia.
 
 **Wymaga uwagi.** Panel na górze listy: kto stanął (ponad 10 dni bez treningu),
 komu wysłałeś plan, a on nie zaczął, kto nie dostał linku, komu kończy się cykl.
-Liczy się tylko z planów oznaczonych jako *wysłany* — szkice to jeszcze nie
-zobowiązanie. Przy kilkunastu klientach arkusz wymagał otwarcia kilkunastu
-plików, żeby to zauważyć.
+Jeden wiersz na klienta i tylko o jego bieżącym planie — szkice to jeszcze nie
+zobowiązanie, a zamknięte cykle nie mają po co wołać. Przy kilkunastu klientach
+arkusz wymagał otwarcia kilkunastu plików, żeby to zauważyć.
+
+**Kartoteka klienta.** Konsola myśli ludźmi, nie dokumentami: na wejściu jest
+lista klientów, a cykle leżą w kartotece każdego z nich. Widać tam wszystkie
+plany po kolei, 1RM przez kolejne cykle (`100 → 112,5 → 125 kg`), obciążenie
+i wzorce ruchu cykl po cyklu, frekwencję i wagę ciała. Porównanie dwóch
+sąsiednich cykli mówi, co się zmieniło; kartoteka odpowiada na pytanie szersze —
+co się dzieje z tym człowiekiem od roku.
+
+**Jeden link na klienta, na stałe.** Wcześniej token dostępowy wisiał przy
+planie, więc każdy nowy cykl znaczył nowy adres do wysłania, a stary link
+zamrażał klienta na poprzednim planie. Teraz link należy do klienta: oznaczasz
+nowy plan jako *wysłany* i klient widzi go pod tym samym adresem. Szkice nie są
+widoczne — do czasu wysyłki klient widzi „trener przygotowuje Twój plan".
 
 **Wobec poprzedniego cyklu.** Gdy plan wskazuje poprzedni cykl, karta pokazuje
 różnice: objętość, wzorce ruchu, 1RM na wejściu, które ćwiczenia wróciły,
@@ -247,6 +260,20 @@ dziś trener jest jeden i konsola nie ma logowania. To jedyna rzecz, której
 nie da się dołożyć później bez przepisywania wszystkiego — a jest darmowa,
 dopóki robi się ją od razu.
 
+## Aktualizacja z wcześniejszej wersji
+
+Baza podnosi się sama przy pierwszym uruchomieniu — z kolumny tekstowej
+`plan.klient` powstają klienci, a token dostępowy i waga ciała przechodzą
+z planu na klienta. **Link, który klient ma już w telefonie, działa dalej**
+i od tej pory sam pokazuje aktualny cykl.
+
+Migracja nie kasuje danych, ale zmienia układ tabel, więc przed pierwszym
+startem nowej wersji zrób kopię:
+
+```bash
+npm run kopia
+```
+
 ## Czego jeszcze nie ma
 
 - Kont dla klientów — dziś dostęp daje token w linku.
@@ -260,14 +287,16 @@ dopóki robi się ją od razu.
 | `serwer.ts` | HTTP + API, bez frameworka |
 | `baza/schemat.sql` | tabele; każda z `trener_id` |
 | `baza/polaczenie.ts` | otwarcie bazy, wersja schematu |
-| `magazyn.ts` | zapis i odczyt planów |
+| `magazyn.ts` | zapis i odczyt klientów i planów |
+| `baza/migracje.ts` | doprowadzenie istniejącej bazy do aktualnego schematu |
+| `nazwy.ts` | nazwa klienta → identyfikator (jedno miejsce dla trzech modułów) |
 | `uklad-planu.ts` | szablon 5 dni × 12 slotów i numeracja Lp. |
 | `uwierzytelnianie.ts` | hasło, sesje, tryb dostępu |
 | `ai/klient.ts` | jedyne miejsce, które wychodzi do internetu |
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 66 testów magazynu, logowania i asystenta (`npm test`) |
+| `testy/` | 82 testy magazynu, migracji, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |

@@ -13,7 +13,8 @@ const KATEGORIE = [
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let cwiczenia = [];
-let obraz = null;      // { zapisany, wynik, uwagi, gotowy, normy }
+let obraz = null;      // { zapisany, klient, wynik, uwagi, gotowy, normy }
+let kartoteka = null;  // { klient, historia, plany, waga } — ekran klienta
 let tydzien = 1;
 let czekaZapis = null;
 
@@ -25,6 +26,18 @@ const el = (tag, klasa, tekst) => {
   return e;
 };
 const liczba = (n, m = 1) => Number(n).toFixed(m).replace(".", ",");
+
+/**
+ * Odmiana rzeczownika po liczbie: `[pojedyncza, mnoga, dopełniacz]`.
+ * `1 cykl · 3 cykle · 5 cykli` — bez tego wszędzie wychodzi „3 pomiarów".
+ */
+function odmiana(n, [jeden, kilka, wiele]) {
+  const ostatnia = n % 10;
+  const dwie = n % 100;
+  if (n === 1) return jeden;
+  if (ostatnia >= 2 && ostatnia <= 4 && !(dwie >= 12 && dwie <= 14)) return kilka;
+  return wiele;
+}
 
 async function api(sciezka, opcje = {}) {
   const odp = await fetch(sciezka, {
@@ -52,64 +65,66 @@ async function api(sciezka, opcje = {}) {
   };
 })();
 
-// ── lista planów ───────────────────────────────────────────────────
+// ── lista klientów ─────────────────────────────────────────────────
+// Konsola przez pierwsze fazy pokazywała płaską listę planów i to działało do
+// mniej więcej trzydziestu pozycji. Trener myśli ludźmi, nie dokumentami —
+// więc na wejściu są klienci, a cykle leżą w kartotece każdego z nich.
 async function pokazListe() {
   $("#ekran-plan").classList.add("ukryty");
+  $("#ekran-klient").classList.add("ukryty");
   $("#ekran-lista").classList.remove("ukryty");
 
-  const [plany, uwaga] = await Promise.all([api("/api/plany"), api("/api/uwaga")]);
+  const [klienci, plany, uwaga] = await Promise.all([
+    api("/api/klienci"), api("/api/plany"), api("/api/uwaga"),
+  ]);
   rysujUwage(uwaga);
+  rysujPodpowiedziKlientow(klienci);
+  rysujWyborPoprzedniego(plany);
 
-  const lista = $("#lista-planow");
+  const lista = $("#lista-klientow");
   lista.replaceChildren();
-
-  const wybor = $('#form-nowy [name="poprzedniId"]');
-  wybor.replaceChildren(el("option", "", "— brak —"));
-  wybor.firstChild.value = "";
-
-  if (plany.length === 0) {
-    lista.append(el("p", "wskazowka", "Jeszcze nic tu nie ma. Utwórz pierwszy plan powyżej."));
+  if (klienci.length === 0) {
+    lista.append(el("p", "wskazowka", "Jeszcze nikogo tu nie ma. Utwórz pierwszy plan powyżej."));
     return;
   }
 
-  for (const p of plany) {
+  for (const k of klienci) {
     const wiersz = el("div", "pozycja");
-    const nazwa = el("div", "nazwa", `${p.klient} ${p.wersja}.0`);
-    const status = el("span", `odznaka ${p.status.replace(/[łą]/g, "l")}`, p.status);
-    const opisCyklu = p.cykl.doStartu !== null ? ` · start za ${p.cykl.doStartu} dni`
-      : p.cykl.tydzien === null ? ""
-        : p.cykl.poCyklu ? " · po cyklu"
-          : ` · T${p.cykl.tydzien}/6`;
-    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń${opisCyklu}`);
-    if (p.cykl.doKonca !== null) {
-      meta.title = p.cykl.poCyklu
-        ? `Cykl skończył się ${-p.cykl.doKonca} dni temu`
-        : `Do końca cyklu ${p.cykl.doKonca} dni`;
-    }
-    wiersz.append(sygnalAktywnosci(p.realizacja));
-    const otworz = el("button", "", "Otwórz");
-    otworz.onclick = () => otworzPlan(p.id);
-    const kopiuj = el("button", "", "Nowa wersja");
-    kopiuj.title = "Kopiuje dobór ćwiczeń jako kolejną wersję i łączy z tym cyklem";
-    kopiuj.onclick = async () => {
-      try {
-        obraz = await api(`/api/plany/${p.id}/kopia`, { method: "POST", body: {} });
-        tydzien = 1;
-        rysujPlan();
-      } catch (err) {
-        alert(err.message);
-      }
-    };
-    const usun = el("button", "link", "usuń");
-    usun.onclick = async () => {
-      if (!confirm(`Usunąć plan ${p.klient} ${p.wersja}.0?`)) return;
-      await api(`/api/plany/${p.id}`, { method: "DELETE" });
-      pokazListe();
-    };
-    wiersz.append(otworz, kopiuj, usun);
-    wiersz.prepend(nazwa, status, meta);
-    lista.append(wiersz);
+    wiersz.append(el("div", "nazwa", k.nazwa));
 
+    const opisCyklu = !k.cykl ? ""
+      : k.cykl.doStartu !== null ? ` · start za ${k.cykl.doStartu} dni`
+        : k.cykl.tydzien === null ? ""
+          : k.cykl.poCyklu ? " · po cyklu" : ` · T${k.cykl.tydzien}/6`;
+    const cykle = `${k.cykli} ${odmiana(k.cykli, ["cykl", "cykle", "cykli"])}`;
+    const biezacy = k.najnowszaWersja ? ` · ostatni ${k.najnowszaWersja}.0 (${k.statusNajnowszego})` : "";
+    wiersz.append(el("div", "meta", `${cykle}${biezacy}${opisCyklu}`));
+
+    wiersz.append(sygnalAktywnosci(k.realizacja ?? { maDostep: k.maLink, dniOdOstatniej: null }));
+
+    const otworz = el("button", "", "Otwórz");
+    otworz.onclick = () => otworzKlienta(k.id);
+    wiersz.append(otworz);
+    lista.append(wiersz);
+  }
+}
+
+/** Podpowiedzi w polu „Klient" — żeby drugi cykl trafił do istniejącej osoby. */
+function rysujPodpowiedziKlientow(klienci) {
+  const lista = $("#klienci-podpowiedzi");
+  lista.replaceChildren();
+  for (const k of klienci) {
+    const o = el("option");
+    o.value = k.nazwa;
+    lista.append(o);
+  }
+}
+
+function rysujWyborPoprzedniego(plany) {
+  const wybor = $('#form-nowy [name="poprzedniId"]');
+  wybor.replaceChildren(el("option", "", "— brak —"));
+  wybor.firstChild.value = "";
+  for (const p of plany) {
     const opcja = el("option", "", `${p.klient} ${p.wersja}.0`);
     opcja.value = p.id;
     wybor.append(opcja);
@@ -211,7 +226,7 @@ function rysujUwage(pozycje) {
     wiersz.append(el("div", "nazwa", `${w.klient} ${w.wersja}.0`));
     wiersz.append(el("span", "meta powody", w.powody.map(opisPowodu).join(" · ")));
     const otworz = el("button", "", "Otwórz");
-    otworz.onclick = () => otworzPlan(w.id);
+    otworz.onclick = () => otworzKlienta(w.klientId);
     wiersz.append(otworz);
     lista.append(wiersz);
   }
@@ -243,6 +258,228 @@ function sygnalAktywnosci(r) {
   return s;
 }
 
+// ── kartoteka klienta ──────────────────────────────────────────────
+// Porównanie dwóch sąsiednich cykli mówi, co się zmieniło. Ten ekran odpowiada
+// na pytanie szersze i jedyne, które trener naprawdę zadaje przy czwartej
+// wersji planu: co się dzieje z tym człowiekiem od roku.
+async function otworzKlienta(id) {
+  kartoteka = await api(`/api/klienci/${id}`);
+  rysujKartoteke();
+}
+
+function rysujKartoteke() {
+  $("#ekran-lista").classList.add("ukryty");
+  $("#ekran-plan").classList.add("ukryty");
+  $("#ekran-klient").classList.remove("ukryty");
+
+  const { klient, historia, plany } = kartoteka;
+  $("#nazwa-klienta").textContent = klient.nazwa;
+  $("#cykli-klienta").textContent = klient.token ? "ma link" : "bez linku";
+  $("#cykli-klienta").className = `odznaka ${klient.token ? "wyslany" : "szkic"}`;
+  $("#podsumowanie-klienta").textContent = kartoteka.podsumowanie;
+
+  rysujCykle(plany);
+  rysujSciezki1RM(historia.cwiczenia);
+  rysujHistorieObciazenia(historia.cykle);
+  rysujHistorieWzorcow(historia.wzorce);
+  rysujHistorieFrekwencji(historia.cykle);
+  rysujHistorieWagi(kartoteka.waga);
+}
+
+function rysujCykle(plany) {
+  const lista = $("#lista-cykli");
+  lista.replaceChildren();
+  if (plany.length === 0) {
+    lista.append(el("p", "wskazowka", "Ten klient nie ma jeszcze żadnego cyklu."));
+    return;
+  }
+
+  // Najnowszy na górze — tam trener pracuje.
+  for (const p of [...plany].reverse()) {
+    const wiersz = el("div", "pozycja");
+    const nazwa = el("div", "nazwa", `${p.wersja}.0`);
+    if (p.id === kartoteka.aktywnyPlanId) {
+      const znacznik = el("span", "znacznik-aktywny", "← widzi klient");
+      znacznik.title = "Ten plan otwiera się pod linkiem klienta";
+      nazwa.append(znacznik);
+    }
+    const status = el("span", `odznaka ${p.status.replace(/[łą]/g, "l")}`, p.status);
+
+    const opisCyklu = p.cykl.doStartu !== null ? ` · start za ${p.cykl.doStartu} dni`
+      : p.cykl.tydzien === null ? ""
+        : p.cykl.poCyklu ? " · po cyklu" : ` · T${p.cykl.tydzien}/6`;
+    const meta = el("div", "meta", `${p.cwiczen} ćwiczeń${opisCyklu}`);
+
+    wiersz.append(nazwa, status, meta, sygnalAktywnosci(p.realizacja));
+
+    const otworz = el("button", "", "Otwórz");
+    otworz.onclick = () => otworzPlan(p.id);
+    const kopiuj = el("button", "", "Nowa wersja");
+    kopiuj.title = "Kopiuje dobór ćwiczeń jako kolejną wersję i łączy z tym cyklem";
+    kopiuj.onclick = async () => {
+      try {
+        obraz = await api(`/api/plany/${p.id}/kopia`, { method: "POST", body: {} });
+        tydzien = 1;
+        rysujPlan();
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+    const usun = el("button", "link", "usuń");
+    usun.onclick = async () => {
+      if (!confirm(`Usunąć cykl ${p.wersja}.0? Znikną też oceny i wpisy klienta z tego cyklu.`)) return;
+      await api(`/api/plany/${p.id}`, { method: "DELETE" });
+      otworzKlienta(kartoteka.klient.id);
+    };
+    wiersz.append(otworz, kopiuj, usun);
+    lista.append(wiersz);
+  }
+}
+
+/** Ciąg wartości ze strzałkami: `100 → 110 → 125`. */
+function ciag(wartosci, jednostka = "") {
+  return wartosci.map((w) => liczba(w).replace(",0", "")).join(" → ") + (jednostka ? ` ${jednostka}` : "");
+}
+
+function zeZnakiemProc(procent) {
+  if (procent === null) return "";
+  return `${procent > 0 ? "+" : ""}${String(procent).replace(".", ",")}%`;
+}
+
+/**
+ * Co się dzieje z siłą przez kolejne cykle.
+ *
+ * Bierzemy 1RM na wejściu w cykl, czyli to, co trener wpisał albo przyjął
+ * z serii roboczych. W kolejnych tygodniach ciężar rusza się mnożnikiem
+ * adaptacji i przestaje być tą samą miarą.
+ */
+function rysujSciezki1RM(cwiczeniaHistorii) {
+  const kontener = $("#sciezki-1rm");
+  kontener.replaceChildren();
+
+  const zTrendem = cwiczeniaHistorii.filter((c) => c.wCyklach >= 2);
+  const jednorazowe = cwiczeniaHistorii.filter((c) => c.wCyklach < 2);
+
+  if (zTrendem.length === 0) {
+    kontener.append(el("p", "wskazowka",
+      jednorazowe.length === 0
+        ? "Nie ma jeszcze ani jednego 1RM do pokazania."
+        : "Trend pokaże się przy drugim cyklu z tym samym ćwiczeniem."));
+  }
+
+  for (const c of zTrendem) {
+    const wiersz = el("div", "wiersz-sciezki");
+    wiersz.append(el("span", "etykieta-szeroka", c.nazwa));
+    wiersz.append(el("span", "tresc mono", ciag(c.punkty.map((p) => p.oneRM), "kg")));
+    const klasa = c.zmianaKg > 0 ? "wzrost" : c.zmianaKg < 0 ? "spadek" : "";
+    wiersz.append(el("span", `wartosc ${klasa}`, zeZnakiemProc(c.zmianaProc)));
+    wiersz.title = `Cykle ${c.punkty.map((p) => `${p.wersja}.0`).join(", ")}`;
+    kontener.append(wiersz);
+  }
+
+  if (jednorazowe.length > 0) {
+    kontener.append(el("p", "wskazowka",
+      `Tylko w jednym cyklu: ${jednorazowe.map((c) => c.nazwa).join(", ")}.`));
+  }
+}
+
+function rysujHistorieObciazenia(cykle) {
+  const kontener = $("#historia-obciazenia");
+  kontener.replaceChildren();
+  if (cykle.length === 0) return;
+
+  for (const c of cykle) {
+    const wiersz = el("div", "wiersz-miary");
+    wiersz.append(el("span", "etykieta", `${c.wersja}.0`));
+    wiersz.append(el("span", "tresc mono", `${liczba(c.stresNaTydzien, 1)} stresu`));
+    wiersz.append(el("span", "wartosc", `${liczba(c.serieNaTydzien, 0)} serii`));
+    wiersz.title = `${c.dniTreningowe} dni treningowe · ${c.cwiczen} ćwiczeń · `
+      + `${liczba(c.powtorzeniaNaTydzien, 0)} powtórzeń na tydzień`;
+    kontener.append(wiersz);
+  }
+  kontener.append(el("p", "wskazowka", "Średnia z sześciu tygodni cyklu."));
+}
+
+function rysujHistorieWzorcow(wzorce) {
+  const kontener = $("#historia-wzorcow");
+  kontener.replaceChildren();
+
+  const ruszone = wzorce.filter((w) => w.punkty.some((p) => p.serie > 0));
+  if (ruszone.length === 0) {
+    kontener.append(el("p", "wskazowka", "Brak danych o wzorcach."));
+    return;
+  }
+  for (const w of ruszone) {
+    const wiersz = el("div", "wiersz-miary");
+    wiersz.append(el("span", "etykieta", w.nazwa));
+    wiersz.append(el("span", "tresc mono", ciag(w.punkty.map((p) => p.serie))));
+    kontener.append(wiersz);
+  }
+  kontener.append(el("p", "wskazowka", "Serie na tydzień, cykl po cyklu."));
+}
+
+function rysujHistorieFrekwencji(cykle) {
+  const kontener = $("#historia-frekwencji");
+  kontener.replaceChildren();
+  if (cykle.length === 0) return;
+
+  for (const c of cykle) {
+    const wiersz = el("div", "wiersz-miary");
+    wiersz.append(el("span", "etykieta", `${c.wersja}.0`));
+    wiersz.append(el("span", "tresc mono", `${c.ukonczonych}/${c.zaplanowanych}`));
+    wiersz.append(el("span", "wartosc", c.frekwencja === null ? "—"
+      : `${Math.round(c.frekwencja * 100)}%`));
+    kontener.append(wiersz);
+  }
+}
+
+function rysujHistorieWagi(waga) {
+  const kontener = $("#historia-wagi");
+  kontener.replaceChildren();
+  if (waga.length === 0) {
+    kontener.append(el("p", "wskazowka", "Klient nie wpisał jeszcze żadnego pomiaru."));
+    return;
+  }
+
+  const zmiana = liczba(waga.at(-1).kg - waga[0].kg, 1);
+  kontener.append(el("p", "poziom-modulu",
+    `${liczba(waga.at(-1).kg)} kg${waga.length > 1 ? ` (${zmiana > 0 ? "+" : ""}${zmiana} kg)` : ""}`));
+  kontener.append(el("p", "wskazowka",
+    `${waga.length} ${odmiana(waga.length, ["pomiar", "pomiary", "pomiarów"])} od ${waga[0].data}. `
+    + "Historia jest ciągła — nie zeruje się przy nowym cyklu."));
+}
+
+$("#wroc-do-klientow").onclick = pokazListe;
+
+$("#nowy-cykl").onclick = async () => {
+  const ostatni = kartoteka.plany.at(-1);
+  const wersja = (ostatni?.wersja ?? 0) + 1;
+  try {
+    obraz = ostatni
+      ? await api(`/api/plany/${ostatni.id}/kopia`, { method: "POST", body: { wersja } })
+      : await api("/api/plany", {
+          method: "POST",
+          body: { klient: kartoteka.klient.nazwa, wersja: 1 },
+        });
+    tydzien = 1;
+    rysujPlan();
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+$("#zmien-nazwe").onclick = async () => {
+  const nazwa = prompt("Nazwa klienta:", kartoteka.klient.nazwa);
+  if (!nazwa?.trim() || nazwa === kartoteka.klient.nazwa) return;
+  // Identyfikator zostaje — poprawienie literówki nie może rozdzielić historii.
+  kartoteka = await api(`/api/klienci/${kartoteka.klient.id}`, {
+    method: "PUT", body: { nazwa },
+  });
+  rysujKartoteke();
+};
+
+$("#link-klienta-karta").onclick = () => pokazLinkKlienta(kartoteka.klient.id);
+
 // ── otwieranie i zapis ─────────────────────────────────────────────
 async function otworzPlan(id) {
   obraz = await api(`/api/plany/${id}`);
@@ -272,11 +509,17 @@ function zapiszPozniej() {
   }, 350);
 }
 
-$("#wroc").onclick = pokazListe;
+// Z planu wraca się do kartoteki jego klienta — to jest miejsce, z którego
+// się tu przyszło i w którym widać resztę cykli.
+$("#wroc").onclick = () => {
+  if (obraz?.zapisany.klientId) otworzKlienta(obraz.zapisany.klientId);
+  else pokazListe();
+};
 
 // ── rysowanie planu ────────────────────────────────────────────────
 function rysujPlan() {
   $("#ekran-lista").classList.add("ukryty");
+  $("#ekran-klient").classList.add("ukryty");
   $("#ekran-plan").classList.remove("ukryty");
 
   const z = obraz.zapisany;
@@ -1179,13 +1422,20 @@ $("#eksportuj").onclick = async () => {
     przycisk.textContent = "Eksportuj arkusz";
   }
 };
-$("#link-klienta").onclick = async () => {
+/**
+ * Link dla klienta. Jeden na klienta i na stałe — nie na plan.
+ *
+ * Wcześniej token wisiał przy planie, więc każdy nowy cykl znaczył nowy adres
+ * do wysłania, a stary link zamrażał klienta na poprzednim planie. Teraz ten
+ * sam adres pokazuje po prostu aktualny cykl.
+ */
+async function pokazLinkKlienta(klientId) {
   try {
-    const { sciezka } = await api(`/api/plany/${obraz.zapisany.id}/link`, { method: "POST", body: {} });
+    const { sciezka, widocznyPlan } = await api(`/api/klienci/${klientId}/link`, {
+      method: "POST", body: {},
+    });
     const adres = `${location.origin}${sciezka}`;
 
-    $("#modal-tytul").textContent = "Link dla klienta";
-    $("#modal-body").replaceChildren();
     const pole = el("code", "", adres);
     const kopiuj = el("button", "glowny", "Kopiuj link");
     kopiuj.onclick = async () => {
@@ -1197,26 +1447,39 @@ $("#link-klienta").onclick = async () => {
       }
     };
     const uniewaznij = el("button", "", "Unieważnij link");
-    uniewaznij.style.marginLeft = ".5rem";
     uniewaznij.onclick = async () => {
-      if (!confirm("Stary link przestanie działać. Na pewno?")) return;
-      await api(`/api/plany/${obraz.zapisany.id}/link`, { method: "DELETE" });
-      $("#modal").classList.add("ukryty");
+      if (!confirm("Stary link przestanie działać u klienta. Na pewno?")) return;
+      await api(`/api/klienci/${klientId}/link`, { method: "DELETE" });
+      zamknijModal();
+      if (kartoteka?.klient.id === klientId) otworzKlienta(klientId);
     };
+    const akcje = el("div", "akcje-modala");
+    akcje.append(kopiuj, uniewaznij);
 
-    $("#modal-body").append(
+    const tresc = [
       el("p", "", "Wyślij klientowi. Otworzy się na telefonie, działa też bez zasięgu."),
       pole,
-      el("p", "wskazowka",
-        "Kto ma link, ten widzi plan — bez hasła. Przy kilkunastu klientach to " +
-        "proporcjonalne. Gdyby link wyciekł, unieważnij go i wygeneruj nowy."),
-      kopiuj, uniewaznij,
-    );
-    $("#modal").classList.remove("ukryty");
+    ];
+    // Szkic nie pokazuje się klientowi — lepiej powiedzieć to teraz niż
+    // pozwolić wysłać link do pustej strony.
+    tresc.push(widocznyPlan
+      ? el("p", "wskazowka",
+          "Ten sam link działa przez kolejne cykle: gdy oznaczysz nowy plan jako " +
+          "wysłany, klient zobaczy go bez wymiany adresu.")
+      : el("p", "wskazowka ostrzezenie",
+          "⚠ Klient nie ma jeszcze aktywnego planu — zobaczy komunikat, że czekasz " +
+          "z przygotowaniem. Szkic nie jest widoczny; oznacz plan jako „wysłany”."));
+    tresc.push(el("p", "wskazowka",
+      "Kto ma link, ten widzi plan — bez hasła. Przy kilkunastu klientach to " +
+      "proporcjonalne. Gdyby link wyciekł, unieważnij go i wygeneruj nowy."));
+
+    pokazModal("Link dla klienta", ...tresc, akcje);
   } catch (err) {
     alert(err.message);
   }
-};
+}
+
+$("#link-klienta").onclick = () => pokazLinkKlienta(obraz.zapisany.klientId);
 
 $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 
