@@ -142,9 +142,21 @@
   </header>
 
   <div class="pasek-ustawien">
-    <label>Tydzień
+    <!-- Grupy przycisków NIE mogą stać w <label>. Kliknięcie w label uruchamia
+         jego kontrolkę, czyli pierwszy przycisk w środku — przez co kliknięcie
+         w „T4" wracało natychmiast na „T1" i przełączanie tygodni nie działało
+         wcale. <label> zostaje tam, gdzie opisuje jedno pole formularza. -->
+    <div class="pole">
+      <span class="etykieta-pola">Tydzień</span>
       <span id="taby-tygodni" class="taby"></span>
-    </label>
+    </div>
+    <div class="pole">
+      <span class="etykieta-pola">Wypełnij tygodnie</span>
+      <span class="taby">
+        <button type="button" id="progresja-szablonu" title="Wpisze do wszystkich sześciu tygodni progresję z szablonu 5.18">progresja 5.18</button>
+        <button type="button" id="kopiuj-tydzien" title="Skopiuje parametry z bieżącego tygodnia do pozostałych">kopiuj ten tydzień</button>
+      </span>
+    </div>
     <label>Akcesoria
       <select id="tryb-akcesoriow">
         <option value="trzymaj z bloku">trzymaj z bloku</option>

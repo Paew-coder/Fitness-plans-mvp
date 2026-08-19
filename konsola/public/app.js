@@ -606,10 +606,15 @@ function rysujPlan() {
   $("#czesc-planu").value = z.plan.czescPlanu;
   $("#data-startu").value = z.dataStartu ?? "";
 
+  $("#kopiuj-tydzien").textContent = `kopiuj T${tydzien}`;
+
   const taby = $("#taby-tygodni");
   taby.replaceChildren();
   for (const t of [1, 2, 3, 4, 5, 6]) {
     const b = el("button", t === tydzien ? "aktywny" : "", `T${t}`);
+    // Bez `type` przycisk jest przyciskiem wysyłki formularza. Poza formularzem
+    // nic to nie robi, ale zostawianie tego przypadkowi nie ma sensu.
+    b.type = "button";
     b.onclick = () => { tydzien = t; rysujPlan(); };
     taby.append(b);
   }
@@ -1472,6 +1477,38 @@ $("#ai-analiza").onclick = async () => {
     przycisk.textContent = "Odczytaj analizę";
   }
 };
+
+/**
+ * Wypełnianie sześciu tygodni naraz.
+ *
+ * To jedyne miejsce, w którym konsola była gorsza od arkusza: szablon 5.18
+ * przychodzi z wypełnionymi parametrami na cały cykl, a konsola kazała wpisać
+ * je od zera — przy planie na trzy dni po piętnaście pozycji to około
+ * dziewięćdziesięciu pól.
+ *
+ * Wartości lądują w polach **widocznie**, jako zwykłe liczby do poprawienia.
+ * Żadnej ukrytej domyślności: ta sama zasada, po której eksport wpisuje do
+ * arkusza liczby policzone, a nie puste komórki.
+ */
+async function wypelnijTygodnie(tryb) {
+  const opis = tryb === "progresja"
+    ? "Progresja z szablonu 5.18 nadpisze serie, powtórzenia i RPE we wszystkich sześciu tygodniach."
+    : `Parametry z tygodnia ${tydzien} nadpiszą pozostałe pięć tygodni.`;
+  if (!confirm(`${opis}\n\nOceny klienta i ręcznie ustawione ciężary zostają. Na pewno?`)) return;
+
+  try {
+    obraz = await api(`/api/plany/${obraz.zapisany.id}/tygodnie`, {
+      method: "POST",
+      body: { tryb, zrodlo: tydzien },
+    });
+    rysujPlan();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+$("#progresja-szablonu").onclick = () => wypelnijTygodnie("progresja");
+$("#kopiuj-tydzien").onclick = () => wypelnijTygodnie("kopiuj");
 
 /**
  * Status planu — jedyne miejsce, w którym się go zmienia.

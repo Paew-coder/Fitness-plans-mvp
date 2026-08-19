@@ -49,7 +49,7 @@ Zero zależności, Node 22 uruchamia je wprost.
 
 ```bash
 cd silnik
-npm test                                        # 108 testów, 912 wartości zgodnych z arkuszem
+npm test                                        # 118 testów, 912 wartości zgodnych z arkuszem
 npm run sprawdz -- "Plan klienta.xlsx"          # co jest nie tak z planem
 npm run policz -- 1rm 80 5                      # 1RM z serii maksymalnej
 npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz

@@ -26,6 +26,7 @@ import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import { porownajCykle, podsumujPorownanie } from "../silnik/src/porownanie-cykli.ts";
 import { historiaKlienta, podsumujHistorie } from "../silnik/src/historia-klienta.ts";
+import { skopiujTydzien, zastosujProgresje } from "../silnik/src/progresja.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
@@ -950,6 +951,31 @@ const serwer = createServer(async (req, res) => {
       if (akcja === "/eksport" && req.method === "POST") {
         const plik = await eksportujDoArkusza(zapisany);
         return json(res, { plik });
+      }
+
+      /**
+       * Wypełnienie sześciu tygodni progresją z szablonu 5.18 albo
+       * rozprowadzenie jednego tygodnia na pozostałe.
+       *
+       * Wartości lądują w planie **wprost** i są widoczne w polach — nie ma tu
+       * ukrytej domyślności. To ta sama zasada, po której eksport wpisuje do
+       * arkusza liczby policzone, a nie puste komórki.
+       */
+      if (akcja === "/tygodnie" && req.method === "POST") {
+        const { tryb, zrodlo } = await cialo(req);
+        if (tryb === "progresja") {
+          return json(res, obrazPlanu(magazyn.zapisz({
+            ...zapisany, plan: zastosujProgresje(zapisany.plan),
+          })));
+        }
+        if (tryb === "kopiuj") {
+          const tydzien = Number(zrodlo);
+          if (!(tydzien >= 1 && tydzien <= 6)) return blad(res, "Podaj tydzień od 1 do 6");
+          return json(res, obrazPlanu(magazyn.zapisz({
+            ...zapisany, plan: skopiujTydzien(zapisany.plan, tydzien as 1),
+          })));
+        }
+        return blad(res, "Nieznany tryb — „progresja” albo „kopiuj”.");
       }
 
       if (akcja === "/moduly" && req.method === "PUT") {

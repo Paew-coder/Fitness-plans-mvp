@@ -84,6 +84,15 @@ label { display: flex; flex-direction: column; gap: .3rem;
         font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 
 .rzad-formularza { display: flex; gap: .9rem; align-items: flex-end; flex-wrap: wrap; }
+
+/* To samo, co daje <label>, ale bez jego zachowania: kliknięcie w label
+   uruchamia pierwszą kontrolkę w środku, co przy grupie przycisków znaczy,
+   że zawsze wygrywa pierwszy z nich. */
+.pole { display: flex; flex-direction: column; gap: .3rem; }
+.etykieta-pola {
+  font-size: .76rem; color: var(--tekst-blady);
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em;
+}
 .wskazowka { font-size: .82rem; color: var(--tekst-blady); margin: .8rem 0 0; }
 
 .panel {
