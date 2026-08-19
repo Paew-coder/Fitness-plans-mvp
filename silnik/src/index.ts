@@ -17,6 +17,7 @@ export * from "./stres.ts";
 export * from "./katalog.ts";
 export * from "./porownanie-cykli.ts";
 export * from "./historia-klienta.ts";
+export * from "./progresja.ts";
 export * from "./oddech.ts";
 export * from "./bieg.ts";
 export * from "./plan.ts";

@@ -72,6 +72,18 @@ przechodzi, jeśli cel jeszcze go nie ma) i *usuń*. Zmiana nazwy na nazwę
 istniejącego klienta jest odrzucana z podpowiedzią, żeby nie powstały dwie
 kartoteki o tej samej nazwie.
 
+**Wypełnianie sześciu tygodni.** Dwa przyciski w pasku nad planem.
+*Progresja 5.18* wpisuje do wszystkich tygodni blok z Twojego szablonu — bój
+główny 6×6 @6,5 → 5×6 @7 → 5×5 @7 → 4×5 @7,5 → 5×4 @7,5 → 6×3 @7,5, akcesoria
+trzy serie przy RPE 8 w pierwszym bloku i 9 w drugim. *Kopiuj T{n}* rozprowadza
+bieżący tydzień na pozostałe. Jedno i drugie zostawia oceny klienta i ręcznie
+ustawione ciężary na miejscu.
+
+Te liczby nie są niczyim pomysłem — zostały odczytane z
+`arkusz/MasterTemplate-5-18.xlsx`. Wcześniej konsola kazała wpisywać je od zera:
+przy planie na trzy dni po piętnaście pozycji to około dziewięćdziesięciu pól
+i jedyne miejsce, w którym aplikacja była gorsza od arkusza.
+
 **Status planu** ustawiasz w pasku nad planem: *szkic → wysłany → zakończony*.
 To nie jest etykieta, tylko przełącznik widoczności: klient widzi wyłącznie plan
 oznaczony jako wysłany. Gdy przestawiasz na *wysłany* przy otwartych błędach
@@ -344,7 +356,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 100 testów magazynu, migracji, eksportu, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 152 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
