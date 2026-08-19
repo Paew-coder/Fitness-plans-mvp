@@ -67,7 +67,9 @@ npm start          # → http://localhost:4173
 
 Układasz plan (5 dni × 12 slotów), widzisz ciężary i analizę na żywo, kontrola
 pokazuje co blokuje wysyłkę, przycisk eksportuje arkusz w formacie 5.18.
-Sprawdzone: plan z konsoli → arkusz → przeliczenie → **500 wartości zgodnych**.
+Sprawdzone całe kółko: plan z konsoli → arkusz → przeliczenie w LibreOffice
+(**753 wartości zgodne z silnikiem**) → wczytanie z powrotem do konsoli
+(**420 wartości identycznych z planem wyjściowym**).
 
 Dwie rzeczy, których arkusz nie miał: karta **Realizacja** (czy klient w ogóle
 ćwiczy — domknięte i zaczęte treningi tydzień po tygodniu) i **1RM z serii
