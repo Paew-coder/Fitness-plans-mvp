@@ -621,7 +621,18 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse): boolean {
   const wzgledna = normalize(sciezkaUrl === "/" ? "/index.html" : sciezkaUrl).replace(/^(\.\.[/\\])+/, "");
   const pelna = join(PUBLIC, wzgledna);
   if (!pelna.startsWith(PUBLIC) || !existsSync(pelna)) return false;
-  res.writeHead(200, { "content-type": TYPY[extname(pelna)] ?? "application/octet-stream" });
+
+  const naglowki: Record<string, string> = {
+    "content-type": TYPY[extname(pelna)] ?? "application/octet-stream",
+  };
+
+  // Service worker klienta leży w `/klient/`, a musi obsługiwać `/k/<token>`.
+  // Przeglądarka pozwala na szerszy zakres tylko wtedy, gdy serwer sam na to
+  // przyzwoli tym nagłówkiem. Bez niego rejestracja z `scope: "/"` jest
+  // odrzucana i aplikacja klienta traci tryb offline.
+  if (wzgledna === "/klient/sw.js") naglowki["service-worker-allowed"] = "/";
+
+  res.writeHead(200, naglowki);
   res.end(readFileSync(pelna));
   return true;
 }
@@ -1041,6 +1052,42 @@ const serwer = createServer(async (req, res) => {
 
       if (!akcja && req.method === "GET") {
         return json(res, widokKlienta(zapisany));
+      }
+
+      /**
+       * Historia klienta przez wszystkie jego cykle — dla niego samego.
+       *
+       * Osobny adres, a nie część `widokKlienta`, bo widok wraca przy **każdym**
+       * dotknięciu oceny na siłowni, a historia wymaga przeliczenia wszystkich
+       * cykli. Ekran postępu pobiera ją raz, gdy klient go otwiera.
+       *
+       * Klient widzi to, co jego: własne cykle, własne 1RM, własną frekwencję.
+       */
+      if (akcja === "/historia" && req.method === "GET") {
+        const cykle = magazyn.planyKlienta(osoba.trenerId, osoba.id)
+          // Szkiców klient nie widzi nigdzie — także w historii.
+          .filter((p) => p.status !== "szkic");
+        const historia = historiaKlienta(cykle.map((p) => {
+          const r = realizacja(p, osoba);
+          return {
+            wersja: p.wersja,
+            status: p.status,
+            dataStartu: p.dataStartu,
+            wynik: przeliczPlan(p.plan),
+            ukonczonych: r.ukonczonych,
+            zaplanowanych: r.zaplanowanych,
+          };
+        }));
+        return json(res, {
+          cykle: historia.cykle.map((c) => ({
+            wersja: c.wersja, dataStartu: c.dataStartu,
+            ukonczonych: c.ukonczonych, zaplanowanych: c.zaplanowanych,
+          })),
+          // Tylko ćwiczenia, które klient robił w co najmniej dwóch cyklach —
+          // jeden punkt to nie jest postęp, tylko liczba.
+          cwiczenia: historia.cwiczenia.filter((c) => c.wCyklach >= 2),
+          razem: historia.razem,
+        });
       }
 
       // Odczucie po ćwiczeniu — to samo pole, które w arkuszu jest kolumną H.

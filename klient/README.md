@@ -5,6 +5,19 @@ swój plan z policzonymi ciężarami. Kod leży w
 [`../konsola/public/klient/`](../konsola/public/klient/) — chodzi na tym samym
 serwerze co konsola trenera.
 
+## Postęp przez wszystkie cykle
+
+Ekran *Twój postęp* zaczyna się teraz od tego, czego arkusz nie pokazywał nigdy:
+ile cykli klient ma za sobą, od kiedy trenuje, ile treningów domknął — i jak
+zmieniał się jego ciężar maksymalny **przez kolejne cykle**, a nie tylko w tych
+sześciu tygodniach: `100 → 112,5 → 125 kg (+25%)`.
+
+Historia pobiera się osobnym zapytaniem, dopiero przy otwarciu tego ekranu —
+widok treningu wraca z serwera przy każdym dotknięciu oceny i nie ma po co
+przeliczać przy tym wszystkich cykli. Raz pobrana zapisuje się lokalnie, więc
+następnym razem widać ją od razu, także bez zasięgu. Szkiców klient nie widzi
+także tutaj.
+
 ## Jak to działa u Ciebie
 
 1. W konsoli otwórz kartotekę klienta → **Link dla klienta** → skopiuj adres.
@@ -78,6 +91,22 @@ Na siłowni zasięg bywa żaden, więc nic nie może się zgubić:
 
 Warunek jest jeden: klient musi otworzyć link **raz z zasięgiem**, żeby plan
 zdążył się pobrać.
+
+> **To przez długi czas nie działało — i wyglądało, jakby działało.** Service
+> worker leży w `/klient/`, więc rejestrował się z domyślnym zakresem
+> `/klient/`. Klient otwiera `/k/<token>`, czyli adres **spoza** tego zakresu:
+> worker instalował się poprawnie i nigdy nie przejmował strony, którą klient
+> faktycznie otwiera. Bez zasięgu przeglądarka pokazywała własny błąd, a plan
+> zapisany lokalnie nie miał kto odczytać. Widać to było dopiero w narzędziach
+> przeglądarki: `navigator.serviceWorker.controller === null`.
+>
+> Naprawa wymaga zgody trzech miejsc: rejestracji z `scope: "/"`, nagłówka
+> `Service-Worker-Allowed: /` od serwera i filtra w samym workerze, żeby przy
+> szerszym zakresie nie zaczął obsługiwać konsoli trenera. Pilnuje tego pięć
+> testów w `konsola/testy/offline-klienta.test.ts`.
+>
+> Sprawdzone po naprawie: pierwsze wejście z zasięgiem, potem tryb samolotowy —
+> aplikacja otwiera się, pokazuje plan i historię przez cykle.
 
 ## O bezpieczeństwie — wprost
 
