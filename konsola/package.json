@@ -11,7 +11,8 @@
     "test": "node --no-warnings --test \"testy/*.test.ts\"",
     "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts",
     "haslo": "node --no-warnings narzedzia/haslo.ts",
-    "kopia": "node --no-warnings narzedzia/kopia.ts"
+    "kopia": "node --no-warnings narzedzia/kopia.ts",
+    "sprawdz-wdrozenie": "node --no-warnings narzedzia/sprawdz-wdrozenie.ts"
   },
   "license": "UNLICENSED",
   "private": true
