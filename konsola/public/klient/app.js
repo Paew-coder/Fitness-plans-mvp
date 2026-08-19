@@ -9,9 +9,11 @@
 const TOKEN = location.pathname.split("/")[2] ?? "";
 const KLUCZ_KOLEJKI = `kolejka-${TOKEN}`;
 const KLUCZ_WIDOKU = `widok-${TOKEN}`;
+const KLUCZ_HISTORII = `historia-${TOKEN}`;
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let widok = null;
+let historia = null;           // wszystkie cykle — dociągana przy otwarciu postępu
 let biezacy = null;            // { tydzien, dzien }
 const otwarteWykonania = new Set();   // positionId z rozwiniętymi polami „co poszło"
 
@@ -115,11 +117,71 @@ function rysuj({ pomiary = true } = {}) {
  * Postęp klienta. Wszystko liczy się z tego, co sam wpisał przy ćwiczeniach —
  * nie ma tu osobnego formularza do wypełniania poza wagą.
  */
+/**
+ * Historia przez wszystkie cykle.
+ *
+ * Pobierana osobno i tylko przy otwarciu ekranu postępu: widok treningu wraca
+ * z serwera przy każdym dotknięciu oceny, a historii nie ma po co przeliczać
+ * dwadzieścia razy w trakcie jednego treningu. Zapisujemy ją lokalnie, więc
+ * przy następnym wejściu widać ją od razu, także bez zasięgu.
+ */
+async function wczytajHistorie() {
+  const zapamietana = localStorage.getItem(KLUCZ_HISTORII);
+  if (zapamietana && !historia) {
+    try { historia = JSON.parse(zapamietana); } catch { /* uszkodzone — pobierzemy */ }
+  }
+  try {
+    const odp = await fetch(`/api/klient/${TOKEN}/historia`);
+    if (odp.ok) {
+      historia = await odp.json();
+      try { localStorage.setItem(KLUCZ_HISTORII, JSON.stringify(historia)); } catch { /* pełna pamięć */ }
+    }
+  } catch { /* brak sieci — zostaje zapamiętana */ }
+}
+
+/** `100 → 112,5 → 125` */
+function ciagLiczb(wartosci) {
+  return wartosci.map((w) => liczba(w)).join(" → ");
+}
+
+function rysujHistorie(kontener) {
+  if (!historia || historia.razem.cykli < 2) return;
+
+  const blok = el("div", "cwiczenie");
+  blok.append(el("div", "modul-tytul", "Przez wszystkie cykle"));
+
+  const miesiace = historia.razem.dniWspolpracy === null
+    ? null : Math.round(historia.razem.dniWspolpracy / 30);
+  const czesci = [`${historia.razem.cykli} cykle`];
+  if (miesiace) czesci.push(`${miesiace} ${miesiace === 1 ? "miesiąc" : "miesięcy"}`);
+  if (historia.razem.zaplanowanych > 0) {
+    czesci.push(`${historia.razem.ukonczonych} z ${historia.razem.zaplanowanych} treningów`);
+  }
+  blok.append(el("div", "modul-poziom", czesci.join(" · ")));
+
+  if (historia.cwiczenia.length === 0) {
+    blok.append(el("p", "brama",
+      "Gdy to samo ćwiczenie wróci w kolejnym cyklu, zobaczysz tu, jak zmienił się ciężar."));
+  }
+  for (const c of historia.cwiczenia) {
+    const w = el("div", "modul-blok");
+    w.append(el("span", "nazwa", c.nazwa));
+    const zmiana = c.zmianaProc === null ? ""
+      : `  (${c.zmianaProc > 0 ? "+" : ""}${String(c.zmianaProc).replace(".", ",")}%)`;
+    w.append(el("span", "tresc", `${ciagLiczb(c.punkty.map((p) => p.oneRM))} kg${zmiana}`));
+    blok.append(w);
+  }
+  blok.append(el("p", "brama", "Szacowany ciężar maksymalny na wejściu w każdy cykl."));
+  kontener.append(blok);
+}
+
 function rysujPostep() {
   const p = widok.postep;
   const kontener = $("#postep");
   kontener.replaceChildren();
   if (!p) return;
+
+  rysujHistorie(kontener);
 
   // frekwencja
   const f = el("div", "cwiczenie");
@@ -473,7 +535,11 @@ $("#do-pomiarow").onclick = () => pokazEkran("#ekran-pomiary");
 $("#pokaz-pomiary").onclick = () => pokazEkran("#ekran-pomiary");
 $("#pokaz-moduly").onclick = () => pokazEkran("#ekran-moduly");
 $("#wroc-z-modulow").onclick = () => pokazEkran("#ekran-tygodnie");
-$("#pokaz-postep").onclick = () => pokazEkran("#ekran-postep");
+$("#pokaz-postep").onclick = async () => {
+  pokazEkran("#ekran-postep");
+  await wczytajHistorie();
+  rysujPostep();
+};
 $("#wroc-z-postepu").onclick = () => pokazEkran("#ekran-tygodnie");
 
 $("#zakoncz").onclick = () => {
@@ -536,6 +602,13 @@ function komunikat(tytul, tresc) {
 
   await synchronizuj();
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/klient/sw.js").catch(() => { /* nieistotne */ });
+    // Zakres jawnie z korzenia, bo klient otwiera `/k/<token>`, a plik workera
+    // leży w `/klient/`. Domyślny zakres to katalog pliku — worker rejestrował
+    // się poprawnie i nigdy nie przejmował strony, którą klient faktycznie
+    // otwiera. Tryb offline był przez to ozdobą: bez zasięgu przeglądarka
+    // pokazywała własny błąd, a zapisany lokalnie plan nie miał kto odczytać.
+    // Szerszy zakres wymaga nagłówka `Service-Worker-Allowed` od serwera.
+    navigator.serviceWorker.register("/klient/sw.js", { scope: "/" })
+      .catch(() => { /* nieistotne — aplikacja działa, tylko bez trybu offline */ });
   }
 })();
