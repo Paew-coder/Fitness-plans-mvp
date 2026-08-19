@@ -134,6 +134,24 @@ Wejdź na `https://twojadomena.pl` i sprawdź, czy plany są.
 
 ---
 
+## Zanim wdrożysz — jedno polecenie
+
+Na swoim komputerze, z uruchomionym Dockerem:
+
+```bash
+cd konsola
+npm run sprawdz-wdrozenie
+```
+
+Zbuduje obraz, postawi go na bazie w starym schemacie i sprawdzi dwadzieścia
+rzeczy naraz: czy migracja podnosi bazę sama, czy nie ginie żaden plan, czy
+link klienta dalej działa, czy eksport arkusza i kopia zapasowa chodzą
+w kontenerze, czy bez hasła nikt z zewnątrz nie wejdzie, a po zalogowaniu widać
+dane. Kończy się zdaniem „Ścieżka wdrożeniowa działa w całości" albo listą
+rzeczy do naprawienia.
+
+Trwa około dwóch minut i jest tańsze niż odkrywanie tego samego na serwerze.
+
 ## Aktualizacja działającej instalacji
 
 Gdy pobierasz nowszą wersję aplikacji, baza może wymagać przebudowy — tak jest

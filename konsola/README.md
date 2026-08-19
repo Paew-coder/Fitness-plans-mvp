@@ -291,6 +291,23 @@ dziś trener jest jeden i konsola nie ma logowania. To jedyna rzecz, której
 nie da się dołożyć później bez przepisywania wszystkiego — a jest darmowa,
 dopóki robi się ją od razu.
 
+## Przed wdrożeniem
+
+```bash
+npm run sprawdz-wdrozenie     # wymaga Dockera, trwa ~2 minuty
+```
+
+Buduje obraz, stawia kontener **na bazie w starym schemacie** — takiej, jaką ma
+działająca instalacja — i sprawdza dwadzieścia rzeczy, które muszą działać na
+serwerze: czy migracja podniosła bazę sama, czy nie zginął żaden plan, czy link,
+który klient ma w telefonie, dalej prowadzi do jego aktualnego cyklu, czy eksport
+arkusza i kopia zapasowa chodzą w kontenerze, i czy bramka dostępu odmawia bez
+hasła, a wpuszcza po zalogowaniu.
+
+Te kontrole robiło się dotąd ręcznie i przez to nie robiło się ich wcale.
+A psują się cicho: dołożony plik, którego `Dockerfile` nie kopiuje, wychodzi
+dopiero na serwerze, przy pierwszym kliknięciu.
+
 ## Aktualizacja z wcześniejszej wersji
 
 Baza podnosi się sama przy pierwszym uruchomieniu — z kolumny tekstowej
@@ -330,6 +347,7 @@ npm run kopia
 | `testy/` | 95 testów magazynu, migracji, eksportu, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
+| `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
 
