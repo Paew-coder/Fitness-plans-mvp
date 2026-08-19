@@ -12,7 +12,8 @@
     "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts",
     "haslo": "node --no-warnings narzedzia/haslo.ts",
     "kopia": "node --no-warnings narzedzia/kopia.ts",
-    "sprawdz-wdrozenie": "node --no-warnings narzedzia/sprawdz-wdrozenie.ts"
+    "sprawdz-wdrozenie": "node --no-warnings narzedzia/sprawdz-wdrozenie.ts",
+    "przeglad-ekranu": "node --no-warnings narzedzia/przeglad-ekranu.ts"
   },
   "license": "UNLICENSED",
   "private": true

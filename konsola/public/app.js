@@ -578,6 +578,7 @@ function zapiszPozniej() {
       $("#zapis").textContent = "zapisano";
       rysujAnalize();
       rysujDni();
+      rysujSerieMax();
     } catch (err) {
       $("#zapis").textContent = `błąd: ${err.message}`;
     }
@@ -632,7 +633,7 @@ function rysujPlan() {
   rysujPropozycje1RM();
   rysujPorownanie();
   rysujModuly();
-  rysujSerieMax();
+  rysujSerieMax(true);
 }
 
 /**
@@ -1214,12 +1215,25 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
   return wiersz;
 }
 
-function rysujSerieMax() {
+// Panel serii maksymalnych zależy od tego, jakie ćwiczenia są w planie — więc
+// musi się odświeżać po każdej zmianie doboru, nie tylko przy otwarciu planu.
+// Przebudowa całości zabrałaby jednak fokus temu, kto właśnie wpisuje ciężar,
+// dlatego przy niezmienionym zestawie ćwiczeń odświeża się samo 1RM.
+let podpisSerieMax = null;
+
+function rysujSerieMax(pelne = false) {
   const kontener = $("#serie-max");
-  kontener.replaceChildren();
 
   const uzyte = [...new Set(obraz.zapisany.plan.sloty
     .map((s) => s.cwiczenieId).filter(Boolean))];
+  const podpis = `${obraz.zapisany.id}|${uzyte.join(",")}`;
+  if (!pelne && podpis === podpisSerieMax) {
+    odswiezObliczone1RM(kontener);
+    return;
+  }
+  podpisSerieMax = podpis;
+  kontener.replaceChildren();
+
   if (uzyte.length === 0) {
     kontener.append(el("p", "wskazowka", "Najpierw dobierz ćwiczenia."));
     return;
@@ -1231,37 +1245,48 @@ function rysujSerieMax() {
     const istniejaca = obraz.zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
 
     const wiersz = el("div", "serie-max-wiersz");
+    wiersz.dataset.cwiczenie = id;
     wiersz.append(el("div", "nazwa", c.nazwa));
 
-    const zmien = (pole) => (e) => {
-      const wartosc = e.target.value === "" ? null : Number(e.target.value);
-      let wpis = obraz.zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
-      if (!wpis) {
-        wpis = { cwiczenieId: id, ciezar: 0, powtorzenia: 0 };
-        obraz.zapisany.plan.serieMaksymalne.push(wpis);
-      }
-      wpis[pole] = wartosc ?? 0;
-      if (!wpis.ciezar || !wpis.powtorzenia) {
-        obraz.zapisany.plan.serieMaksymalne =
-          obraz.zapisany.plan.serieMaksymalne.filter((s) => s !== wpis);
-      }
+    // Seria maksymalna ma sens tylko w komplecie: sam ciężar bez powtórzeń
+    // niczego nie liczy. Dlatego stan czyta się z obu pól wiersza naraz —
+    // gdyby każde pole zapisywało się osobno, pierwsze kasowałoby drugie.
+    const zmien = () => {
+      const [wCiezar, wPowt] = [...wiersz.querySelectorAll("input")]
+        .map((i) => (i.value === "" ? 0 : Number(i.value)));
+      const pozostale = obraz.zapisany.plan.serieMaksymalne
+        .filter((s) => s.cwiczenieId !== id);
+      obraz.zapisany.plan.serieMaksymalne = wCiezar > 0 && wPowt > 0
+        ? [...pozostale, { cwiczenieId: id, ciezar: wCiezar, powtorzenia: wPowt }]
+        : pozostale;
       zapiszPozniej();
     };
 
-    for (const [pole, wartosc, tytul] of [
-      ["ciezar", istniejaca?.ciezar, "kg"], ["powtorzenia", istniejaca?.powtorzenia, "powt."],
+    for (const [wartosc, tytul] of [
+      [istniejaca?.ciezar, "kg"], [istniejaca?.powtorzenia, "powt."],
     ]) {
       const input = el("input");
       input.type = "number"; input.min = "0"; input.placeholder = tytul;
       input.title = tytul;
       input.value = wartosc || "";
-      input.onchange = zmien(pole);
+      input.onchange = zmien;
       wiersz.append(input);
     }
 
-    const wyliczony = obraz.wynik.tygodnie[0].sloty.find((s) => s.cwiczenie?.id === id);
-    wiersz.append(el("div", "rm", wyliczony?.oneRM ? `${liczba(wyliczony.oneRM)}` : "—"));
+    wiersz.append(el("div", "rm", tekst1RM(id)));
     kontener.append(wiersz);
+  }
+}
+
+function tekst1RM(cwiczenieId) {
+  const wyliczony = obraz.wynik.tygodnie[0].sloty
+    .find((s) => s.cwiczenie?.id === cwiczenieId);
+  return wyliczony?.oneRM ? `${liczba(wyliczony.oneRM)}` : "—";
+}
+
+function odswiezObliczone1RM(kontener) {
+  for (const wiersz of kontener.querySelectorAll(".serie-max-wiersz")) {
+    wiersz.querySelector(".rm").textContent = tekst1RM(wiersz.dataset.cwiczenie);
   }
 }
 
