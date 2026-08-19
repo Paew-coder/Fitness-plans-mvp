@@ -134,11 +134,22 @@ jeśli ćwiczenie już w nim było — realizacja zasady „sprawdzać poprzedni
 ## Sprawdzone
 
 Pełne kółko: plan ułożony w konsoli → eksport do `.xlsx` → przeliczenie arkusza →
-porównanie z silnikiem (**500 wartości, wszystkie zgodne**) → wczytanie tego samego
-pliku z powrotem do konsoli → **te same ciężary co na starcie**.
+porównanie z silnikiem (**753 wartości, wszystkie zgodne**) → wczytanie tego samego
+pliku z powrotem do konsoli → porównanie z planem wyjściowym (**420 wartości:
+ciężary, serie, powtórzenia, RPE i stres — identycznie**).
 
 Arkusz liczy dokładnie to, co pokazywała konsola, a konsola czyta z powrotem
 dokładnie to, co arkusz.
+
+> **Co ta kontrola wykryła.** Slot, w którym trener nie ruszył serii ani RPE,
+> wychodził z konsoli jako „nie ustawione". Wypełniacz pomijał puste pola, więc
+> w arkuszu zostawały wartości szablonu (6 serii, RPE 6,5 dla boju głównego
+> w T1), a silnik liczył swoje (1 seria, RPE 8) — klient dostawał inne liczby
+> niż te, które trener widział na ekranie. Do tego eksport w ogóle nie zapisywał
+> odczuć klienta, choć import je czytał, więc odesłany arkusz startował od
+> mnożnika 1 i od T2 rozjeżdżał się jeszcze bardziej. Jedno i drugie naprawione;
+> pilnuje tego sześć testów w `testy/eksport.test.ts`, które nie potrzebują
+> ani Pythona, ani LibreOffice.
 
 To sprawdzenie wymaga LibreOffice do przeliczenia pliku, więc nie chodzi
 automatycznie w testach — trzeba je powtórzyć ręcznie po zmianach w eksporcie.
@@ -316,7 +327,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 89 testów magazynu, migracji, logowania i asystenta (`npm test`) |
+| `testy/` | 95 testów magazynu, migracji, eksportu, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |

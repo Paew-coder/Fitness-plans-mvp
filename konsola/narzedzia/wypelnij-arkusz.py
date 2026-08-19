@@ -20,6 +20,10 @@ SLOTOW_W_DNIU = 12
 # Kolumny w T1-T6
 KOL_LP, KOL_PRZEL, KOL_CWICZENIE = 1, 2, 3
 KOL_SERIE, KOL_POWT, KOL_RPE = 4, 5, 6
+# Kolumna odczuc klienta. Import ja czytal od poczatku, a eksport dotad
+# pomijal — przez co odeslany arkusz startowal od mnoznika 1 i od T2
+# pokazywal inne ciezary niz konsola.
+KOL_FEEDBACK = 8
 KOL_SZKIELET = 10
 
 # Kolumny w START
@@ -82,6 +86,8 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
             # Inaczej zostawiamy formule, ktora liczy je automatem.
             if pole.get("powtorzenia_reczne") is not None:
                 ws.cell(row=r, column=KOL_POWT).value = pole["powtorzenia_reczne"]
+            if pole.get("feedback") is not None:
+                ws.cell(row=r, column=KOL_FEEDBACK).value = pole["feedback"]
             licznik["tygodnie"] += 1
 
     # --- TOP SETY: przelacznik i RPE ustawia sie w T1, reszta lustrzy ---
