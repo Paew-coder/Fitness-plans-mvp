@@ -70,13 +70,17 @@ async function api(sciezka, opcje = {}) {
 // mniej więcej trzydziestu pozycji. Trener myśli ludźmi, nie dokumentami —
 // więc na wejściu są klienci, a cykle leżą w kartotece każdego z nich.
 async function pokazListe() {
+  // Najpierw dane, potem przełączenie ekranu — inaczej przez moment widać
+  // poprzednią zawartość listy. Lokalnie to niewidoczne, przez wolne łącze
+  // wyglądałoby jak „usunąłem, a dalej jest".
+  const [klienci, plany, uwaga] = await Promise.all([
+    api("/api/klienci"), api("/api/plany"), api("/api/uwaga"),
+  ]);
+
   $("#ekran-plan").classList.add("ukryty");
   $("#ekran-klient").classList.add("ukryty");
   $("#ekran-lista").classList.remove("ukryty");
 
-  const [klienci, plany, uwaga] = await Promise.all([
-    api("/api/klienci"), api("/api/plany"), api("/api/uwaga"),
-  ]);
   rysujUwage(uwaga);
   rysujPodpowiedziKlientow(klienci);
   rysujWyborPoprzedniego(plany);
@@ -479,6 +483,77 @@ $("#zmien-nazwe").onclick = async () => {
 };
 
 $("#link-klienta-karta").onclick = () => pokazLinkKlienta(kartoteka.klient.id);
+
+/**
+ * Scalenie dwóch kartotek tej samej osoby.
+ *
+ * Bierze się to z literówki w nazwisku: „Zuzana C" i „Zuzanna C" to dwie
+ * kartoteki, a orientuje się to zwykle po cyklu pracy. Usunięcie i wpisanie
+ * od nowa znaczyłoby stratę wykonań, wagi i historii — scalenie je zachowuje.
+ */
+$("#polacz-klienta").onclick = async () => {
+  const inni = (await api("/api/klienci")).filter((k) => k.id !== kartoteka.klient.id);
+  if (inni.length === 0) return alert("Nie ma z kim łączyć — to jedyny klient.");
+
+  const wybor = el("select");
+  for (const k of inni) {
+    const o = el("option", "", `${k.nazwa} — ${k.cykli} ${odmiana(k.cykli, ["cykl", "cykle", "cykli"])}`);
+    o.value = k.id;
+    wybor.append(o);
+  }
+  const pole = el("label", "", "Przenieś wszystko do ");
+  pole.append(wybor);
+  const pola = el("div", "pola-modulu");
+  pola.append(pole);
+
+  const polacz = el("button", "glowny", "Połącz");
+  polacz.onclick = async () => {
+    const cel = inni.find((k) => k.id === wybor.value);
+    if (!confirm(
+      `Wszystkie cykle, wykonania i pomiary wagi klienta „${kartoteka.klient.nazwa}" ` +
+      `przejdą do „${cel.nazwa}", a ta kartoteka zniknie. Tego nie da się cofnąć. Na pewno?`)) return;
+    polacz.disabled = true;
+    try {
+      const wynik = await api(`/api/klienci/${kartoteka.klient.id}/polacz`, {
+        method: "POST", body: { celId: wybor.value },
+      });
+      zamknijModal();
+      kartoteka = wynik.kartoteka;
+      rysujKartoteke();
+    } catch (err) {
+      alert(err.message);
+      polacz.disabled = false;
+    }
+  };
+  const anuluj = el("button", "", "Anuluj");
+  anuluj.onclick = zamknijModal;
+  const akcje = el("div", "akcje-modala");
+  akcje.append(polacz, anuluj);
+
+  pokazModal("Połącz z innym klientem",
+    el("p", "", `Kartoteka „${kartoteka.klient.nazwa}" zostanie przeniesiona w całości i zniknie.`),
+    pola,
+    el("p", "wskazowka",
+      "Link dostępowy przechodzi tylko wtedy, gdy klient docelowy jeszcze go nie ma. " +
+      "Jeśli ma własny, zostaje jego — a stary adres przestaje działać."),
+    akcje);
+  $("#modal-zamknij").classList.add("ukryty");
+};
+
+$("#usun-klienta").onclick = async () => {
+  const k = kartoteka.klient;
+  const cykli = kartoteka.plany.length;
+  const opis = cykli === 0
+    ? "Ten klient nie ma żadnych cykli."
+    : `Znikną ${cykli} ${odmiana(cykli, ["cykl", "cykle", "cykli"])} razem z ocenami klienta, `
+      + "wpisanymi ciężarami i historią wagi.";
+  if (!confirm(`Usunąć klienta „${k.nazwa}"?\n\n${opis}\nTego nie da się cofnąć.`)) return;
+
+  // Kartoteka bez cykli to zwykle ślad po literówce — dlatego usuwanie jest
+  // tu w ogóle, a nie tylko przy pojedynczych planach.
+  await api(`/api/klienci/${k.id}`, { method: "DELETE" });
+  pokazListe();
+};
 
 // ── otwieranie i zapis ─────────────────────────────────────────────
 async function otworzPlan(id) {

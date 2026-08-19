@@ -243,6 +243,84 @@ describe("magazyn — rozdzielenie trenerów", () => {
   });
 });
 
+describe("magazyn — scalanie kartotek", () => {
+  /** Dwie kartoteki tej samej osoby — dokładnie to, co robi literówka w nazwisku. */
+  function dwieKartoteki() {
+    const zly = magazyn.zapisz(planTestowy("zuzana-x-1", "Zuzana X"));
+    magazyn.zapiszWage(TRENER, zly.klientId, "2026-09-01", 61.5);
+    magazyn.zapiszWage(TRENER, zly.klientId, "2026-09-08", 61.1);
+
+    const dobry = magazyn.zapisz(planTestowy("zuzanna-x-1", "Zuzanna X"));
+    magazyn.zapiszWage(TRENER, dobry.klientId, "2026-09-08", 99);   // ten sam dzień, inna liczba
+    magazyn.zapiszWage(TRENER, dobry.klientId, "2026-09-15", 60.8);
+    return { zly, dobry };
+  }
+
+  test("plany i waga przechodzą, kartoteka źródłowa znika", () => {
+    const { zly, dobry } = dwieKartoteki();
+    const wynik = magazyn.scalKlientow(TRENER, zly.klientId, dobry.klientId);
+
+    assert.equal(wynik.przeniesionePlany, 1);
+    assert.equal(magazyn.wczytajKlienta(TRENER, zly.klientId), null, "źródło znika");
+    assert.deepEqual(
+      magazyn.planyKlienta(TRENER, dobry.klientId).map((p) => p.id).sort(),
+      ["zuzana-x-1", "zuzanna-x-1"],
+    );
+    assert.equal(magazyn.wczytaj(TRENER, "zuzana-x-1")!.klient, "Zuzanna X",
+      "przeniesiony plan pokazuje nazwę celu");
+  });
+
+  test("przeniesione cykle dostają kolejne numery, nie duplikaty", () => {
+    const { zly, dobry } = dwieKartoteki();
+    // Cel ma już cykl 1.0, źródło też — po scaleniu muszą dać 1.0 i 2.0.
+    magazyn.scalKlientow(TRENER, zly.klientId, dobry.klientId);
+
+    const cykle = magazyn.planyKlienta(TRENER, dobry.klientId);
+    assert.deepEqual(cykle.map((p) => p.wersja), [1, 2]);
+    assert.deepEqual(cykle.map((p) => p.id), ["zuzanna-x-1", "zuzana-x-1"],
+      "identyfikatory zostają — inaczej rozpadłby się łańcuch poprzednich cykli");
+  });
+
+  test("pomiar z tego samego dnia nie dubluje się ani nie nadpisuje", () => {
+    const { zly, dobry } = dwieKartoteki();
+    magazyn.scalKlientow(TRENER, zly.klientId, dobry.klientId);
+
+    const waga = magazyn.wagaKlienta(TRENER, dobry.klientId);
+    assert.deepEqual(waga.map((w) => w.data), ["2026-09-01", "2026-09-08", "2026-09-15"]);
+    assert.equal(waga.find((w) => w.data === "2026-09-08")!.kg, 99,
+      "przy konflikcie zostaje wpis klienta docelowego");
+  });
+
+  test("link przechodzi tylko wtedy, gdy cel go nie ma", () => {
+    const { zly, dobry } = dwieKartoteki();
+    const token = magazyn.nowyToken();
+    magazyn.zapiszKlienta({ ...magazyn.wczytajKlienta(TRENER, zly.klientId)!, token });
+
+    magazyn.scalKlientow(TRENER, zly.klientId, dobry.klientId);
+    assert.equal(magazyn.klientPoTokenie(token)!.id, dobry.klientId,
+      "link, który klient ma w telefonie, prowadzi teraz do właściwej kartoteki");
+  });
+
+  test("gdy cel ma własny link, zostaje jego", () => {
+    const { zly, dobry } = dwieKartoteki();
+    const tokenZlego = magazyn.nowyToken();
+    const tokenDobrego = magazyn.nowyToken();
+    magazyn.zapiszKlienta({ ...magazyn.wczytajKlienta(TRENER, zly.klientId)!, token: tokenZlego });
+    magazyn.zapiszKlienta({ ...magazyn.wczytajKlienta(TRENER, dobry.klientId)!, token: tokenDobrego });
+
+    magazyn.scalKlientow(TRENER, zly.klientId, dobry.klientId);
+    assert.equal(magazyn.klientPoTokenie(tokenDobrego)!.id, dobry.klientId);
+    assert.equal(magazyn.klientPoTokenie(tokenZlego), null, "stary link przestaje działać");
+  });
+
+  test("scalenie z samym sobą i z nieistniejącym jest odrzucane", () => {
+    const { zly } = dwieKartoteki();
+    assert.throws(() => magazyn.scalKlientow(TRENER, zly.klientId, zly.klientId), /samym sobą/);
+    assert.throws(() => magazyn.scalKlientow(TRENER, zly.klientId, "kogo-nie-ma"), /docelowego/);
+    assert.ok(magazyn.wczytajKlienta(TRENER, zly.klientId), "nieudane scalenie niczego nie kasuje");
+  });
+});
+
 describe("magazyn — kopia jako nowa wersja", () => {
   test("dobór ćwiczeń zostaje, odczucia klienta znikają", () => {
     const zrodlo = planTestowy("kopia-zrodlo", "Zuzanna C");
