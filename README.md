@@ -90,6 +90,12 @@ z policzonych liczb, słowami). Granica jest ostra i pilnowana testami: **AI nie
 liczy ciężaru, RPE ani serii** — od tego jest silnik. Bez klucza do API funkcja
 jest wyłączona, a cała reszta konsoli działa tak samo.
 
+Ekran planu ma własny przegląd: `npm run przeglad-ekranu` przechodzi po
+wszystkich kontrolkach w prawdziwej przeglądarce i po każdym kliknięciu pyta
+serwer, czy coś się faktycznie zapisało. Wyszły z tego trzy błędy niewidoczne
+w testach — najcięższy z nich sprawiał, że **serii maksymalnej nie dało się
+wpisać wcale**, bo dwa pola kasowały się nawzajem.
+
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 
 ## Aplikacja klienta
