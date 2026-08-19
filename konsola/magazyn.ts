@@ -173,6 +173,81 @@ export function usunKlienta(trenerId: number, id: string): void {
 }
 
 /**
+ * Przenosi wszystko z jednego klienta na drugiego i kasuje źródłowego.
+ *
+ * Po co: literówka w nazwisku zakłada drugą osobę, a orientuje się to zwykle
+ * po cyklu pracy — wtedy „usuń i wpisz od nowa" znaczy stratę wykonań, wagi
+ * i historii. Scalenie zachowuje jedno i drugie.
+ *
+ * Token: jeśli cel nie ma linku, przejmuje link źródła — dzięki temu adres,
+ * który klient ma w telefonie, działa dalej. Jeśli cel ma własny, zostaje jego,
+ * a link źródła przestaje działać (i tak prowadziłby do usuniętego klienta).
+ */
+export function scalKlientow(trenerId: number, zrodloId: string, celId: string): {
+  przeniesionePlany: number;
+  przeniesionePomiary: number;
+} {
+  if (zrodloId === celId) throw new Error("Nie da się scalić klienta z samym sobą");
+
+  const d = baza();
+  const zrodlo = wczytajKlienta(trenerId, zrodloId);
+  const cel = wczytajKlienta(trenerId, celId);
+  if (!zrodlo) throw new Error("Nie ma takiego klienta do scalenia");
+  if (!cel) throw new Error("Nie ma klienta docelowego");
+
+  d.exec("BEGIN");
+  try {
+    // Token źródła przejmujemy tylko wtedy, gdy cel go nie ma — inaczej
+    // unikalność w bazie odrzuciłaby zapis, a klient docelowy straciłby
+    // link, którym już się posługuje.
+    if (zrodlo.token && !cel.token) {
+      d.prepare("UPDATE klient SET token = NULL WHERE trener_id = ? AND id = ?")
+        .run(trenerId, zrodloId);
+      d.prepare("UPDATE klient SET token = ? WHERE trener_id = ? AND id = ?")
+        .run(zrodlo.token, trenerId, celId);
+    }
+
+    // Numery cykli przenoszonych planów idą dalej za tym, co cel już ma —
+    // inaczej w kartotece stanęłyby obok siebie dwa „1.0" i nie dałoby się
+    // powiedzieć, który był pierwszy. Identyfikatory zostają nietknięte,
+    // więc łańcuch `poprzedni_id` się nie rozpada.
+    const { najwyzsza } = d.prepare(
+      "SELECT COALESCE(MAX(wersja), 0) AS najwyzsza FROM plan WHERE trener_id = ? AND klient_id = ?",
+    ).get(trenerId, celId) as { najwyzsza: number };
+
+    const doPrzeniesienia = d.prepare(
+      "SELECT id FROM plan WHERE trener_id = ? AND klient_id = ? ORDER BY wersja, utworzony",
+    ).all(trenerId, zrodloId) as { id: string }[];
+
+    const przenies = d.prepare(
+      "UPDATE plan SET klient_id = ?, wersja = ? WHERE trener_id = ? AND id = ?",
+    );
+    for (const [i, plan] of doPrzeniesienia.entries()) {
+      przenies.run(celId, najwyzsza + i + 1, trenerId, plan.id);
+    }
+    const plany = { changes: doPrzeniesienia.length };
+
+    // Pomiar z tego samego dnia u obu klientów: zostaje ten, który cel ma już
+    // u siebie. Waga to jedna liczba na dzień i nie da się jej scalić inaczej.
+    const pomiary = d.prepare(`
+      INSERT OR IGNORE INTO pomiar_wagi (trener_id, klient_id, data, kg)
+      SELECT trener_id, ?, data, kg FROM pomiar_wagi WHERE trener_id = ? AND klient_id = ?
+    `).run(celId, trenerId, zrodloId);
+
+    d.prepare("DELETE FROM klient WHERE trener_id = ? AND id = ?").run(trenerId, zrodloId);
+    d.exec("COMMIT");
+
+    return {
+      przeniesionePlany: Number(plany.changes),
+      przeniesionePomiary: Number(pomiary.changes),
+    };
+  } catch (blad) {
+    d.exec("ROLLBACK");
+    throw blad;
+  }
+}
+
+/**
  * Klient po kluczu dostępu. `null`, gdy token nieznany.
  * Szuka po wszystkich trenerach — klient nie wie, czyim jest klientem.
  */

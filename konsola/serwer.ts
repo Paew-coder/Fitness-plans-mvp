@@ -747,8 +747,31 @@ const serwer = createServer(async (req, res) => {
       if (!akcja && req.method === "PUT") {
         const { nazwa } = await cialo(req);
         if (!nazwa?.trim()) return blad(res, "Podaj nazwę klienta");
+
+        // Dwie kartoteki o tej samej nazwie to stan, w którym trener nie wie,
+        // którą otwiera. Od łączenia jest osobna operacja, która zachowuje
+        // historię — a nie zmiana nazwy, która by ją zdublowała.
+        const kolizja = magazyn.wczytajKlienta(trenerId, magazyn.idKlienta(nazwa));
+        if (kolizja && kolizja.id !== klient.id) {
+          return blad(res, `Klient „${kolizja.nazwa}" już istnieje. `
+            + "Jeśli to ta sama osoba, użyj „Połącz z innym klientem” — historia zostanie zachowana.");
+        }
+
         magazyn.zapiszKlienta({ ...klient, nazwa: nazwa.trim() });
         return json(res, kartotekaKlienta(trenerId, klientId!));
+      }
+
+      // Scalenie dwóch kartotek tej samej osoby. Powstają z literówki
+      // w nazwisku, a zauważa się je zwykle po cyklu pracy — wtedy „usuń
+      // i wpisz od nowa" znaczyłoby stratę wykonań, wagi i historii.
+      if (akcja === "/polacz" && req.method === "POST") {
+        const { celId } = await cialo(req);
+        try {
+          const wynik = magazyn.scalKlientow(trenerId, klientId!, String(celId ?? ""));
+          return json(res, { ...wynik, celId, kartoteka: kartotekaKlienta(trenerId, String(celId)) });
+        } catch (e) {
+          return blad(res, e instanceof Error ? e.message : "Nie udało się scalić klientów");
+        }
       }
 
       if (!akcja && req.method === "DELETE") {
