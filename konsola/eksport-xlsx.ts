@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { katalog } from "../silnik/src/katalog.ts";
-import { TYGODNIE } from "../silnik/src/plan.ts";
+import { przeliczPlan, TYGODNIE } from "../silnik/src/plan.ts";
 import { jestBojemGlownym } from "../silnik/src/import-arkusza.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 
@@ -34,8 +34,29 @@ function bezpiecznaNazwa(tekst: string): string {
   return tekst.replace(/[^\p{L}\p{N} ._-]/gu, "").trim() || "plan";
 }
 
-export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string> {
+/**
+ * Co dokładnie wpisujemy do arkusza.
+ *
+ * Wydzielone z `eksportujDoArkusza`, żeby dało się to sprawdzić testem bez
+ * Pythona i bez LibreOffice — a jest co sprawdzać: to tutaj rozstrzyga się,
+ * czy klient dostanie te same liczby, które trener widział na ekranie.
+ */
+export function daneDoArkusza(zapisany: ZapisanyPlan) {
   const { plan } = zapisany;
+
+  /**
+   * Do arkusza wpisujemy wartości **policzone**, a nie surowe pola planu.
+   *
+   * Powód wyszedł przy pełnym kółku konsola → arkusz → konsola: slot, w którym
+   * trener nie ruszył serii ani RPE, wychodził z konsoli jako „nie ustawione".
+   * Wypełniacz pomijał puste pola, więc w arkuszu zostawały wartości szablonu
+   * (6 serii, RPE 6,5 dla boju głównego w T1), a silnik liczył swoje domyślne
+   * (1 seria, RPE 8). Klient dostawał inne liczby niż te, które trener widział
+   * na ekranie — a cała umowa tej aplikacji brzmi „klient nie zauważa zmiany".
+   */
+  const wynik = przeliczPlan(plan);
+  const policzony = (positionId: string, tydzien: number) =>
+    wynik.tygodnie[tydzien - 1]?.sloty.find((s) => s.positionId === positionId);
 
   const sloty = plan.sloty.map((slot) => {
     const { dzien, pozycja } = rozbijPositionId(slot.positionId);
@@ -44,16 +65,21 @@ export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string
 
     const tygodnie: Record<string, unknown> = {};
     for (const t of TYGODNIE) {
-      const p = slot.tygodnie?.[t];
-      if (!p) continue;
+      if (!cwiczenie) continue;
+      const p = slot.tygodnie?.[t] ?? {};
+      const obliczony = policzony(slot.positionId, t);
       tygodnie[`T${t}`] = {
-        serie: p.serie ?? null,
-        rpe: p.rpe ?? null,
+        serie: obliczony?.serie ?? p.serie ?? null,
+        rpe: obliczony?.rpe ?? p.rpe ?? null,
         // Bój główny zawsze ma powtórzenia wpisane wprost; akcesorium tylko
-        // wtedy, gdy trener świadomie nadpisał automat.
-        powtorzenia_reczne: bojGlowny || p.powtorzenia !== undefined
-          ? (p.powtorzenia ?? null)
-          : null,
+        // wtedy, gdy trener świadomie nadpisał automat — inaczej nadpisalibyśmy
+        // formułę, która w arkuszu liczy je sama.
+        powtorzenia_reczne: bojGlowny
+          ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
+          : (p.powtorzenia ?? null),
+        // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby
+        // od mnożnika 1 i od T2 pokazywał inne ciężary niż konsola.
+        feedback: p.feedback ?? null,
       };
     }
 
@@ -84,7 +110,7 @@ export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string
     })
     .filter((s): s is NonNullable<typeof s> => s !== null);
 
-  const wypelnienie = {
+  return {
     ustawienia: {
       tryb_akcesoriow: plan.trybAkcesoriow,
       czesc_planu: plan.czescPlanu,
@@ -98,6 +124,10 @@ export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string
       rpe: t.rpe,
     })),
   };
+}
+
+export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string> {
+  const wypelnienie = daneDoArkusza(zapisany);
 
   mkdirSync(WYJSCIE, { recursive: true });
   const nazwa = `${bezpiecznaNazwa(zapisany.klient)} ${zapisany.wersja}.0.xlsx`;
