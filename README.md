@@ -14,7 +14,7 @@ nie z pamięci) i **jak przenieść go do aplikacji** bez utraty ani jednej licz
 | [`01-analiza-zrodel.md`](docs/01-analiza-zrodel.md) | Co robi arkusz 5.17, rozbieżności instrukcja ↔ plik, gdzie jest Base44 |
 | [`02-silnik-obliczeniowy.md`](docs/02-silnik-obliczeniowy.md) | Jądro rozłożone na funkcje czyste — wzory, sygnatury, plan testów |
 | [`03-architektura.md`](docs/03-architektura.md) | Warstwy, schemat bazy, ekrany, rekomendacja stacku, miejsce dla AI |
-| [`04-roadmapa.md`](docs/04-roadmapa.md) | Sześć faz, migracja danych, otwarte decyzje |
+| [`04-roadmapa.md`](docs/04-roadmapa.md) | Siedem faz, migracja danych, otwarte decyzje |
 
 ## Dane referencyjne
 
@@ -121,10 +121,10 @@ każda poprawka jest do pominięcia osobno.
 
 ## Gdzie to jest
 
-Fazy 0–5 z [`04-roadmapa.md`](docs/04-roadmapa.md) są domknięte: jądro
+Fazy 0–6 z [`04-roadmapa.md`](docs/04-roadmapa.md) są domknięte: jądro
 sprawdzone przeciwko arkuszowi, konsola trenera, aplikacja klienta, to czego
 arkusz nie umiał, wersja produkcyjna (baza, logowanie, wdrożenie, kopie),
-warstwa AI i kartoteka klienta.
+warstwa AI, kartoteka klienta i progresja z szablonu.
 
 Otwarte decyzje — liczenie ćwiczeń jednostronnych i to, czy aplikacja ma kiedyś
 przechowywać dane o zdrowiu — są zapisane na końcu roadmapy. Model SaaS dla
