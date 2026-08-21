@@ -311,6 +311,28 @@ połączenie. Manifest nie narzuca już adresu startowego, więc aplikacja otwie
 ten, pod którym klient ją dodał. Pilnuje tego trzynaście testów, łącznie
 z próbami wyjścia poza katalog publiczny.
 
+```bash
+npm run sprawdz-odpornosc     # ~10 sekund, bez dodatkowych narzędzi
+```
+
+Sześćdziesiąt siedem prób na trzydziestu sześciu adresach: katalogi zamiast
+plików, wyjścia poza `public/`, obcięty JSON, tablica zamiast obiektu, liczba
+zamiast nazwiska, pięćdziesiąt tysięcy znaków w nazwie, znaki sterujące,
+nieskończoności w polach liczbowych, metody, których adres nie obsługuje.
+Sprawdzane jest **czworo**: że serwer zawsze odpowiada, że złe wejście dostaje
+odmowę (4xx), a nie awarię (5xx), że w komunikacie nie ma śladów wnętrza
+i że odrzucone żądanie **nic po sobie nie zostawia**.
+
+> **Dlaczego 4xx zamiast 500 to nie kosmetyka.** Kolejka offline w telefonie
+> klienta czyta te kody: 5xx znaczy „serwer ma zły dzień, spróbuj później",
+> 4xx znaczy „tego nie da się zapisać nigdy, wyrzuć zadanie". Zniekształcone
+> żądanie odsyłane z kodem 500 wracałoby w nieskończoność i zatykało kolejkę —
+> czyli ten sam błąd, który już raz naprawialiśmy, wpuszczony tylnymi drzwiami.
+
+Nazwisko klienta ma teraz własną kontrolę, bo trafia do identyfikatora planu,
+do nazwy pliku eksportu i na ekran klienta: najwyżej 120 znaków, bez znaków
+sterujących. Numer cyklu musi być całkowity z zakresu 1–999.
+
 ## Dostęp — dwa tryby
 
 Konsola sama rozpoznaje, w którym trybie chodzi. Nie ma przełącznika
@@ -520,13 +542,14 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 216 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 217 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
 | `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
 | `narzedzia/sprawdz-kolko.ts` | kółko konsola → arkusz → konsola, wartość po wartości |
+| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 67 prób, serwer ma przeżyć |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

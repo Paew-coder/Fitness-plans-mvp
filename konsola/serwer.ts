@@ -117,10 +117,67 @@ async function bajty(req: IncomingMessage): Promise<Buffer> {
   return Buffer.concat(kawalki);
 }
 
+/**
+ * Błąd, za który odpowiada nadawca żądania, nie serwer.
+ *
+ * Rozróżnienie ma konkretny skutek po drugiej stronie: kolejka offline
+ * w telefonie klienta traktuje 5xx jako „serwer ma zły dzień, spróbuj później",
+ * a 4xx jako „tego nie da się zapisać nigdy, wyrzuć zadanie". Zniekształcone
+ * żądanie odsyłane z kodem 500 wracałoby w nieskończoność i zatykało kolejkę
+ * — czyli dokładnie ten błąd, który już raz naprawialiśmy, tylko wpuszczony
+ * z powrotem tylnymi drzwiami.
+ */
+class BladZadania extends Error {
+  readonly kod = 400;
+}
+
 async function cialo(req: IncomingMessage): Promise<any> {
   const dane = await bajty(req);
   if (dane.length === 0) return {};
-  return JSON.parse(dane.toString("utf-8"));
+  let odczytane: unknown;
+  try {
+    odczytane = JSON.parse(dane.toString("utf-8"));
+  } catch {
+    throw new BladZadania("Treść żądania nie jest poprawnym JSON-em.");
+  }
+  // Reszta kodu czyta z ciała pola po nazwie, więc wszystko, co nie jest
+  // obiektem — tablica, liczba, `null` — musi odpaść tutaj, a nie przy
+  // pierwszym `.trim()` na liczbie.
+  if (odczytane === null || typeof odczytane !== "object" || Array.isArray(odczytane)) {
+    throw new BladZadania("Treść żądania musi być obiektem JSON.");
+  }
+  return odczytane;
+}
+
+/** Tekst z ciała żądania — cokolwiek przyszło, wychodzi napis albo pustka. */
+function tekst(wartosc: unknown): string {
+  return typeof wartosc === "string" ? wartosc.trim() : "";
+}
+
+/**
+ * Nazwisko klienta — jedyne pole, które trafia do identyfikatora planu,
+ * do nazwy pliku eksportu i na ekran klienta. Trzy rzeczy muszą tu odpaść:
+ * pustka, długość spoza rozsądku (identyfikator planu powstaje z tego tekstu)
+ * i znaki sterujące, które w nazwie pliku nie mają czego szukać.
+ */
+const DLUGOSC_NAZWY = 120;
+function nazwaKlienta(wartosc: unknown): { nazwa: string } | { blad: string } {
+  const surowa = tekst(wartosc);
+  if (!surowa) return { blad: "Podaj nazwisko klienta" };
+  if (surowa.length > DLUGOSC_NAZWY) {
+    return { blad: `Nazwisko może mieć najwyżej ${DLUGOSC_NAZWY} znaków` };
+  }
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(surowa)) {
+    return { blad: "Nazwisko zawiera znaki, których nie da się zapisać" };
+  }
+  return { nazwa: surowa };
+}
+
+/** Liczba z ciała żądania. Nieskończoności i teksty odpadają jako `null`. */
+function liczbaZadania(wartosc: unknown): number | null {
+  const n = typeof wartosc === "number" ? wartosc : Number(wartosc);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -827,8 +884,9 @@ const serwer = createServer(async (req, res) => {
       // Zmiana nazwy nie rusza identyfikatora — inaczej poprawienie literówki
       // rozdzieliłoby historię klienta na dwie osoby.
       if (!akcja && req.method === "PUT") {
-        const { nazwa } = await cialo(req);
-        if (!nazwa?.trim()) return blad(res, "Podaj nazwę klienta");
+        const sprawdzona = nazwaKlienta((await cialo(req)).nazwa);
+        if ("blad" in sprawdzona) return blad(res, sprawdzona.blad);
+        const nazwa = sprawdzona.nazwa;
 
         // Dwie kartoteki o tej samej nazwie to stan, w którym trener nie wie,
         // którą otwiera. Od łączenia jest osobna operacja, która zachowuje
@@ -839,7 +897,7 @@ const serwer = createServer(async (req, res) => {
             + "Jeśli to ta sama osoba, użyj „Połącz z innym klientem” — historia zostanie zachowana.");
         }
 
-        magazyn.zapiszKlienta({ ...klient, nazwa: nazwa.trim() });
+        magazyn.zapiszKlienta({ ...klient, nazwa });
         return json(res, kartotekaKlienta(trenerId, klientId!));
       }
 
@@ -884,18 +942,25 @@ const serwer = createServer(async (req, res) => {
 
     // ── nowy plan ────────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "POST") {
-      const { klient, wersja = 1, poprzedniId } = await cialo(req);
-      if (!klient?.trim()) return blad(res, "Podaj nazwisko klienta");
+      const c = await cialo(req);
+      const sprawdzona = nazwaKlienta(c.klient);
+      if ("blad" in sprawdzona) return blad(res, sprawdzona.blad);
+      const klient = sprawdzona.nazwa;
+      // Numer cyklu przychodzi z sieci, więc musi być liczbą całkowitą z tego
+      // świata — inaczej trafiłby do identyfikatora planu i do bazy.
+      const wersja = Math.trunc(liczbaZadania(c.wersja) ?? 1);
+      if (!(wersja >= 1 && wersja <= 999)) return blad(res, "Numer cyklu musi być z zakresu 1–999");
+      const poprzedniId = tekst(c.poprzedniId) || undefined;
       const id = magazyn.nowyId(klient, wersja);
       if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
 
       // Ten sam klient przy drugim cyklu nie powstaje drugi raz — dopasowanie
       // idzie po slugu, więc „Zuzanna C" i „zuzanna c." to jedna osoba.
-      const osoba = magazyn.zapewnijKlienta(trenerId, klient.trim());
+      const osoba = magazyn.zapewnijKlienta(trenerId, klient);
       const zapisany = magazyn.zapisz({
         id, trenerId, klientId: osoba.id, klient: osoba.nazwa, wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
-        poprzedniId: poprzedniId || undefined,
+        poprzedniId,
         plan: magazyn.pustyPlan(osoba.nazwa),
       });
       return json(res, obrazPlanu(zapisany), 201);
@@ -903,9 +968,11 @@ const serwer = createServer(async (req, res) => {
 
     // ── import z arkusza ─────────────────────────────────────────────
     if (sciezka === "/api/import" && req.method === "POST") {
-      const klient = url.searchParams.get("klient")?.trim();
-      const wersja = Number(url.searchParams.get("wersja") ?? 1);
-      if (!klient) return blad(res, "Podaj nazwisko klienta");
+      const sprawdzona = nazwaKlienta(url.searchParams.get("klient"));
+      if ("blad" in sprawdzona) return blad(res, sprawdzona.blad);
+      const klient = sprawdzona.nazwa;
+      const wersja = Math.trunc(liczbaZadania(url.searchParams.get("wersja")) ?? 1);
+      if (!(wersja >= 1 && wersja <= 999)) return blad(res, "Numer cyklu musi być z zakresu 1–999");
 
       const zawartosc = await bajty(req);
       if (zawartosc.length === 0) return blad(res, "Pusty plik");
@@ -1335,6 +1402,7 @@ const serwer = createServer(async (req, res) => {
   } catch (e) {
     // Błędy asystenta są już po polsku i niosą własny kod — brak klucza to 503,
     // nie 500. Reszta idzie do logu, bo to znaczy, że coś jest zepsute tutaj.
+    if (e instanceof BladZadania) return blad(res, e.message, e.kod);
     if (e instanceof BladAI) return blad(res, e.message, Math.min(Math.max(e.kod, 400), 599));
     console.error(e);
     try {
