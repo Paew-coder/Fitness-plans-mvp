@@ -1,0 +1,184 @@
+#!/usr/bin/env node
+/**
+ * Przegląd aplikacji klienta — klikanie po telefonie, po kolei.
+ *
+ *   npm run przeglad-klienta
+ *
+ * To jedyny ekran w całym projekcie, którego **nie ogląda trener**. Klient
+ * otwiera link na siłowni, między seriami, często bez zasięgu — i albo działa,
+ * albo nie ma komu tego zgłosić. Przegląd konsoli wykrył cztery błędy
+ * niewidoczne w testach; ta powierzchnia zasługuje na to samo traktowanie.
+ *
+ * Idzie pętlą, dla której cała aplikacja powstała: klient dostaje policzony
+ * ciężar → ocenia serię → **ocena zmienia ciężar w kolejnym tygodniu**.
+ * Ostatni krok jest tu najważniejszy: to jest ta jedna rzecz, której arkusz
+ * nie umiał, i jedyna, przez którą warto było to przepisywać.
+ *
+ * Wymaga Playwrighta z Chromium. Nie chodzi w `npm test`, bo tam przeglądarki
+ * nie ma — to kontrola do puszczenia po zmianach w `public/klient/`.
+ */
+import { doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola, type Srodowisko }
+  from "./przegladarka.ts";
+
+const PORT = 4192;
+const KLIENT = "Klient telefon";
+const PLAN = "klient-telefon-1";
+/** iPhone 13 — realny ekran, na którym to naprawdę bywa otwierane. */
+const TELEFON = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+
+/**
+ * Plan gotowy do wysłania: bój główny, akcesorium, serie maksymalne dla obu
+ * i progresja z szablonu. Sianie idzie przez API konsoli, a nie przez klikanie —
+ * układanie planu sprawdza `przeglad-ekranow.ts`, tu chodzi o telefon.
+ */
+async function zasiej({ api }: Srodowisko): Promise<string> {
+  await api("/api/plany", "POST", { klient: KLIENT, wersja: 1 });
+
+  const { zapisany } = await api(`/api/plany/${PLAN}`);
+  const plan = zapisany.plan;
+  plan.sloty[0].cwiczenieId = "EX-0010";   // A1. bój główny
+  plan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
+  plan.serieMaksymalne = [
+    { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
+    { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
+  ];
+  await api(`/api/plany/${PLAN}`, "PUT", { plan, dataStartu: null, status: "szkic" });
+  await api(`/api/plany/${PLAN}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
+
+  const zProgresja = (await api(`/api/plany/${PLAN}`)).zapisany.plan;
+  await api(`/api/plany/${PLAN}`, "PUT",
+    { plan: zProgresja, dataStartu: null, status: "wysłany" });
+
+  return (await api(`/api/plany/${PLAN}/link`, "POST")).sciezka;
+}
+
+await zKonsola(PORT, async (przegladarka, srodowisko) => {
+  const sciezka = await zasiej(srodowisko);
+  const { adres, api } = srodowisko;
+  const kontekst = await przegladarka.newContext(TELEFON);
+  const s = await kontekst.newPage();
+  const bledy = pilnujBledow(s);
+
+  /** Widok prosto z serwera — sprawdzamy skutek dotknięcia, nie sam ekran. */
+  const token = sciezka.replace("/k/", "");
+  const widok = async () => await api(`/api/klient/${token}`);
+  const cwiczenie = (w: any, tydzien: number, i = 0) =>
+    w.tygodnie[tydzien - 1].dni[0].cwiczenia[i];
+
+  await s.goto(`${adres}${sciezka}`, { waitUntil: "networkidle" });
+
+  // ── 1. wejście z linku ────────────────────────────────────────────
+  sprawdz("link otwiera plan klienta",
+    (await s.locator("#tytul").innerText()).includes(KLIENT),
+    await s.locator("#tytul").innerText());
+
+  const przedStart = await widok();
+  sprawdz("tygodnie są do wyboru",
+    await s.locator("#tygodnie .tydzien").count() === 6,
+    `${await s.locator("#tygodnie .tydzien").count()} tygodni`);
+
+  // ── 2. otwarcie treningu ──────────────────────────────────────────
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const karty = s.locator("#cwiczenia .cwiczenie");
+  sprawdz("trening pokazuje ćwiczenia z planu", await karty.count() === 2,
+    `${await karty.count()} ćwiczenia`);
+
+  // ── 3. ciężar na ekranie to ciężar policzony ──────────────────────
+  // Umowa całej aplikacji: klient widzi dokładnie tę liczbę, którą policzył
+  // silnik. Rozjazd tutaj znaczy, że ktoś trenuje wg innych liczb niż trener.
+  // Aplikacja pisze liczby po polsku, z przecinkiem — porównujemy wartości,
+  // nie zapis.
+  const naEkranie = await karty.first().locator(".zadanie .ciezar").innerText();
+  sprawdz("ciężar na telefonie zgadza się z policzonym",
+    Number(naEkranie.replace(",", ".").replace(/[^\d.]/g, "")) === cwiczenie(przedStart, 1).ciezar,
+    `${naEkranie} ↔ ${cwiczenie(przedStart, 1).ciezar} kg`);
+
+  // ── 4. ocena serii ────────────────────────────────────────────────
+  await karty.first().getByRole("button", { name: "Za łatwe" }).click();
+  await s.waitForTimeout(600);
+  sprawdz("ocena zapisuje się", cwiczenie(await widok(), 1).feedback === "za łatwe",
+    String(cwiczenie(await widok(), 1).feedback));
+
+  // ── 5. pętla adaptacji ────────────────────────────────────────────
+  // Rzecz, dla której to powstało: „za łatwe" ma podnieść ciężar w T2.
+  const poOcenie = await widok();
+  sprawdz("ocena zmienia ciężar w kolejnym tygodniu",
+    cwiczenie(poOcenie, 2).ciezar > cwiczenie(przedStart, 2).ciezar,
+    `T2: ${cwiczenie(przedStart, 2).ciezar} → ${cwiczenie(poOcenie, 2).ciezar} kg`);
+
+  // ── 6. co faktycznie poszło ───────────────────────────────────────
+  await karty.first().getByRole("button", { name: /zapisz, co poszło/ }).click();
+  const pola = karty.first().locator(".wykonanie-pola input");
+  await pola.nth(0).fill("95");
+  await pola.nth(1).fill("5");
+  await pola.nth(1).blur();
+  await s.waitForTimeout(600);
+  const wykonane = cwiczenie(await widok(), 1);
+  sprawdz("wykonanie zapisuje się w komplecie",
+    wykonane.ciezarWykonany === 95 && wykonane.powtorzeniaWykonane === 5,
+    `${wykonane.ciezarWykonany} kg × ${wykonane.powtorzeniaWykonane}`);
+
+  // ── 7. domknięcie treningu ────────────────────────────────────────
+  await s.click("#zakoncz");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  const poZakonczeniu = await widok();
+  sprawdz("zakończony trening jest zakończony",
+    poZakonczeniu.tygodnie[0].dni[0].ukonczony === true);
+  sprawdz("nieocenione ćwiczenia dostają OK, nie pustkę",
+    cwiczenie(poZakonczeniu, 1, 1).feedback === "OK",
+    String(cwiczenie(poZakonczeniu, 1, 1).feedback));
+
+  // ── 8. seria maksymalna z telefonu ────────────────────────────────
+  await s.click("#pokaz-pomiary");
+  await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
+  const pomiar = s.locator("#pomiary .pomiar").first().locator("input");
+  await pomiar.nth(0).fill("125");
+  await pomiar.nth(1).fill("2");
+  await pomiar.nth(1).blur();
+  await s.waitForTimeout(700);
+  const poPomiarze = await widok();
+  const zmierzone = poPomiarze.doZmierzenia[0];
+  sprawdz("seria maksymalna z telefonu daje nowe 1RM",
+    zmierzone.ciezar === 125 && zmierzone.powtorzenia === 2 && zmierzone.oneRM > 127,
+    `${zmierzone.ciezar}×${zmierzone.powtorzenia} → 1RM ${zmierzone.oneRM}`);
+
+  // ── 9. ekran postępu ──────────────────────────────────────────────
+  await s.click("#wroc-z-pomiarow");
+  await s.click("#pokaz-postep");
+  await s.waitForSelector("#ekran-postep:not(.ukryty)");
+  await s.waitForTimeout(600);
+  // `innerText` oddaje tekst po stylach, a nagłówki kart są wersalikami —
+  // porównanie wprost szukałoby napisu, którego na ekranie nie ma.
+  const tekstPostepu = await s.locator("#postep").innerText();
+  sprawdz("ekran postępu pokazuje wykonaną pracę",
+    tekstPostepu.toLocaleLowerCase("pl").includes("barbell back squat"),
+    tekstPostepu.replace(/\n/g, " · ").slice(0, 160));
+
+  // ── 10. waga ──────────────────────────────────────────────────────
+  const poleWagi = s.locator("#postep input").last();
+  await poleWagi.fill("81.5");
+  await poleWagi.blur();
+  await s.waitForTimeout(600);
+  const waga = (await widok()).postep.waga.punkty;
+  sprawdz("waga zapisuje się i widać ją u trenera",
+    waga.at(-1)?.kg === 81.5, `${waga.length} pomiar(ów), ostatni ${waga.at(-1)?.kg} kg`);
+
+  // ── 11. druga strona pętli: konsola trenera ───────────────────────
+  // Ocena z telefonu ma dojść do trenera jako realizacja, nie tylko jako liczba
+  // w bazie — inaczej nie ma po czym poznać, że klient w ogóle ćwiczy.
+  const uTrenera = await api(`/api/plany/${PLAN}`);
+  const realizacja = uTrenera.realizacja ?? uTrenera.zapisany.plan;
+  sprawdz("trener widzi ocenę klienta w swoim planie",
+    uTrenera.zapisany.plan.sloty[0].tygodnie["1"].feedback === "za łatwe",
+    String(uTrenera.zapisany.plan.sloty[0].tygodnie["1"].feedback));
+  sprawdz("trener widzi domknięty trening",
+    JSON.stringify(realizacja).includes("true"));
+
+  console.log(bledy.length
+    ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
+    : "\n  błędów w przeglądarce: brak");
+  doliczBledy(bledy.length);
+});
+
+podsumuj("cała pętla klienta działa");

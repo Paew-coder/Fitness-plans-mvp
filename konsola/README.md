@@ -336,8 +336,25 @@ który ładnie wygląda i nic nie zapisuje, wypada tu na czerwono.
 > się żaden ciężar. A wczytanie własnego, dopiero co wyeksportowanego arkusza
 > dawało **pusty plan i komunikat o powodzeniu** (opis niżej).
 
+Drugi przegląd chodzi po aplikacji klienta — po telefonie:
+
+```bash
+npm run przeglad-klienta      # wymaga Playwrighta z Chromium, trwa ~20 sekund
+```
+
+Otwiera link na ekranie 390×844 i przechodzi pętlę, dla której cała aplikacja
+powstała: klient dostaje policzony ciężar → ocenia serię → **ocena podnosi
+ciężar w kolejnym tygodniu** → zapisuje, ile faktycznie podniósł → domyka
+trening → wpisuje serię maksymalną i wagę → widzi swój postęp, a trener widzi
+realizację. Sprawdza przy tym, że liczba na telefonie to **dokładnie** ta,
+którą policzył silnik — rozjazd tutaj znaczy, że klient trenuje wg innych
+liczb niż trener.
+
+> Aplikacja klienta wyszła z tego przeglądu bez jednej poprawki. Wszystkie
+> potknięcia pierwszego przebiegu były w samym przeglądzie, nie w niej.
+
 Testy jednostkowe pilnują silnika i serwera, ale nie dotykają przeglądarki.
-Ten przegląd jest po to, żeby po zmianach w `public/` nie trzeba było klikać
+Te przeglądy są po to, żeby po zmianach w `public/` nie trzeba było klikać
 ręcznie — i żeby nie odpuścić klikania wtedy, gdy zmiana wygląda niewinnie.
 
 ## Przed wdrożeniem
@@ -393,11 +410,13 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 153 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 157 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
+| `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
+| `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
 
