@@ -315,7 +315,7 @@ z próbami wyjścia poza katalog publiczny.
 npm run sprawdz-odpornosc     # ~10 sekund, bez dodatkowych narzędzi
 ```
 
-Osiemdziesiąt prób na trzydziestu sześciu adresach: katalogi zamiast
+Dziewięćdziesiąt dwie próby na trzydziestu sześciu adresach: katalogi zamiast
 plików, wyjścia poza `public/`, obcięty JSON, tablica zamiast obiektu, liczba
 zamiast nazwiska, pięćdziesiąt tysięcy znaków w nazwie, znaki sterujące,
 nieskończoności w polach liczbowych, metody, których adres nie obsługuje.
@@ -342,6 +342,18 @@ sterujących. Numer cyklu musi być całkowity z zakresu 1–999.
 > maksymalna: 100 kg × 999 powtórzeń podmieniało tę prawdziwą i przeliczało
 > ciężary na całe sześć tygodni. Nieznane odczucie dawało z kolei 500 — czyli
 > kolejka w telefonie wracałaby z nim w nieskończoność.
+>
+> **To samo po stronie trenera.** Zapis planu — największe i najbardziej
+> złożone wejście w całym API — rozsypywał ciało żądania wprost na zapisany
+> rekord. Znaczyło to, że jedno żądanie mogło podmienić **cokolwiek**:
+> właściciela planu, datę utworzenia, a nawet historię wykonań klienta. Plan
+> jako tekst albo bez listy slotów kończył się piątką z komunikatem z wnętrza
+> Node'a; plan z `serieMaksymalne` jako tekstem zapisywał się bez słowa i psuł
+> dopiero przy odczycie — czyli trener tracił dostęp do cyklu, którego przed
+> chwilą używał. Zapis zmienia teraz dokładnie trzy rzeczy, które trener
+> zmienia z ekranu (plan, datę startu, status), a kształt planu sprawdza
+> `ksztalt-planu.ts` na granicy. Data 30 lutego też już nie przechodzi —
+> `Date.parse` przyjmował ją i po cichu przesuwał cykl na 2 marca.
 >
 > Klient nie jest przeciwnikiem, ale jest **bez nadzoru**: zamiast 100 kg wpisze
 > 1000, a kolejka sprzed dwóch cykli przyniesie numer tygodnia, którego już nie
@@ -555,19 +567,20 @@ npm run kopia
 | `baza/migracje.ts` | doprowadzenie istniejącej bazy do aktualnego schematu |
 | `nazwy.ts` | nazwa klienta → identyfikator (jedno miejsce dla trzech modułów) |
 | `uklad-planu.ts` | szablon 5 dni × 12 slotów i numeracja Lp. |
+| `ksztalt-planu.ts` | granica: czy to, co przyszło z sieci, jest w ogóle planem |
 | `uwierzytelnianie.ts` | hasło, sesje, tryb dostępu |
 | `ai/klient.ts` | jedyne miejsce, które wychodzi do internetu |
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 230 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 231 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
 | `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
 | `narzedzia/sprawdz-kolko.ts` | kółko konsola → arkusz → konsola, wartość po wartości |
-| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 80 prób, serwer ma przeżyć i odmówić |
+| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 92 próby, serwer ma przeżyć i odmówić |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

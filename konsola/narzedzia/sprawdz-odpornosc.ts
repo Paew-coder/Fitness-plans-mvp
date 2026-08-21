@@ -149,6 +149,42 @@ function proby(token: string): Proba[] {
       opis: `${akcja} — ${opis}`, sciezka: `/api/klient/${token}${akcja}`,
       metoda: "POST", cialo, musiOdmowic: true as const,
     })),
+
+    // ── plan zapisywany przez trenera ─────────────────────────────────
+    //
+    // Największe i najbardziej złożone wejście w całym API: idzie wprost do
+    // silnika i do bazy. Rozsypanie ciała żądania na zapisany rekord znaczyło,
+    // że dało się podmienić cokolwiek — właściciela planu, datę utworzenia,
+    // a nawet historię wykonań klienta.
+    ...(([
+      ["plan jako tekst", '{"plan":"to nie plan","status":"szkic"}'],
+      ["plan jako null", '{"plan":null,"status":"szkic"}'],
+      ["plan jako tablica", '{"plan":[1,2,3],"status":"szkic"}'],
+      ["plan bez slotów", '{"plan":{"serieMaksymalne":[]},"status":"szkic"}'],
+      ["sloty jako tekst",
+       '{"plan":{"sloty":"nie","serieMaksymalne":[],"trybAkcesoriow":"licz z RPE","czescPlanu":"objętość"},"status":"szkic"}'],
+      ["slot jako null",
+       '{"plan":{"sloty":[null],"serieMaksymalne":[],"trybAkcesoriow":"licz z RPE","czescPlanu":"objętość"},"status":"szkic"}'],
+      ["serie maksymalne jako tekst",
+       '{"plan":{"sloty":[],"serieMaksymalne":"nie","trybAkcesoriow":"licz z RPE","czescPlanu":"objętość"},"status":"szkic"}'],
+      ["tryb akcesoriów nieznany",
+       '{"plan":{"sloty":[],"serieMaksymalne":[],"trybAkcesoriow":"cokolwiek","czescPlanu":"objętość"},"status":"szkic"}'],
+      ["status nieznany", '{"status":"cokolwiek"}'],
+      ["data startu bez sensu", '{"status":"szkic","dataStartu":"wczoraj"}'],
+      ["30 lutego", '{"status":"szkic","dataStartu":"2026-02-30"}'],
+    ] as const).map(([opis, cialo]) => ({
+      opis: `PUT planu — ${opis}`, sciezka: `/api/plany/${PLAN}`,
+      metoda: "PUT", cialo, musiOdmowic: true as const,
+    }))),
+
+    // Podmiana pól, których żądanie ruszać nie może. Odpowiedź ma być 200 —
+    // tu chodzi o to, że pola zostaną nietknięte, co sprawdzamy na końcu.
+    { opis: "PUT planu — próba podmiany właściciela i historii",
+      sciezka: `/api/plany/${PLAN}`, metoda: "PUT",
+      // Status zostaje „wysłany" — inaczej ta próba sama odebrałaby klientowi
+      // plan i następne sprawdzenie mierzyłoby skutek naszego żądania,
+      // zamiast tego, o co pytamy.
+      cialo: '{"status":"wysłany","trenerId":999,"klientId":"ktos-inny","wykonania":[],"utworzony":"1999-01-01"}' },
   ];
 }
 
@@ -232,6 +268,14 @@ await zSerwerem(PORT, async ({ adres, api }: Srodowisko) => {
   // Ani jeden ze śmieci nie mógł osiąść w danych: seria maksymalna musi być
   // ta wpisana przez trenera, historia wykonań pusta, waga bez pomiarów.
   const poProbach = (await api(`/api/plany/${PLAN}`)).zapisany;
+  sprawdz("żądanie nie podmieniło właściciela ani daty utworzenia",
+    poProbach.trenerId === 1 && poProbach.klientId === "odpornosc-test"
+    && !poProbach.utworzony.startsWith("1999"),
+    `trener ${poProbach.trenerId}, klient ${poProbach.klientId}, `
+    + `utworzony ${poProbach.utworzony.slice(0, 10)}`);
+  sprawdz("plan nie stracił slotów po serii prób",
+    poProbach.plan.sloty.length === 60, `${poProbach.plan.sloty.length} slotów`);
+
   const seria = poProbach.plan.serieMaksymalne[0];
   sprawdz("dane klienta zostały nietknięte",
     seria?.ciezar === 120 && seria?.powtorzenia === 3
