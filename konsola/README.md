@@ -45,6 +45,14 @@ proponuje nowe 1RM policzone z tych serii — zamiast wysyłać go na kolejną s
 maksymalną. Przy każdej propozycji widać, z czego wyszła i czy można jej ufać.
 Przyjmujesz kliknięciem; bez kliknięcia nic się nie zmienia.
 
+Ta propozycja czeka też na początku nowego cyklu — i tam jest najbardziej
+potrzebna. Serie maksymalne przechodzą do nowego planu razem z doborem
+ćwiczeń, więc wygląda on na kompletny, a liczy z 1RM sprzed sześciu tygodni:
+klient przez ten czas urósł, każdy ciężar wychodzi za lekki i **nic tego nie
+widać**. Wykonania z poprzedniego cyklu są najlepszym, co w tym momencie mamy,
+więc konsola wyciąga je stamtąd i podpisuje: „Z cyklu 1.0 — ten dopiero się
+zaczyna". Wykonanie z bieżącego cyklu, gdy już będzie, wygrywa ze starszym.
+
 **Wymaga uwagi.** Panel na górze listy: kto stanął (ponad 10 dni bez treningu),
 komu wysłałeś plan, a on nie zaczął, kto nie dostał linku, komu kończy się cykl.
 Jeden wiersz na klienta i tylko o jego bieżącym planie — szkice to jeszcze nie
@@ -430,7 +438,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 169 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 173 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
