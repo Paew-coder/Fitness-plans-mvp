@@ -156,7 +156,56 @@ async function przejdz(przegladarka: any): Promise<void> {
     && bojA1["6"].serie === 6 && bojA1["6"].powtorzenia === 3,
     `T1 ${bojA1?.["1"]?.serie}×${bojA1?.["1"]?.powtorzenia}@${bojA1?.["1"]?.rpe} · T6 ${bojA1?.["6"]?.serie}×${bojA1?.["6"]?.powtorzenia}@${bojA1?.["6"]?.rpe}`);
 
-  // ── 8. przełączniki planu ─────────────────────────────────────────
+  // ── 8. podmiana ćwiczenia, które klient już ocenił ────────────────
+  // Mnożnik adaptacji liczy się z odczuć slotu, nie ćwiczenia. Po podmianie
+  // oceny poprzedniego ćwiczenia działałyby dalej — na ciężar czegoś, czego
+  // klient nie robił. Konsola musi o tym powiedzieć w chwili podmiany.
+  const zOcena = await (async () => {
+    const { zapisany } = await zBazy();
+    const slot = zapisany.plan.sloty.find((x: any) => x.cwiczenieId === "EX-0010");
+    slot.tygodnie["1"] = { ...(slot.tygodnie["1"] ?? {}), feedback: "za łatwe" };
+    slot.tygodnie["2"] = { ...(slot.tygodnie["2"] ?? {}), feedback: "za łatwe" };
+    await fetch(`${ADRES}/api/plany/${PLAN}`, {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ plan: zapisany.plan, dataStartu: zapisany.dataStartu,
+        status: zapisany.status }),
+    });
+    return slot.positionId;
+  })();
+  // Oceny dopisaliśmy z boku, więc ekran trzeba wczytać na nowo — tą samą
+  // drogą, którą trener wraca do planu: lista → kartoteka → cykl.
+  await s.reload({ waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja", { hasText: KLIENT })
+    .getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)");
+
+  const wierszZOcena = s.locator("#dni tr").filter({ has: s.locator("td.cwiczenie select") })
+    .filter({ has: s.locator(`td:text-is("${zOcena}")`) });
+  const doPodmiany = (await wierszZOcena.count()) > 0
+    ? wierszZOcena.first()
+    : s.locator("#dni tr").filter({ has: s.locator("td.cwiczenie select") }).nth(1);
+  // Wybór po identyfikatorze, nie po nazwie — lista bywa zawężona szkieletem,
+  // a to samo ćwiczenie ma w niej różne podpisy.
+  await doPodmiany.locator("td.cwiczenie select").selectOption("EX-0013");
+  await s.waitForSelector("#modal:not(.ukryty)", { timeout: 5000 });
+  // `innerText` oddaje tekst po stylach, a nagłówki modala są wersalikami.
+  sprawdz("podmiana ocenionego ćwiczenia pyta o oceny",
+    (await s.locator("#modal-tytul").innerText()).toLocaleLowerCase("pl").includes("ocenił"),
+    await s.locator("#modal-tytul").innerText());
+
+  await s.locator("#modal-body").getByRole("button", { name: "Wyczyść oceny" }).click();
+  await zapisano();
+  const poWyczyszczeniu = (await zBazy()).zapisany.plan.sloty
+    .find((x: any) => x.positionId === zOcena)?.tygodnie;
+  sprawdz("wyczyszczenie zdejmuje oceny ze slotu",
+    !poWyczyszczeniu?.["1"]?.feedback && !poWyczyszczeniu?.["2"]?.feedback,
+    JSON.stringify(poWyczyszczeniu?.["1"] ?? {}));
+  sprawdz("parametry tygodnia zostają po wyczyszczeniu ocen",
+    poWyczyszczeniu?.["1"]?.serie > 0, JSON.stringify(poWyczyszczeniu?.["1"] ?? {}));
+
+  // ── 9. przełączniki planu ─────────────────────────────────────────
   await s.selectOption("#tryb-akcesoriow", "licz z RPE");
   await zapisano();
   await s.selectOption("#czesc-planu", "intensywność");
@@ -168,26 +217,26 @@ async function przejdz(przegladarka: any): Promise<void> {
   sprawdz("część planu zapisana", ustawienia.zapisany.plan.czescPlanu === "intensywność");
   sprawdz("data startu zapisana", ustawienia.zapisany.dataStartu === "2026-09-01");
 
-  // ── 9. TOP SET ────────────────────────────────────────────────────
+  // ── 10. TOP SET ────────────────────────────────────────────────────
   await s.locator(".topset input[type=checkbox]").first().uncheck();
   await zapisano();
   sprawdz("TOP SET da się wyłączyć", (await zBazy()).zapisany.plan.topSety[0].wlaczony === false);
 
-  // ── 10. moduł oddechu ─────────────────────────────────────────────
+  // ── 11. moduł oddechu ─────────────────────────────────────────────
   await s.fill("#oddech-twot", "22");
   await s.locator("#oddech-twot").blur();
   await s.waitForTimeout(700);
   const oddech = (await zBazy()).moduly.oddech.dawka;
   sprawdz("moduł oddechu liczy dawkę", oddech !== null, oddech?.poziom ?? "brak");
 
-  // ── 11. link dla klienta ──────────────────────────────────────────
+  // ── 12. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
   const link = (await s.locator("#modal-body").innerText()).match(/\/k\/\S+/)?.[0] ?? "";
   sprawdz("link dla klienta pokazuje adres", /^\/k\/[\w-]{16,}$/.test(link), link || "brak");
   await s.click("#modal-zamknij");
 
-  // ── 12. eksport arkusza ───────────────────────────────────────────
+  // ── 13. eksport arkusza ───────────────────────────────────────────
   // Arkusz nie leci przez przeglądarkę — konsola zapisuje go na dysku i podaje
   // ścieżkę. Kontrola jest więc dwuczęściowa: co pokazała i czy plik jest.
   await s.click("#eksportuj");
@@ -197,7 +246,7 @@ async function przejdz(przegladarka: any): Promise<void> {
     sciezka.endsWith(".xlsx") && existsSync(sciezka), sciezka);
   await s.click("#modal-zamknij");
 
-  // ── 13. wysyłka planu ─────────────────────────────────────────────
+  // ── 14. wysyłka planu ─────────────────────────────────────────────
   await s.selectOption("#status-wybor", "wysłany");
   await s.waitForTimeout(800);
   sprawdz("plan da się wysłać", (await zBazy()).zapisany.status === "wysłany");
@@ -261,9 +310,10 @@ async function przejdz(przegladarka: any): Promise<void> {
   await s.click("#form-import button[type=submit]");
   await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 60000 });
   const wczytany = await (await fetch(`${ADRES}/api/plany/import-przegladu-1`)).json();
+  // Drugi slot to EX-0013 — ćwiczenie podmienione w kroku 8.
   sprawdz("arkusz wraca z tymi samymi ćwiczeniami",
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(",")
-      === "EX-0016,EX-0010",
+      === "EX-0016,EX-0013",
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(" → ") ?? "brak");
   // Arkusz był potrzebny tylko na tę jedną kontrolę — katalog eksportów należy
   // do trenera i nie ma w nim zostawać plik po przeglądzie.
