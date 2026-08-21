@@ -363,6 +363,25 @@ sterujących. Numer cyklu musi być całkowity z zakresu 1–999.
 > są szeroko postawione: mają odciąć to, co nie może być prawdziwe, a nie
 > zgadywać, co klient miał na myśli.
 
+## Aktualizacja u trenera
+
+Konsola nie ma service workera ani numeru wersji w adresie — aktualizuje się
+w miejscu: pobierasz nową wersję, restartujesz, odświeżasz stronę. Do tej pory
+serwer nie wysyłał **żadnych** nagłówków o świeżości, więc przeglądarka robiła
+z plikami to, co uznała za stosowne: raz pobierała na nowo, raz trzymała starą
+kopię. Po aktualizacji mogłeś więc oglądać starą konsolę i mieć pełne prawo
+sądzić, że poprawka po prostu nie działa.
+
+Każdy plik ma teraz znacznik wersji (rozmiar + czas zmiany) i `cache-control:
+no-cache` — co, wbrew nazwie, nie znaczy „nie zapisuj", tylko „zapisz, ale
+zawsze pytaj". Odpowiedzią na to pytanie jest zwykle 304 bez treści, czyli
+**taniej** niż pobranie pliku, a jednocześnie bez ryzyka, że zostaniesz ze
+starą wersją.
+
+To ta sama rodzina błędu, co po stronie klienta (opisana w
+[`../klient/README.md`](../klient/README.md)) — z tą różnicą, że konsoli nie
+ratował żaden worker.
+
 ## Dostęp — dwa tryby
 
 Konsola sama rozpoznaje, w którym trybie chodzi. Nie ma przełącznika
@@ -573,7 +592,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 233 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 241 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
