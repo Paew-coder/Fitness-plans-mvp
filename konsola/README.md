@@ -288,6 +288,29 @@ Każde zapytanie kosztuje ułamek dolara i konsola pokazuje ile, pod odpowiedzi�
 Katalog 164 ćwiczeń jest oznaczony do cache, więc drugie i kolejne zapytanie
 w ciągu paru minut płaci za niego dziesiątą część ceny.
 
+## Odporność serwera
+
+Konsola obsługuje jednego trenera, ale jego klienci wchodzą z zewnątrz — więc
+żadne żądanie nie może położyć procesu. Do tej pory mogło, i to bez hasła:
+
+> **`GET /klient/` zabijało cały serwer.** Adres wskazuje katalog, a sprawdzenie
+> „czy plik istnieje" jest dla katalogu prawdziwe. Serwer wysyłał nagłówki
+> i dopiero potem próbował odczytać katalog jako plik — wyjątek leciał **po**
+> rozpoczęciu odpowiedzi, obsługa błędu próbowała odpowiedzieć drugi raz,
+> a to rzucało już spoza bloku `try` i kończyło proces. Konsola znikała razem
+> z dostępem wszystkich klientów.
+>
+> Najgorsze: `/klient/` było dokładnie tym adresem, który otwierała aplikacja
+> **dodana do ekranu głównego** — `start_url` w manifeście prowadził do
+> katalogu zamiast do linku klienta. Klient instalował sobie skrót, dotykał go
+> i kładł trenerowi serwer.
+
+Naprawione w trzech warstwach: katalog nie udaje pliku, odpowiedź wysyła się
+dokładnie raz, a wyjątek w obsłudze żądania w najgorszym razie zrywa jedno
+połączenie. Manifest nie narzuca już adresu startowego, więc aplikacja otwiera
+ten, pod którym klient ją dodał. Pilnuje tego trzynaście testów, łącznie
+z próbami wyjścia poza katalog publiczny.
+
 ## Dostęp — dwa tryby
 
 Konsola sama rozpoznaje, w którym trybie chodzi. Nie ma przełącznika
@@ -497,7 +520,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 203 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 216 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
