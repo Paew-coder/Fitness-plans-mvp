@@ -23,6 +23,7 @@ KOL_SERIE, KOL_POWT, KOL_RPE = 4, 5, 6
 # Kolumna odczuc klienta. Import ja czytal od poczatku, a eksport dotad
 # pomijal — przez co odeslany arkusz startowal od mnoznika 1 i od T2
 # pokazywal inne ciezary niz konsola.
+KOL_CIEZAR = 7
 KOL_FEEDBACK = 8
 KOL_SZKIELET = 10
 
@@ -88,6 +89,11 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
                 ws.cell(row=r, column=KOL_POWT).value = pole["powtorzenia_reczne"]
             if pole.get("feedback") is not None:
                 ws.cell(row=r, column=KOL_FEEDBACK).value = pole["feedback"]
+            # Ciezar wpisany recznie zastepuje formule w komorce - tak samo,
+            # jak robil to trener, wpisujac liczbe wprost do arkusza. Bez tego
+            # klient dostawalby ciezar policzony, a w konsoli stalby inny.
+            if pole.get("ciezar_reczny") is not None:
+                ws.cell(row=r, column=KOL_CIEZAR).value = pole["ciezar_reczny"]
             licznik["tygodnie"] += 1
 
     # --- TOP SETY: przelacznik i RPE ustawia sie w T1, reszta lustrzy ---
