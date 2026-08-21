@@ -1,11 +1,12 @@
 /**
- * Wspólna obsługa przeglądów klikanych: serwer na czystej bazie, Chromium
- * i liczenie kontroli. Używają tego `przeglad-ekranow.ts` (konsola trenera)
- * i `przeglad-klienta.ts` (aplikacja na telefon).
+ * Wspólne rusztowanie kontroli, które potrzebują działającej konsoli: serwer
+ * na czystej bazie, Chromium i liczenie wyników. Używają tego przeglądy
+ * klikane (`przeglad-ekranow.ts`, `przeglad-klienta.ts`) i sprawdzenie
+ * pełnego kółka przez arkusz (`sprawdz-kolko.ts`).
  *
- * Wydzielone, bo to jedyny kawałek, który oba przeglądy mają identyczny —
- * a serwer stawiany na dwa sposoby prędzej czy później rozjeżdża się tak,
- * że jeden przegląd testuje co innego niż drugi.
+ * Wydzielone, bo to jedyny kawałek, który mają identyczny — a serwer stawiany
+ * na trzy sposoby prędzej czy później rozjeżdża się tak, że jedna kontrola
+ * sprawdza co innego niż druga.
  */
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -62,11 +63,10 @@ export type Srodowisko = {
  * i oddaje jedno i drugie. Po wszystkim sprząta — także wtedy, gdy przegląd
  * się wywali, bo inaczej po każdym nieudanym przebiegu zostaje wiszący serwer.
  */
-export async function zKonsola(
+export async function zSerwerem(
   port: number,
-  przebieg: (przegladarka: any, srodowisko: Srodowisko) => Promise<void>,
+  przebieg: (srodowisko: Srodowisko) => Promise<void>,
 ): Promise<void> {
-  const { chromium } = await wczytajPlaywrighta();
   const katalog = mkdtempSync(join(tmpdir(), "craftmyplan-przeglad-"));
   const adres = `http://127.0.0.1:${port}`;
 
@@ -80,21 +80,39 @@ export async function zKonsola(
   };
 
   let serwer: ChildProcess | null = null;
-  let przegladarka: any = null;
   try {
     serwer = spawn("node", ["--no-warnings", "serwer.ts"], {
       cwd: KONSOLA,
-      env: { ...process.env, PORT: String(port), BAZA_CRAFTMYPLAN: join(katalog, "przeglad.db") },
-      stdio: "ignore",
+      env: {
+        ...process.env,
+        PORT: String(port),
+        BAZA_CRAFTMYPLAN: join(katalog, "przeglad.db"),
+        KOPIE_CRAFTMYPLAN: join(katalog, "kopie"),
+      },
+      stdio: process.env.PRZEGLAD_GLOSNO ? "inherit" : "ignore",
     });
     await czekajNaSerwer(adres);
-    przegladarka = await chromium.launch();
-    await przebieg(przegladarka, { adres, api });
+    await przebieg({ adres, api });
   } finally {
-    await przegladarka?.close();
     serwer?.kill();
     rmSync(katalog, { recursive: true, force: true });
   }
+}
+
+/** To samo, plus Chromium — dla kontroli, które klikają po ekranie. */
+export async function zKonsola(
+  port: number,
+  przebieg: (przegladarka: any, srodowisko: Srodowisko) => Promise<void>,
+): Promise<void> {
+  const { chromium } = await wczytajPlaywrighta();
+  await zSerwerem(port, async (srodowisko) => {
+    const przegladarka = await chromium.launch();
+    try {
+      await przebieg(przegladarka, srodowisko);
+    } finally {
+      await przegladarka.close();
+    }
+  });
 }
 
 async function czekajNaSerwer(adres: string): Promise<void> {

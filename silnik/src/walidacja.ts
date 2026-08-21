@@ -41,6 +41,24 @@ export function sprawdzPlan(
     zCwiczeniem.length === 0 ? ["cały plan"] : [],
   );
 
+  /**
+   * Slot wskazuje ćwiczenie, którego w BAZIE nie ma.
+   *
+   * Z ekranu konsoli to niemożliwe — ćwiczenie wybiera się z listy. Ale plan
+   * wchodzi też przez import arkusza i przez API, a taki slot jest **niewidzialny**:
+   * nie ma ćwiczenia, więc wypada ze wszystkich pozostałych kontroli, nie liczy
+   * się do objętości i nie pokazuje się klientowi. W planie wygląda normalnie,
+   * a w treningu go po prostu nie ma.
+   */
+  dodaj(
+    "CWICZENIE_SPOZA_BAZY",
+    "blad",
+    "Slot wskazuje ćwiczenie, którego nie ma w BAZIE",
+    plan.sloty
+      .filter((s) => s.cwiczenieId && !katalog.poId(s.cwiczenieId))
+      .map((s) => `${s.positionId} ${s.cwiczenieId}`),
+  );
+
   dodaj(
     "SLOT_PUSTY_MIMO_SZKIELETU",
     "blad",
