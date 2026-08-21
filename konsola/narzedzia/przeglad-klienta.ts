@@ -164,7 +164,43 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("waga zapisuje się i widać ją u trenera",
     waga.at(-1)?.kg === 81.5, `${waga.length} pomiar(ów), ostatni ${waga.at(-1)?.kg} kg`);
 
-  // ── 11. druga strona pętli: konsola trenera ───────────────────────
+  // ── 11. kolejka offline nie blokuje się na odrzuconym zadaniu ─────
+  // Scenariusz z życia: klient ocenia trening bez zasięgu, a w tym czasie
+  // trener wyjmuje jedno z ćwiczeń z planu. Ocena tego ćwiczenia nie da się
+  // już zapisać nigdy — i wcześniej zostawała na czele kolejki, blokując
+  // wszystko, co klient ocenił po niej.
+  await s.click("#wroc-z-postepu");
+  const bledyPrzedOffline = bledy.length;
+  await kontekst.setOffline(true);
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await karty.nth(0).getByRole("button", { name: "Za trudne" }).click();
+  await karty.nth(1).getByRole("button", { name: "Za trudne" }).click();
+  await s.waitForTimeout(400);
+  const wKolejce = await s.evaluate(() =>
+    JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
+  sprawdz("bez zasięgu oceny czekają w kolejce", wKolejce === 2, `${wKolejce} zadania`);
+
+  const { zapisany } = await api(`/api/plany/${PLAN}`);
+  zapisany.plan.sloty[0].cwiczenieId = null;
+  await api(`/api/plany/${PLAN}`, "PUT",
+    { plan: zapisany.plan, dataStartu: zapisany.dataStartu, status: zapisany.status });
+
+  await kontekst.setOffline(false);
+  await s.waitForTimeout(2500);
+  const poSynchronizacji = await s.evaluate(() =>
+    JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
+  sprawdz("odrzucone zadanie nie blokuje kolejki", poSynchronizacji === 0,
+    `${poSynchronizacji} zadań zostało w kolejce`);
+  sprawdz("ocena, którą dało się zapisać, doszła do trenera",
+    cwiczenie(await widok(), 1, 0).feedback === "za trudne",
+    String(cwiczenie(await widok(), 1, 0).feedback));
+  // Ten krok celowo rozłącza sieć i celowo wysyła zapis, który serwer musi
+  // odrzucić — zgłoszenia przeglądarki z tego okna są spodziewane. Reszta
+  // przebiegu dalej ma być czysta.
+  bledy.splice(bledyPrzedOffline);
+
+  // ── 12. druga strona pętli: konsola trenera ───────────────────────
   // Ocena z telefonu ma dojść do trenera jako realizacja, nie tylko jako liczba
   // w bazie — inaczej nie ma po czym poznać, że klient w ogóle ćwiczy.
   const uTrenera = await api(`/api/plany/${PLAN}`);
