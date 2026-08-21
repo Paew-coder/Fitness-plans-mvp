@@ -17,7 +17,7 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -66,5 +66,36 @@ describe("offline klienta — zakres service workera", () => {
     assert.match(sw, /const CACHE = "trening-v\d+"/);
     assert.match(sw, /caches\.delete/, "stare cache mają znikać przy aktywacji");
     assert.match(sw, /clients\.claim/, "worker ma przejmować stronę od razu");
+  });
+});
+
+describe("aktualizacja aplikacji u klienta", () => {
+  /**
+   * Worker odpowiadał wcześniej „z cache, a jak nie ma, to z sieci" — czyli
+   * plik raz zapisany zostawał u klienta **na zawsze**. Nowa wersja docierała
+   * wyłącznie wtedy, gdy ktoś pamiętał podbić `CACHE`. Zabezpieczenie oparte
+   * na pamięci: jedno przeoczenie i wszyscy klienci zostają ze starym kodem,
+   * bez żadnego objawu po stronie trenera. Teraz odświeżenie leci w tle.
+   */
+  test("odpowiedź z cache idzie w parze z odświeżeniem z sieci", () => {
+    const sw = zrodlo("public/klient/sw.js");
+    assert.match(sw, /caches\.open\(CACHE\)/, "worker nie sięga po swój magazyn");
+    assert.match(sw, /magazyn\.put\(zapytanie, odp\.clone\(\)\)/,
+      "worker nie zapisuje świeżej odpowiedzi do cache");
+    assert.match(sw, /e\.waitUntil\(zSieci\)/,
+      "odświeżenie musi dokończyć się także po oddaniu odpowiedzi z cache");
+  });
+
+  test("szkielet do zapisania obejmuje wszystkie pliki aplikacji klienta", () => {
+    // Dołożony plik, którego nie ma na tej liście, nie trafi do cache — czyli
+    // aplikacja przestanie działać bez zasięgu dokładnie w tym miejscu.
+    const sw = zrodlo("public/klient/sw.js");
+    const wSzkielecie = new Set(
+      [...sw.matchAll(/"\/klient\/([^"]+)"/g)].map((m) => m[1]!));
+    const naDysku = readdirSync(join(KONSOLA, "public", "klient"))
+      .filter((f) => f !== "sw.js");   // worker sam siebie nie cache'uje
+    const brakujace = naDysku.filter((f) => !wSzkielecie.has(f));
+    assert.deepEqual(brakujace, [],
+      `pliki poza szkieletem: ${brakujace.join(", ")}`);
   });
 });

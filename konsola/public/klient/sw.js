@@ -4,7 +4,7 @@
  * Trzymamy tylko szkielet (HTML, CSS, JS). Dane planu idą przez localStorage
  * w app.js, bo muszą przetrwać także wtedy, gdy przeglądarka wyczyści cache.
  */
-const CACHE = "trening-v8";
+const CACHE = "trening-v9";
 // `index.html` musi być w tej liście: bez niego pierwsza wizyta zapisuje tylko
 // arkusz stylów i skrypt, a sama strona trafia do cache dopiero przy drugim
 // wejściu — czyli offline działał od trzeciej wizyty, nie od pierwszej.
@@ -46,15 +46,39 @@ self.addEventListener("fetch", (e) => {
   // Adres /k/<token> to zawsze ta sama strona.
   const zapytanie = url.pathname.startsWith("/k/") ? "/klient/index.html" : e.request;
 
-  e.respondWith(
-    caches.match(zapytanie).then((zCache) =>
-      zCache ?? fetch(e.request).then((odp) => {
-        if (odp.ok) {
-          const kopia = odp.clone();
-          caches.open(CACHE).then((c) => c.put(zapytanie, kopia));
-        }
-        return odp;
-      }).catch(() => caches.match("/klient/index.html")),
-    ),
-  );
+  e.respondWith(odpowiedz(e, zapytanie));
 });
+
+/**
+ * Z cache od razu, ale z odświeżeniem w tle.
+ *
+ * Wcześniej było samo „z cache, a jak nie ma, to z sieci" — czyli plik raz
+ * zapisany zostawał u klienta **na zawsze**. Nowa wersja aplikacji docierała
+ * do niego wyłącznie wtedy, gdy ktoś pamiętał podbić `CACHE` w tym pliku.
+ * Do tej pory pamiętałem, ale to jest zabezpieczenie oparte na pamięci:
+ * jedno przeoczenie i wszyscy klienci zostają ze starym kodem, bez żadnego
+ * objawu po stronie trenera.
+ *
+ * Kolejność jest celowa. Najpierw cache, bo aplikacja ma się otworzyć na
+ * siłowni w piwnicy, gdzie zasięgu nie ma — czekanie na sieć znaczyłoby biały
+ * ekran. Odświeżenie leci obok i wchodzi w życie przy następnym otwarciu.
+ * „Sieć najpierw" dałaby świeższy kod kosztem tego, po co ten worker istnieje.
+ */
+async function odpowiedz(e, zapytanie) {
+  const magazyn = await caches.open(CACHE);
+  const zCache = await magazyn.match(zapytanie);
+
+  const zSieci = fetch(e.request)
+    .then((odp) => {
+      if (odp.ok) magazyn.put(zapytanie, odp.clone());
+      return odp;
+    })
+    .catch(() => null);
+
+  if (zCache) {
+    e.waitUntil(zSieci);   // odświeżenie kończy się nawet po oddaniu odpowiedzi
+    return zCache;
+  }
+  return (await zSieci) ?? (await magazyn.match("/klient/index.html"))
+    ?? Response.error();
+}
