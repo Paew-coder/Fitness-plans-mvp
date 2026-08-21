@@ -49,7 +49,7 @@ Zero zależności, Node 22 uruchamia je wprost.
 
 ```bash
 cd silnik
-npm test                                        # 118 testów, 912 wartości zgodnych z arkuszem
+npm test                                        # 127 testów, 912 wartości zgodnych z arkuszem
 npm run sprawdz -- "Plan klienta.xlsx"          # co jest nie tak z planem
 npm run policz -- 1rm 80 5                      # 1RM z serii maksymalnej
 npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz
@@ -90,11 +90,13 @@ z policzonych liczb, słowami). Granica jest ostra i pilnowana testami: **AI nie
 liczy ciężaru, RPE ani serii** — od tego jest silnik. Bez klucza do API funkcja
 jest wyłączona, a cała reszta konsoli działa tak samo.
 
-Ekran planu ma własny przegląd: `npm run przeglad-ekranu` przechodzi po
-wszystkich kontrolkach w prawdziwej przeglądarce i po każdym kliknięciu pyta
-serwer, czy coś się faktycznie zapisało. Wyszły z tego trzy błędy niewidoczne
-w testach — najcięższy z nich sprawiał, że **serii maksymalnej nie dało się
-wpisać wcale**, bo dwa pola kasowały się nawzajem.
+Konsola ma własny przegląd: `npm run przeglad-ekranow` przechodzi drogą trenera
+w prawdziwej przeglądarce — lista, plan, eksport, wczytanie arkusza z powrotem,
+kartoteka — i po każdym kliknięciu pyta serwer, czy coś się faktycznie
+zapisało. Wyszły z tego cztery błędy niewidoczne w testach: **serii maksymalnej
+nie dało się wpisać wcale**, bo dwa pola kasowały się nawzajem, a wczytanie
+własnego, dopiero co wyeksportowanego arkusza dawało **pusty plan i komunikat
+o powodzeniu**.
 
 Szczegóły: [`konsola/README.md`](konsola/README.md).
 

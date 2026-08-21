@@ -847,6 +847,19 @@ const serwer = createServer(async (req, res) => {
         return blad(res, "Nie udało się odczytać pliku. Czy to arkusz w układzie 5.17/5.18?");
       }
 
+      // Arkusz bez ani jednego rozpoznanego ćwiczenia dawał do tej pory pusty
+      // plan i komunikat o powodzeniu — najgorsze możliwe połączenie. Import
+      // ma tu powiedzieć wprost, że nic nie wczytał.
+      const zArkusza = planZArkusza(zrzut);
+      if (!zArkusza.sloty.some((s) => s.cwiczenieId)) {
+        const nierozpoznane = nierozpoznaneCwiczenia(zrzut);
+        return blad(res, nierozpoznane.length
+          ? `W arkuszu nie ma ani jednego ćwiczenia z BAZY. Nierozpoznane nazwy: `
+            + `${nierozpoznane.slice(0, 5).map((n) => `„${n.nazwa}"`).join(", ")}.`
+          : "W arkuszu nie ma ani jednego ćwiczenia. Czy to plik z planem, "
+            + "z wypełnionymi zakładkami T1–T6?");
+      }
+
       const id = magazyn.nowyId(klient, wersja);
       if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
 
@@ -856,7 +869,7 @@ const serwer = createServer(async (req, res) => {
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId: url.searchParams.get("poprzedniId") || undefined,
         // Szkielet pustych slotów musi zostać — import wypełnia tylko te z ćwiczeniem.
-        plan: scalZPustym(magazyn.pustyPlan(osoba.nazwa), planZArkusza(zrzut)),
+        plan: scalZPustym(magazyn.pustyPlan(osoba.nazwa), zArkusza),
       });
 
       return json(res, {

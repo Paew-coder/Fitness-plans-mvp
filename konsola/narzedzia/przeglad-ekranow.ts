@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Przegląd ekranu planu — klikanie po wszystkich kontrolkach, po kolei.
+ * Przegląd ekranów konsoli — klikanie po wszystkich kontrolkach, po kolei.
  *
- *   npm run przeglad-ekranu
+ *   npm run przeglad-ekranow
  *
  * Po co osobne narzędzie: testy jednostkowe pilnują silnika i serwera, ale
  * nie dotykają tego, co dzieje się w przeglądarce. A tam psuje się najciszej.
@@ -21,11 +21,14 @@
  * pytamy bazę, czy klik faktycznie coś zapisał. Ekran, który ładnie wygląda
  * i nic nie zapisuje, ma tu wypaść na czerwono.
  *
+ * Idzie tą samą drogą co trener: lista klientów → nowy plan → ułożenie cyklu →
+ * eksport i wysyłka → wczytanie arkusza z powrotem → kartoteka klienta.
+ *
  * Wymaga Playwrighta z Chromium. Nie chodzi w `npm test`, bo tam przeglądarki
  * nie ma — to jest kontrola do puszczenia po zmianach w `public/`.
  */
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +39,9 @@ const PORT = 4189;
 const ADRES = `http://127.0.0.1:${PORT}`;
 const KLIENT = "Przegląd ekranu";
 const PLAN = "przeglad-ekranu-1";
+const KLIENT_PO_ZMIANIE = "Przegląd ekranów";
+const KLIENT_Z_ARKUSZA = "Import przegladu";
+const KLIENT_DO_USUNIECIA = "Do usuniecia";
 
 let bledow = 0;
 function sprawdz(nazwa: string, warunek: boolean, szczegol = ""): void {
@@ -83,11 +89,6 @@ async function main(): Promise<void> {
   const przegladarka = await (async () => {
     try {
       await czekajNaSerwer();
-      await fetch(`${ADRES}/api/plany`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ klient: KLIENT, wersja: 1 }),
-      });
       return await chromium.launch();
     } catch (e) {
       serwer.kill();
@@ -114,7 +115,11 @@ async function przejdz(przegladarka: any): Promise<void> {
   // Konsola pyta przed każdą operacją, która nadpisuje cudzą robotę. Bez tego
   // Playwright odrzuca pytanie po cichu i wychodzi, że przycisk nie działa.
   const pytania: string[] = [];
-  s.on("dialog", (d: any) => { pytania.push(d.message()); d.accept(); });
+  const odpowiedzi: string[] = [];   // dla `prompt()` — po kolei, jak padają
+  s.on("dialog", (d: any) => {
+    pytania.push(d.message());
+    d.accept(d.type() === "prompt" ? (odpowiedzi.shift() ?? "") : undefined);
+  });
 
   /** Stan prosto z serwera — sprawdzamy skutek kliknięcia, nie sam ekran. */
   const zBazy = async () => await (await fetch(`${ADRES}/api/plany/${PLAN}`)).json();
@@ -122,10 +127,17 @@ async function przejdz(przegladarka: any): Promise<void> {
     () => document.querySelector("#zapis")?.textContent === "zapisano", null, { timeout: 8000 });
 
   await s.goto(ADRES, { waitUntil: "networkidle" });
-  await s.locator("#lista-klientow .pozycja", { hasText: KLIENT })
-    .getByRole("button", { name: "Otwórz" }).click();
-  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
-  await s.waitForSelector("#ekran-plan:not(.ukryty)");
+
+  // ═══ EKRAN LISTY ═══════════════════════════════════════════════════
+  await s.fill('#form-nowy [name="klient"]', KLIENT);
+  await s.fill('#form-nowy [name="wersja"]', "1");
+  await s.click("#form-nowy button[type=submit]");
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  const zalozony = await (await fetch(`${ADRES}/api/plany`)).json();
+  sprawdz("nowy plan zakłada się z listy",
+    zalozony.some((x: any) => x.id === PLAN), zalozony.map((x: any) => x.id).join(", "));
+
+  // ═══ EKRAN PLANU ═══════════════════════════════════════════════════
 
   const wiersz = (n: number) =>
     s.locator("#dni tr").filter({ has: s.locator("td.cwiczenie select") }).nth(n);
@@ -235,9 +247,8 @@ async function przejdz(przegladarka: any): Promise<void> {
   // ── 11. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
-  const link = await s.locator("#modal-body").innerText();
-  sprawdz("link dla klienta pokazuje adres", /\/k\/[a-z0-9]+/i.test(link),
-    link.match(/\/k\/\S+/)?.[0] ?? "brak");
+  const link = (await s.locator("#modal-body").innerText()).match(/\/k\/\S+/)?.[0] ?? "";
+  sprawdz("link dla klienta pokazuje adres", /^\/k\/[\w-]{16,}$/.test(link), link || "brak");
   await s.click("#modal-zamknij");
 
   // ── 12. eksport arkusza ───────────────────────────────────────────
@@ -255,6 +266,105 @@ async function przejdz(przegladarka: any): Promise<void> {
   await s.waitForTimeout(800);
   sprawdz("plan da się wysłać", (await zBazy()).zapisany.status === "wysłany");
 
+  // ═══ KARTOTEKA KLIENTA ═════════════════════════════════════════════
+  const klienci = async () => await (await fetch(`${ADRES}/api/klienci`)).json();
+
+  await s.click("#wroc");
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  sprawdz("z planu wraca się do kartoteki jego klienta",
+    (await s.locator("#nazwa-klienta").innerText()).includes(KLIENT),
+    await s.locator("#nazwa-klienta").innerText());
+
+  // ── 14. nowy cykl ─────────────────────────────────────────────────
+  // Drugi cykl powstaje jako kopia poprzedniego — po to, żeby nie układać
+  // tego samego szkieletu od zera co sześć tygodni.
+  await s.click("#nowy-cykl");
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  const drugi = await (await fetch(`${ADRES}/api/plany/przeglad-ekranu-2`)).json();
+  sprawdz("nowy cykl kopiuje poprzedni",
+    drugi.zapisany?.wersja === 2 && drugi.zapisany.status === "szkic"
+    && drugi.zapisany.plan.sloty[0].cwiczenieId === "EX-0016",
+    `wersja ${drugi.zapisany?.wersja} · ${drugi.zapisany?.status}`);
+  await s.click("#wroc");
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+
+  // ── 15. poprawienie nazwy ─────────────────────────────────────────
+  // Literówka w nazwisku nie może rozdzielić historii, więc identyfikator
+  // klienta zostaje ten sam — zmienia się tylko to, co widać.
+  odpowiedzi.push(KLIENT_PO_ZMIANIE);
+  await s.click("#zmien-nazwe");
+  await s.waitForTimeout(600);
+  const poZmianie = (await klienci()).find((k: any) => k.id === "przeglad-ekranu");
+  sprawdz("zmiana nazwy nie rusza identyfikatora",
+    poZmianie?.nazwa === KLIENT_PO_ZMIANIE && poZmianie.cykli === 2,
+    `${poZmianie?.nazwa} · ${poZmianie?.cykli} cykle`);
+
+  // ── 16. link dla klienta z kartoteki ──────────────────────────────
+  await s.click("#link-klienta-karta");
+  await s.waitForSelector("#modal:not(.ukryty)");
+  const linkKarty = (await s.locator("#modal-body").innerText()).match(/\/k\/\S+/)?.[0] ?? "";
+  sprawdz("link z kartoteki jest ten sam co z planu", linkKarty === link, linkKarty || "brak");
+  await s.click("#modal-zamknij");
+
+  // ═══ POWRÓT NA LISTĘ: WCZYTANIE ARKUSZA ════════════════════════════
+  await s.click("#wroc-do-klientow");
+  await s.waitForSelector("#ekran-lista:not(.ukryty)");
+
+  // ── 17. import wyeksportowanego arkusza ───────────────────────────
+  // Ten sam plik, który przed chwilą wyszedł z eksportu, ma wrócić z tymi
+  // samymi ćwiczeniami. To domyka kółko konsola → arkusz → konsola.
+  await s.fill('#form-import [name="klient"]', KLIENT_Z_ARKUSZA);
+  await s.fill('#form-import [name="wersja"]', "1");
+  // Chromium pod Playwrightem gubi po cichu plik, którego ścieżka ma polskie
+  // znaki — a eksport nazywa pliki nazwiskiem klienta. To ograniczenie samego
+  // sterowania przeglądarką, nie konsoli, więc kopiujemy plik obok pod nazwą
+  // bez ogonków i wczytujemy tę kopię.
+  const kopiaArkusza = join(tmpdir(), "przeglad-ekranow.xlsx");
+  copyFileSync(sciezka, kopiaArkusza);
+  await s.setInputFiles('#form-import [name="plik"]', kopiaArkusza);
+  await s.click("#form-import button[type=submit]");
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 60000 });
+  const wczytany = await (await fetch(`${ADRES}/api/plany/import-przegladu-1`)).json();
+  sprawdz("arkusz wraca z tymi samymi ćwiczeniami",
+    wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(",")
+      === "EX-0016,EX-0010",
+    wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(" → ") ?? "brak");
+  // Arkusz był potrzebny tylko na tę jedną kontrolę — katalog eksportów należy
+  // do trenera i nie ma w nim zostawać plik po przeglądzie.
+  rmSync(sciezka, { force: true });
+  rmSync(kopiaArkusza, { force: true });
+
+  // ── 18. scalenie dwóch kartotek ───────────────────────────────────
+  // Dwie kartoteki tej samej osoby biorą się z literówki. Scalenie przenosi
+  // cykle zamiast kazać wpisywać je od nowa.
+  await s.click("#wroc");
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  await s.click("#polacz-klienta");
+  await s.waitForSelector("#modal:not(.ukryty)");
+  await s.locator("#modal-body select").selectOption("przeglad-ekranu");
+  await s.locator("#modal-body").getByRole("button", { name: "Połącz" }).click();
+  await s.waitForTimeout(900);
+  const poScaleniu = await klienci();
+  sprawdz("scalenie przenosi cykle i zamyka drugą kartotekę",
+    poScaleniu.length === 1 && poScaleniu[0].cykli === 3,
+    poScaleniu.map((k: any) => `${k.nazwa}: ${k.cykli}`).join(" · "));
+
+  // ── 19. usunięcie kartoteki ───────────────────────────────────────
+  await s.click("#wroc-do-klientow");
+  await s.waitForSelector("#ekran-lista:not(.ukryty)");
+  await s.fill('#form-nowy [name="klient"]', KLIENT_DO_USUNIECIA);
+  await s.fill('#form-nowy [name="wersja"]', "1");
+  await s.click("#form-nowy button[type=submit]");
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  await s.click("#wroc");
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  await s.click("#usun-klienta");
+  await s.waitForSelector("#ekran-lista:not(.ukryty)", { timeout: 10000 });
+  const poUsunieciu = await klienci();
+  sprawdz("usunięcie kartoteki zabiera ją z listy",
+    poUsunieciu.length === 1 && poUsunieciu[0].id === "przeglad-ekranu",
+    poUsunieciu.map((k: any) => k.nazwa).join(" · "));
+
   console.log(bledyPrzegladarki.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledyPrzegladarki.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
@@ -263,6 +373,6 @@ async function przejdz(przegladarka: any): Promise<void> {
 
 await main();
 console.log(bledow === 0
-  ? "\n  ✓ wszystkie kontrolki ekranu planu działają\n"
+  ? "\n  ✓ wszystkie kontrolki konsoli działają\n"
   : `\n  ✗ ${bledow} kontrolek nie działa\n`);
 process.exit(bledow === 0 ? 0 : 1);
