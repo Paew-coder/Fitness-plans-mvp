@@ -134,8 +134,12 @@ działa bez zasięgu.
 
 Pętla się domyka: ocena klienta zmienia ciężar w kolejnym tygodniu, bez
 odsyłania arkusza. Kto chce, dopisuje jeszcze, ile faktycznie podniósł — i z
-tego wychodzi nowe 1RM oraz jego własny ekran postępu. Szczegóły i uwagi o bezpieczeństwie:
-[`klient/README.md`](klient/README.md).
+tego wychodzi nowe 1RM oraz jego własny ekran postępu.
+
+Że ta pętla naprawdę się domyka, sprawdza `npm run przeglad-klienta`: otwiera
+link na ekranie telefonu i przechodzi ją całą — ocena „za łatwe” w pierwszym
+tygodniu podnosi ciężar w drugim z 90 na 95 kg. Szczegóły i uwagi
+o bezpieczeństwie: [`klient/README.md`](klient/README.md).
 
 ## Postawienie na serwerze
 
