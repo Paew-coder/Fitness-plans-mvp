@@ -14,7 +14,8 @@
     "kopia": "node --no-warnings narzedzia/kopia.ts",
     "sprawdz-wdrozenie": "node --no-warnings narzedzia/sprawdz-wdrozenie.ts",
     "przeglad-ekranow": "node --no-warnings narzedzia/przeglad-ekranow.ts",
-    "przeglad-klienta": "node --no-warnings narzedzia/przeglad-klienta.ts"
+    "przeglad-klienta": "node --no-warnings narzedzia/przeglad-klienta.ts",
+    "sprawdz-kolko": "node --no-warnings narzedzia/sprawdz-kolko.ts"
   },
   "license": "UNLICENSED",
   "private": true

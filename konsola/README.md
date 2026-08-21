@@ -153,13 +153,20 @@ jeśli ćwiczenie już w nim było — realizacja zasady „sprawdzać poprzedni
 
 ## Sprawdzone
 
-Pełne kółko: plan ułożony w konsoli → eksport do `.xlsx` → przeliczenie arkusza →
-porównanie z silnikiem (**753 wartości, wszystkie zgodne**) → wczytanie tego samego
-pliku z powrotem do konsoli → porównanie z planem wyjściowym (**420 wartości:
-ciężary, serie, powtórzenia, RPE i stres — identycznie**).
+```bash
+npm run sprawdz-kolko         # wymaga LibreOffice, trwa ~2 minuty
+```
+
+Pełne kółko w jednym poleceniu: plan ułożony w konsoli → eksport do `.xlsx` →
+przeliczenie arkusza w LibreOffice → porównanie z silnikiem (**758 wartości,
+wszystkie zgodne**) → wczytanie tego samego pliku z powrotem → porównanie
+z planem wyjściowym (**702 wartości: ćwiczenia, serie, powtórzenia, RPE,
+odczucia, ciężary i stres — identycznie, zero różnic**).
 
 Arkusz liczy dokładnie to, co pokazywała konsola, a konsola czyta z powrotem
-dokładnie to, co arkusz.
+dokładnie to, co arkusz. Na tym stoi cała umowa tej aplikacji, więc kontrola
+jest jedną komendą, a nie kilkunastoma — bo rytuał do powtarzania ręcznie
+po każdej zmianie w eksporcie po prostu przestaje się powtarzać.
 
 > **Co ta kontrola wykryła.** Slot, w którym trener nie ruszył serii ani RPE,
 > wychodził z konsoli jako „nie ustawione". Wypełniacz pomijał puste pola, więc
@@ -171,8 +178,8 @@ dokładnie to, co arkusz.
 > pilnuje tego sześć testów w `testy/eksport.test.ts`, które nie potrzebują
 > ani Pythona, ani LibreOffice.
 
-To sprawdzenie wymaga LibreOffice do przeliczenia pliku, więc nie chodzi
-automatycznie w testach — trzeba je powtórzyć ręcznie po zmianach w eksporcie.
+Wymaga LibreOffice i Pythona z `openpyxl`, więc nie chodzi w `npm test` —
+przeliczenie arkusza trwa kilkadziesiąt sekund.
 
 > **I co przeoczyło.** Właśnie to przeliczenie. Identyfikator ćwiczenia stoi
 > w arkuszu w ukrytej kolumnie liczonej formułą, a plik prosto z eksportu nie
@@ -185,7 +192,7 @@ automatycznie w testach — trzeba je powtórzyć ręcznie po zmianach w eksporc
 > który nie rozpoznał niczego, **odmawia zamiast zakładać pusty plan**.
 > Pilnuje tego dziewięć testów w `../silnik/testy/import-arkusza.test.ts`.
 
-Powtórzenie tej kontroli na dowolnym pliku:
+Ta sama kontrola na dowolnym własnym pliku:
 
 ```bash
 cd ../silnik
@@ -458,12 +465,13 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 183 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 184 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
 | `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
+| `narzedzia/sprawdz-kolko.ts` | kółko konsola → arkusz → konsola, wartość po wartości |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

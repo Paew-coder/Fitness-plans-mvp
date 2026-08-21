@@ -486,6 +486,28 @@ describe("przeliczenie planu i walidacja", () => {
     assert.equal(planGotowyDoWyslania(uwagi), false);
   });
 
+  test("ćwiczenie spoza BAZY blokuje wysyłkę", () => {
+    // Z ekranu konsoli to niemożliwe — ćwiczenie wybiera się z listy. Ale plan
+    // wchodzi też przez import arkusza i przez API, a taki slot jest niewidzialny:
+    // wypada ze wszystkich innych kontroli, nie liczy się do objętości i nie
+    // pokazuje się klientowi. W planie wygląda normalnie, w treningu go nie ma.
+    const plan = planTestowy();
+    const zWidmem: Plan = {
+      ...plan,
+      sloty: plan.sloty.map((s, i) => (i === 0 ? { ...s, cwiczenieId: "EX-9999" } : s)),
+    };
+    const uwagi = sprawdzPlan(zWidmem, przeliczPlan(zWidmem));
+    const widmo = uwagi.find((u) => u.kod === "CWICZENIE_SPOZA_BAZY")!;
+    assert.ok(widmo, "slot z nieznanym ćwiczeniem przeszedł bez uwagi");
+    assert.ok(widmo.pozycje[0]?.includes("EX-9999"), widmo.pozycje.join(", "));
+    assert.equal(planGotowyDoWyslania(uwagi), false);
+  });
+
+  test("plan z samych znanych ćwiczeń nie zgłasza widm", () => {
+    const uwagi = sprawdzPlan(planTestowy(), przeliczPlan(planTestowy()));
+    assert.equal(uwagi.find((u) => u.kod === "CWICZENIE_SPOZA_BAZY"), undefined);
+  });
+
   test("plan z choćby jednym ćwiczeniem nie jest pusty", () => {
     const uwagi = sprawdzPlan(planTestowy(), przeliczPlan(planTestowy()));
     assert.equal(uwagi.find((u) => u.kod === "PLAN_PUSTY"), undefined);

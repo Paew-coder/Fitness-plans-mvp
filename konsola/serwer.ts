@@ -1334,6 +1334,20 @@ async function kopiaWTle(): Promise<void> {
   }
 }
 
+/**
+ * Node domyślnie zamyka bezczynne połączenie po 5 sekundach. Klient, który
+ * trzyma je otwarte i wraca po dłuższej przerwie — przeglądarka po treningu,
+ * narzędzie po przeliczeniu arkusza — pisze wtedy do gniazda, którego już nie
+ * ma, i dostaje „other side closed" zamiast odpowiedzi. Żądania POST nie są
+ * powtarzane automatycznie, więc taka utrata to utrata zapisu.
+ *
+ * Konsola obsługuje jednego trenera i jego klientów; trzymanie połączeń
+ * minutę dłużej nic tu nie kosztuje. `headersTimeout` musi być większy od
+ * `keepAliveTimeout`, inaczej Node zgłasza konflikt ustawień.
+ */
+serwer.keepAliveTimeout = 65_000;
+serwer.headersTimeout = 70_000;
+
 serwer.listen(PORT, async () => {
   const tryb = auth.trybDostepu(TRENER);
   console.log(`\n  Konsola trenera CraftMyPlan`);

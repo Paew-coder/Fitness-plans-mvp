@@ -17,7 +17,7 @@
  * Wymaga działającego Dockera. Nie chodzi w `npm test`, bo tam Dockera nie ma.
  */
 import { execFileSync, execSync } from "node:child_process";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -204,6 +204,30 @@ async function main(): Promise<void> {
 
     const log = docker("logs", KONTENER);
     sprawdz("migracja wykonała się przy starcie", log.includes("Migracja bazy → wersja 2"));
+
+    // Kopia przed migracją to jedyna rzecz, po którą sięga się po nieudanej
+    // aktualizacji. Musi wylądować na woluminie, a nie w warstwie obrazu —
+    // inaczej przy przebudowie zniknie razem z powodem, dla którego istnieje.
+    const kopie = existsSync(join(katalogDanych, "kopie"))
+      ? readdirSync(join(katalogDanych, "kopie")) : [];
+    const przedMigracja = kopie.filter((f) => f.includes("przed-migracja"));
+    sprawdz("kopia przed migracją została na woluminie", przedMigracja.length === 1,
+      przedMigracja[0] ?? (kopie.join(", ") || "brak"));
+    await sprawdzProbujac("kopia sprzed migracji otwiera się jako baza w starym schemacie",
+      () => {
+        const d = new DatabaseSync(join(katalogDanych, "kopie", przedMigracja[0]!), { readOnly: true });
+        const maKlienta = d.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='klient'").get() !== undefined;
+        const planow = (d.prepare("SELECT COUNT(*) AS n FROM plan").get() as { n: number }).n;
+        d.close();
+        return { maKlienta, planow };
+      },
+      (w) => ({
+        // Skoro to kopia sprzed migracji, tabeli `klient` jeszcze w niej nie ma —
+        // i właśnie po tym poznajemy, że powstała w odpowiednim momencie.
+        ok: !w.maKlienta && w.planow === 2,
+        szczegol: `${w.planow} plany, bez tabeli klient`,
+      }));
 
     console.log("\nDANE PO MIGRACJI");
     const stan = JSON.parse((await sprawdzProbujac("konsola czyta bazę po migracji", () => wKontenerze(`

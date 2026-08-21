@@ -49,7 +49,7 @@ Zero zależności, Node 22 uruchamia je wprost.
 
 ```bash
 cd silnik
-npm test                                        # 127 testów, 912 wartości zgodnych z arkuszem
+npm test                                        # 129 testów, 912 wartości zgodnych z arkuszem
 npm run sprawdz -- "Plan klienta.xlsx"          # co jest nie tak z planem
 npm run policz -- 1rm 80 5                      # 1RM z serii maksymalnej
 npm run policz -- blok "Rope pushdown" --1rm 40 # sześć tygodni naraz
@@ -93,9 +93,10 @@ Eksport i import arkusza wymagają dodatkowo Pythona z biblioteką `openpyxl`
 
 Układasz plan (5 dni × 12 slotów), widzisz ciężary i analizę na żywo, kontrola
 pokazuje co blokuje wysyłkę, przycisk eksportuje arkusz w formacie 5.18.
-Sprawdzone całe kółko: plan z konsoli → arkusz → przeliczenie w LibreOffice
-(**753 wartości zgodne z silnikiem**) → wczytanie z powrotem do konsoli
-(**420 wartości identycznych z planem wyjściowym**).
+Sprawdzone całe kółko, jednym poleceniem (`npm run sprawdz-kolko`): plan
+z konsoli → arkusz → przeliczenie w LibreOffice (**758 wartości zgodnych
+z silnikiem**) → wczytanie z powrotem do konsoli (**702 wartości identyczne
+z planem wyjściowym, zero różnic**).
 
 Dwie rzeczy, których arkusz nie miał: karta **Realizacja** (czy klient w ogóle
 ćwiczy — domknięte i zaczęte treningi tydzień po tygodniu) i **1RM z serii
