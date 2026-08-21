@@ -196,6 +196,19 @@ td.ciezar.brak { color: var(--uwaga); font-weight: 400; font-size: .8rem; }
 td.stres { font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady); white-space: nowrap; }
 .znacznik-jedn { color: var(--akcent); font-size: .8rem; }
 
+/* Ciężar liczony i ciężar wpisany ręcznie muszą się różnić na pierwszy rzut
+   oka — ten drugi nie reaguje ani na 1RM, ani na oceny klienta. Pusta wartość
+   to ciężar liczony, więc podpowiedź jest tu treścią, nie ozdobą. */
+td.ciezar input.pole-ciezaru {
+  width: 4.2rem; text-align: right; font-family: var(--mono); font-weight: 600;
+}
+td.ciezar input.pole-ciezaru::placeholder { color: var(--tekst); opacity: 1; font-weight: 600; }
+td.ciezar.brak input.pole-ciezaru::placeholder {
+  color: var(--uwaga); font-weight: 400; font-size: .8rem;
+}
+td.ciezar.reczny input.pole-ciezaru { border-color: var(--akcent); }
+.znacznik-reczny { color: var(--akcent); font-size: .7rem; margin-left: .15rem; }
+
 .topset {
   display: flex; align-items: center; gap: .7rem; padding: .45rem .9rem;
   background: var(--akcent-tlo); border-bottom: 1px solid var(--linia);

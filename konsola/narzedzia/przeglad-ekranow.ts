@@ -205,7 +205,69 @@ async function przejdz(przegladarka: any): Promise<void> {
   sprawdz("parametry tygodnia zostają po wyczyszczeniu ocen",
     poWyczyszczeniu?.["1"]?.serie > 0, JSON.stringify(poWyczyszczeniu?.["1"] ?? {}));
 
-  // ── 9. przełączniki planu ─────────────────────────────────────────
+  // ── 9. ciężar wpisany ręcznie ─────────────────────────────────────
+  // Silnik od początku przyjmował `ciezarOverride`; brakowało miejsca, w którym
+  // trener może go wpisać. Puste pole znaczy „licz automatem", tak samo jak
+  // przy powtórzeniach.
+  // Po podmianie ćwiczeń żadne nie ma już serii maksymalnej, a nadpisanie chcemy
+  // sprawdzić tam, gdzie ciężar naprawdę się liczy — inaczej pokazalibyśmy
+  // tylko, że da się wpisać liczbę w puste miejsce.
+  await (async () => {
+    const { zapisany } = await zBazy();
+    const pierwsze = zapisany.plan.sloty.find((x: any) => x.cwiczenieId)!.cwiczenieId;
+    zapisany.plan.serieMaksymalne = [
+      ...zapisany.plan.serieMaksymalne.filter((x: any) => x.cwiczenieId !== pierwsze),
+      { cwiczenieId: pierwsze, ciezar: 100, powtorzenia: 5 },
+    ];
+    await fetch(`${ADRES}/api/plany/${PLAN}`, {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ plan: zapisany.plan, dataStartu: zapisany.dataStartu,
+        status: zapisany.status }),
+    });
+  })();
+  await s.reload({ waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja", { hasText: KLIENT })
+    .getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)");
+
+  // Bierzemy wiersz, w którym ciężar naprawdę się policzył — inaczej sprawdzenie
+  // pokazałoby tylko, że da się wpisać liczbę tam, gdzie i tak nic nie było.
+  const wszystkiePola = s.locator("#dni tr input.pole-ciezaru");
+  let poleCiezaru = wszystkiePola.first();
+  let liczony = await poleCiezaru.getAttribute("placeholder");
+  for (let i = 0; i < await wszystkiePola.count(); i++) {
+    const p = await wszystkiePola.nth(i).getAttribute("placeholder");
+    if (p && Number.isFinite(Number(p.replace(",", ".")))) {
+      poleCiezaru = wszystkiePola.nth(i);
+      liczony = p;
+      break;
+    }
+  }
+  await poleCiezaru.fill("62.5");
+  await poleCiezaru.blur();
+  await zapisano();
+  const zReczym = await zBazy();
+  const nadpisany = zReczym.wynik.tygodnie[0].sloty.find((x: any) => x.ciezarNadpisany);
+  sprawdz("ciężar wpisany ręcznie wygrywa z liczonym",
+    nadpisany?.ciezar === 62.5, `liczony ${liczony} → ręczny ${nadpisany?.ciezar}`);
+  sprawdz("kontrola planu wymienia ciężary ręczne",
+    zReczym.uwagi.some((u: any) => u.kod === "CIEZAR_RECZNY" && u.pozycje[0] !== "0"),
+    zReczym.uwagi.find((u: any) => u.kod === "CIEZAR_RECZNY")?.pozycje.join(", ") ?? "brak");
+
+  await poleCiezaru.fill("");
+  await poleCiezaru.blur();
+  await zapisano();
+  const bezRecznego = await zBazy();
+  const wrocony = bezRecznego.wynik.tygodnie[0].sloty
+    .find((x: any) => x.positionId === nadpisany?.positionId);
+  sprawdz("wyczyszczenie pola wraca do ciężaru liczonego",
+    wrocony?.ciezarNadpisany === false
+    && String(wrocony?.ciezar).replace(".", ",") === liczony,
+    `${wrocony?.ciezar} kg (liczony ${liczony})`);
+
+  // ── 10. przełączniki planu ────────────────────────────────────────
   await s.selectOption("#tryb-akcesoriow", "licz z RPE");
   await zapisano();
   await s.selectOption("#czesc-planu", "intensywność");
@@ -217,26 +279,26 @@ async function przejdz(przegladarka: any): Promise<void> {
   sprawdz("część planu zapisana", ustawienia.zapisany.plan.czescPlanu === "intensywność");
   sprawdz("data startu zapisana", ustawienia.zapisany.dataStartu === "2026-09-01");
 
-  // ── 10. TOP SET ────────────────────────────────────────────────────
+  // ── 11. TOP SET ────────────────────────────────────────────────────
   await s.locator(".topset input[type=checkbox]").first().uncheck();
   await zapisano();
   sprawdz("TOP SET da się wyłączyć", (await zBazy()).zapisany.plan.topSety[0].wlaczony === false);
 
-  // ── 11. moduł oddechu ─────────────────────────────────────────────
+  // ── 12. moduł oddechu ─────────────────────────────────────────────
   await s.fill("#oddech-twot", "22");
   await s.locator("#oddech-twot").blur();
   await s.waitForTimeout(700);
   const oddech = (await zBazy()).moduly.oddech.dawka;
   sprawdz("moduł oddechu liczy dawkę", oddech !== null, oddech?.poziom ?? "brak");
 
-  // ── 12. link dla klienta ──────────────────────────────────────────
+  // ── 13. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
   const link = (await s.locator("#modal-body").innerText()).match(/\/k\/\S+/)?.[0] ?? "";
   sprawdz("link dla klienta pokazuje adres", /^\/k\/[\w-]{16,}$/.test(link), link || "brak");
   await s.click("#modal-zamknij");
 
-  // ── 13. eksport arkusza ───────────────────────────────────────────
+  // ── 14. eksport arkusza ───────────────────────────────────────────
   // Arkusz nie leci przez przeglądarkę — konsola zapisuje go na dysku i podaje
   // ścieżkę. Kontrola jest więc dwuczęściowa: co pokazała i czy plik jest.
   await s.click("#eksportuj");
@@ -246,7 +308,7 @@ async function przejdz(przegladarka: any): Promise<void> {
     sciezka.endsWith(".xlsx") && existsSync(sciezka), sciezka);
   await s.click("#modal-zamknij");
 
-  // ── 14. wysyłka planu ─────────────────────────────────────────────
+  // ── 15. wysyłka planu ─────────────────────────────────────────────
   await s.selectOption("#status-wybor", "wysłany");
   await s.waitForTimeout(800);
   sprawdz("plan da się wysłać", (await zBazy()).zapisany.status === "wysłany");
