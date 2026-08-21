@@ -15,12 +15,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { MIGRACJE, tabelaIstnieje } from "./migracje.ts";
+import { kopiaPrzedMigracja } from "./kopie.ts";
+import { SCIEZKA_BAZY } from "./sciezka.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 
-/** Ścieżka do pliku bazy. Nadpisywalna, żeby testy nie ruszały prawdziwych danych. */
-export const SCIEZKA_BAZY = process.env.BAZA_CRAFTMYPLAN
-  ?? join(KATALOG, "..", "dane", "craftmyplan.db");
+export { SCIEZKA_BAZY };
 
 let db: DatabaseSync | null = null;
 
@@ -59,9 +59,21 @@ export function baza(): DatabaseSync {
 export const WERSJA_SCHEMATU = 2;
 
 function wersjaBazy(d: DatabaseSync): number {
+  // Baza sprzed wprowadzenia wersjonowania nie ma nawet tej tabeli — a nie
+  // mając jej, samo pytanie o wersję wywalało konsolę przy starcie, zanim
+  // jakakolwiek migracja zdążyła się wykonać. Aplikacja nie wstawała wcale,
+  // z komunikatem o SQL-u, na bazie pełnej danych. Taka baza to wersja 1:
+  // zakładamy tabelę i zwykłą drogą doprowadzamy plik do aktualnego schematu.
+  if (!tabelaIstnieje(d, "wersja_schematu")) {
+    d.exec(`CREATE TABLE wersja_schematu (
+      wersja  INTEGER NOT NULL,
+      wgrana  TEXT    NOT NULL
+    )`);
+    return 1;
+  }
+
   const wiersz = d.prepare("SELECT MAX(wersja) AS w FROM wersja_schematu").get() as { w: number | null };
-  // Baza sprzed wprowadzenia wersjonowania to wersja 1 — tam, gdzie tabele
-  // istnieją, ale nikt nie zapisał numeru.
+  // Tabela jest, ale pusta — też wersja 1, tylko zapisana inaczej.
   return wiersz?.w ?? 1;
 }
 
@@ -84,6 +96,13 @@ export function migruj(d: DatabaseSync): void {
     if (migracja.doWersji <= wersja) continue;
 
     console.log(`  Migracja bazy → wersja ${migracja.doWersji}: ${migracja.opis}`);
+
+    // Kopia przed każdą migracją. Instrukcja mówi, żeby zrobić ją ręcznie
+    // przed aktualizacją; nikt tego nie robi, a to jedyny moment, w którym
+    // aplikacja przepisuje cudze dane. Gdy coś pójdzie nie tak, jest do czego wrócić.
+    const kopia = kopiaPrzedMigracja(d, migracja.doWersji);
+    if (kopia) console.log(`  Kopia przed migracją: ${kopia}`);
+
     d.exec("PRAGMA foreign_keys = OFF");
     d.exec("BEGIN");
     try {
