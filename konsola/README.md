@@ -300,7 +300,19 @@ dwanaście ocen wysłanych równocześnie, wszystkie na miejscu.
 `node:sqlite` jest wbudowane w Node 22, więc dalej zero zależności i zero
 instalowania czegokolwiek.
 
-**Kopia zapasowa**
+**Kopia zapasowa — robi się sama**
+
+Konsola kopiuje bazę **raz na dobę** (przy starcie i potem w tle) oraz
+**przed każdą migracją**. Kopie leżą w `konsola/dane/kopie/`, zostaje 30
+ostatnich; kopie sprzed migracji liczą się osobno, żeby nie wypadły spod
+codziennych akurat wtedy, gdy są potrzebne.
+
+To nie jest ozdoba. Instrukcja mówiła dotąd: „przed aktualizacją zrób kopię" —
+i tak samo mówi każda instrukcja na świecie, po czym nikt tego nie robi.
+W tych danych leży po sześć tygodni pracy każdego klienta, a jedno kliknięcie
+„Usuń klienta" kasowało je bezpowrotnie.
+
+Kopia na żądanie — na przykład na pendrive albo na Dysk — dalej jest:
 
 ```bash
 npm run kopia                    # do konsola/dane/kopie/
@@ -309,7 +321,7 @@ npm run kopia -- /sciezka/gdzies # np. na Dysk
 
 Nie kopiuj pliku `.db` ręcznie w trakcie pracy konsoli: baza chodzi w trybie
 WAL, więc część świeżych zapisów siedzi w pliku obok. `npm run kopia` robi to
-poprawnie na działającej bazie i trzyma 30 ostatnich kopii.
+poprawnie na działającej bazie.
 
 **Masz plany z poprzedniej wersji?**
 
@@ -409,12 +421,19 @@ Baza podnosi się sama przy pierwszym uruchomieniu — z kolumny tekstowej
 z planu na klienta. **Link, który klient ma już w telefonie, działa dalej**
 i od tej pory sam pokazuje aktualny cykl.
 
-Migracja nie kasuje danych, ale zmienia układ tabel, więc przed pierwszym
-startem nowej wersji zrób kopię:
+Migracja nie kasuje danych, ale zmienia układ tabel — dlatego konsola robi
+kopię **sama, tuż przed nią**, i mówi w konsoli, gdzie ją położyła. Gdybyś
+chciał mieć jeszcze jedną, u siebie:
 
 ```bash
 npm run kopia
 ```
+
+> **Baza z wersji sprzed wersjonowania schematu** też się podniesie. Wcześniej
+> nie: konsola pytała taką bazę o numer wersji, tabeli z numerami tam jeszcze
+> nie było i aplikacja **nie wstawała wcale** — z komunikatem o błędzie SQL,
+> na pliku pełnym danych. Test migracji buduje teraz dokładnie taką bazę,
+> bez tej tabeli, bo tylko wtedy sprawdza to, co naprawdę może się zdarzyć.
 
 ## Czego jeszcze nie ma
 
@@ -429,6 +448,7 @@ npm run kopia
 | `serwer.ts` | HTTP + API, bez frameworka |
 | `baza/schemat.sql` | tabele; każda z `trener_id` |
 | `baza/polaczenie.ts` | otwarcie bazy, wersja schematu |
+| `baza/kopie.ts` | kopie zapasowe: dobowa, przed migracją, na żądanie |
 | `magazyn.ts` | zapis i odczyt klientów i planów |
 | `baza/migracje.ts` | doprowadzenie istniejącej bazy do aktualnego schematu |
 | `nazwy.ts` | nazwa klienta → identyfikator (jedno miejsce dla trzech modułów) |
@@ -438,7 +458,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 173 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 183 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |

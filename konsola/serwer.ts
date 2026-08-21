@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
+import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
@@ -1316,7 +1317,24 @@ const serwer = createServer(async (req, res) => {
   }
 });
 
-serwer.listen(PORT, () => {
+/**
+ * Kopia raz na dobę, przy starcie i potem w tle.
+ *
+ * Konsola chodzi na laptopie i trzyma w sobie po sześć tygodni pracy każdego
+ * klienta. Do tej pory jedyną kopią była ta zrobiona ręcznie — czyli żadna.
+ * Zegar jest `unref`, więc nie trzyma procesu przy życiu przy zamykaniu okna.
+ */
+async function kopiaWTle(): Promise<void> {
+  try {
+    const plik = await kopiaJesliTrzeba();
+    if (plik) console.log(`  Kopia zapasowa: ${plik}\n`);
+  } catch (e) {
+    // Brak kopii nie może zatrzymać konsoli — ale ma zostać powiedziany wprost.
+    console.error(`  Nie udało się zrobić kopii zapasowej: ${e instanceof Error ? e.message : e}\n`);
+  }
+}
+
+serwer.listen(PORT, async () => {
   const tryb = auth.trybDostepu(TRENER);
   console.log(`\n  Konsola trenera CraftMyPlan`);
   console.log(`  → http://localhost:${PORT}\n`);
@@ -1325,4 +1343,7 @@ serwer.listen(PORT, () => {
     ? "  Dostęp: hasło wymagane.\n"
     : "  Dostęp: tryb lokalny, bez hasła — połączenia tylko z tego komputera.\n"
       + "  Zanim wystawisz konsolę na zewnątrz: npm run haslo\n");
+
+  await kopiaWTle();
+  setInterval(kopiaWTle, 6 * 3_600_000).unref();
 });

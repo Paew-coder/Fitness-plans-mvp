@@ -150,6 +150,10 @@ otwierać linki niezależnie od tego, czy Twój laptop jest włączony:
 **[`WDROZENIE.md`](WDROZENIE.md)** — instrukcja od zera. Serwer, domena,
 HTTPS z automatycznym certyfikatem, kopie zapasowe raz na dobę.
 
+Kopie robią się same także na laptopie: raz na dobę i przed każdą migracją
+bazy. Nie trzeba o nich pamiętać — bo o kopiach, o których trzeba pamiętać,
+się nie pamięta.
+
 ## Poprawki do arkusza
 
 [`arkusz/`](arkusz/README.md) robi z 5.17 plik **5.18** z trzema poprawkami:
