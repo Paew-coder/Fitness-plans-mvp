@@ -775,7 +775,18 @@ function plikCzytelny(sciezka: string): boolean {
   }
 }
 
-function plikStatyczny(sciezkaUrl: string, res: ServerResponse): boolean {
+/**
+ * Znacznik wersji pliku — rozmiar i czas zmiany.
+ *
+ * Wystarcza, żeby przeglądarka spytała „czy się zmieniło" i dostała krótką
+ * odpowiedź, zamiast pobierać całość albo trzymać starą kopię w nieskończoność.
+ */
+function znacznik(sciezka: string): string {
+  const st = statSync(sciezka);
+  return `"${st.size.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}"`;
+}
+
+function plikStatyczny(sciezkaUrl: string, res: ServerResponse, req?: IncomingMessage): boolean {
   const wzgledna = normalize(sciezkaUrl === "/" ? "/index.html" : sciezkaUrl).replace(/^(\.\.[/\\])+/, "");
   const pelna = join(PUBLIC, wzgledna);
   // `existsSync` jest prawdziwe także dla katalogu — a próba odczytania go
@@ -793,6 +804,26 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse): boolean {
   // przyzwoli tym nagłówkiem. Bez niego rejestracja z `scope: "/"` jest
   // odrzucana i aplikacja klienta traci tryb offline.
   if (wzgledna === "/klient/sw.js") naglowki["service-worker-allowed"] = "/";
+
+  /**
+   * Aplikacja aktualizuje się w miejscu, więc przeglądarka musi za każdym
+   * razem **spytać**, czy plik się zmienił. Bez żadnych nagłówków robiła to,
+   * co uznała za stosowne: raz pobierała na nowo, raz trzymała starą kopię.
+   * Trener po aktualizacji widziałby wtedy starą konsolę, bez żadnego objawu
+   * poza tym, że poprawka „nie działa".
+   *
+   * `no-cache` nie znaczy „nie zapisuj" — znaczy „zapisz, ale zawsze pytaj".
+   * Ze znacznikiem wersji odpowiedź na to pytanie to zwykle 304 bez treści,
+   * czyli taniej niż pobranie pliku.
+   */
+  naglowki["cache-control"] = "no-cache";
+  naglowki.etag = znacznik(pelna);
+
+  if (req?.headers["if-none-match"] === naglowki.etag) {
+    res.writeHead(304, { etag: naglowki.etag, "cache-control": "no-cache" });
+    res.end();
+    return true;
+  }
 
   res.writeHead(200, naglowki);
   res.end(readFileSync(pelna));
@@ -863,7 +894,7 @@ const serwer = createServer(async (req, res) => {
         // dane) → zwykła odmowa, żeby nie odsyłać HTML-a tam, gdzie
         // przeglądarka spodziewa się czegoś innego.
         if (kto.kod === 401 && (sciezka === "/" || sciezka === "/index.html")) {
-          if (plikStatyczny("/logowanie.html", res)) return;
+          if (plikStatyczny("/logowanie.html", res, req)) return;
         }
         res.writeHead(kto.kod, { "content-type": "text/plain; charset=utf-8" });
         return res.end(kto.odmowa);
@@ -1482,7 +1513,7 @@ const serwer = createServer(async (req, res) => {
     }
 
     if (sciezka.startsWith("/k/")) {
-      if (plikStatyczny("/klient/index.html", res)) return;
+      if (plikStatyczny("/klient/index.html", res, req)) return;
     }
 
     // ── 1RM z serii maksymalnej (podgląd na żywo) ────────────────────
@@ -1492,7 +1523,7 @@ const serwer = createServer(async (req, res) => {
       return json(res, { oneRM: oblicz1RM(ciezar, powt) });
     }
 
-    if (plikStatyczny(sciezka, res)) return;
+    if (plikStatyczny(sciezka, res, req)) return;
     blad(res, "Nie znaleziono", 404);
   } catch (e) {
     // Błędy asystenta są już po polsku i niosą własny kod — brak klucza to 503,

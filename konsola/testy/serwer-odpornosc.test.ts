@@ -20,7 +20,7 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -120,5 +120,54 @@ describe("manifest aplikacji klienta", () => {
     assert.equal("start_url" in manifest, false,
       "start_url prowadziłby aplikację do adresu bez tokenu klienta");
     assert.equal(manifest.scope, "/", "zakres musi obejmować /k/<token>");
+  });
+});
+
+describe("aktualizacja konsoli u trenera", () => {
+  /**
+   * Konsola nie ma service workera ani numeru wersji w adresie — aktualizuje
+   * się w miejscu. Bez żadnych nagłówków przeglądarka robiła z plikami to,
+   * co uznała za stosowne: raz pobierała na nowo, raz trzymała starą kopię.
+   * Trener po aktualizacji widziałby wtedy starą konsolę i miałby prawo
+   * sądzić, że poprawka po prostu nie działa.
+   *
+   * `no-cache` nie znaczy „nie zapisuj" — znaczy „zapisz, ale zawsze pytaj".
+   * Ze znacznikiem wersji odpowiedź to zwykle 304 bez treści, czyli taniej
+   * niż pobranie pliku.
+   */
+  const pliki = ["/index.html", "/app.js", "/style.css", "/klient/app.js", "/klient/sw.js"];
+
+  for (const plik of pliki) {
+    test(`${plik} każe przeglądarce pytać o świeżość`, async () => {
+      const odp = await fetch(`${ADRES}${plik}`);
+      assert.equal(odp.headers.get("cache-control"), "no-cache");
+      assert.ok(odp.headers.get("etag"), "brak znacznika wersji");
+    });
+  }
+
+  test("niezmieniony plik wraca jako 304, bez treści", async () => {
+    const pierwsza = await fetch(`${ADRES}/app.js`);
+    const znacznik = pierwsza.headers.get("etag")!;
+    const druga = await fetch(`${ADRES}/app.js`, { headers: { "if-none-match": znacznik } });
+    assert.equal(druga.status, 304);
+    assert.equal(await druga.text(), "");
+  });
+
+  test("inny znacznik znaczy pobranie całości", async () => {
+    const odp = await fetch(`${ADRES}/app.js`, { headers: { "if-none-match": '"nieaktualny"' } });
+    assert.equal(odp.status, 200);
+    assert.ok((await odp.text()).length > 1000);
+  });
+
+  test("znacznik zmienia się razem z plikiem", () => {
+    // Znacznik wywodzi się z rozmiaru i czasu zmiany, więc dopisanie choćby
+    // jednej linii musi go zmienić — inaczej poprawka nigdy by nie dotarła.
+    const plik = join(KONSOLA, "public", "app.js");
+    const przed = statSync(plik);
+    const znacznikZ = (st: { size: number; mtimeMs: number }) =>
+      `"${st.size.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}"`;
+    assert.notEqual(
+      znacznikZ(przed),
+      znacznikZ({ size: przed.size + 1, mtimeMs: przed.mtimeMs + 1000 }));
   });
 });
