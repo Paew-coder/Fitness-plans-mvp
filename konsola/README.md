@@ -83,6 +83,10 @@ w obu przypadkach, bo ten trening naprawdę się odbył.
 
 **Wymaga uwagi.** Panel na górze listy: kto stanął (ponad 10 dni bez treningu),
 komu wysłałeś plan, a on nie zaczął, kto nie dostał linku, komu kończy się cykl.
+Cała jego wartość polega na tym, że **milczy, gdy nie ma o czym mówić** — panel
+wołający o wszystkich jest tym samym co panel wyłączony. Pilnuje tego trzynaście
+testów, które cofają daty w bazie, bo inaczej sprawdzenie „ktoś nie ćwiczy od
+jedenastu dni" trwałoby jedenaście dni.
 Jeden wiersz na klienta i tylko o jego bieżącym planie — szkice to jeszcze nie
 zobowiązanie, a zamknięte cykle nie mają po co wołać. Przy kilkunastu klientach
 arkusz wymagał otwarcia kilkunastu plików, żeby to zauważyć.
@@ -493,7 +497,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 190 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 203 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
