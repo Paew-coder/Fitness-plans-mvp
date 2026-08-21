@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
+import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
@@ -1066,7 +1067,33 @@ const serwer = createServer(async (req, res) => {
 
       if (!akcja && req.method === "PUT") {
         const zmiany = await cialo(req);
-        const zaktualizowany = magazyn.zapisz({ ...zapisany, ...zmiany, id: zapisany.id });
+
+        // Rozsypanie całego ciała na zapisany plan znaczyło, że żądanie mogło
+        // podmienić **cokolwiek** — właściciela planu, datę utworzenia, a nawet
+        // historię wykonań klienta. Tu zmienia się dokładnie to, co trener
+        // zmienia z ekranu; reszta pochodzi z bazy.
+        const status = zmiany.status ?? zapisany.status;
+        if (!magazyn.STATUSY_PLANU.includes(status)) {
+          return blad(res, `Status musi być jednym z: ${magazyn.STATUSY_PLANU.join(", ")}`);
+        }
+        const bladDaty = bladDatyStartu(zmiany.dataStartu);
+        if (bladDaty) return blad(res, bladDaty);
+
+        // `plan` nieobecny znaczy „nie ruszaj planu"; `plan: null` znaczy, że
+        // ktoś przysłał coś, co planem nie jest — i musi o tym usłyszeć,
+        // zamiast dostać ciche 200 i przekonanie, że zapisał.
+        const plan = "plan" in zmiany ? zmiany.plan : zapisany.plan;
+        // Silnik zakłada, że dostaje plan — i ma prawo zakładać, bo jest czystą
+        // matematyką. Sprawdzenie, czy to naprawdę plan, należy do granicy.
+        const bladKsztaltu = bladKsztaltuPlanu(plan);
+        if (bladKsztaltu) return blad(res, bladKsztaltu);
+
+        const zaktualizowany = magazyn.zapisz({
+          ...zapisany,
+          plan,
+          status,
+          dataStartu: zmiany.dataStartu ?? null,
+        });
         return json(res, obrazPlanu(zaktualizowany));
       }
 

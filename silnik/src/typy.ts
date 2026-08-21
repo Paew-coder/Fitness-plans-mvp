@@ -61,13 +61,23 @@ export type Cwiczenie = {
   jednostronneDoPotwierdzenia?: boolean;
 };
 
-export type Feedback = "OK" | "za łatwe" | "za trudne";
+/**
+ * Wartości dopuszczalne — jako listy, nie tylko jako typy.
+ *
+ * Typ znika przy uruchomieniu, a serwer musi sprawdzić w locie, czy to, co
+ * przyszło z sieci, jest jedną z tych wartości. Trzymanie listy i typu obok
+ * siebie znaczyłoby dwa źródła prawdy, więc typ wywodzi się z listy.
+ */
+export const ODCZUCIA = ["OK", "za łatwe", "za trudne"] as const;
+export type Feedback = (typeof ODCZUCIA)[number];
 
 export type Tydzien = 1 | 2 | 3 | 4 | 5 | 6;
 
-export type TrybAkcesoriow = "trzymaj z bloku" | "licz z RPE";
+export const TRYBY_AKCESORIOW = ["trzymaj z bloku", "licz z RPE"] as const;
+export type TrybAkcesoriow = (typeof TRYBY_AKCESORIOW)[number];
 
-export type CzescPlanu = "objętość" | "intensywność";
+export const CZESCI_PLANU = ["objętość", "intensywność"] as const;
+export type CzescPlanu = (typeof CZESCI_PLANU)[number];
 
 /** Komunikaty, które arkusz wyświetla w kolumnie CIĘŻAR zamiast liczby. */
 export type KomunikatCiezaru = "— brak 1RM" | "— ustaw ręcznie";

@@ -22,7 +22,9 @@ export { idKlienta, idPlanu } from "./nazwy.ts";
 /** Układ pustego planu mieszka w `uklad-planu.ts` — dzieli go z asystentem AI. */
 export { LP_SLOTU, SLOTOW_W_DNIU, DNI_W_PLANIE, pustyPlan } from "./uklad-planu.ts";
 
-export type StatusPlanu = "szkic" | "wysłany" | "zakończony";
+/** Statusy planu — lista, bo serwer sprawdza je w locie na wejściu z sieci. */
+export const STATUSY_PLANU = ["szkic", "wysłany", "zakończony"] as const;
+export type StatusPlanu = (typeof STATUSY_PLANU)[number];
 
 /** Co klient faktycznie zrobił — tego arkusz nie przechowuje w ogóle. */
 export type Wykonanie = {
