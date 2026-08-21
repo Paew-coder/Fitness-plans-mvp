@@ -144,6 +144,62 @@ describe("zapis, który dotarł po zmianie cyklu", () => {
   });
 });
 
+describe("nowy cykl zaczyna od tego, co klient faktycznie podnosił", () => {
+  /**
+   * Serie maksymalne przechodzą do nowego cyklu razem z doborem ćwiczeń, więc
+   * plan wygląda na kompletny, a liczy z 1RM sprzed sześciu tygodni. Klient
+   * przez ten czas urósł — każdy ciężar wychodzi za lekki i nic tego nie widać.
+   * Konsola umie policzyć nowy 1RM z serii roboczych, tyle że te zostały
+   * w poprzednim planie. Ma je stamtąd wyciągnąć.
+   */
+  test("propozycja 1RM przychodzi z wykonań poprzedniego cyklu", async () => {
+    // Klient podnosił w cyklu 1 więcej, niż wynikało z jego starego 1RM.
+    for (const [tydzien, ciezar] of [[1, 110], [2, 115]] as const) {
+      await api(`/api/klient/${token}/odczucie`, "POST", {
+        planId: planCyklu1, positionId: "D1-S01", tydzien,
+        ciezarWykonany: ciezar, powtorzeniaWykonane: 5, feedback: "OK",
+      });
+    }
+
+    const { dane } = await api(`/api/plany/${planCyklu2}`);
+    const propozycja = dane.propozycje1RM.find((p: any) => p.cwiczenieId === "EX-0010");
+    assert.ok(propozycja, "nowy cykl nie dostał propozycji z poprzedniego");
+    assert.equal(propozycja.zPoprzedniegoCyklu, 1, "propozycja ma być podpisana cyklem");
+    assert.ok(propozycja.oneRM > 127,
+      `1RM z serii roboczych (${propozycja.oneRM}) miał być wyższy niż stary 127`);
+  });
+
+  test("przyjęcie propozycji podnosi ciężary w nowym cyklu", async () => {
+    const przed = await api(`/api/plany/${planCyklu2}`);
+    const ciezarPrzed = przed.dane.wynik.tygodnie[0].sloty[0].ciezar;
+    const propozycja = przed.dane.propozycje1RM.find((p: any) => p.cwiczenieId === "EX-0010");
+
+    const { dane } = await api(`/api/plany/${planCyklu2}/1rm`, "POST",
+      { cwiczenieId: "EX-0010", oneRM: propozycja.oneRM });
+    assert.ok(dane.wynik.tygodnie[0].sloty[0].ciezar > ciezarPrzed,
+      `ciężar miał urosnąć, a stoi na ${dane.wynik.tygodnie[0].sloty[0].ciezar}`);
+  });
+
+  test("przyjęta propozycja znika z listy", async () => {
+    const { dane } = await api(`/api/plany/${planCyklu2}`);
+    assert.equal(dane.propozycje1RM.some((p: any) => p.cwiczenieId === "EX-0010"), false);
+  });
+
+  test("wykonania z bieżącego cyklu biją te sprzed sześciu tygodni", async () => {
+    // To samo ćwiczenie, ale podniesione już w nowym cyklu — świeższa liczba
+    // ma wygrać, i to bez podpisu o poprzednim cyklu.
+    await api(`/api/klient/${token}/odczucie`, "POST", {
+      positionId: "D1-S02", tydzien: 1,
+      ciezarWykonany: 95, powtorzeniaWykonane: 5, feedback: "OK",
+    });
+    const { dane } = await api(`/api/plany/${planCyklu2}`);
+    const propozycja = dane.propozycje1RM.find((p: any) => p.cwiczenieId === "EX-0016");
+    assert.ok(propozycja, "brak propozycji z bieżącego cyklu");
+    assert.equal(propozycja.zPoprzedniegoCyklu, undefined,
+      "propozycja z tego cyklu nie może być podpisana poprzednim");
+  });
+});
+
 describe("zapis, którego nie da się przyjąć", () => {
   test("nieistniejący cykl to odmowa, nie cichy zapis gdzie indziej", async () => {
     const { kod } = await api(`/api/klient/${token}/odczucie`, "POST",

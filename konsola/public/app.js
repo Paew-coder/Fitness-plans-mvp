@@ -852,6 +852,14 @@ function rysujPropozycje1RM() {
       `${p.obecne1RM ? `${liczba(p.obecne1RM)} → ` : ""}${liczba(p.oneRM)} kg${zmiana}`));
     wiersz.append(gora);
 
+    // Propozycja z poprzedniego cyklu musi być podpisana. Bez tego trener nie
+    // wie, czy patrzy na to, co klient podniósł w tym tygodniu, czy sześć
+    // tygodni temu — a to zupełnie inna informacja.
+    if (p.zPoprzedniegoCyklu) {
+      wiersz.append(el("p", "wskazowka",
+        `Z cyklu ${p.zPoprzedniegoCyklu}.0 — ten dopiero się zaczyna.`));
+    }
+
     const bezZera = (n) => liczba(n).replace(",0", "");
     const zrodlo = p.estymaty
       .map((e) => `${bezZera(e.seria.ciezar)}×${e.seria.powtorzenia} @RPE ${bezZera(e.rpeEfektywne)}`)

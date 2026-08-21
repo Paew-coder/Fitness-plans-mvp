@@ -213,7 +213,22 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
  * czytamy, co klient faktycznie podnosił przez sześć tygodni. Trener dostaje
  * propozycję i decyduje — nic nie zmienia się samo.
  */
-function propozycje1RM(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof przeliczPlan>) {
+/**
+ * Propozycje nowego 1RM policzone z serii roboczych.
+ *
+ * `zrodlo` to cykl, z którego bierzemy wykonania; `serieObecne` to serie
+ * maksymalne planu, który ma być poprawiony. Zwykle jedno i drugie pochodzi
+ * z tego samego planu — ale przy pierwszym tygodniu nowego cyklu wykonań
+ * jeszcze nie ma, a te z cyklu poprzedniego są najlepszym, co mamy.
+ */
+function propozycje1RM(
+  zrodlo: magazyn.ZapisanyPlan,
+  wynikZrodla: ReturnType<typeof przeliczPlan>,
+  serieObecne: readonly { cwiczenieId: string; ciezar: number; powtorzenia: number }[]
+    = zrodlo.plan.serieMaksymalne,
+) {
+  const zapisany = zrodlo;
+  const wynik = wynikZrodla;
   const wykonania = (zapisany.wykonania ?? [])
     .filter((w) => w.ciezarWykonany && w.powtorzeniaWykonane)
     .sort((a, b) => a.data.localeCompare(b.data));
@@ -235,7 +250,7 @@ function propozycje1RM(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
   }
 
   return [...wgCwiczenia].flatMap(([cwiczenieId, serie]) => {
-    const obecne = rozwiaz1RM(cwiczenieId, zapisany.plan.serieMaksymalne);
+    const obecne = rozwiaz1RM(cwiczenieId, serieObecne);
     const p = propozycja1RM(serie, obecne);
     if (!p || p.oneRM === obecne) return [];   // przyjęte albo bez zmiany — nie ma o czym mówić
     return [{
@@ -246,6 +261,32 @@ function propozycje1RM(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
       ocena: ocenPropozycje(p),
     }];
   }).sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+}
+
+/**
+ * Nowy cykl zaczyna z 1RM sprzed sześciu tygodni — bo serie maksymalne
+ * przechodzą z poprzedniego planu razem z doborem ćwiczeń. Klient przez ten
+ * czas urósł, więc każdy ciężar wychodzi za lekki, a na ekranie nie widać
+ * nawet, że liczby są stare.
+ *
+ * Konsola umie policzyć nowy 1RM z tego, co klient faktycznie podnosił — tyle
+ * że te dane zostały w poprzednim cyklu. Wyciągamy je stamtąd i pokazujemy
+ * przy nowym planie. Nic się nie zmienia samo: to dalej propozycja z przyciskiem.
+ */
+function scalPropozycje<T extends { cwiczenieId: string }>(wlasne: T[], starsze: T[]): T[] {
+  // Świeższe dane wygrywają: wykonanie z tego cyklu mówi więcej niż sprzed sześciu tygodni.
+  const juzJest = new Set(wlasne.map((p) => p.cwiczenieId));
+  return [...wlasne, ...starsze.filter((p) => !juzJest.has(p.cwiczenieId))];
+}
+
+function propozycjeZPoprzedniegoCyklu(zapisany: magazyn.ZapisanyPlan) {
+  if (!zapisany.poprzedniId) return [];
+  const poprzedni = magazyn.wczytaj(zapisany.trenerId, zapisany.poprzedniId);
+  if (!poprzedni?.wykonania?.length) return [];
+
+  return propozycje1RM(poprzedni, przeliczPlan(poprzedni.plan), zapisany.plan.serieMaksymalne)
+    .filter((p) => zapisany.plan.sloty.some((s) => s.cwiczenieId === p.cwiczenieId))
+    .map((p) => ({ ...p, zPoprzedniegoCyklu: poprzedni.wersja }));
 }
 
 /** Ile dni od `data`. `null`, gdy daty nie ma. */
@@ -545,7 +586,8 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     gotowy: planGotowyDoWyslania(uwagi),
     jednostronne: porownajLiczenieJednostronnych(zapisany.plan),
     realizacja: realizacja(zapisany, klient),
-    propozycje1RM: propozycje1RM(zapisany, wynik),
+    propozycje1RM: scalPropozycje(
+      propozycje1RM(zapisany, wynik), propozycjeZPoprzedniegoCyklu(zapisany)),
     porownanie: porownanieZPoprzednim(zapisany, wynik),
     moduly: moduly(zapisany),
     normy: NORMY,
