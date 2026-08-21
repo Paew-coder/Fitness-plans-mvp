@@ -31,7 +31,8 @@ import { copyFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola } from "./przegladarka.ts";
+import { doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola, type Srodowisko }
+  from "./przegladarka.ts";
 
 const PORT = 4189;
 const ADRES = `http://127.0.0.1:${PORT}`;
@@ -41,10 +42,12 @@ const KLIENT_PO_ZMIANIE = "Przegląd ekranów";
 const KLIENT_Z_ARKUSZA = "Import przegladu";
 const KLIENT_DO_USUNIECIA = "Do usuniecia";
 
-await zKonsola(PORT, async (przegladarka) => { await przejdz(przegladarka); });
+await zKonsola(PORT, async (przegladarka, srodowisko) => {
+  await przejdz(przegladarka, srodowisko);
+});
 podsumuj("wszystkie kontrolki konsoli działają");
 
-async function przejdz(przegladarka: any): Promise<void> {
+async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const s = await przegladarka.newPage({ viewport: { width: 1500, height: 1000 } });
   const bledyPrzegladarki = pilnujBledow(s);
 
@@ -267,7 +270,50 @@ async function przejdz(przegladarka: any): Promise<void> {
     && String(wrocony?.ciezar).replace(".", ",") === liczony,
     `${wrocony?.ciezar} kg (liczony ${liczony})`);
 
-  // ── 10. przełączniki planu ────────────────────────────────────────
+  // ── 10. klient ocenia trening w trakcie pracy trenera ─────────────
+  // Konsola trzyma plan w pamięci przeglądarki. Gdy klient w tym czasie oceni
+  // serię, zapis trenera niósłby wersję sprzed oceny i kasował ją — razem
+  // z podniesionym ciężarem w kolejnym tygodniu. Konsola ma to pogodzić sama.
+  // Klient widzi tylko plan wysłany — bez tego nie ma czego oceniać.
+  // Przestawiamy status z ekranu, żeby konsola miała go u siebie tak samo.
+  await s.selectOption("#status-wybor", "wysłany");
+  await s.waitForTimeout(800);
+  // Po wysłaniu konsola sama pokazuje link dla klienta — zamykamy, żeby nie
+  // zasłaniał reszty ekranu.
+  await s.locator("#modal-zamknij").click({ timeout: 3000 }).catch(() => {});
+
+  const bledyPrzedWyscigiem = bledyPrzegladarki.length;
+  const przedOcena = await zBazy();
+  const linkKlienta = await api(`/api/plany/${PLAN}/link`, "POST");
+  const ciezarT2 = (o: any) => o.wynik.tygodnie[1].sloty[0].ciezar;
+
+  await api(`/api/klient/${linkKlienta.token}/odczucie`, "POST",
+    { positionId: przedOcena.zapisany.plan.sloty[0].positionId, tydzien: 1, feedback: "za łatwe" });
+  const poOcenie = await zBazy();
+  sprawdz("ocena klienta podnosi ciężar w kolejnym tygodniu",
+    ciezarT2(poOcenie) > ciezarT2(przedOcena),
+    `T2: ${ciezarT2(przedOcena)} → ${ciezarT2(poOcenie)} kg`);
+
+  // Trener zmienia coś na swoim ekranie — konsola dalej ma kopię sprzed oceny.
+  await s.selectOption("#czesc-planu", "intensywność");
+  await zapisano();
+
+  const poZapisie = await zBazy();
+  sprawdz("zapis trenera nie skasował oceny klienta",
+    poZapisie.zapisany.plan.sloty[0].tygodnie["1"]?.feedback === "za łatwe",
+    String(poZapisie.zapisany.plan.sloty[0].tygodnie["1"]?.feedback));
+  sprawdz("ciężar policzony z oceny został utrzymany",
+    ciezarT2(poZapisie) === ciezarT2(poOcenie),
+    `T2 ${ciezarT2(poZapisie)} kg (po ocenie było ${ciezarT2(poOcenie)})`);
+  sprawdz("zmiana trenera też weszła",
+    poZapisie.zapisany.plan.czescPlanu === "intensywność",
+    poZapisie.zapisany.plan.czescPlanu);
+  // Odrzucony zapis (409) jest tu **celem sprawdzenia**, nie awarią —
+  // przeglądarka wypisuje go do konsoli i to jest w porządku.
+  bledyPrzegladarki.splice(bledyPrzedWyscigiem);
+
+
+  // ── 11. przełączniki planu ────────────────────────────────────────
   await s.selectOption("#tryb-akcesoriow", "licz z RPE");
   await zapisano();
   await s.selectOption("#czesc-planu", "intensywność");
@@ -279,26 +325,26 @@ async function przejdz(przegladarka: any): Promise<void> {
   sprawdz("część planu zapisana", ustawienia.zapisany.plan.czescPlanu === "intensywność");
   sprawdz("data startu zapisana", ustawienia.zapisany.dataStartu === "2026-09-01");
 
-  // ── 11. TOP SET ────────────────────────────────────────────────────
+  // ── 12. TOP SET ────────────────────────────────────────────────────
   await s.locator(".topset input[type=checkbox]").first().uncheck();
   await zapisano();
   sprawdz("TOP SET da się wyłączyć", (await zBazy()).zapisany.plan.topSety[0].wlaczony === false);
 
-  // ── 12. moduł oddechu ─────────────────────────────────────────────
+  // ── 13. moduł oddechu ─────────────────────────────────────────────
   await s.fill("#oddech-twot", "22");
   await s.locator("#oddech-twot").blur();
   await s.waitForTimeout(700);
   const oddech = (await zBazy()).moduly.oddech.dawka;
   sprawdz("moduł oddechu liczy dawkę", oddech !== null, oddech?.poziom ?? "brak");
 
-  // ── 13. link dla klienta ──────────────────────────────────────────
+  // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
   const link = (await s.locator("#modal-body").innerText()).match(/\/k\/\S+/)?.[0] ?? "";
   sprawdz("link dla klienta pokazuje adres", /^\/k\/[\w-]{16,}$/.test(link), link || "brak");
   await s.click("#modal-zamknij");
 
-  // ── 14. eksport arkusza ───────────────────────────────────────────
+  // ── 15. eksport arkusza ───────────────────────────────────────────
   // Arkusz nie leci przez przeglądarkę — konsola zapisuje go na dysku i podaje
   // ścieżkę. Kontrola jest więc dwuczęściowa: co pokazała i czy plik jest.
   await s.click("#eksportuj");
@@ -308,9 +354,12 @@ async function przejdz(przegladarka: any): Promise<void> {
     sciezka.endsWith(".xlsx") && existsSync(sciezka), sciezka);
   await s.click("#modal-zamknij");
 
-  // ── 15. wysyłka planu ─────────────────────────────────────────────
+  // ── 16. wysyłka planu ─────────────────────────────────────────────
   await s.selectOption("#status-wybor", "wysłany");
   await s.waitForTimeout(800);
+  // Po wysłaniu konsola sama pokazuje link dla klienta — zamykamy, żeby nie
+  // zasłaniał reszty ekranu.
+  await s.locator("#modal-zamknij").click({ timeout: 3000 }).catch(() => {});
   sprawdz("plan da się wysłać", (await zBazy()).zapisany.status === "wysłany");
 
   // ═══ KARTOTEKA KLIENTA ═════════════════════════════════════════════

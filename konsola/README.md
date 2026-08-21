@@ -363,6 +363,31 @@ sterujących. Numer cyklu musi być całkowity z zakresu 1–999.
 > są szeroko postawione: mają odciąć to, co nie może być prawdziwe, a nie
 > zgadywać, co klient miał na myśli.
 
+## Gdy trener i klient piszą naraz
+
+Scenariusz jest zwyczajny, nie wymyślony: masz otwarty plan wieczorem, a klient
+w tej samej chwili kończy trening i ocenia serię.
+
+> **Co się działo.** Ocena szła do bazy i podnosiła ciężar w kolejnym tygodniu.
+> Potem zapisywałeś swoją kopię — sprzed oceny — i **ocena znikała**, a ciężar
+> wracał do poprzedniego. Sprawdzone na liczbach: 105 → 110 kg po ocenie,
+> z powrotem 105 kg po Twoim zapisie.
+>
+> Najgorsze było to, czego nie widać: w panelu **Realizacja ocena dalej
+> widniała**, bo tam czyta się z historii wykonań, a nie z planu. Miałeś więc
+> pełne przekonanie, że wszystko działa, a klient przez sześć tygodni dostawał
+> na sztangę o pięć kilogramów za mało.
+
+Zapis niesie teraz znacznik wersji, na której się oparł. Gdy w bazie jest coś
+nowszego, zapis nie przechodzi, a w odpowiedzi wraca świeży plan — konsola
+przenosi z niego to, co należy do klienta (oceny i serie maksymalne wpisane
+z telefonu), i zapisuje jeszcze raz. **Bez pytania Cię o cokolwiek**, bo nie
+ma tu sprzeczności do rozstrzygania: każda strona zmieniała co innego.
+
+Sprawdzone w obie strony — siedem testów na samym API i przejście klikane
+w przeglądarce, gdzie klient ocenia trening w trakcie pracy konsoli, a na
+końcu na ekranie są obie zmiany naraz.
+
 ## Aktualizacja u trenera
 
 Konsola nie ma service workera ani numeru wersji w adresie — aktualizuje się
@@ -592,7 +617,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 241 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 249 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |

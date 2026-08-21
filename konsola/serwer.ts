@@ -1113,6 +1113,27 @@ const serwer = createServer(async (req, res) => {
         // `plan` nieobecny znaczy „nie ruszaj planu"; `plan: null` znaczy, że
         // ktoś przysłał coś, co planem nie jest — i musi o tym usłyszeć,
         // zamiast dostać ciche 200 i przekonanie, że zapisał.
+        /**
+         * Wyścig o ten sam plan.
+         *
+         * Trener otwiera plan, a klient w tym czasie ocenia trening na siłowni.
+         * Ocena idzie do bazy i podnosi ciężar w kolejnym tygodniu. Potem
+         * trener zapisuje swoją kopię — sprzed oceny — i **ocena znika**,
+         * a ciężar wraca do poprzedniego. Cicho: w „Realizacji" ocena dalej
+         * widnieje, bo tam czyta się z historii wykonań, a nie z planu.
+         *
+         * Znacznik `zmieniony` mówi, na czym trener oparł swoją wersję. Gdy
+         * baza ma coś nowszego, zapis nie przechodzi — a konsola dostaje
+         * świeży plan w odpowiedzi, żeby móc pogodzić jedno z drugim bez
+         * pytania trenera o cokolwiek.
+         */
+        if (zmiany.zmieniony && zmiany.zmieniony !== zapisany.zmieniony) {
+          return json(res, {
+            blad: "Plan zmienił się w międzyczasie — pewnie klient właśnie ocenił trening.",
+            aktualny: obrazPlanu(zapisany),
+          }, 409);
+        }
+
         const plan = "plan" in zmiany ? zmiany.plan : zapisany.plan;
         // Silnik zakłada, że dostaje plan — i ma prawo zakładać, bo jest czystą
         // matematyką. Sprawdzenie, czy to naprawdę plan, należy do granicy.
