@@ -200,6 +200,54 @@ describe("nowy cykl zaczyna od tego, co klient faktycznie podnosił", () => {
   });
 });
 
+describe("wartości spoza świata", () => {
+  /**
+   * Klient nie jest przeciwnikiem, ale jest **bez nadzoru**: zamiast 100 kg
+   * wpisze 1000, a kolejka sprzed dwóch cykli przyniesie numer tygodnia,
+   * którego już nie ma. Wszystko to szło wprost do danych trenera — i psuło
+   * jego liczby: frekwencję, propozycje 1RM, wykres wagi, a przy serii
+   * maksymalnej ciężary na całe sześć tygodni.
+   *
+   * Osobno: nieznane odczucie kończyło się błędem 500 na ograniczeniu w bazie.
+   * A 500 znaczy dla kolejki w telefonie „spróbuj później", więc takie zadanie
+   * wracałoby w nieskończoność i zatykało wszystko za sobą.
+   */
+  const odrzucane: [string, string, Record<string, unknown>][] = [
+    ["tydzień spoza cyklu", "/odczucie", { positionId: "D1-S01", tydzien: 99, feedback: "OK" }],
+    ["tydzień ujemny", "/odczucie", { positionId: "D1-S01", tydzien: -1, feedback: "OK" }],
+    ["odczucie spoza trzech", "/odczucie", { positionId: "D1-S01", tydzien: 1, feedback: "świetnie" }],
+    ["ciężar ujemny", "/odczucie", { positionId: "D1-S01", tydzien: 1, ciezarWykonany: -100 }],
+    ["ciężar ponad tonę", "/odczucie", { positionId: "D1-S01", tydzien: 1, ciezarWykonany: 5000 }],
+    ["sto tysięcy powtórzeń", "/odczucie", { positionId: "D1-S01", tydzien: 1, powtorzeniaWykonane: 100_000 }],
+    ["waga ujemna", "/waga", { kg: -80 }],
+    ["waga bilion kilogramów", "/waga", { kg: 1e12 }],
+    ["dzień spoza planu", "/dzien", { dzien: 99, tydzien: 1 }],
+    ["seria milion kilogramów", "/serie", { cwiczenieId: "EX-0010", ciezar: 1e9, powtorzenia: 3 }],
+    ["seria poza tabelą powtórzeń", "/serie", { cwiczenieId: "EX-0010", ciezar: 100, powtorzenia: 999 }],
+    ["seria ćwiczenia spoza bazy", "/serie", { cwiczenieId: "EX-9999", ciezar: 100, powtorzenia: 3 }],
+  ];
+
+  for (const [opis, akcja, cialo] of odrzucane) {
+    test(`${opis} — odmowa, nie zapis`, async () => {
+      const { kod } = await api(`/api/klient/${token}${akcja}`, "POST", cialo);
+      assert.equal(kod, 400, `${akcja} przyjęło wartość, która nie może być prawdziwa`);
+    });
+  }
+
+  test("to, co możliwe, dalej przechodzi", async () => {
+    const dobre: [string, Record<string, unknown>][] = [
+      ["/odczucie", { positionId: "D1-S01", tydzien: 1, feedback: "za łatwe" }],
+      ["/odczucie", { positionId: "D1-S01", tydzien: 1, ciezarWykonany: 105, powtorzeniaWykonane: 5 }],
+      ["/waga", { kg: 81.5 }],
+      ["/serie", { cwiczenieId: "EX-0010", ciezar: 125, powtorzenia: 2 }],
+    ];
+    for (const [akcja, cialo] of dobre) {
+      const { kod } = await api(`/api/klient/${token}${akcja}`, "POST", cialo);
+      assert.equal(kod, 200, `${akcja} odrzuciło poprawne dane`);
+    }
+  });
+});
+
 describe("zapis, którego nie da się przyjąć", () => {
   test("nieistniejący cykl to odmowa, nie cichy zapis gdzie indziej", async () => {
     const { kod } = await api(`/api/klient/${token}/odczucie`, "POST",
