@@ -58,12 +58,38 @@ npm run policz -- kontrola                      # listy robocze z BAZY
 
 Szczegóły i sposób dokładania własnych planów do testów: [`silnik/README.md`](silnik/README.md).
 
-## Konsola trenera
+## Uruchomienie
+
+Jedyne, co trzeba mieć zainstalowane, to **Node 22** ze strony
+[nodejs.org](https://nodejs.org) (wersja LTS). Aplikacja nie ma ani jednej
+zewnętrznej biblioteki — nie ma czego doinstalowywać.
+
+Potem wystarczy kliknąć plik w głównym katalogu projektu:
+
+| System | Plik |
+|---|---|
+| Mac | `Uruchom CraftMyPlan.command` |
+| Windows | `Uruchom CraftMyPlan.bat` |
+
+Sprawdza wersję Node'a, uruchamia konsolę i sam otwiera przeglądarkę pod
+`http://localhost:4173`. Okno terminala musi zostać otwarte — jego zamknięcie
+wyłącza aplikację. Gdy czegoś brakuje, plik mówi po polsku czego i zostawia
+okno otwarte, zamiast zniknąć.
+
+> Na Macu przy pierwszym kliknięciu system może odmówić otwarcia pliku
+> pobranego z internetu. Wtedy: **prawy przycisk → Otwórz → Otwórz**. Raz.
+
+Z terminala, dla tych którzy wolą:
 
 ```bash
 cd konsola
 npm start          # → http://localhost:4173
 ```
+
+Eksport i import arkusza wymagają dodatkowo Pythona z biblioteką `openpyxl`
+(`pip install openpyxl`). Bez nich reszta konsoli działa normalnie.
+
+## Konsola trenera
 
 Układasz plan (5 dni × 12 slotów), widzisz ciężary i analizę na żywo, kontrola
 pokazuje co blokuje wysyłkę, przycisk eksportuje arkusz w formacie 5.18.
