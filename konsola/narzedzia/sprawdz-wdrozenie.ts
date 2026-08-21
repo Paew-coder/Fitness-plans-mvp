@@ -107,7 +107,6 @@ const TOKEN_W_TELEFONIE = "token-ktory-klient-ma-w-telefonie";
 function zbudujStaraBaze(sciezka: string): void {
   const d = new DatabaseSync(sciezka);
   d.exec(`
-    CREATE TABLE wersja_schematu (wersja INTEGER NOT NULL, wgrana TEXT NOT NULL);
     CREATE TABLE trener (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, nazwa TEXT NOT NULL,
       hash_hasla TEXT, utworzony TEXT NOT NULL);
     CREATE TABLE sesja (token TEXT PRIMARY KEY, trener_id INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,

@@ -17,9 +17,14 @@ const KATALOG = mkdtempSync(join(tmpdir(), "migracja-test-"));
 const PLIK = join(KATALOG, "stara.db");
 process.env.BAZA_CRAFTMYPLAN = PLIK;
 
-/** Schemat sprzed wprowadzenia encji klienta — dokładnie taki, jaki był. */
+/**
+ * Schemat sprzed wprowadzenia encji klienta — dokładnie taki, jaki był.
+ *
+ * Nie ma tu tabeli `wersja_schematu` i to jest celowe: instalacja sprzed
+ * wersjonowania jej nie miała. Konsola musi sobie z tym poradzić sama, bo
+ * inaczej nie wstaje w ogóle — na bazie pełnej danych, z komunikatem o SQL-u.
+ */
 const SCHEMAT_V1 = `
-CREATE TABLE wersja_schematu (wersja INTEGER NOT NULL, wgrana TEXT NOT NULL);
 CREATE TABLE trener (
   id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, nazwa TEXT NOT NULL,
   hash_hasla TEXT, utworzony TEXT NOT NULL
