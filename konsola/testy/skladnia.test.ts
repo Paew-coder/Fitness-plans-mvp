@@ -9,10 +9,16 @@
  *
  * Zwykłe testy tego nie łapią, bo nie importują wszystkiego — `serwer.ts`
  * przy imporcie postawiłby nasłuch. Dlatego parsujemy pliki bez wykonywania.
+ *
+ * Ta sama pułapka czeka w skryptach powłoki i trafiła się tam za czwartym
+ * razem: `echo "katalog „konsola" obok"` urywa łańcuch w połowie i psuje
+ * plik uruchamiający całą aplikację. Dlatego sprawdzamy je tym samym trybem
+ * „sparsuj, nie wykonuj" — `bash -n`.
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { stripTypeScriptTypes } from "node:module";
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,6 +56,24 @@ describe("składnia — każdy plik da się sparsować", () => {
         if (extname(plik) === ".ts") stripTypeScriptTypes(kod);
         else new Function(kod);   // moduły klienta: sam parser, bez uruchamiania
       });
+    });
+  }
+});
+
+describe("składnia — skrypty uruchamiające", () => {
+  const KORZEN = join(KONSOLA, "..");
+  const skrypty = readdirSync(KORZEN)
+    .filter((w) => w.endsWith(".command") || w.endsWith(".sh"))
+    .map((w) => join(KORZEN, w));
+
+  test("plik uruchamiający jest na swoim miejscu", () => {
+    assert.ok(skrypty.length > 0, "nie znalazłem żadnego skryptu uruchamiającego w korzeniu");
+  });
+
+  for (const plik of skrypty) {
+    test(relative(KORZEN, plik), () => {
+      // `bash -n` czyta i parsuje, ale nie wykonuje ani jednej komendy.
+      assert.doesNotThrow(() => execFileSync("bash", ["-n", plik], { stdio: "pipe" }));
     });
   }
 });
