@@ -608,6 +608,9 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     });
 
   return {
+    // Klient musi wiedzieć, którego cyklu dotyczy to, co widzi — inaczej ocena
+    // wysłana po zmianie planu nie ma jak trafić tam, gdzie należy.
+    planId: zapisany.id,
     klient: zapisany.klient,
     wersja: zapisany.wersja,
     dataStartu: zapisany.dataStartu,
@@ -1094,6 +1097,29 @@ const serwer = createServer(async (req, res) => {
       }
 
       /**
+       * Do którego cyklu trafia ten zapis.
+       *
+       * Klient bywa offline przez kilka dni — ocenia trening na siłowni bez
+       * zasięgu, a kolejka wychodzi dopiero w domu. Jeśli w międzyczasie
+       * trener wysłał kolejny cykl, zapis szedł dotąd do **aktywnego** planu:
+       * oceny z poprzedniego cyklu przepadały, a nowy dostawał odczucia
+       * z treningu, którego jeszcze nie było — i liczył z nich ciężary.
+       *
+       * Dlatego każde zadanie niesie `planId` tego, co klient miał na ekranie.
+       * Zapis idzie tam, gdzie należy, a na ekran wraca zawsze cykl aktywny,
+       * żeby telefon sam przeszedł na nowy plan.
+       */
+      const doZapisu = (cialoZadania: Record<string, unknown>) => {
+        const planId = cialoZadania.planId;
+        if (!planId || planId === zapisany.id) return zapisany;
+        const stary = magazyn.wczytaj(osoba.trenerId, String(planId));
+        if (!stary || stary.klientId !== osoba.id) return null;
+        return stary;
+      };
+      const naEkran = (zapisanyWynik: magazyn.ZapisanyPlan) =>
+        zapisanyWynik.id === zapisany.id ? zapisanyWynik : zapisany;
+
+      /**
        * Historia klienta przez wszystkie jego cykle — dla niego samego.
        *
        * Osobny adres, a nie część `widokKlienta`, bo widok wraca przy **każdym**
@@ -1136,11 +1162,17 @@ const serwer = createServer(async (req, res) => {
       if (akcja === "/odczucie" && req.method === "POST") {
         const cialoZadania = await cialo(req);
         const { positionId, tydzien } = cialoZadania;
-        const slot = zapisany.plan.sloty.find((s) => s.positionId === positionId);
-        if (!slot) return blad(res, "Nie ma takiego ćwiczenia");
+        const cel = doZapisu(cialoZadania);
+        if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        // Slot bez ćwiczenia to nie to samo co brak slotu: szkielet ma zawsze
+        // 5 dni po 12 pozycji. Zapis w pusty slot brałby się tylko ze spóźnionej
+        // kolejki po tym, jak trener wyjął stamtąd ćwiczenie — i przykleiłby
+        // się do tego, co trener wstawi tam później.
+        const slot = cel.plan.sloty.find((s) => s.positionId === positionId);
+        if (!slot?.cwiczenieId) return blad(res, "Nie ma takiego ćwiczenia");
 
         // Historia wykonań — czego arkusz nie ma w ogóle.
-        const wykonania = [...(zapisany.wykonania ?? [])];
+        const wykonania = [...(cel.wykonania ?? [])];
         const i = wykonania.findIndex((w) => w.positionId === positionId && w.tydzien === tydzien);
         const wpis = { ...(i >= 0 ? wykonania[i]! : { positionId, tydzien }) };
         wpis.data = new Date().toISOString();
@@ -1159,21 +1191,24 @@ const serwer = createServer(async (req, res) => {
         }
 
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);
-        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, wykonania })));
+        return json(res, widokKlienta(naEkran(magazyn.zapisz({ ...cel, wykonania }))));
       }
 
       if (akcja === "/dzien" && req.method === "POST") {
-        const { dzien, tydzien } = await cialo(req);
-        const ukonczoneDni = (zapisany.ukonczoneDni ?? [])
+        const cialoZadania = await cialo(req);
+        const { dzien, tydzien } = cialoZadania;
+        const cel = doZapisu(cialoZadania);
+        if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        const ukonczoneDni = (cel.ukonczoneDni ?? [])
           .filter((d) => !(d.dzien === dzien && d.tydzien === tydzien));
         ukonczoneDni.push({ dzien, tydzien, data: new Date().toISOString() });
 
         // Arkusz robi to samo: brak odczucia w ukończonym dniu znaczy "OK".
         // Domknięcie dnia dopisuje też brakujące wpisy do historii — inaczej
         // podsumowanie odczuć w konsoli liczyłoby tylko te wciśnięte ręcznie.
-        const wykonania = [...(zapisany.wykonania ?? [])];
+        const wykonania = [...(cel.wykonania ?? [])];
         const teraz = new Date().toISOString();
-        for (const slot of zapisany.plan.sloty) {
+        for (const slot of cel.plan.sloty) {
           if (slot.dzien !== dzien || !slot.cwiczenieId) continue;
           slot.tygodnie ??= {};
           slot.tygodnie[tydzien as 1] ??= {};
@@ -1188,7 +1223,8 @@ const serwer = createServer(async (req, res) => {
           }
         }
 
-        return json(res, widokKlienta(magazyn.zapisz({ ...zapisany, ukonczoneDni, wykonania })));
+        return json(res,
+          widokKlienta(naEkran(magazyn.zapisz({ ...cel, ukonczoneDni, wykonania }))));
       }
 
       // Waga ciała. Jeden wpis na dzień — kolejny tego samego dnia nadpisuje
@@ -1202,14 +1238,17 @@ const serwer = createServer(async (req, res) => {
       }
 
       if (akcja === "/serie" && req.method === "POST") {
-        const { cwiczenieId, ciezar, powtorzenia } = await cialo(req);
-        const serieMaksymalne = zapisany.plan.serieMaksymalne
+        const cialoZadania = await cialo(req);
+        const { cwiczenieId, ciezar, powtorzenia } = cialoZadania;
+        const cel = doZapisu(cialoZadania);
+        if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        const serieMaksymalne = cel.plan.serieMaksymalne
           .filter((s) => s.cwiczenieId !== cwiczenieId);
         if (ciezar > 0 && powtorzenia > 0) {
           serieMaksymalne.push({ cwiczenieId, ciezar, powtorzenia });
         }
-        zapisany.plan.serieMaksymalne = serieMaksymalne;
-        return json(res, widokKlienta(magazyn.zapisz(zapisany)));
+        cel.plan.serieMaksymalne = serieMaksymalne;
+        return json(res, widokKlienta(naEkran(magazyn.zapisz(cel))));
       }
     }
 

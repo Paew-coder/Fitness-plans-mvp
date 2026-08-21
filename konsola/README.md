@@ -350,8 +350,28 @@ realizację. Sprawdza przy tym, że liczba na telefonie to **dokładnie** ta,
 którą policzył silnik — rozjazd tutaj znaczy, że klient trenuje wg innych
 liczb niż trener.
 
-> Aplikacja klienta wyszła z tego przeglądu bez jednej poprawki. Wszystkie
-> potknięcia pierwszego przebiegu były w samym przeglądzie, nie w niej.
+Przegląd sprawdza też to, co dzieje się bez zasięgu — bo tam wyszły dwa
+błędy, każdy cichy i każdy o liczby.
+
+> **Zapis, który dotarł po zmianie cyklu.** Klient trenuje bez zasięgu, a
+> kolejka wychodzi dopiero w domu — czasem po kilku dniach. Jeśli w tym czasie
+> trener wysłał kolejny cykl, zapis szedł do planu **aktywnego w chwili
+> dotarcia**: oceny z poprzedniego cyklu przepadały bez śladu, a nowy dostawał
+> odczucia z treningu, którego jeszcze nie było — i liczył z nich ciężary na
+> kolejne tygodnie. Teraz każde zadanie niesie identyfikator cyklu, którego
+> dotyczy, i trafia tam, gdzie należy; na ekran wraca zawsze cykl aktywny,
+> więc telefon sam przechodzi na nowy plan.
+>
+> **Odrzucone zadanie blokowało kolejkę.** Brak sieci i odmowa serwera
+> kończyły się tak samo: zadanie zostawało na czele kolejki. Wystarczyło,
+> żeby trener wyjął ćwiczenie z planu, gdy klient był offline — ocena tego
+> ćwiczenia nie mogła się już zapisać nigdy, a każda kolejna czekała za nią.
+> Klient oceniał, ekran potwierdzał, do trenera nie docierało już nic. Teraz
+> odmowa (4xx) wyrzuca zadanie i mówi o tym klientowi; brak sieci i awaria
+> serwera dalej znaczą „spróbuj później".
+
+Sam interfejs klienta ma też pokrycie bez przeglądarki — `testy/api-klienta.test.ts`
+stawia serwer i sprawdza, do którego cyklu trafia każdy rodzaj zapisu.
 
 Testy jednostkowe pilnują silnika i serwera, ale nie dotykają przeglądarki.
 Te przeglądy są po to, żeby po zmianach w `public/` nie trzeba było klikać
@@ -410,7 +430,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 157 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 169 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |

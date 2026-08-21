@@ -26,6 +26,8 @@ const el = (tag, klasa, tekst) => {
 };
 const liczba = (n) => Number(n).toFixed(1).replace(".", ",").replace(",0", "");
 
+const TEKST_OFFLINE = "Offline — zapiszę, gdy wróci zasięg";
+
 // ── kolejka offline ────────────────────────────────────────────────
 const kolejka = {
   wczytaj: () => JSON.parse(localStorage.getItem(KLUCZ_KOLEJKI) || "[]"),
@@ -35,26 +37,41 @@ const kolejka = {
     k.push(zadanie);
     this.zapisz(k);
   },
+  /**
+   * Opróżnianie kolejki. Rozróżnienie, które tu stoi, jest ważniejsze niż
+   * wygląda: **brak sieci** znaczy „spróbuj później", a **odmowa serwera**
+   * znaczy „to się nigdy nie uda". Wcześniej jedno i drugie kończyło się tak
+   * samo — zadanie zostawało na czele kolejki, a każda kolejna ocena lądowała
+   * za nim i nie wychodziła nigdy. Klient oceniał, ekran potwierdzał, a do
+   * trenera nie docierało już nic.
+   */
   async wyslij() {
     let k = this.wczytaj();
+    let odrzucone = 0;
     while (k.length > 0) {
       const zadanie = k[0];
+      let odp;
       try {
-        const odp = await fetch(`/api/klient/${TOKEN}${zadanie.sciezka}`, {
+        odp = await fetch(`/api/klient/${TOKEN}${zadanie.sciezka}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(zadanie.dane),
         });
-        if (!odp.ok) throw new Error("serwer odrzucił");
+      } catch {
+        return { wyslane: false, odrzucone };   // brak sieci — próbujemy później
+      }
+      if (odp.ok) {
         widok = await odp.json();
         zapiszWidokLokalnie();
-      } catch {
-        return false;      // brak sieci — próbujemy później
+      } else if (odp.status >= 500) {
+        return { wyslane: false, odrzucone };   // serwer ma zły dzień, nie zadanie
+      } else {
+        odrzucone++;   // 4xx — tego zadania nie da się zapisać, wyrzucamy je
       }
       k = this.wczytaj().slice(1);
       this.zapisz(k);
     }
-    return true;
+    return { wyslane: true, odrzucone };
   },
 };
 
@@ -67,9 +84,27 @@ function pokazStanPolaczenia(online) {
 }
 
 async function synchronizuj(odswiez = true) {
-  const udalo = await kolejka.wyslij();
-  pokazStanPolaczenia(udalo);
-  if (udalo && odswiez) rysuj();
+  const { wyslane, odrzucone } = await kolejka.wyslij();
+  pokazStanPolaczenia(wyslane);
+  if (odrzucone > 0) pokazOdrzucone(odrzucone);
+  if (wyslane && odswiez) rysuj();
+}
+
+/**
+ * Zadania, których serwer nie przyjmie nigdy — najczęściej dlatego, że trener
+ * zdążył zmienić plan. Milczenie byłoby tu najgorsze: klient ma prawo wiedzieć,
+ * że tych ocen u trenera nie ma.
+ */
+function pokazOdrzucone(ile) {
+  const pasek = $("#stan-polaczenia");
+  pasek.textContent = ile === 1
+    ? "Jedna ocena nie została zapisana — trener zmienił plan."
+    : `${ile} ocen nie zostało zapisanych — trener zmienił plan.`;
+  pasek.classList.remove("ukryty");
+  setTimeout(() => {
+    pasek.textContent = TEKST_OFFLINE;
+    pokazStanPolaczenia(navigator.onLine);
+  }, 6000);
 }
 
 addEventListener("online", synchronizuj);
@@ -84,7 +119,10 @@ async function wyslij(sciezka, dane, zmienLokalnie, { odswiez = true } = {}) {
   zmienLokalnie();
   zapiszWidokLokalnie();
   if (odswiez) rysuj();
-  kolejka.dodaj({ sciezka, dane });
+  // Zadanie zapamiętuje cykl, którego dotyczy. Klient bywa offline przez kilka
+  // dni; gdy w międzyczasie trener wyśle kolejny plan, ocena ma trafić do tego
+  // treningu, który się faktycznie odbył, a nie do nowego cyklu.
+  kolejka.dodaj({ sciezka, dane: { ...dane, planId: widok?.planId ?? null } });
   await synchronizuj(odswiez);
 }
 
