@@ -53,6 +53,17 @@ widać**. Wykonania z poprzedniego cyklu są najlepszym, co w tym momencie mamy,
 więc konsola wyciąga je stamtąd i podpisuje: „Z cyklu 1.0 — ten dopiero się
 zaczyna". Wykonanie z bieżącego cyklu, gdy już będzie, wygrywa ze starszym.
 
+**Podmiana ćwiczenia, które klient już ocenił.** Mnożnik adaptacji liczy się
+z odczuć **slotu**, nie ćwiczenia — tak samo jak w arkuszu. Po podmianie oceny
+zostają i działają dalej: dwa razy „za łatwe" przy przysiadzie podniosłoby
+o 10% ciężar ćwiczenia, którego klient nawet nie robił. W arkuszu było
+identycznie, tylko trener miał ten wiersz przed oczami.
+
+Konsola pyta w chwili podmiany: zostawić oceny czy wyczyścić. Nie decyduje za
+Ciebie, bo bywa, że to ten sam ruch na innym sprzęcie i oceny mają prawo zostać.
+Czyszczone są wyłącznie oceny **w planie** — historia wykonań klienta zostaje
+w obu przypadkach, bo ten trening naprawdę się odbył.
+
 **Wymaga uwagi.** Panel na górze listy: kto stanął (ponad 10 dni bez treningu),
 komu wysłałeś plan, a on nie zaczął, kto nie dostał linku, komu kończy się cykl.
 Jeden wiersz na klienta i tylko o jego bieżącym planie — szkice to jeszcze nie

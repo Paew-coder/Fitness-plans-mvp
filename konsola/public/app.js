@@ -1075,7 +1075,9 @@ function rysujSlot(slot, pusty) {
   }
   wybor.value = slot.cwiczenieId ?? "";
   wybor.onchange = () => {
+    const poprzednie = slot.cwiczenieId;
     slot.cwiczenieId = wybor.value || null;
+    zapytajOOceny(slot, poprzednie);
     zapiszPozniej();
   };
   komorkaCwiczenia.append(wybor);
@@ -1221,6 +1223,57 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
   const klasa = ocena.includes("poniżej") ? "pod" : ocena.includes("powyżej") ? "nad" : "ok";
   wiersz.append(el("span", `ocena ${klasa}`, ocena));
   return wiersz;
+}
+
+/**
+ * Podmiana ćwiczenia w slocie, który klient już ocenił.
+ *
+ * Mnożnik adaptacji liczy się z odczuć **slotu**, nie ćwiczenia — tak jak
+ * w arkuszu. Po podmianie oceny zostają i działają dalej: dwa razy „za łatwe"
+ * przy przysiadzie podniosą o 10% ciężar ćwiczenia, którego klient nawet nie
+ * robił. W arkuszu było tak samo, tylko trener miał ten wiersz przed oczami.
+ *
+ * Nie decydujemy za trenera — bywa, że podmiana jest kosmetyczna (ten sam
+ * ruch na innym sprzęcie) i oceny mają pełne prawo zostać. Pytamy w chwili,
+ * w której to się dzieje, bo później nie widać już, że coś się wydarzyło.
+ *
+ * Czyścimy wyłącznie oceny **w planie**. Zapis w historii wykonań zostaje:
+ * klient naprawdę zrobił ten trening i naprawdę tak go ocenił.
+ */
+function zapytajOOceny(slot, poprzednieCwiczenie) {
+  if (!poprzednieCwiczenie || poprzednieCwiczenie === slot.cwiczenieId) return;
+  const zOcenami = Object.entries(slot.tygodnie ?? {})
+    .filter(([, p]) => p?.feedback)
+    .map(([t]) => Number(t))
+    .sort((a, b) => a - b);
+  if (zOcenami.length === 0) return;
+
+  const nazwa = (id) => cwiczenia.find((c) => c.id === id)?.nazwa ?? id;
+  const tygodnie = zOcenami.map((t) => `T${t}`).join(", ");
+
+  const zostaw = el("button", "", "Zostaw oceny");
+  zostaw.onclick = zamknijModal;
+  const wyczysc = el("button", "glowny", "Wyczyść oceny");
+  wyczysc.onclick = () => {
+    for (const t of zOcenami) delete slot.tygodnie[t].feedback;
+    zamknijModal();
+    zapiszPozniej();
+  };
+  const akcje = el("div", "akcje-modala");
+  akcje.append(wyczysc, zostaw);
+
+  pokazModal("Klient ocenił poprzednie ćwiczenie",
+    el("p", "", `W ${slot.lp} był „${nazwa(poprzednieCwiczenie)}", a klient ocenił go `
+      + `w ${tygodnie}. Te oceny zostaną przy slocie i będą podnosić albo obniżać `
+      + `ciężar „${nazwa(slot.cwiczenieId)}" — ćwiczenia, którego jeszcze nie robił.`),
+    el("p", "wskazowka",
+      "Jeśli to ten sam ruch na innym sprzęcie, oceny mogą zostać. Jeśli to inne "
+      + "ćwiczenie, lepiej zacząć od czystego mnożnika."),
+    el("p", "wskazowka",
+      "Historia wykonań klienta zostaje w obu przypadkach — czyścimy tylko to, "
+      + "co liczy ciężar."),
+    akcje);
+  $("#modal-zamknij").classList.add("ukryty");
 }
 
 // Panel serii maksymalnych zależy od tego, jakie ćwiczenia są w planie — więc
