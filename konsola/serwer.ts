@@ -9,7 +9,7 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { execFileSync } from "node:child_process";
-import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { readFileSync, existsSync, statSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,7 +89,19 @@ const TYPY: Record<string, string> = {
   ".svg": "image/svg+xml",
 };
 
+/**
+ * Odpowiedź wysyła się dokładnie raz.
+ *
+ * Gdy coś wywali się już po wysłaniu nagłówków, obsługa błędu próbowała
+ * odpowiedzieć drugi raz — a `writeHead` rzuca wtedy wyjątek **spoza** bloku
+ * `try`, czyli kładzie cały proces. Jeden nieudany odczyt pliku wystarczał,
+ * żeby konsola zniknęła razem z dostępem wszystkich klientów.
+ */
 function json(res: ServerResponse, dane: unknown, kod = 200): void {
+  if (res.headersSent) {
+    res.end();
+    return;
+  }
   const tresc = JSON.stringify(dane);
   res.writeHead(kod, { "content-type": "application/json; charset=utf-8" });
   res.end(tresc);
@@ -664,10 +676,22 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
   };
 }
 
+function plikCzytelny(sciezka: string): boolean {
+  try {
+    return statSync(sciezka).isFile();
+  } catch {
+    return false;
+  }
+}
+
 function plikStatyczny(sciezkaUrl: string, res: ServerResponse): boolean {
   const wzgledna = normalize(sciezkaUrl === "/" ? "/index.html" : sciezkaUrl).replace(/^(\.\.[/\\])+/, "");
   const pelna = join(PUBLIC, wzgledna);
-  if (!pelna.startsWith(PUBLIC) || !existsSync(pelna)) return false;
+  // `existsSync` jest prawdziwe także dla katalogu — a próba odczytania go
+  // jako pliku leci wyjątkiem **po** wysłaniu nagłówków. Żądanie `/klient/`
+  // zabijało w ten sposób cały serwer: obsługa błędu próbowała odpowiedzieć
+  // drugi raz i wywalała proces. Bez hasła, jednym GET-em.
+  if (!pelna.startsWith(PUBLIC) || !plikCzytelny(pelna)) return false;
 
   const naglowki: Record<string, string> = {
     "content-type": TYPY[extname(pelna)] ?? "application/octet-stream",
@@ -1313,7 +1337,13 @@ const serwer = createServer(async (req, res) => {
     // nie 500. Reszta idzie do logu, bo to znaczy, że coś jest zepsute tutaj.
     if (e instanceof BladAI) return blad(res, e.message, Math.min(Math.max(e.kod, 400), 599));
     console.error(e);
-    blad(res, e instanceof Error ? e.message : String(e), 500);
+    try {
+      blad(res, e instanceof Error ? e.message : String(e), 500);
+    } catch {
+      // Nawet zerwana odpowiedź nie może położyć serwera — połączenie
+      // zamykamy, a konsola pracuje dalej dla wszystkich pozostałych.
+      res.destroy();
+    }
   }
 });
 
