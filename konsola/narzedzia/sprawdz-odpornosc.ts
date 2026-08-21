@@ -28,7 +28,11 @@ import { doliczBledy, podsumuj, sprawdz, zSerwerem, type Srodowisko }
 const PORT = 4198;
 const PLAN = "odpornosc-test-1";
 
-type Proba = { opis: string; sciezka: string; metoda?: string; cialo?: string; typ?: string };
+type Proba = {
+  opis: string; sciezka: string; metoda?: string; cialo?: string; typ?: string;
+  /** Żądanie, które serwer ma **odrzucić**, a nie tylko przeżyć. */
+  musiOdmowic?: true;
+};
 
 /** Wejścia, które psują parsery: puste, obcięte, złego typu, absurdalnie duże. */
 function proby(token: string): Proba[] {
@@ -119,6 +123,32 @@ function proby(token: string): Proba[] {
     ...["/api/1rm", "/api/1rm?ciezar=abc&powt=xyz", "/api/1rm?ciezar=1e400&powt=-3",
         "/api/1rm?ciezar=100&powt=0"]
       .map((sciezka) => ({ opis: `GET ${sciezka}`, sciezka })),
+
+    // ── wartości, które serwer ma ODRZUCIĆ, a nie tylko przeżyć ───────
+    //
+    // Klient nie jest przeciwnikiem, ale jest bez nadzoru: zamiast 100 kg
+    // wpisze 1000, a kolejka sprzed dwóch cykli przyniesie numer tygodnia,
+    // którego już nie ma. Wszystko to szło wprost do danych trenera i psuło
+    // jego liczby — frekwencję, propozycje 1RM, wykres wagi, a przy serii
+    // maksymalnej ciężary na całe sześć tygodni.
+    ...([
+      ["tydzień 99", "/odczucie", '{"positionId":"D1-S01","tydzien":99,"feedback":"OK"}'],
+      ["tydzień ujemny", "/odczucie", '{"positionId":"D1-S01","tydzien":-1,"feedback":"OK"}'],
+      ["odczucie spoza trzech", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"feedback":"świetnie"}'],
+      ["ciężar ujemny", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"ciezarWykonany":-100}'],
+      ["ciężar 1e400", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"ciezarWykonany":1e400}'],
+      ["powtórzenia 100000", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"powtorzeniaWykonane":100000}'],
+      ["waga ujemna", "/waga", '{"kg":-80}'],
+      ["waga bilion kg", "/waga", '{"kg":1e12}'],
+      ["dzień spoza planu", "/dzien", '{"dzien":99,"tydzien":1}'],
+      ["dzień bez ćwiczeń", "/dzien", '{"dzien":4,"tydzien":1}'],
+      ["seria milion kg", "/serie", '{"cwiczenieId":"EX-0010","ciezar":1e9,"powtorzenia":3}'],
+      ["seria 999 powtórzeń", "/serie", '{"cwiczenieId":"EX-0010","ciezar":100,"powtorzenia":999}'],
+      ["seria ćwiczenia spoza bazy", "/serie", '{"cwiczenieId":"EX-9999","ciezar":100,"powtorzenia":3}'],
+    ] as const).map(([opis, akcja, cialo]) => ({
+      opis: `${akcja} — ${opis}`, sciezka: `/api/klient/${token}${akcja}`,
+      metoda: "POST", cialo, musiOdmowic: true as const,
+    })),
   ];
 }
 
@@ -142,6 +172,7 @@ await zSerwerem(PORT, async ({ adres, api }: Srodowisko) => {
   const martwy: string[] = [];
   const piecsetki: string[] = [];
   const gadatliwe: string[] = [];
+  const przepuszczone: string[] = [];
 
   for (const p of lista) {
     let odp: Response;
@@ -156,6 +187,7 @@ await zSerwerem(PORT, async ({ adres, api }: Srodowisko) => {
       continue;
     }
     if (odp.status >= 500) piecsetki.push(`${p.opis} → ${odp.status}`);
+    if (p.musiOdmowic && odp.status < 400) przepuszczone.push(`${p.opis} → ${odp.status}`);
     const tresc = await odp.text();
     if (ZDRADLIWE.some((w) => w.test(tresc))) {
       gadatliwe.push(`${p.opis} → ${tresc.slice(0, 90)}`);
@@ -168,6 +200,12 @@ await zSerwerem(PORT, async ({ adres, api }: Srodowisko) => {
     piecsetki.slice(0, 4).join(" · ") || "żadnej piątki");
   sprawdz("komunikaty błędów nie pokazują wnętrza", gadatliwe.length === 0,
     gadatliwe.slice(0, 3).join(" · ") || "czysto");
+  // „Nie wywala się" to nie to samo co „waliduje". Wartość spoza świata ma
+  // dostać odmowę, a nie wylądować w danych trenera.
+  sprawdz("wartości spoza świata są odrzucane, nie zapisywane",
+    przepuszczone.length === 0,
+    przepuszczone.slice(0, 4).join(" · ")
+      || `${lista.filter((p) => p.musiOdmowic).length} prób odrzuconych`);
 
   // Najważniejsze: po całej serii konsola ma dalej pracować normalnie.
   const poWszystkim = await api("/api/plany");
@@ -190,6 +228,18 @@ await zSerwerem(PORT, async ({ adres, api }: Srodowisko) => {
   sprawdz("plan klienta nie ucierpiał po serii prób",
     widok.planId === PLAN && widok.tygodnie?.length === 6,
     `${widok.tygodnie?.length ?? 0} tygodni`);
+
+  // Ani jeden ze śmieci nie mógł osiąść w danych: seria maksymalna musi być
+  // ta wpisana przez trenera, historia wykonań pusta, waga bez pomiarów.
+  const poProbach = (await api(`/api/plany/${PLAN}`)).zapisany;
+  const seria = poProbach.plan.serieMaksymalne[0];
+  sprawdz("dane klienta zostały nietknięte",
+    seria?.ciezar === 120 && seria?.powtorzenia === 3
+    && (poProbach.wykonania ?? []).length === 0
+    && (widok.postep?.waga?.punkty ?? []).length === 0,
+    `seria ${seria?.ciezar}×${seria?.powtorzenia}, `
+    + `${(poProbach.wykonania ?? []).length} wykonań, `
+    + `${(widok.postep?.waga?.punkty ?? []).length} pomiarów wagi`);
 
   doliczBledy(0);
 });
