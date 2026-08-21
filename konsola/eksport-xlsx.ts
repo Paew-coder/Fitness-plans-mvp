@@ -80,6 +80,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby
         // od mnożnika 1 i od T2 pokazywał inne ciężary niż konsola.
         feedback: p.feedback ?? null,
+        // Ciężar wpisany ręcznie zastępuje w arkuszu formułę — dokładnie tak,
+        // jak robił to trener, wpisując liczbę do komórki. Bez tego klient
+        // zobaczyłby w arkuszu ciężar policzony, a w konsoli stoi inny.
+        ciezar_reczny: p.ciezarOverride ?? null,
       };
     }
 

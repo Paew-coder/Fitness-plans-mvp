@@ -80,6 +80,9 @@ async function zasiej({ api }: Srodowisko): Promise<string> {
     if (["D1-S01", "D2-S01", "D3-S02"].includes(s.positionId)) s.tygodnie["1"].feedback = "za łatwe";
     if (["D1-S03", "D2-S02"].includes(s.positionId)) s.tygodnie["1"].feedback = "za trudne";
     if (s.positionId === "D1-S02") s.tygodnie["2"].feedback = "OK";
+    // Ciężar ustalony ręcznie ma przejść przez arkusz tak samo jak reszta:
+    // w komórce staje literą liczba zamiast formuły i taki ma wrócić.
+    if (s.positionId === "D2-S03") s.tygodnie["3"].ciezarOverride = 47.5;
   }
   await api(`/api/plany/${PLAN}`, "PUT",
     { plan: zProgresja, dataStartu: "2026-09-01", status: "szkic" });
@@ -161,6 +164,7 @@ function porownaj(oryginal: any, wrocony: any): void {
       por(`${a.positionId} T${t} serie`, pa.serie, pb.serie);
       por(`${a.positionId} T${t} RPE`, pa.rpe, pb.rpe);
       por(`${a.positionId} T${t} odczucie`, pa.feedback, pb.feedback);
+      por(`${a.positionId} T${t} ciężar ręczny`, pa.ciezarOverride, pb.ciezarOverride);
     }
   }
 

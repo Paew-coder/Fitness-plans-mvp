@@ -53,6 +53,23 @@ widać**. Wykonania z poprzedniego cyklu są najlepszym, co w tym momencie mamy,
 więc konsola wyciąga je stamtąd i podpisuje: „Z cyklu 1.0 — ten dopiero się
 zaczyna". Wykonanie z bieżącego cyklu, gdy już będzie, wygrywa ze starszym.
 
+**Ciężar wpisany ręcznie.** Kolumna CIĘŻAR jest polem, nie napisem — zasada
+ta sama co przy powtórzeniach: **puste znaczy „licz automatem"**, a podpowiedź
+pokazuje, co z tego wychodzi. Wpisana liczba wygrywa, dostaje kropkę i ramkę
+w kolorze akcentu, a kontrola planu wymienia wszystkie takie miejsca — ciężar,
+który nie reaguje ani na 1RM, ani na oceny klienta, nie może wyglądać jak reszta.
+
+Do czego to służy: maszyna z ustalonymi płytkami, ograniczenie po kontuzji,
+ćwiczenie z progresją „ręczne ustawienie", slot bez serii maksymalnej, który
+mimo to ma dziś mieć ciężar. Silnik przyjmował to od początku (`ciezarOverride`
+zachowywany przez progresję, czyszczony przy nowym cyklu) — brakowało jedynego,
+co widzi trener: miejsca, w którym da się wpisać. W arkuszu było to zwykłe
+wpisanie liczby do komórki z formułą.
+
+Przez arkusz przechodzi tak samo: w wyeksportowanym pliku w tej komórce staje
+liczba zamiast formuły, a przy wczytaniu z powrotem wraca jako nadpisanie.
+Sprawdza to `npm run sprawdz-kolko`.
+
 **Podmiana ćwiczenia, które klient już ocenił.** Mnożnik adaptacji liczy się
 z odczuć **slotu**, nie ćwiczenia — tak samo jak w arkuszu. Po podmianie oceny
 zostają i działają dalej: dwa razy „za łatwe" przy przysiadzie podniosłoby
@@ -171,8 +188,8 @@ npm run sprawdz-kolko         # wymaga LibreOffice, trwa ~2 minuty
 Pełne kółko w jednym poleceniu: plan ułożony w konsoli → eksport do `.xlsx` →
 przeliczenie arkusza w LibreOffice → porównanie z silnikiem (**758 wartości,
 wszystkie zgodne**) → wczytanie tego samego pliku z powrotem → porównanie
-z planem wyjściowym (**702 wartości: ćwiczenia, serie, powtórzenia, RPE,
-odczucia, ciężary i stres — identycznie, zero różnic**).
+z planem wyjściowym (**786 wartości: ćwiczenia, serie, powtórzenia, RPE,
+odczucia, ciężary ręczne i policzone oraz stres — identycznie, zero różnic**).
 
 Arkusz liczy dokładnie to, co pokazywała konsola, a konsola czyta z powrotem
 dokładnie to, co arkusz. Na tym stoi cała umowa tej aplikacji, więc kontrola
@@ -476,7 +493,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 184 testy magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 190 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |

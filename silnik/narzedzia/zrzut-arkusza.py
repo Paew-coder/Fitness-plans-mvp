@@ -135,6 +135,11 @@ def zrzut(sciezka_xlsx: str) -> dict:
                 # oczekiwane wyniki
                 "ocz_powtorzenia": liczba(ws.cell(row=r, column=KOL["powt"]).value),
                 "ocz_ciezar": ws.cell(row=r, column=KOL["ciezar"]).value,
+                # Ciezar: formula = liczony z 1RM i RPE, liczba = wpis trenera.
+                # To samo rozroznienie co przy powtorzeniach, i z tego samego
+                # powodu: wczytujac plan z powrotem trzeba wiedziec, ktore
+                # liczby maja zostac jak stoja, a ktore ma przeliczyc silnik.
+                "ciezar_reczny": not ma_formule(wsf.cell(row=r, column=KOL["ciezar"]).value),
                 "ocz_procent": liczba(ws.cell(row=r, column=KOL["procent"]).value),
                 "ocz_one_rm": liczba(ws.cell(row=r, column=KOL["one_rm"]).value),
                 "ocz_mnoznik": liczba(ws.cell(row=r, column=KOL["mnoznik"]).value),

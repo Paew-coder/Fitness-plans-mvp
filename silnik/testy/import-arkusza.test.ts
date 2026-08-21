@@ -89,6 +89,35 @@ describe("plan z arkusza bez policzonych formuł", () => {
   });
 });
 
+describe("ciężar wpisany ręcznie", () => {
+  /**
+   * W arkuszu trener wpisywał liczbę wprost do komórki z formułą — i tak
+   * zostawało. Wczytanie takiego pliku musi to odróżnić od ciężaru liczonego,
+   * inaczej plan po powrocie z arkusza liczyłby coś innego, niż widział klient.
+   */
+  function zCiezarem(reczny: boolean, wartosc: number) {
+    const z = zrzut([{ nazwa: "Barbell back squat", ex_id: "EX-0010" }]);
+    z.sloty[0]!.tygodnie["T3"]!.ciezar_reczny = reczny;
+    z.sloty[0]!.tygodnie["T3"]!.ocz_ciezar = wartosc;
+    return planZArkusza(z).sloty[0]!.tygodnie![3]!;
+  }
+
+  test("liczba zamiast formuły wraca jako nadpisanie", () => {
+    assert.equal(zCiezarem(true, 47.5).ciezarOverride, 47.5);
+  });
+
+  test("formuła zostaje ciężarem liczonym", () => {
+    assert.equal(zCiezarem(false, 105).ciezarOverride, undefined);
+  });
+
+  test("tekst w komórce (np. „— brak 1RM”) nie staje się ciężarem", () => {
+    const z = zrzut([{ nazwa: "Barbell back squat", ex_id: "EX-0010" }]);
+    z.sloty[0]!.tygodnie["T3"]!.ciezar_reczny = true;
+    z.sloty[0]!.tygodnie["T3"]!.ocz_ciezar = "— brak 1RM";
+    assert.equal(planZArkusza(z).sloty[0]!.tygodnie![3]!.ciezarOverride, undefined);
+  });
+});
+
 describe("arkusz, z którego nie da się nic wczytać", () => {
   test("arkusz bez ćwiczeń daje plan bez slotów — jest po czym poznać", () => {
     // Na tym stoi odmowa importu po stronie konsoli: pusty plan powstały

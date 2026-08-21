@@ -15,6 +15,8 @@ export const SKROTY_TYGODNI = ["T1", "T2", "T3", "T4", "T5", "T6"] as const;
 export type PoleTygodniaArkusza = {
   /** Powtórzenia wpisane ręcznie przez trenera (a nie policzone automatem). */
   powt_reczne?: boolean;
+  /** Ciężar wpisany ręcznie — w komórce stoi liczba, nie formuła. */
+  ciezar_reczny?: boolean;
   serie: number | null;
   rpe: number | null;
   feedback: string | null;
@@ -123,6 +125,13 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
           powtorzenia:
             jestBojemGlownym(s.lp) || pole.powt_reczne
               ? (pole.ocz_powtorzenia ?? undefined)
+              : undefined,
+          // Liczba zamiast formuły w kolumnie CIĘŻAR znaczy, że trener ustalił
+          // ten ciężar na sztywno. Musi wrócić jako nadpisanie, a nie zniknąć —
+          // inaczej po powrocie z arkusza plan liczyłby coś innego.
+          ciezarOverride:
+            pole.ciezar_reczny && typeof pole.ocz_ciezar === "number"
+              ? pole.ocz_ciezar
               : undefined,
         };
       });

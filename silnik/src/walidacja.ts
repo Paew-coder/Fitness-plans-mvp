@@ -30,6 +30,14 @@ export function sprawdzPlan(
   ]);
   dodaj("DNI_TRENINGOWE", "info", "Dni treningowe w planie", [String(wynik.dniTreningowe)]);
 
+  // Ciężar wpisany ręcznie nie reaguje ani na 1RM, ani na oceny klienta.
+  // W tabeli widać go przy konkretnym tygodniu, ale trener patrzy zwykle na
+  // jeden tydzień naraz — a nadpisanie z T5 działa przez cały cykl.
+  const reczne = wynik.tygodnie.flatMap((t) =>
+    t.sloty.filter((s) => s.cwiczenie && s.ciezarNadpisany)
+      .map((s) => `T${t.tydzien} ${s.positionId}`));
+  dodaj("CIEZAR_RECZNY", "info", "Ciężary wpisane ręcznie", reczne.length ? reczne : ["0"]);
+
   // Arkusz nie potrzebował tej kontroli: plik z planem zawsze miał treść, bo
   // powstawał przez wypełnianie. W aplikacji pusty plan da się utworzyć jednym
   // kliknięciem i — odkąd „wysłany" znaczy „widoczny dla klienta" — dałoby się

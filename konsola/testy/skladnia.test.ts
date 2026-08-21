@@ -25,6 +25,9 @@ import { fileURLToPath } from "node:url";
 
 const KONSOLA = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SILNIK = join(KONSOLA, "..", "silnik", "src");
+// Testy silnika też są kodem — i to właśnie w nich trafił się piąty raz
+// cudzysłów „…" urywający łańcuch w połowie.
+const TESTY_SILNIKA = join(KONSOLA, "..", "silnik", "testy");
 const POMIJANE = new Set(["node_modules", "dane", ".git"]);
 
 const zrodlo = (sciezka: string) => readFileSync(join(KONSOLA, sciezka), "utf-8");
@@ -39,7 +42,7 @@ function zrodla(katalog: string): string[] {
 }
 
 describe("składnia — każdy plik da się sparsować", () => {
-  const pliki = [...zrodla(KONSOLA), ...zrodla(SILNIK)];
+  const pliki = [...zrodla(KONSOLA), ...zrodla(SILNIK), ...zrodla(TESTY_SILNIKA)];
 
   test("znaleziono pliki do sprawdzenia", () => {
     assert.ok(pliki.length > 25, `tylko ${pliki.length} plików — coś nie tak ze skanowaniem`);

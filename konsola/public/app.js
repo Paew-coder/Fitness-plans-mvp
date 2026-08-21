@@ -1134,13 +1134,7 @@ function rysujSlot(slot, pusty) {
   ));
   wiersz.append(poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", "8"));
 
-  const ciezar = wyliczony?.ciezar;
-  const komorkaCiezaru = el("td", typeof ciezar === "number" ? "ciezar" : "ciezar brak",
-    typeof ciezar === "number" ? `${liczba(ciezar)} kg` : String(ciezar ?? "—"));
-  if (wyliczony?.cwiczenie?.jednostronne && typeof ciezar === "number") {
-    komorkaCiezaru.append(el("span", "znacznik-jedn", "  ↔ na stronę"));
-  }
-  wiersz.append(komorkaCiezaru);
+  wiersz.append(komorkaCiezaru(parametry, wyliczony));
 
   const s = wyliczony?.stres;
   wiersz.append(el("td", "stres", s
@@ -1223,6 +1217,57 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
   const klasa = ocena.includes("poniżej") ? "pod" : ocena.includes("powyżej") ? "nad" : "ok";
   wiersz.append(el("span", `ocena ${klasa}`, ocena));
   return wiersz;
+}
+
+/**
+ * Ciężar w tabeli planu — pole, nie napis.
+ *
+ * Silnik od początku umie przyjąć ciężar wpisany ręcznie (`ciezarOverride`):
+ * progresja go zachowuje, kopia na nowy cykl czyści, testy tego pilnują.
+ * Brakowało jedynego, co widzi trener — miejsca, w którym da się go wpisać.
+ * W arkuszu było to zwykłe wpisanie liczby do komórki z formułą.
+ *
+ * Zasada jest ta sama co przy powtórzeniach, więc nie trzeba jej tłumaczyć:
+ * **puste pole znaczy „licz automatem"**, a podpowiedź pokazuje, co z tego
+ * wychodzi. Wpisana liczba wygrywa i jest podpisana kropką — bo ciężar, który
+ * nie reaguje na 1RM ani na oceny klienta, musi się różnić od reszty.
+ *
+ * Przy ćwiczeniach bez ciężaru (masa ciała, czas, dystans) zostaje sam napis:
+ * kilogramy nie mają się tam do czego odnieść.
+ */
+function komorkaCiezaru(parametry, wyliczony) {
+  const ciezar = wyliczony?.ciezar;
+  const bezCiezaru = typeof ciezar === "string" && !ciezar.startsWith("—");
+  const komorka = el("td", typeof ciezar === "number" ? "ciezar" : "ciezar brak");
+
+  if (bezCiezaru) {
+    komorka.append(el("span", "", String(ciezar)));
+    return komorka;
+  }
+
+  const input = el("input");
+  input.type = "number"; input.step = "0.5"; input.min = "0";
+  input.className = "pole-ciezaru";
+  input.value = parametry.ciezarOverride ?? "";
+  input.placeholder = typeof ciezar === "number" ? liczba(ciezar) : String(ciezar ?? "—");
+  input.title = parametry.ciezarOverride !== undefined
+    ? "Ciężar wpisany ręcznie. Wyczyść pole, żeby wrócić do liczonego."
+    : "Puste = liczony z 1RM, RPE i ocen klienta. Wpisz, żeby ustalić na sztywno.";
+  input.onchange = () => {
+    if (input.value === "") delete parametry.ciezarOverride;
+    else parametry.ciezarOverride = Number(input.value);
+    zapiszPozniej();
+  };
+  komorka.append(input);
+
+  if (parametry.ciezarOverride !== undefined) {
+    komorka.classList.add("reczny");
+    komorka.append(el("span", "znacznik-reczny", "●"));
+  }
+  if (wyliczony?.cwiczenie?.jednostronne && typeof wyliczony?.ciezar === "number") {
+    komorka.append(el("span", "znacznik-jedn", "↔"));
+  }
+  return komorka;
 }
 
 /**
