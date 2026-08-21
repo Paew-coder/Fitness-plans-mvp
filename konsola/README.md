@@ -166,6 +166,17 @@ dokładnie to, co arkusz.
 To sprawdzenie wymaga LibreOffice do przeliczenia pliku, więc nie chodzi
 automatycznie w testach — trzeba je powtórzyć ręcznie po zmianach w eksporcie.
 
+> **I co przeoczyło.** Właśnie to przeliczenie. Identyfikator ćwiczenia stoi
+> w arkuszu w ukrytej kolumnie liczonej formułą, a plik prosto z eksportu nie
+> ma jeszcze policzonych formuł — ich wartości wpisuje dopiero Excel albo
+> LibreOffice przy pierwszym otwarciu. Kółko szło przez przeliczenie, więc
+> działało; wczytanie pliku **wprost po eksporcie**, bez otwierania go w
+> arkuszu kalkulacyjnym, dawało plan bez ani jednego ćwiczenia — i meldunek
+> o powodzeniu. Teraz, gdy w tej kolumnie nic nie stoi, rozstrzyga nazwa
+> z kolumny ĆWICZENIE (ta sama BAZA, to samo źródło co formuła), a import,
+> który nie rozpoznał niczego, **odmawia zamiast zakładać pusty plan**.
+> Pilnuje tego dziewięć testów w `../silnik/testy/import-arkusza.test.ts`.
+
 Powtórzenie tej kontroli na dowolnym pliku:
 
 ```bash
@@ -303,26 +314,27 @@ dziś trener jest jeden i konsola nie ma logowania. To jedyna rzecz, której
 nie da się dołożyć później bez przepisywania wszystkiego — a jest darmowa,
 dopóki robi się ją od razu.
 
-## Przegląd ekranu
+## Przegląd ekranów
 
 ```bash
-npm run przeglad-ekranu       # wymaga Playwrighta z Chromium, trwa ~30 sekund
+npm run przeglad-ekranow      # wymaga Playwrighta z Chromium, trwa ~40 sekund
 ```
 
-Przechodzi po wszystkich kontrolkach ekranu planu — dobór ćwiczenia, seria
-maksymalna, serie/powtórzenia/RPE, zakładki tygodni, przenoszenie slotów,
-progresja z szablonu, przełączniki, TOP SET, moduł oddechu, link dla klienta,
-eksport i wysyłka — i za każdym razem pyta **serwer**, czy klik faktycznie coś
-zapisał. Ekran, który ładnie wygląda i nic nie zapisuje, wypada tu na czerwono.
+Idzie tą samą drogą co trener: lista klientów → nowy plan → ułożenie cyklu →
+eksport i wysyłka → wczytanie tego samego arkusza z powrotem → kartoteka
+klienta, nowy cykl, poprawienie nazwiska, scalenie dwóch kartotek, usunięcie.
+Po każdym kliknięciu pyta **serwer**, czy coś się faktycznie zapisało. Ekran,
+który ładnie wygląda i nic nie zapisuje, wypada tu na czerwono.
 
-> **Co ten przegląd wykrył.** Trzy błędy, których nie widać ani w kodzie, ani
-> w `npm test`. Zakładki tygodni siedziały w `<label>`, więc każde kliknięcie
-> trafiało w T1 i konsola pokazywała wyłącznie pierwszy tydzień. Panel serii
-> maksymalnych nie odrysowywał się po dobraniu ćwiczenia, więc pola pojawiały
-> się dopiero po ponownym otwarciu planu. A pola tej serii kasowały się
-> nawzajem: wpisanie ciężaru czyściło powtórzenia i odwrotnie — czyli
-> **serii maksymalnej nie dało się wpisać wcale**, a bez niej nie liczy się
-> żaden ciężar.
+> **Co ten przegląd wykrył.** Cztery błędy, których nie widać ani w kodzie,
+> ani w `npm test`. Zakładki tygodni siedziały w `<label>`, więc każde
+> kliknięcie trafiało w T1 i konsola pokazywała wyłącznie pierwszy tydzień.
+> Panel serii maksymalnych nie odrysowywał się po dobraniu ćwiczenia, więc
+> pola pojawiały się dopiero po ponownym otwarciu planu. Pola tej serii
+> kasowały się nawzajem: wpisanie ciężaru czyściło powtórzenia i odwrotnie —
+> czyli **serii maksymalnej nie dało się wpisać wcale**, a bez niej nie liczy
+> się żaden ciężar. A wczytanie własnego, dopiero co wyeksportowanego arkusza
+> dawało **pusty plan i komunikat o powodzeniu** (opis niżej).
 
 Testy jednostkowe pilnują silnika i serwera, ale nie dotykają przeglądarki.
 Ten przegląd jest po to, żeby po zmianach w `public/` nie trzeba było klikać
@@ -385,7 +397,7 @@ npm run kopia
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
-| `narzedzia/przeglad-ekranu.ts` | klikanie po kontrolkach planu w przeglądarce |
+| `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
 

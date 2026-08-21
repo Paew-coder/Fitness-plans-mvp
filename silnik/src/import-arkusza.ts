@@ -7,6 +7,7 @@
  */
 import type { CzescPlanu, Feedback, Kategoria, TrybAkcesoriow, Tydzien } from "./typy.ts";
 import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
+import { katalog } from "./katalog.ts";
 
 export const TYGODNIE_IMPORTU: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 export const SKROTY_TYGODNI = ["T1", "T2", "T3", "T4", "T5", "T6"] as const;
@@ -76,6 +77,23 @@ export type ZrzutArkusza = {
   }>;
 };
 
+/**
+ * Identyfikator ćwiczenia dla slotu z arkusza.
+ *
+ * Normalnie stoi w ukrytej kolumnie, którą arkusz wylicza formułą. Ale plik
+ * **prosto z eksportu nie ma jeszcze policzonych formuł** — wartości pojawiają
+ * się w nim dopiero po otwarciu w Excelu albo LibreOffice. Bez tego zapasowego
+ * odczytu wczytanie własnego, dopiero co wyeksportowanego arkusza dawało plan
+ * bez ani jednego ćwiczenia, i to bez słowa ostrzeżenia.
+ *
+ * Zapas jest bezpieczny: nazwa i tak pochodzi z BAZY, tej samej, z której
+ * bierze ją formuła. Literówka nie przejdzie ani tu, ani tam.
+ */
+export function idCwiczenia(nazwa: string | null, exId: string | null): string | null {
+  if (exId) return exId;
+  return nazwa?.trim() ? (katalog.poNazwie(nazwa)?.id ?? null) : null;
+}
+
 /** Bój główny to pozycja, której `lp` zaczyna się na „A". */
 export function jestBojemGlownym(lp: string): boolean {
   return lp.trim().toUpperCase().startsWith("A");
@@ -91,8 +109,9 @@ export function jestBojemGlownym(lp: string): boolean {
  */
 export function planZArkusza(z: ZrzutArkusza): Plan {
   const sloty: SlotPlanu[] = z.sloty
-    .filter((s) => s.ex_id)
-    .map((s) => {
+    .map((s) => ({ s, id: idCwiczenia(s.nazwa, s.ex_id) }))
+    .filter((x): x is { s: SlotArkusza; id: string } => x.id !== null)
+    .map(({ s, id }) => {
       const tygodnie: Partial<Record<Tydzien, ParametryTygodnia>> = {};
       TYGODNIE_IMPORTU.forEach((t, i) => {
         const pole = s.tygodnie[SKROTY_TYGODNI[i]!]!;
@@ -111,7 +130,7 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
         positionId: s.position_id,
         dzien: s.dzien,
         lp: s.lp,
-        cwiczenieId: s.ex_id!,
+        cwiczenieId: id,
         kategoriaSzkieletu: (s.kategoria_szkieletu as Kategoria | null) ?? null,
         tygodnie,
       };
@@ -122,8 +141,9 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
     trybAkcesoriow: (z.ustawienia.tryb_akcesoriow as TrybAkcesoriow) ?? "trzymaj z bloku",
     czescPlanu: (z.ustawienia.czesc_planu as CzescPlanu) ?? "objętość",
     serieMaksymalne: z.serie_maksymalne
-      .filter((s) => s.ex_id)
-      .map((s) => ({ cwiczenieId: s.ex_id!, ciezar: s.ciezar, powtorzenia: s.powtorzenia })),
+      .map((s) => ({ ...s, id: idCwiczenia(s.nazwa, s.ex_id) }))
+      .filter((s) => s.id !== null)
+      .map((s) => ({ cwiczenieId: s.id!, ciezar: s.ciezar, powtorzenia: s.powtorzenia })),
     sloty,
     topSety: z.top_sety
       .filter((t) => t.wlaczony && t.slot_position_id)
@@ -145,6 +165,6 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
  */
 export function nierozpoznaneCwiczenia(z: ZrzutArkusza): { positionId: string; nazwa: string }[] {
   return z.sloty
-    .filter((s) => s.nazwa && !s.ex_id)
+    .filter((s) => s.nazwa && !idCwiczenia(s.nazwa, s.ex_id))
     .map((s) => ({ positionId: s.position_id, nazwa: s.nazwa }));
 }
