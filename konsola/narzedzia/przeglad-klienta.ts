@@ -17,6 +17,9 @@
  * Wymaga Playwrighta z Chromium. Nie chodzi w `npm test`, bo tam przeglądarki
  * nie ma — to kontrola do puszczenia po zmianach w `public/klient/`.
  */
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola, type Srodowisko }
   from "./przegladarka.ts";
 
@@ -210,6 +213,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     String(uTrenera.zapisany.plan.sloty[0].tygodnie["1"].feedback));
   sprawdz("trener widzi domknięty trening",
     JSON.stringify(realizacja).includes("true"));
+
+  // ── 13. czy poprawka w ogóle dociera do klienta ───────────────────
+  // Worker odpowiada z cache, żeby aplikacja otwierała się bez zasięgu — ale
+  // gdyby na tym poprzestał, plik raz zapisany zostawałby u klienta na zawsze
+  // i żadna poprawka nigdy by do niego nie dotarła. Sprawdzamy to jedynym
+  // sposobem, który cokolwiek dowodzi: podmieniając plik na dysku.
+  const plikAplikacji = join(import.meta.dirname, "..", "public", "klient", "app.js");
+  const oryginal = readFileSync(plikAplikacji, "utf-8");
+  try {
+    writeFileSync(plikAplikacji, `${oryginal}\nwindow.__nowaWersja = true;\n`);
+
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(1200);   // odświeżenie w tle ma zdążyć zapisać
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(400);
+
+    const doszlo = await s.evaluate(() => (window as any).__nowaWersja === true);
+    sprawdz("nowa wersja aplikacji dociera do klienta z cache",
+      doszlo, doszlo ? "przy drugim otwarciu" : "nie doszła wcale");
+  } finally {
+    writeFileSync(plikAplikacji, oryginal);
+  }
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

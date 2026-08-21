@@ -108,6 +108,26 @@ zdążył się pobrać.
 > Sprawdzone po naprawie: pierwsze wejście z zasięgiem, potem tryb samolotowy —
 > aplikacja otwiera się, pokazuje plan i historię przez cykle.
 
+## Aktualizacje docierają same
+
+Aplikacja klienta zapisuje się w telefonie, żeby otwierała się bez zasięgu —
+i to jest cały sens tego rozwiązania. Ma jednak drugą stronę: plik raz
+zapisany zostaje tam na długo. Przez pierwsze wersje worker odpowiadał
+wyłącznie z zapisanej kopii, więc **poprawka docierała do klienta tylko wtedy,
+gdy ktoś pamiętał podbić numer wersji w kodzie workera**. Zabezpieczenie
+oparte na pamięci: jedno przeoczenie i wszyscy klienci zostają ze starym
+kodem, bez żadnego objawu po stronie trenera.
+
+Teraz jest inaczej: aplikacja otwiera się **z kopii** (czyli natychmiast,
+także w piwnicy bez zasięgu), a świeża wersja pobiera się **w tle** i wchodzi
+w życie przy następnym otwarciu. Kolejność jest celowa — „najpierw sieć"
+dawałoby świeższy kod kosztem tego, po co ten mechanizm w ogóle istnieje.
+
+Sprawdzone klikaniem, nie na słowo: `npm run przeglad-klienta` podmienia plik
+aplikacji na dysku i potwierdza, że zmiana dociera przy drugim otwarciu.
+Ta sama kontrola puszczona na starym kodzie pokazuje, że zmiana **nie
+docierała nigdy**, choćby klient otwierał aplikację bez końca.
+
 ## O bezpieczeństwie — wprost
 
 Link jest kluczem. Kto go ma, ten widzi plan; nie ma hasła ani logowania.
