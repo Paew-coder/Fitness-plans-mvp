@@ -27,14 +27,12 @@
  * Wymaga Playwrighta z Chromium. Nie chodzi w `npm test`, bo tam przeglądarki
  * nie ma — to jest kontrola do puszczenia po zmianach w `public/`.
  */
-import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const KATALOG = dirname(fileURLToPath(import.meta.url));
-const KONSOLA = join(KATALOG, "..");
+import { doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola } from "./przegladarka.ts";
+
 const PORT = 4189;
 const ADRES = `http://127.0.0.1:${PORT}`;
 const KLIENT = "Przegląd ekranu";
@@ -43,74 +41,12 @@ const KLIENT_PO_ZMIANIE = "Przegląd ekranów";
 const KLIENT_Z_ARKUSZA = "Import przegladu";
 const KLIENT_DO_USUNIECIA = "Do usuniecia";
 
-let bledow = 0;
-function sprawdz(nazwa: string, warunek: boolean, szczegol = ""): void {
-  console.log(`  ${warunek ? "✓" : "✗"} ${nazwa}${szczegol ? ` — ${szczegol}` : ""}`);
-  if (!warunek) bledow++;
-}
-
-/**
- * Playwright bywa zainstalowany globalnie, a nie w tym projekcie — nie jest
- * jego zależnością, bo to narzędzie do ręcznego puszczania, nie do `npm test`.
- */
-async function wczytajPlaywrighta(): Promise<{ chromium: any }> {
-  try {
-    return await import("playwright");
-  } catch { /* spróbujemy globalnie */ }
-  try {
-    const globalny = execFileSync("npm", ["root", "-g"], { encoding: "utf-8" }).trim();
-    return await import(join(globalny, "playwright", "index.mjs"));
-  } catch {
-    console.error("Brakuje Playwrighta. Zainstaluj: npm i -g playwright && npx playwright install chromium");
-    process.exit(2);
-  }
-}
-
-async function czekajNaSerwer(): Promise<void> {
-  for (let i = 0; i < 60; i++) {
-    try {
-      const o = await fetch(`${ADRES}/api/cwiczenia`);
-      if (o.ok) return;
-    } catch { /* jeszcze nie wstał */ }
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  throw new Error("serwer konsoli nie wstał");
-}
-
-async function main(): Promise<void> {
-  const { chromium } = await wczytajPlaywrighta();
-  const katalog = mkdtempSync(join(tmpdir(), "craftmyplan-przeglad-"));
-  const serwer = spawn("node", ["--no-warnings", "serwer.ts"], {
-    cwd: KONSOLA,
-    env: { ...process.env, PORT: String(PORT), BAZA_CRAFTMYPLAN: join(katalog, "przeglad.db") },
-    stdio: "ignore",
-  });
-
-  const przegladarka = await (async () => {
-    try {
-      await czekajNaSerwer();
-      return await chromium.launch();
-    } catch (e) {
-      serwer.kill();
-      rmSync(katalog, { recursive: true, force: true });
-      throw e;
-    }
-  })();
-
-  try {
-    await przejdz(przegladarka);
-  } finally {
-    await przegladarka.close();
-    serwer.kill();
-    rmSync(katalog, { recursive: true, force: true });
-  }
-}
+await zKonsola(PORT, async (przegladarka) => { await przejdz(przegladarka); });
+podsumuj("wszystkie kontrolki konsoli działają");
 
 async function przejdz(przegladarka: any): Promise<void> {
-  const bledyPrzegladarki: string[] = [];
   const s = await przegladarka.newPage({ viewport: { width: 1500, height: 1000 } });
-  s.on("pageerror", (e: Error) => bledyPrzegladarki.push(String(e)));
-  s.on("console", (m: any) => { if (m.type() === "error") bledyPrzegladarki.push(m.text()); });
+  const bledyPrzegladarki = pilnujBledow(s);
 
   // Konsola pyta przed każdą operacją, która nadpisuje cudzą robotę. Bez tego
   // Playwright odrzuca pytanie po cichu i wychodzi, że przycisk nie działa.
@@ -368,11 +304,5 @@ async function przejdz(przegladarka: any): Promise<void> {
   console.log(bledyPrzegladarki.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledyPrzegladarki.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
-  bledow += bledyPrzegladarki.length;
+  doliczBledy(bledyPrzegladarki.length);
 }
-
-await main();
-console.log(bledow === 0
-  ? "\n  ✓ wszystkie kontrolki konsoli działają\n"
-  : `\n  ✗ ${bledow} kontrolek nie działa\n`);
-process.exit(bledow === 0 ? 0 : 1);
