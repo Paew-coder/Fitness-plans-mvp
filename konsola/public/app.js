@@ -46,7 +46,13 @@ async function api(sciezka, opcje = {}) {
     body: opcje.body ? JSON.stringify(opcje.body) : undefined,
   });
   const dane = await odp.json();
-  if (!odp.ok) throw new Error(dane.blad ?? "Błąd serwera");
+  if (!odp.ok) {
+    const blad = new Error(dane.blad ?? "Błąd serwera");
+    // Konflikt zapisu niesie ze sobą świeży plan — wołający ma czym pogodzić
+    // swoją wersję z tą, którą zdążył zapisać ktoś inny.
+    if (dane.aktualny) blad.aktualny = dane.aktualny;
+    throw blad;
+  }
   return dane;
 }
 
@@ -562,19 +568,61 @@ async function otworzPlan(id) {
   rysujPlan();
 }
 
+/**
+ * Co należy do klienta, a nie do trenera.
+ *
+ * Oceny treningu i serie maksymalne wpisane z telefonu trafiają do tego samego
+ * planu, który trener ma otwarty na ekranie. Gdy oba zapisy się miną, wygrywa
+ * ten późniejszy — i kopia trenera, sprzed oceny, kasowała to, co klient
+ * właśnie wpisał. Ciężary wracały do poprzednich, bez śladu na ekranie.
+ *
+ * Serwer odrzuca teraz zapis oparty na nieaktualnej wersji i oddaje świeży
+ * plan. Tutaj przenosimy z niego to, co należy do klienta, na to, co trener
+ * ma przed sobą — i zapisujemy jeszcze raz. Bez pytania go o cokolwiek, bo
+ * nie ma tu żadnej sprzeczności do rozstrzygnięcia: każda strona zmieniała
+ * co innego.
+ */
+function przejmijOdKlienta(mojPlan, swiezyPlan) {
+  const swiezeSloty = new Map(swiezyPlan.sloty.map((s) => [s.positionId, s]));
+  for (const slot of mojPlan.sloty) {
+    const swiezy = swiezeSloty.get(slot.positionId);
+    if (!swiezy) continue;
+    for (const t of ["1", "2", "3", "4", "5", "6"]) {
+      const ocena = swiezy.tygodnie?.[t]?.feedback;
+      if (ocena === undefined) continue;
+      slot.tygodnie ??= {};
+      slot.tygodnie[t] ??= {};
+      slot.tygodnie[t].feedback = ocena;
+    }
+  }
+  mojPlan.serieMaksymalne = swiezyPlan.serieMaksymalne;
+  return mojPlan;
+}
+
 function zapiszPozniej() {
   $("#zapis").textContent = "zapisywanie…";
   clearTimeout(czekaZapis);
   czekaZapis = setTimeout(async () => {
+    const wyslij = () => api(`/api/plany/${obraz.zapisany.id}`, {
+      method: "PUT",
+      body: {
+        plan: obraz.zapisany.plan,
+        dataStartu: obraz.zapisany.dataStartu,
+        status: obraz.zapisany.status,
+        zmieniony: obraz.zapisany.zmieniony,
+      },
+    });
+
     try {
-      obraz = await api(`/api/plany/${obraz.zapisany.id}`, {
-        method: "PUT",
-        body: {
-          plan: obraz.zapisany.plan,
-          dataStartu: obraz.zapisany.dataStartu,
-          status: obraz.zapisany.status,
-        },
-      });
+      try {
+        obraz = await wyslij();
+      } catch (err) {
+        if (!err.aktualny) throw err;
+        // Ktoś nas ubiegł — godzimy obie wersje i próbujemy raz jeszcze.
+        obraz.zapisany.plan = przejmijOdKlienta(obraz.zapisany.plan, err.aktualny.zapisany.plan);
+        obraz.zapisany.zmieniony = err.aktualny.zapisany.zmieniony;
+        obraz = await wyslij();
+      }
       $("#zapis").textContent = "zapisano";
       rysujAnalize();
       rysujDni();
