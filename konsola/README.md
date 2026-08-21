@@ -315,13 +315,14 @@ z próbami wyjścia poza katalog publiczny.
 npm run sprawdz-odpornosc     # ~10 sekund, bez dodatkowych narzędzi
 ```
 
-Sześćdziesiąt siedem prób na trzydziestu sześciu adresach: katalogi zamiast
+Osiemdziesiąt prób na trzydziestu sześciu adresach: katalogi zamiast
 plików, wyjścia poza `public/`, obcięty JSON, tablica zamiast obiektu, liczba
 zamiast nazwiska, pięćdziesiąt tysięcy znaków w nazwie, znaki sterujące,
 nieskończoności w polach liczbowych, metody, których adres nie obsługuje.
-Sprawdzane jest **czworo**: że serwer zawsze odpowiada, że złe wejście dostaje
-odmowę (4xx), a nie awarię (5xx), że w komunikacie nie ma śladów wnętrza
-i że odrzucone żądanie **nic po sobie nie zostawia**.
+Osiem kontroli: że serwer zawsze odpowiada, że złe wejście dostaje odmowę (4xx),
+a nie awarię (5xx), że w komunikacie nie ma śladów wnętrza, że wartości spoza
+świata są **odrzucane, a nie zapisywane**, i że po całej serii dane klienta
+są co do liczby takie same jak przed nią.
 
 > **Dlaczego 4xx zamiast 500 to nie kosmetyka.** Kolejka offline w telefonie
 > klienta czyta te kody: 5xx znaczy „serwer ma zły dzień, spróbuj później",
@@ -332,6 +333,23 @@ i że odrzucone żądanie **nic po sobie nie zostawia**.
 Nazwisko klienta ma teraz własną kontrolę, bo trafia do identyfikatora planu,
 do nazwy pliku eksportu i na ekran klienta: najwyżej 120 znaków, bez znaków
 sterujących. Numer cyklu musi być całkowity z zakresu 1–999.
+
+> **„Nie wywala się" to nie to samo co „waliduje".** Pierwszy przebieg tej
+> kontroli wyszedł na zielono przy sprawdzaniu samych kodów odpowiedzi —
+> a potem okazało się, że serwer **przyjmował i zapisywał** prawie wszystko:
+> ocenę z tygodnia 99, ciężar −100 kg, sto tysięcy powtórzeń, wagę biliona
+> kilogramów, domknięcie dnia, którego w planie nie ma. Najgorsza była seria
+> maksymalna: 100 kg × 999 powtórzeń podmieniało tę prawdziwą i przeliczało
+> ciężary na całe sześć tygodni. Nieznane odczucie dawało z kolei 500 — czyli
+> kolejka w telefonie wracałaby z nim w nieskończoność.
+>
+> Klient nie jest przeciwnikiem, ale jest **bez nadzoru**: zamiast 100 kg wpisze
+> 1000, a kolejka sprzed dwóch cykli przyniesie numer tygodnia, którego już nie
+> ma. Zapisy z telefonu mają teraz granice — tydzień 1–6, dzień z planu, ciężar
+> 0–1000 kg, powtórzenia do 200 (w serii maksymalnej do 15, bo dalej nie ma
+> z czego liczyć 1RM), waga 20–400 kg, odczucie z trzech dozwolonych. Granice
+> są szeroko postawione: mają odciąć to, co nie może być prawdziwe, a nie
+> zgadywać, co klient miał na myśli.
 
 ## Dostęp — dwa tryby
 
@@ -542,14 +560,14 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 217 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 230 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
 | `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
 | `narzedzia/sprawdz-kolko.ts` | kółko konsola → arkusz → konsola, wartość po wartości |
-| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 67 prób, serwer ma przeżyć |
+| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 80 prób, serwer ma przeżyć i odmówić |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

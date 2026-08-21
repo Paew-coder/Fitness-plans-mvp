@@ -18,7 +18,7 @@ import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../siln
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { katalog } from "../silnik/src/katalog.ts";
-import { oblicz1RM, rozwiaz1RM } from "../silnik/src/rpe.ts";
+import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
 import { dawkaOddechowa } from "../silnik/src/oddech.ts";
@@ -172,6 +172,39 @@ function nazwaKlienta(wartosc: unknown): { nazwa: string } | { blad: string } {
     return { blad: "Nazwisko zawiera znaki, których nie da się zapisać" };
   }
   return { nazwa: surowa };
+}
+
+/**
+ * Granice wartości, które przychodzą z telefonu klienta.
+ *
+ * Klient nie jest przeciwnikiem — ale jest **bez nadzoru**. Zamiast 100 kg
+ * wpisze 1000, kolejka sprzed dwóch cykli przyniesie numer tygodnia, którego
+ * już nie ma, a nieznane odczucie wywali zapis na ograniczeniu w bazie.
+ * Wszystko to trafiało dotąd wprost do danych trenera i psuło jego liczby:
+ * frekwencję, propozycje 1RM, wykres wagi, a przy serii maksymalnej — ciężary
+ * na całe sześć tygodni.
+ *
+ * Granice są celowo szerokie. Mają odciąć wartości, które nie mogą być
+ * prawdziwe, a nie zgadywać, co klient miał na myśli.
+ */
+const GRANICE = {
+  tydzien: [1, 6],
+  dzien: [1, 5],
+  /** Rekord świata w martwym ciągu to około 500 kg. */
+  ciezar: [0, 1000],
+  powtorzenia: [0, 200],
+  /** Masa ciała dorosłego człowieka, z zapasem w obie strony. */
+  waga: [20, 400],
+} as const;
+
+const ODCZUCIA = ["za łatwe", "OK", "za trudne"];
+
+/** Liczba całkowita z zakresu albo `null`. */
+function wZakresie(wartosc: unknown, [dol, gora]: readonly [number, number],
+                   calkowita = true): number | null {
+  const n = liczbaZadania(wartosc);
+  if (n === null || n < dol || n > gora) return null;
+  return calkowita ? Math.trunc(n) : n;
 }
 
 /** Liczba z ciała żądania. Nieskończoności i teksty odpadają jako `null`. */
@@ -1295,7 +1328,9 @@ const serwer = createServer(async (req, res) => {
       // kolejności. Nadpisanie całego wpisu gubiłoby to, czego nie przysłano.
       if (akcja === "/odczucie" && req.method === "POST") {
         const cialoZadania = await cialo(req);
-        const { positionId, tydzien } = cialoZadania;
+        const { positionId } = cialoZadania;
+        const tydzien = wZakresie(cialoZadania.tydzien, GRANICE.tydzien);
+        if (tydzien === null) return blad(res, "Numer tygodnia musi być z zakresu 1–6");
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
         // Slot bez ćwiczenia to nie to samo co brak slotu: szkielet ma zawsze
@@ -1312,16 +1347,29 @@ const serwer = createServer(async (req, res) => {
         wpis.data = new Date().toISOString();
 
         if ("feedback" in cialoZadania) {
-          wpis.feedback = cialoZadania.feedback || undefined;
+          // Nieznane odczucie kończyło się dotąd błędem 500 na ograniczeniu
+          // w bazie — a 500 znaczy dla kolejki w telefonie „spróbuj później",
+          // więc takie zadanie wracałoby w nieskończoność.
+          const f = cialoZadania.feedback;
+          if (f && !ODCZUCIA.includes(String(f))) {
+            return blad(res, "Nieznane odczucie — dozwolone: za łatwe, OK, za trudne");
+          }
+          wpis.feedback = f || undefined;
           slot.tygodnie ??= {};
           slot.tygodnie[tydzien as 1] ??= {};
-          slot.tygodnie[tydzien as 1]!.feedback = cialoZadania.feedback || undefined;
+          slot.tygodnie[tydzien as 1]!.feedback = f || undefined;
         }
-        if ("ciezarWykonany" in cialoZadania) {
-          wpis.ciezarWykonany = cialoZadania.ciezarWykonany || undefined;
+        // Ciężar i powtórzenia idą do propozycji nowego 1RM, czyli wprost do
+        // ciężarów kolejnego cyklu. Wartość spoza świata psuje je po cichu.
+        if ("ciezarWykonany" in cialoZadania && cialoZadania.ciezarWykonany != null) {
+          const kg = wZakresie(cialoZadania.ciezarWykonany, GRANICE.ciezar, false);
+          if (kg === null) return blad(res, "Ciężar musi być z zakresu 0–1000 kg");
+          wpis.ciezarWykonany = kg || undefined;
         }
-        if ("powtorzeniaWykonane" in cialoZadania) {
-          wpis.powtorzeniaWykonane = cialoZadania.powtorzeniaWykonane || undefined;
+        if ("powtorzeniaWykonane" in cialoZadania && cialoZadania.powtorzeniaWykonane != null) {
+          const powt = wZakresie(cialoZadania.powtorzeniaWykonane, GRANICE.powtorzenia);
+          if (powt === null) return blad(res, "Powtórzenia muszą być z zakresu 0–200");
+          wpis.powtorzeniaWykonane = powt || undefined;
         }
 
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);
@@ -1330,9 +1378,18 @@ const serwer = createServer(async (req, res) => {
 
       if (akcja === "/dzien" && req.method === "POST") {
         const cialoZadania = await cialo(req);
-        const { dzien, tydzien } = cialoZadania;
+        const dzien = wZakresie(cialoZadania.dzien, GRANICE.dzien);
+        const tydzien = wZakresie(cialoZadania.tydzien, GRANICE.tydzien);
+        if (dzien === null || tydzien === null) {
+          return blad(res, "Dzień musi być z zakresu 1–5, a tydzień 1–6");
+        }
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        // Domknięcie dnia, którego w planie nie ma, liczyłoby się do frekwencji
+        // jako trening, którego nie było.
+        if (!cel.plan.sloty.some((s) => s.dzien === dzien && s.cwiczenieId)) {
+          return blad(res, "Ten dzień nie ma w planie ćwiczeń");
+        }
         const ukonczoneDni = (cel.ukonczoneDni ?? [])
           .filter((d) => !(d.dzien === dzien && d.tydzien === tydzien));
         ukonczoneDni.push({ dzien, tydzien, data: new Date().toISOString() });
@@ -1365,15 +1422,26 @@ const serwer = createServer(async (req, res) => {
       // poprzedni, bo waży się rano, a nie co godzinę. Wpis idzie do klienta,
       // nie do planu: historia ma być ciągła przez kolejne cykle.
       if (akcja === "/waga" && req.method === "POST") {
-        const { kg } = await cialo(req);
+        const kg = wZakresie((await cialo(req)).kg, GRANICE.waga, false);
+        if (kg === null) return blad(res, "Waga musi być z zakresu 20–400 kg");
         const dzisiaj = new Date().toISOString().slice(0, 10);
-        magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj, Number(kg));
+        magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj, kg);
         return json(res, widokKlienta(magazyn.wczytaj(zapisany.trenerId, zapisany.id)!));
       }
 
       if (akcja === "/serie" && req.method === "POST") {
         const cialoZadania = await cialo(req);
-        const { cwiczenieId, ciezar, powtorzenia } = cialoZadania;
+        const { cwiczenieId } = cialoZadania;
+        // Z tej jednej pary liczb wychodzi 1RM, a z niego ciężary na sześć
+        // tygodni. Powtórzeń liczy się do 15 — poza tabelą nie ma z czego.
+        const ciezar = wZakresie(cialoZadania.ciezar, GRANICE.ciezar, false);
+        const powtorzenia = wZakresie(cialoZadania.powtorzenia, [0, POWT_MAX]);
+        if (ciezar === null || powtorzenia === null) {
+          return blad(res, `Seria maksymalna: ciężar 0–1000 kg, powtórzenia 0–${POWT_MAX}`);
+        }
+        if (cwiczenieId && !katalog.poId(String(cwiczenieId))) {
+          return blad(res, "Nie ma takiego ćwiczenia w bazie");
+        }
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
         const serieMaksymalne = cel.plan.serieMaksymalne
