@@ -10,6 +10,26 @@ python3 arkusz/napraw-topset.py MasterTemplate517.xlsx MasterTemplate518.xlsx
 Skrypt wypisuje każdą zmienioną komórkę — „było" i „jest" — żeby dało się to przejrzeć
 przed użyciem pliku.
 
+## Gdy skrypt odmówi
+
+Skrypt nigdy nie nadpisuje pliku wyjściowego przy błędzie — przerywa i mówi,
+co zastał zamiast tego, czego szukał. Dwie odmowy, które można spotkać:
+
+**„komórka K6 nie jest pusta"** — plik jest już poprawiony, czyli to wynik
+tego skryptu, a nie oryginał. Uruchom go na 5.17.
+
+**„w komórce D19 nie ma wzorca"** — do komunikatu dołączony jest fragment,
+który skrypt faktycznie zastał, więc widać różnicę na oczy. Zwykle znaczy to,
+że plik przeszedł przez inny program: skrypt czyta surowy XML, a konwertery
+zapisują formuły po swojemu.
+
+Jedna taka różnica jest już obsłużona: cudzysłów w formule bywa zapisany jako
+encja (`&quot;`) albo dosłownie, zależnie od programu. Skrypt próbuje obu
+postaci i podmienia dokładnie tę, która stoi w pliku. Sprawdzone na arkuszu
+przepuszczonym przez openpyxl: wcześniej odmawiał, teraz przechodzi i daje
+plik, którego zakładka T1 zgadza się ze wzorcem 5.18 co do każdej formuły
+(3071 komórek; dziesięć różnic to wpisana treść planu, nie układ).
+
 ## Trzy poprawki, trzy niezależne decyzje
 
 Poprawki 2 i 3 wyszły przy testowaniu poprawki 1. Każdą można pominąć osobno:
