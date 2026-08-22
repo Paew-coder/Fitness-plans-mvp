@@ -50,6 +50,28 @@ if defined STARA (
   exit /b 1
 )
 
+rem -- Python do arkuszy ---------------------------------------------
+rem
+rem Konsola dziala bez Pythona - nie dziala tylko eksport i wczytywanie
+rem arkuszy, bo format .xlsx czyta wylacznie biblioteka openpyxl. Lepiej
+rem powiedziec to teraz niz wtedy, gdy trener ulozy caly plan i kliknie
+rem "Eksportuj arkusz". To jest uwaga, nie przeszkoda.
+rem
+rem Na Windows Python bywa pod trzema nazwami: py, python i python3.
+set PYCMD=
+for %%p in (py python python3) do (
+  if not defined PYCMD (
+    %%p -c "import openpyxl" >nul 2>nul && set PYCMD=%%p
+  )
+)
+if not defined PYCMD (
+  echo Uwaga: nie znalazlem Pythona z biblioteka openpyxl.
+  echo   Konsola bedzie dzialac, ale eksport i wczytywanie arkuszy - nie.
+  echo   Pobierz Pythona 3 ze strony python.org, potem w wierszu polecen:
+  echo     pip install openpyxl
+  echo.
+)
+
 rem -- start ---------------------------------------------------------
 echo Uruchamiam konsole CraftMyPlan...
 echo.
