@@ -96,6 +96,19 @@ export function idCwiczenia(nazwa: string | null, exId: string | null): string |
   return nazwa?.trim() ? (katalog.poNazwie(nazwa)?.id ?? null) : null;
 }
 
+/**
+ * Ćwiczenie podmienione w tym tygodniu, o ile jest inne niż w slocie.
+ *
+ * Arkusz wyraża podmianę po prostu inną nazwą w kolumnie ĆWICZENIE danego
+ * tygodnia. Nazwa taka sama jak w slocie to nie podmiana, tylko powtórzenie
+ * tej samej pozycji — i nie ma po co jej zapisywać.
+ */
+function idPodmienionego(nazwa: string | null, idSlotu: string): string | undefined {
+  if (!nazwa?.trim()) return undefined;
+  const podmienione = katalog.poNazwie(nazwa)?.id;
+  return podmienione && podmienione !== idSlotu ? podmienione : undefined;
+}
+
 /** Bój główny to pozycja, której `lp` zaczyna się na „A". */
 export function jestBojemGlownym(lp: string): boolean {
   return lp.trim().toUpperCase().startsWith("A");
@@ -133,6 +146,11 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
             pole.ciezar_reczny && typeof pole.ocz_ciezar === "number"
               ? pole.ocz_ciezar
               : undefined,
+          // Inna nazwa ćwiczenia w tym tygodniu niż w slocie znaczy podmianę
+          // w środku cyklu — trener zmienił ćwiczenie od pewnego tygodnia,
+          // a wcześniejsze zostały takie, jakie klient przerobił.
+          cwiczenieIdOverride: idPodmienionego(pole.cwiczenie, id),
+          oneRMReczny: pole.one_rm_reczny ?? undefined,
         };
       });
       return {

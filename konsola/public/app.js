@@ -1125,7 +1125,7 @@ function rysujSlot(slot, pusty) {
   wybor.onchange = () => {
     const poprzednie = slot.cwiczenieId;
     slot.cwiczenieId = wybor.value || null;
-    zapytajOOceny(slot, poprzednie);
+    zapytajOPodmiane(slot, poprzednie);
     zapiszPozniej();
   };
   komorkaCwiczenia.append(wybor);
@@ -1333,38 +1333,93 @@ function komorkaCiezaru(parametry, wyliczony) {
  * Czyścimy wyłącznie oceny **w planie**. Zapis w historii wykonań zostaje:
  * klient naprawdę zrobił ten trening i naprawdę tak go ocenił.
  */
-function zapytajOOceny(slot, poprzednieCwiczenie) {
+function zapytajOPodmiane(slot, poprzednieCwiczenie) {
   if (!poprzednieCwiczenie || poprzednieCwiczenie === slot.cwiczenieId) return;
-  const zOcenami = Object.entries(slot.tygodnie ?? {})
-    .filter(([, p]) => p?.feedback)
-    .map(([t]) => Number(t))
-    .sort((a, b) => a - b);
-  if (zOcenami.length === 0) return;
 
   const nazwa = (id) => cwiczenia.find((c) => c.id === id)?.nazwa ?? id;
-  const tygodnie = zOcenami.map((t) => `T${t}`).join(", ");
+  const nowe = slot.cwiczenieId;
 
-  const zostaw = el("button", "", "Zostaw oceny");
-  zostaw.onclick = zamknijModal;
-  const wyczysc = el("button", "glowny", "Wyczyść oceny");
-  wyczysc.onclick = () => {
-    for (const t of zOcenami) delete slot.tygodnie[t].feedback;
+  // Tygodnie, w których ten slot ma już ślad treningu: ocenę albo zapisane
+  // wykonanie. To jest historia, a nie plan — i nie wolno jej przepisać.
+  const zrobione = new Set(
+    Object.entries(slot.tygodnie ?? {})
+      .filter(([, p]) => p?.feedback !== undefined)
+      .map(([t]) => Number(t)),
+  );
+  for (const w of obraz.zapisany.wykonania ?? []) {
+    if (w.positionId === slot.positionId) zrobione.add(Number(w.tydzien));
+  }
+  const ostatniZrobiony = zrobione.size ? Math.max(...zrobione) : 0;
+
+  // Nic się jeszcze nie odbyło — podmiana dotyczy całego cyklu i nie ma o co pytać.
+  if (ostatniZrobiony === 0) return;
+
+  const odTygodnia = Math.min(ostatniZrobiony + 1, 6);
+  const przerobione = [...zrobione].sort((a, b) => a - b).map((t) => `T${t}`).join(", ");
+
+  /**
+   * Podmiana od wybranego tygodnia — mechanika z arkusza (`cwiczenieIdOverride`).
+   *
+   * Silnik przy podmienionym ćwiczeniu **nie sięga po jego serię maksymalną**,
+   * tylko po 1RM wpisany ręcznie — dokładnie tak jak arkusz w kolumnie AA.
+   * Gdybyśmy to obeszli, konsola pokazywałaby liczbę tam, gdzie arkusz pokazuje
+   * „ustaw ręcznie", i oba przestałyby się zgadzać. Zamiast tego przepisujemy
+   * tu serię maksymalną nowego ćwiczenia na ten ręczny 1RM, jeśli w planie jest.
+   */
+  const odTegoTygodnia = async () => {
+    slot.cwiczenieId = poprzednieCwiczenie;
+    // 1RM liczymy wprost z serii maksymalnej nowego ćwiczenia. Szukanie go
+    // wśród slotów planu nic nie daje — tego ćwiczenia jeszcze tam nie ma.
+    const seria = obraz.zapisany.plan.serieMaksymalne.find((x) => x.cwiczenieId === nowe);
+    const oneRM = seria
+      ? (await api(`/api/1rm?ciezar=${seria.ciezar}&powt=${seria.powtorzenia}`)).oneRM
+      : null;
+
+    for (let t = odTygodnia; t <= 6; t++) {
+      slot.tygodnie ??= {};
+      slot.tygodnie[t] ??= {};
+      slot.tygodnie[t].cwiczenieIdOverride = nowe;
+      if (oneRM) slot.tygodnie[t].oneRMReczny = oneRM;
+    }
     zamknijModal();
     zapiszPozniej();
   };
-  const akcje = el("div", "akcje-modala");
-  akcje.append(wyczysc, zostaw);
 
-  pokazModal("Klient ocenił poprzednie ćwiczenie",
-    el("p", "", `W ${slot.lp} był „${nazwa(poprzednieCwiczenie)}", a klient ocenił go `
-      + `w ${tygodnie}. Te oceny zostaną przy slocie i będą podnosić albo obniżać `
-      + `ciężar „${nazwa(slot.cwiczenieId)}" — ćwiczenia, którego jeszcze nie robił.`),
+  const odPoczatku = () => {
+    for (const t of Object.keys(slot.tygodnie ?? {})) delete slot.tygodnie[t].feedback;
+    zamknijModal();
+    zapiszPozniej();
+  };
+
+  const przycisk = (klasa, tekst, akcja) => {
+    const b = el("button", klasa, tekst);
+    b.onclick = akcja;
+    return b;
+  };
+  const akcje = el("div", "akcje-modala");
+  akcje.append(
+    przycisk("glowny", `Od T${odTygodnia}`, odTegoTygodnia),
+    przycisk("", "Od początku cyklu", odPoczatku),
+  );
+
+  const maSerie = obraz.zapisany.plan.serieMaksymalne.some((x) => x.cwiczenieId === nowe);
+
+  pokazModal("Ten slot ma już przerobione treningi",
+    el("p", "", `W ${slot.lp} był „${nazwa(poprzednieCwiczenie)}" i klient przerobił `
+      + `go w ${przerobione}. Od którego tygodnia ma być „${nazwa(nowe)}"?`),
     el("p", "wskazowka",
-      "Jeśli to ten sam ruch na innym sprzęcie, oceny mogą zostać. Jeśli to inne "
-      + "ćwiczenie, lepiej zacząć od czystego mnożnika."),
-    el("p", "wskazowka",
-      "Historia wykonań klienta zostaje w obu przypadkach — czyścimy tylko to, "
-      + "co liczy ciężar."),
+      `Od T${odTygodnia} — przerobione tygodnie zostają takie, jakie były. `
+      + "Tak robi to arkusz i tak wygląda prawda: klient zrobił tamto ćwiczenie, "
+      + "nie to nowe."),
+    el("p", "wskazowka ostrzezenie",
+      "Od początku cyklu — przepisze też tygodnie, które się odbyły. Ekran postępu "
+      + "klienta pokaże wtedy, że podniósł te ciężary w nowym ćwiczeniu, choć go "
+      + "nie robił. Wybieraj to tylko przy prostowaniu pomyłki."),
+    el("p", "wskazowka", maSerie
+      ? "Seria maksymalna nowego ćwiczenia jest w planie — użyję jej jako 1RM "
+        + "dla podmienionych tygodni."
+      : "Nowe ćwiczenie nie ma jeszcze serii maksymalnej. Do czasu jej wpisania "
+        + "podmienione tygodnie pokażą „— ustaw ręcznie”."),
     akcje);
   $("#modal-zamknij").classList.add("ukryty");
 }
