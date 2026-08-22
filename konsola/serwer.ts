@@ -18,6 +18,7 @@ import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../siln
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
+import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
@@ -213,54 +214,6 @@ function wZakresie(wartosc: unknown, [dol, gora]: readonly [number, number],
 function liczbaZadania(wartosc: unknown): number | null {
   const n = typeof wartosc === "number" ? wartosc : Number(wartosc);
   return Number.isFinite(n) ? n : null;
-}
-
-/**
- * Wyciąga plan z pliku .xlsx w formacie 5.17/5.18.
- * Ekstraktor siedzi w Pythonie, bo tylko openpyxl czyta ten format.
- */
-function wczytajArkusz(zawartosc: Buffer): ZrzutArkusza {
-  const katalogTymczasowy = mkdtempSync(join(tmpdir(), "import-"));
-  const zrodlo = join(katalogTymczasowy, "plan.xlsx");
-  const cel = join(katalogTymczasowy, "zrzut.json");
-  try {
-    writeFileSync(zrodlo, zawartosc);
-    try {
-      execFileSync(
-        "python3",
-        [join(KATALOG, "..", "silnik", "narzedzia", "zrzut-arkusza.py"), zrodlo, cel],
-        { stdio: ["ignore", "pipe", "pipe"] },
-      );
-    } catch (blad) {
-      console.error(blad);
-      // Brak Pythona albo biblioteki to nie jest wina pliku trenera —
-      // a takie właśnie zdanie dostawał wcześniej.
-      const srodowisko = bladSrodowiskaPythona(blad);
-      if (srodowisko) throw new BladZadania(srodowisko);
-      throw blad;
-    }
-    return JSON.parse(readFileSync(cel, "utf-8")) as ZrzutArkusza;
-  } finally {
-    rmSync(katalogTymczasowy, { recursive: true, force: true });
-  }
-}
-
-/**
- * Nakłada zaimportowany plan na pusty szkielet 5 dni × 12 slotów.
- *
- * Import zwraca tylko sloty z ćwiczeniem; reszta musi zostać pusta, ale obecna,
- * żeby w konsoli dało się dopisywać kolejne pozycje.
- */
-function scalZPustym(pusty: Plan, zaimportowany: Plan): Plan {
-  const wgPozycji = new Map(zaimportowany.sloty.map((s) => [s.positionId, s]));
-  return {
-    ...zaimportowany,
-    sloty: pusty.sloty.map((s) => wgPozycji.get(s.positionId) ?? s),
-    topSety: pusty.topSety?.map((t) => {
-      const z = zaimportowany.topSety?.find((x) => x.dzien === t.dzien);
-      return z ? { ...t, wlaczony: z.wlaczony, rpe: z.rpe } : t;
-    }),
-  };
 }
 
 /**
@@ -1050,44 +1003,22 @@ const serwer = createServer(async (req, res) => {
       if (!(wersja >= 1 && wersja <= 999)) return blad(res, "Numer cyklu musi być z zakresu 1–999");
 
       const zawartosc = await bajty(req);
-      if (zawartosc.length === 0) return blad(res, "Pusty plik");
 
-      let zrzut: ZrzutArkusza;
+      // Ta sama droga, którą idzie wczytywanie całego katalogu z linii poleceń.
+      let wynik: WynikWczytania;
       try {
-        zrzut = wczytajArkusz(zawartosc);
+        wynik = wczytajPlanZArkusza({
+          zawartosc, trenerId, klient, wersja,
+          poprzedniId: url.searchParams.get("poprzedniId") || undefined,
+        });
       } catch (e) {
-        if (e instanceof BladZadania) return blad(res, e.message, e.kod);
-        return blad(res, "Nie udało się odczytać pliku. Czy to arkusz w układzie 5.17/5.18?");
+        if (e instanceof BladArkusza) return blad(res, e.message);
+        throw e;
       }
-
-      // Arkusz bez ani jednego rozpoznanego ćwiczenia dawał do tej pory pusty
-      // plan i komunikat o powodzeniu — najgorsze możliwe połączenie. Import
-      // ma tu powiedzieć wprost, że nic nie wczytał.
-      const zArkusza = planZArkusza(zrzut);
-      if (!zArkusza.sloty.some((s) => s.cwiczenieId)) {
-        const nierozpoznane = nierozpoznaneCwiczenia(zrzut);
-        return blad(res, nierozpoznane.length
-          ? `W arkuszu nie ma ani jednego ćwiczenia z BAZY. Nierozpoznane nazwy: `
-            + `${nierozpoznane.slice(0, 5).map((n) => `„${n.nazwa}"`).join(", ")}.`
-          : "W arkuszu nie ma ani jednego ćwiczenia. Czy to plik z planem, "
-            + "z wypełnionymi zakładkami T1–T6?");
-      }
-
-      const id = magazyn.nowyId(klient, wersja);
-      if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
-
-      const osoba = magazyn.zapewnijKlienta(trenerId, klient);
-      const zapisany = magazyn.zapisz({
-        id, trenerId, klientId: osoba.id, klient: osoba.nazwa, wersja, status: "szkic",
-        dataStartu: null, utworzony: "", zmieniony: "",
-        poprzedniId: url.searchParams.get("poprzedniId") || undefined,
-        // Szkielet pustych slotów musi zostać — import wypełnia tylko te z ćwiczeniem.
-        plan: scalZPustym(magazyn.pustyPlan(osoba.nazwa), zArkusza),
-      });
 
       return json(res, {
-        ...obrazPlanu(zapisany),
-        nierozpoznane: nierozpoznaneCwiczenia(zrzut),
+        ...obrazPlanu(wynik.zapisany),
+        nierozpoznane: wynik.nierozpoznane,
       }, 201);
     }
 

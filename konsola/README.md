@@ -545,6 +545,31 @@ Nie kopiuj pliku `.db` ręcznie w trakcie pracy konsoli: baza chodzi w trybie
 WAL, więc część świeżych zapisów siedzi w pliku obok. `npm run kopia` robi to
 poprawnie na działającej bazie.
 
+**Przeprowadzka z arkuszy — cały katalog naraz**
+
+```bash
+npm run wczytaj-arkusze -- ~/Plany            # podgląd, nic nie zapisuje
+npm run wczytaj-arkusze -- ~/Plany --wykonaj  # wczytuje naprawdę
+```
+
+Dotychczasowe plany leżą w plikach `.xlsx`, po jednym na cykl. Wczytywanie ich
+pojedynczo z ekranu — z ręcznym wpisywaniem nazwiska i numeru cyklu przy
+każdym — to przy kilkunastu klientach godzina klikania, czyli dokładnie ta
+przeszkoda, przez którą przeprowadzka się nie odbywa.
+
+Nazwisko i cykl biorą się z nazwy pliku: `Zuzanna C 4.0.xlsx` → klient
+„Zuzanna C", cykl 4. Rozumiane jest też `Plan Zuzanna C 4.0.xlsx` i wersja
+bez `.0`. Czego nie da się odczytać, to **zostaje pominięte i wypisane** —
+lepiej powiedzieć „nie rozumiem tej nazwy" niż założyć klienta o nazwisku
+„Kopia (2)". Pominięty plik wczytasz z ekranu; źle rozpoznanego nie
+zauważyłbyś, dopóki nie zajrzysz do kartoteki.
+
+Cykle jednego klienta wchodzą po kolei i **łączą się w łańcuch**, więc od razu
+działa ostrzeżenie o powtórkach ćwiczeń i propozycja 1RM z poprzedniego cyklu.
+Wszystko wchodzi jako **szkic** — żaden plan nie staje się widoczny dla klienta,
+dopóki sam nie przestawisz statusu. Powtórne uruchomienie pomija to, co już
+jest, więc można je puścić drugi raz bez obawy o duplikaty.
+
 **Masz plany z poprzedniej wersji?**
 
 ```bash
@@ -682,8 +707,10 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 270 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 289 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
+| `wczytaj-arkusz.ts` | arkusz → zapisany plan; jedna droga dla ekranu i narzędzia |
+| `narzedzia/wczytaj-arkusze.ts` | wczytanie całego katalogu arkuszy jedną komendą |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
