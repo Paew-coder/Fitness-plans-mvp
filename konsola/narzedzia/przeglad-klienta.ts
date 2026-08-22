@@ -20,7 +20,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola, type Srodowisko }
+import { czekajNa, doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola, type Srodowisko }
   from "./przegladarka.ts";
 
 const PORT = 4192;
@@ -291,6 +291,78 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   } finally {
     writeFileSync(plikAplikacji, oryginal);
   }
+
+  // ── 16. przycisk „wstecz" telefonu ────────────────────────────────
+  // Aplikacja przełącza ekrany w miejscu, pod jednym adresem. Dopóki nie
+  // zostawiała po sobie śladu w historii, systemowe „wstecz" z otwartego
+  // treningu nie wracało do listy dni, tylko wychodziło ze strony — a po
+  // dodaniu aplikacji do ekranu głównego po prostu ją zamykało. To ruch,
+  // który klient na siłowni wykonuje odruchowo.
+  //
+  // Druga strona tego samego: aplikacja nie ma prawa zatrzymywać klienta
+  // u siebie. „Wstecz" z listy tygodni musi wyjść — pułapka byłaby gorsza
+  // od błędu, który to naprawia. Dlatego wchodzimy tu z innej strony,
+  // żeby w ogóle było dokąd wyjść.
+  const t2 = await kontekst.newPage();
+  await t2.goto(`${adres}/klient/manifest.json`, { waitUntil: "load" });
+  await t2.goto(`${adres}${sciezka}`, { waitUntil: "networkidle" });
+  await t2.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
+  await t2.goBack({ waitUntil: "load" });
+  sprawdz("„wstecz” z listy tygodni wychodzi z aplikacji",
+    !t2.url().includes("/k/"), t2.url().replace(adres, ""));
+
+  await t2.goForward({ waitUntil: "networkidle" });
+  await t2.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await t2.locator("#tygodnie .dzien-kafel").first().click();
+  await t2.waitForSelector("#ekran-trening:not(.ukryty)");
+
+  // Tak samo, jak zadziałałby przycisk telefonu — bez pośrednictwa Playwrighta.
+  await t2.evaluate(() => history.back());
+  const wrocilo = await czekajNa(t2, "#ekran-tygodnie:not(.ukryty)");
+  sprawdz("„wstecz” z treningu wraca do listy dni, a nie zamyka aplikacji",
+    wrocilo && t2.url().includes("/k/"),
+    t2.url().includes("/k/") ? t2.url().replace(adres, "") : "wyszło z aplikacji");
+
+  // Gdy poprzednia kontrola padła, aplikacji nie ma już na ekranie i dalsze
+  // „wstecz" nie miałoby czego dotykać. Zamiast zgłaszać przy tym trzy kolejne
+  // fałszywe ✓, mówimy wprost, że dalej nie ma po czym chodzić.
+  if (!wrocilo) {
+    console.log("      dalsze kontrole „wstecz” pomijam — aplikacja wyszła z ekranu");
+    doliczBledy(3);
+  } else {
+    // „W przód" po powrocie: wybranego dnia już nie ma, więc ekran treningu
+    // byłby pusty. Zamiast pustki ma zostać lista.
+    await t2.evaluate(() => history.forward());
+    await t2.waitForTimeout(300);
+    sprawdz("„w przód” nie pokazuje treningu bez wybranego dnia",
+      await t2.locator("#ekran-tygodnie:not(.ukryty)").count() === 1,
+      await t2.locator("#ekran-trening:not(.ukryty)").count() === 1
+        ? "pusty ekran treningu" : "lista tygodni");
+
+    // Ekrany poboczne tak samo — postęp klient otwiera częściej niż trening.
+    await t2.click("#pokaz-postep");
+    await t2.waitForSelector("#ekran-postep:not(.ukryty)");
+    await t2.evaluate(() => history.back());
+    sprawdz("„wstecz” z postępu też wraca do listy",
+      await czekajNa(t2, "#ekran-tygodnie:not(.ukryty)")
+        && t2.url().includes("/k/"));
+
+    // Chodzenie po aplikacji nie może puchnąć w historii: gdyby każdy ekran
+    // dokładał wpis, klient po kwadransie klikania musiałby dotknąć „wstecz"
+    // trzydzieści razy, żeby wyjść.
+    const przed = await t2.evaluate(() => history.length);
+    for (const gdzie of ["#pokaz-pomiary", "#pokaz-postep", "#pokaz-pomiary"]) {
+      await t2.click(gdzie);
+      await t2.waitForTimeout(150);
+      await t2.evaluate(() => history.back());
+      await t2.waitForTimeout(150);
+    }
+    const po = await t2.evaluate(() => history.length);
+    sprawdz("chodzenie po ekranach nie zapycha historii", po === przed,
+      `${przed} → ${po} wpisów`);
+  }
+  await t2.close();
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

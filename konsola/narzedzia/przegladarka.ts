@@ -125,6 +125,23 @@ async function czekajNaSerwer(adres: string): Promise<void> {
   throw new Error("serwer konsoli nie wstał");
 }
 
+/**
+ * Czeka na element i **oddaje odpowiedź zamiast rzucać wyjątkiem**.
+ *
+ * `waitForSelector` po upływie czasu przerywa cały przegląd, więc jedna
+ * regresja zabiera ze sobą wszystkie kontrole stojące za nią — a to właśnie
+ * wtedy najbardziej chce się wiedzieć, co jeszcze przestało działać.
+ * Tutaj brak elementu to zwykłe `false`, które idzie wprost do `sprawdz`.
+ */
+export async function czekajNa(s: any, selektor: string, ms = 3000): Promise<boolean> {
+  try {
+    await s.waitForSelector(selektor, { timeout: ms });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Zbiera to, co przeglądarka zgłasza jako błąd — cicha awaria to też awaria. */
 export function pilnujBledow(s: any): string[] {
   const bledy: string[] = [];
