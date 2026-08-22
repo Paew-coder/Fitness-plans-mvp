@@ -75,6 +75,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await s.locator("#tytul").innerText()).includes(KLIENT),
     await s.locator("#tytul").innerText());
 
+  // Podpowiedź o dodaniu do ekranu głównego ma milczeć, dopóki aplikacja się
+  // do czegoś nie przyda. Sprawdzamy to tutaj, zanim klient cokolwiek zrobi.
+  sprawdz("przed pierwszym treningiem podpowiedź o instalacji milczy",
+    !(await s.locator("#baner-instalacji").isVisible()));
+
   const przedStart = await widok();
   sprawdz("tygodnie są do wyboru",
     await s.locator("#tygodnie .tydzien").count() === 6,
@@ -132,7 +137,24 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     cwiczenie(poZakonczeniu, 1, 1).feedback === "OK",
     String(cwiczenie(poZakonczeniu, 1, 1).feedback));
 
-  // ── 8. seria maksymalna z telefonu ────────────────────────────────
+  // ── 8. podpowiedź o dodaniu do ekranu głównego ────────────────────
+  // Aplikacja ma ikonę i działa bez zasięgu, ale nikt sam nie odkrywa, że da
+  // się ją dodać. Podpowiedź ma się jednak odezwać dopiero wtedy, gdy zdążyła
+  // się do czegoś przydać — i tylko raz.
+  // (trening domknięty w kroku 7, więc teraz podpowiedź ma prawo się pojawić)
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("po domkniętym treningu podpowiedź się pokazuje",
+    await s.locator("#baner-instalacji").isVisible(),
+    (await s.locator("#instalacja-tresc").innerText()).slice(0, 60));
+
+  await s.click("#instalacja-nie");
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("„nie teraz” znaczy nigdy więcej",
+    !(await s.locator("#baner-instalacji").isVisible()));
+
+  // ── 9. seria maksymalna z telefonu ────────────────────────────────
   await s.click("#pokaz-pomiary");
   await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
   const pomiar = s.locator("#pomiary .pomiar").first().locator("input");
@@ -146,7 +168,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     zmierzone.ciezar === 125 && zmierzone.powtorzenia === 2 && zmierzone.oneRM > 127,
     `${zmierzone.ciezar}×${zmierzone.powtorzenia} → 1RM ${zmierzone.oneRM}`);
 
-  // ── 9. ekran postępu ──────────────────────────────────────────────
+  // ── 10. ekran postępu ──────────────────────────────────────────────
   await s.click("#wroc-z-pomiarow");
   await s.click("#pokaz-postep");
   await s.waitForSelector("#ekran-postep:not(.ukryty)");
@@ -158,7 +180,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     tekstPostepu.toLocaleLowerCase("pl").includes("barbell back squat"),
     tekstPostepu.replace(/\n/g, " · ").slice(0, 160));
 
-  // ── 10. waga ──────────────────────────────────────────────────────
+  // ── 11. waga ──────────────────────────────────────────────────────
   const poleWagi = s.locator("#postep input").last();
   await poleWagi.fill("81.5");
   await poleWagi.blur();
@@ -167,7 +189,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("waga zapisuje się i widać ją u trenera",
     waga.at(-1)?.kg === 81.5, `${waga.length} pomiar(ów), ostatni ${waga.at(-1)?.kg} kg`);
 
-  // ── 11. kolejka offline nie blokuje się na odrzuconym zadaniu ─────
+  // ── 12. kolejka offline nie blokuje się na odrzuconym zadaniu ─────
   // Scenariusz z życia: klient ocenia trening bez zasięgu, a w tym czasie
   // trener wyjmuje jedno z ćwiczeń z planu. Ocena tego ćwiczenia nie da się
   // już zapisać nigdy — i wcześniej zostawała na czele kolejki, blokując
@@ -203,7 +225,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // przebiegu dalej ma być czysta.
   bledy.splice(bledyPrzedOffline);
 
-  // ── 12. druga strona pętli: konsola trenera ───────────────────────
+  // ── 13. druga strona pętli: konsola trenera ───────────────────────
   // Ocena z telefonu ma dojść do trenera jako realizacja, nie tylko jako liczba
   // w bazie — inaczej nie ma po czym poznać, że klient w ogóle ćwiczy.
   const uTrenera = await api(`/api/plany/${PLAN}`);
@@ -214,7 +236,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("trener widzi domknięty trening",
     JSON.stringify(realizacja).includes("true"));
 
-  // ── 13. postęp przez dwa cykle ────────────────────────────────────
+  // ── 14. postęp przez dwa cykle ────────────────────────────────────
   // Blok „Przez wszystkie cykle" pokazuje się dopiero od drugiego cyklu, więc
   // jednocyklowe przejście nigdy go nie dotykało. A to jest jedyne miejsce,
   // w którym klient widzi, że przez pół roku coś się w ogóle zmieniło.
@@ -248,7 +270,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       .find((l) => l.includes("→"))?.slice(0, 60) ?? "brak strzałki");
   await s.click("#wroc-z-postepu");
 
-  // ── 14. czy poprawka w ogóle dociera do klienta ───────────────────
+  // ── 15. czy poprawka w ogóle dociera do klienta ───────────────────
   // Worker odpowiada z cache, żeby aplikacja otwierała się bez zasięgu — ale
   // gdyby na tym poprzestał, plik raz zapisany zostawałby u klienta na zawsze
   // i żadna poprawka nigdy by do niego nie dotarła. Sprawdzamy to jedynym

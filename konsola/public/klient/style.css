@@ -80,6 +80,10 @@ button { font: inherit; cursor: pointer; }
   border-radius: 12px; padding: 1rem; margin-bottom: 1.2rem;
 }
 .baner p { margin: .4rem 0 .9rem; font-size: .88rem; color: var(--tekst-slaby); }
+/* Dwa przyciski obok siebie: „dodaj” i „nie teraz”. Na wąskim ekranie
+   zawijają się, zamiast wypychać baner poza szerokość. */
+.akcje-baneru { display: flex; gap: .6rem; flex-wrap: wrap; }
+.akcje-baneru button { flex: 1 1 auto; }
 
 /* ── tygodnie i dni ─────────────────────────────────────────────── */
 .tydzien { margin-bottom: 1.4rem; }

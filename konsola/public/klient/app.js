@@ -10,6 +10,7 @@ const TOKEN = location.pathname.split("/")[2] ?? "";
 const KLUCZ_KOLEJKI = `kolejka-${TOKEN}`;
 const KLUCZ_WIDOKU = `widok-${TOKEN}`;
 const KLUCZ_HISTORII = `historia-${TOKEN}`;
+const KLUCZ_INSTALACJI = `instalacja-${TOKEN}`;
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let widok = null;
@@ -145,6 +146,7 @@ function rysuj({ pomiary = true } = {}) {
   $("#podtytul").textContent = `${zrobione} z ${wszystkie} treningów za Tobą`;
 
   rysujTygodnie();
+  rysujInstalacje();
   if (biezacy) rysujTrening();
   if (pomiary) rysujPomiary();
   rysujModuly();
@@ -565,6 +567,74 @@ function rysujPomiary() {
     kontener.append(karta);
   }
 }
+
+/**
+ * Podpowiedź o dodaniu do ekranu głównego.
+ *
+ * Aplikacja ma ikonę, otwiera się na pełnym ekranie i działa bez zasięgu —
+ * ale **nikt tego sam nie odkrywa**. Bez jednego zdania klient do końca cyklu
+ * będzie otwierał link z SMS-a, czyli używał zakładki zamiast aplikacji.
+ *
+ * Trzy zasady, żeby to była podpowiedź, a nie naganianie:
+ *   1. dopiero **po pierwszym domkniętym treningu** — zanim aplikacja się
+ *      przyda, proszenie o miejsce na ekranie głównym jest bezczelne;
+ *   2. **raz**; „nie teraz" znaczy nigdy więcej;
+ *   3. nigdy, gdy aplikacja jest już dodana.
+ *
+ * Android daje na to zdarzenie i przycisk. iOS nie daje nic — tam zostaje
+ * napisanie wprost, w co dotknąć, bo inaczej podpowiedź jest bezużyteczna.
+ */
+let zdarzenieInstalacji = null;
+
+addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  zdarzenieInstalacji = e;
+});
+
+const jestDodana = () =>
+  matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
+function odlozInstalacje() {
+  try { localStorage.setItem(KLUCZ_INSTALACJI, "nie"); } catch { /* pełna pamięć */ }
+  $("#baner-instalacji").classList.add("ukryty");
+}
+
+function moznaPokazacInstalacje() {
+  if (jestDodana()) return false;
+  try { if (localStorage.getItem(KLUCZ_INSTALACJI)) return false; } catch { return false; }
+  // Dopiero gdy aplikacja zdążyła się do czegoś przydać.
+  return (widok?.tygodnie ?? []).flatMap((t) => t.dni).some((d) => d.ukonczony);
+}
+
+function rysujInstalacje() {
+  const baner = $("#baner-instalacji");
+  if (!moznaPokazacInstalacje()) {
+    baner.classList.add("ukryty");
+    return;
+  }
+
+  const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  $("#instalacja-tresc").textContent = zdarzenieInstalacji
+    ? "Dodaj tę stronę do ekranu głównego — otworzy się jak aplikacja, "
+      + "na pełnym ekranie i bez szukania linku."
+    : iOS
+      ? "Dotknij ikony udostępniania na dole, potem „Do ekranu początkowego”. "
+        + "Trening otworzy się jak aplikacja, bez szukania linku."
+      : "W menu przeglądarki wybierz „Dodaj do ekranu głównego”. Trening "
+        + "otworzy się jak aplikacja, bez szukania linku.";
+
+  $("#zainstaluj").classList.toggle("ukryty", !zdarzenieInstalacji);
+  baner.classList.remove("ukryty");
+}
+
+$("#instalacja-nie").onclick = odlozInstalacje;
+$("#zainstaluj").onclick = async () => {
+  if (!zdarzenieInstalacji) return;
+  zdarzenieInstalacji.prompt();
+  await zdarzenieInstalacji.userChoice;
+  zdarzenieInstalacji = null;
+  odlozInstalacje();   // niezależnie od decyzji — pytamy raz
+};
 
 // ── obsługa przycisków ─────────────────────────────────────────────
 $("#wroc-z-treningu").onclick = () => { biezacy = null; pokazEkran("#ekran-tygodnie"); };
