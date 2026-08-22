@@ -46,6 +46,26 @@ if [ "$GLOWNA" -lt 22 ] || { [ "$GLOWNA" -eq 22 ] && [ "$POBOCZNA" -lt 6 ]; }; t
   czekaj_i_zamknij
 fi
 
+# ── Python do arkuszy ──────────────────────────────────────────────
+#
+# Konsola działa bez Pythona — nie działa tylko eksport i wczytywanie arkuszy,
+# bo format .xlsx czyta wyłącznie biblioteka `openpyxl`. Lepiej powiedzieć to
+# teraz niż wtedy, gdy trener ułoży cały plan i kliknie „Eksportuj arkusz".
+# To jest uwaga, nie przeszkoda: konsola startuje tak czy inaczej.
+if command -v python3 > /dev/null 2>&1; then
+  if ! python3 -c "import openpyxl" > /dev/null 2>&1; then
+    echo "Uwaga: brakuje biblioteki openpyxl."
+    echo "  Konsola będzie działać, ale eksport i wczytywanie arkuszy — nie."
+    echo "  Żeby to naprawić, wpisz w terminalu:  pip install openpyxl"
+    echo
+  fi
+else
+  echo "Uwaga: nie znalazłem Pythona."
+  echo "  Konsola będzie działać, ale eksport i wczytywanie arkuszy — nie."
+  echo "  Pobierz Pythona 3 ze strony python.org, potem:  pip install openpyxl"
+  echo
+fi
+
 # ── start ──────────────────────────────────────────────────────────
 echo "Uruchamiam konsolę CraftMyPlan…"
 echo

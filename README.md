@@ -58,6 +58,19 @@ npm run policz -- kontrola                      # listy robocze z BAZY
 
 Szczegóły i sposób dokładania własnych planów do testów: [`silnik/README.md`](silnik/README.md).
 
+## Gdzie leży kod
+
+Cała aplikacja jest na gałęzi **`claude/craftmyplan-training-app-hokugh`**.
+Na `main` stoi na razie sam pierwszy commit, więc pobranie domyślnej gałęzi
+daje katalog z jednym plikiem.
+
+- **Pobranie paczki:** [Code → Download ZIP na tej
+  gałęzi](https://github.com/Paew-coder/Fitness-plans-mvp/tree/claude/craftmyplan-training-app-hokugh)
+- **Klonowanie:** `git clone -b claude/craftmyplan-training-app-hokugh https://github.com/Paew-coder/Fitness-plans-mvp.git`
+
+Scalenie gałęzi do `main` to decyzja właściciela repozytorium — dopóki nie
+zapadnie, wszystkie instrukcje wskazują gałąź wprost.
+
 ## Uruchomienie
 
 Jedyne, co trzeba mieć zainstalowane, to **Node 22** ze strony

@@ -58,9 +58,15 @@ curl -fsSL https://get.docker.com | sh
 ## Krok 4 — pobranie aplikacji
 
 ```bash
-git clone https://github.com/Paew-coder/Fitness-plans-mvp.git
+git clone -b claude/craftmyplan-training-app-hokugh \
+  https://github.com/Paew-coder/Fitness-plans-mvp.git
 cd Fitness-plans-mvp/konsola
 ```
+
+> **Skąd ta gałąź.** Cała aplikacja leży na gałęzi `claude/craftmyplan-training-app-hokugh`;
+> na `main` jest na razie pusty pierwszy commit. Bez `-b` pobrałbyś katalog
+> z jednym plikiem i nic by nie zadziałało. Gdy scalisz gałąź do `main`,
+> to `-b` przestanie być potrzebne — i wtedy warto je stąd usunąć.
 
 ## Krok 5 — konfiguracja
 
@@ -181,7 +187,7 @@ docker compose logs -f     # co się dzieje; Ctrl+C wychodzi
 
 ```bash
 cd ~/Fitness-plans-mvp
-git pull
+git pull origin claude/craftmyplan-training-app-hokugh
 cd konsola
 docker compose up -d --build
 ```
