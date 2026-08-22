@@ -101,12 +101,15 @@ def podmien_formule(xml: str, adres: str, nowa: str, zmiany: list) -> str:
     wzorzec = re.compile(rf'(<c r="{adres}"[^>]*>)(.*?)(</c>)', re.S)
     m = wzorzec.search(xml)
     if not m:
-        raise SystemExit(f"BLAD: nie znalazlem komorki {adres}")
+        raise SystemExit(
+            f"BLAD: nie znalazlem komorki {adres} — to nie wyglada na uklad 5.17.")
     srodek = m.group(2)
 
     stara = re.search(r"<f[^>]*>(.*?)</f>", srodek, re.S)
     if not stara:
-        raise SystemExit(f"BLAD: komorka {adres} nie zawiera formuly")
+        raise SystemExit(
+            f"BLAD: komorka {adres} nie zawiera formuly, a powinna.\n"
+            "  Plik prawdopodobnie zostal przeliczony i zapisany bez formul.")
     zmiany.append((adres, stara.group(1), escape(nowa[1:])))
 
     nowy_srodek = re.sub(r"(<f[^>]*>).*?(</f>)",
@@ -132,7 +135,11 @@ def ustaw_komorke(xml: str, wiersz: int, adres: str, formula: str,
     if istniejaca:
         srodek = istniejaca.group(2) or ""
         if "<f" in srodek or "<v" in srodek:
-            raise SystemExit(f"BLAD: komorka {adres} nie jest pusta — przerywam")
+            raise SystemExit(
+                f"BLAD: komorka {adres} nie jest pusta — przerywam.\n"
+                "  Najczestsza przyczyna: to jest juz plik 5.18, czyli wynik tego\n"
+                "  skryptu. Uruchom go na oryginale 5.17, a nie na poprawionym pliku.\n"
+                "  Skrypt niczego nie nadpisuje — plik wyjsciowy nie powstal.")
         atrybuty = istniejaca.group(1).rstrip("/")
         zmiany.append((adres, "(pusta)", escape(formula[1:])))
         return (xml[:istniejaca.start()]
@@ -171,12 +178,33 @@ def napraw_arkusz(xml: str, nazwa: str, zmiany: list) -> str:
 
         # Podsumowanie dnia liczy TOP SET jako serie — tez czytalo pierwszy slot.
         podsumowanie = r + SLOTOW_W_DNIU + 1
-        stary = f",C{r + 1}&lt;&gt;&quot;&quot;),1,0)"
-        nowy = f",$C${r}&lt;&gt;&quot;&quot;),1,0)"
+        # Cudzyslow w formule bywa zapisany jako encja (&quot;) albo doslownie —
+        # zalezy od programu, ktory zapisal plik. Excel escape'uje, konwertery
+        # i skrypty czesto nie. Probujemy obu postaci i podmieniamy dokladnie te,
+        # ktora faktycznie stoi w pliku.
+        warianty = [
+            (f",C{r + 1}&lt;&gt;&quot;&quot;),1,0)", f",$C${r}&lt;&gt;&quot;&quot;),1,0)"),
+            (f',C{r + 1}&lt;&gt;""),1,0)', f',$C${r}&lt;&gt;""),1,0)'),
+        ]
         m = re.search(rf'(<c r="D{podsumowanie}"[^>]*>)(.*?)(</c>)', xml, re.S)
-        if not m or stary not in m.group(2):
+        stary = nowy = ""
+        if m:
+            for kandydat, zamiennik in warianty:
+                if kandydat in m.group(2):
+                    stary, nowy = kandydat, zamiennik
+                    break
+        if not m or not stary:
+            stary = warianty[0][0]
+            znalezione = (m.group(2)[:120] + "...") if m else "(nie ma takiej komorki)"
             raise SystemExit(
-                f"BLAD: nie znalazlem wzorca TOP SET w podsumowaniu D{podsumowanie} — przerywam")
+                f"BLAD: w komorce D{podsumowanie} nie ma wzorca, ktory mam poprawic — przerywam.\n"
+                f"  Szukalem:  ...{stary}\n"
+                f"  Zastalem:  {znalezione}\n"
+                "  Dwie mozliwe przyczyny: to nie jest arkusz w ukladzie 5.17, albo plik\n"
+                "  przeszedl przez inny program (np. zostal zapisany przez skrypt lub\n"
+                "  konwerter), ktory przepisal formuly po swojemu. Skrypt czyta surowy\n"
+                "  XML Excela, wiec potrzebuje pliku prosto z arkusza kalkulacyjnego.\n"
+                "  Skrypt niczego nie nadpisuje — plik wyjsciowy nie powstal.")
         srodek = m.group(2).replace(stary, nowy)
         srodek = re.sub(r"<v>.*?</v>", "", srodek, flags=re.S)
         zmiany.append((f"D{podsumowanie}", f"…{stary}", f"…{nowy}"))
@@ -234,7 +262,9 @@ def napraw_start(xml: str, zmiany: list) -> str:
     formula = "=IF('T1'!$C8=\"\",\"\",'T1'!$C8)"
     m = re.search(r'<c r="B7"([^>]*?)(?:/>|>(.*?)</c>)', xml, re.S)
     if not m:
-        raise SystemExit("BLAD: nie znalazlem komorki START!B7")
+        raise SystemExit(
+            "BLAD: nie znalazlem komorki START!B7 — to nie wyglada na uklad 5.17.\n"
+            "  Te poprawke mozna pominac: --bez-startu")
     srodek = m.group(2) or ""
     if "<f" in srodek or "<v" in srodek:
         print("  UWAGA: START!B7 nie jest pusta — pomijam te poprawke")
