@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
+import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
@@ -224,11 +225,20 @@ function wczytajArkusz(zawartosc: Buffer): ZrzutArkusza {
   const cel = join(katalogTymczasowy, "zrzut.json");
   try {
     writeFileSync(zrodlo, zawartosc);
-    execFileSync(
-      "python3",
-      [join(KATALOG, "..", "silnik", "narzedzia", "zrzut-arkusza.py"), zrodlo, cel],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
+    try {
+      execFileSync(
+        "python3",
+        [join(KATALOG, "..", "silnik", "narzedzia", "zrzut-arkusza.py"), zrodlo, cel],
+        { stdio: ["ignore", "pipe", "pipe"] },
+      );
+    } catch (blad) {
+      console.error(blad);
+      // Brak Pythona albo biblioteki to nie jest wina pliku trenera —
+      // a takie właśnie zdanie dostawał wcześniej.
+      const srodowisko = bladSrodowiskaPythona(blad);
+      if (srodowisko) throw new BladZadania(srodowisko);
+      throw blad;
+    }
     return JSON.parse(readFileSync(cel, "utf-8")) as ZrzutArkusza;
   } finally {
     rmSync(katalogTymczasowy, { recursive: true, force: true });
@@ -1045,7 +1055,8 @@ const serwer = createServer(async (req, res) => {
       let zrzut: ZrzutArkusza;
       try {
         zrzut = wczytajArkusz(zawartosc);
-      } catch {
+      } catch (e) {
+        if (e instanceof BladZadania) return blad(res, e.message, e.kod);
         return blad(res, "Nie udało się odczytać pliku. Czy to arkusz w układzie 5.17/5.18?");
       }
 

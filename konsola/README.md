@@ -296,6 +296,32 @@ polsku. Teraz zły kształt znaczy „model nic sensownego nie przysłał": prop
 wychodzi pusta, a trener czyta dlaczego. Lista uwag jest przycięta do dwudziestu
 pozycji plus „i jeszcze N podobnych" — tysiąc linijek to nie jest informacja.
 
+## Gdy zabraknie Pythona
+
+Eksport i wczytywanie arkuszy idą przez Pythona, bo tylko `openpyxl` czyta
+format `.xlsx`. Na świeżo postawionym komputerze tej biblioteki zwykle nie ma
+— i to jest najbardziej prawdopodobna rzecz, która nie zadziała przy pierwszym
+uruchomieniu.
+
+> **Co widziałeś wcześniej.** Przy eksporcie: surowy ślad stosu z Pythona —
+> angielskie „ModuleNotFoundError", ścieżki z dysku, nazwy plików źródłowych.
+> Przy wczytywaniu arkusza jeszcze gorzej: „Nie udało się odczytać pliku. Czy
+> to arkusz w układzie 5.17/5.18?" — czyli aplikacja obwiniała **Twój plik**
+> za swój własny brak, a Ty szukałbyś błędu w arkuszu.
+
+Teraz oba miejsca mówią jednym zdaniem, czego brakuje i co wpisać:
+
+```
+Brakuje biblioteki openpyxl, bez której nie da się czytać ani zapisywać
+arkuszy. Zainstaluj ją w terminalu: pip install openpyxl
+```
+
+Rozpoznawane są cztery przypadki: brak Pythona, brak `openpyxl`, brak innej
+biblioteki (z jej nazwą) i brak uprawnień do zapisu. Cokolwiek innego zostaje
+przy komunikacie z miejsca wywołania — zły plik dalej jest nazywany złym
+plikiem. Pełny ślad stosu ląduje w logu serwera, bo tam jest od tego; do Ciebie
+idzie jedno zdanie, bez ścieżek z dysku.
+
 ## Skala
 
 ```bash
@@ -650,6 +676,7 @@ npm run kopia
 | `nazwy.ts` | nazwa klienta → identyfikator (jedno miejsce dla trzech modułów) |
 | `uklad-planu.ts` | szablon 5 dni × 12 slotów i numeracja Lp. |
 | `ksztalt-planu.ts` | granica: czy to, co przyszło z sieci, jest w ogóle planem |
+| `blad-pythona.ts` | awaria Pythona przetłumaczona na zdanie z konkretną radą |
 | `uwierzytelnianie.ts` | hasło, sesje, tryb dostępu |
 | `ai/klient.ts` | jedyne miejsce, które wychodzi do internetu |
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |

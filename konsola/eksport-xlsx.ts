@@ -18,6 +18,7 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { przeliczPlan, TYGODNIE } from "../silnik/src/plan.ts";
 import { jestBojemGlownym } from "../silnik/src/import-arkusza.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
+import { bladSrodowiskaPythona, pierwszaLiniaBledu } from "./blad-pythona.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 const SZABLON = join(KATALOG, "..", "arkusz", "MasterTemplate-5-18.xlsx");
@@ -141,11 +142,18 @@ export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string
   const plikDanych = join(tymczasowy, "wypelnienie.json");
   try {
     writeFileSync(plikDanych, JSON.stringify(wypelnienie), "utf-8");
-    execFileSync(
-      "python3",
-      [join(KATALOG, "narzedzia", "wypelnij-arkusz.py"), SZABLON, plikDanych, cel],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
+    try {
+      execFileSync(
+        "python3",
+        [join(KATALOG, "narzedzia", "wypelnij-arkusz.py"), SZABLON, plikDanych, cel],
+        { stdio: ["ignore", "pipe", "pipe"] },
+      );
+    } catch (blad) {
+      // Pełny ślad zostaje w logu serwera; do trenera idzie jedno zdanie.
+      console.error(blad);
+      throw new Error(bladSrodowiskaPythona(blad)
+        ?? `Nie udało się zapisać arkusza: ${pierwszaLiniaBledu(blad)}`);
+    }
   } finally {
     rmSync(tymczasowy, { recursive: true, force: true });
   }
