@@ -102,6 +102,33 @@ npm start          # → http://localhost:4173
 Eksport i import arkusza wymagają dodatkowo Pythona z biblioteką `openpyxl`
 (`pip install openpyxl`). Bez nich reszta konsoli działa normalnie.
 
+## Aktualizacja — i gdzie są Twoje dane
+
+Konsola wypisuje przy starcie, gdzie trzyma bazę:
+
+```
+  Dane: /Users/ty/Desktop/Fitness-plans-mvp/konsola/dane/craftmyplan.db
+```
+
+To jest **jedyny plik, na którym Ci zależy**: wszyscy klienci, wszystkie cykle,
+oceny i waga. Reszta katalogu to program, który da się odtworzyć w każdej chwili.
+
+> **Uwaga przy aktualizacji z paczki ZIP.** Nowa paczka rozpakowuje się do
+> **nowego katalogu obok starego**, razem z pustym `dane/`. Twoi klienci
+> zostają w starym — konsola z nowego katalogu wystartuje pusta. Zanim
+> skasujesz stary folder, przenieś z niego cały katalog `konsola/dane/`.
+
+Prościej jest tego uniknąć: jeśli pobierzesz projekt przez `git clone`
+(polecenie w sekcji wyżej), aktualizacja to jedna komenda w tym samym
+katalogu, a dane w ogóle się nie ruszają:
+
+```bash
+git pull origin claude/craftmyplan-training-app-hokugh
+```
+
+Niezależnie od sposobu — kopie zapasowe robią się same, raz na dobę i przed
+każdą migracją, i leżą w `konsola/dane/kopie/`.
+
 ## Konsola trenera
 
 Układasz plan (5 dni × 12 slotów), widzisz ciężary i analizę na żywo, kontrola
