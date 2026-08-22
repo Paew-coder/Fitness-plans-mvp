@@ -1792,6 +1792,40 @@ async function pokazLinkKlienta(klientId) {
       el("p", "", "Wyślij klientowi. Otworzy się na telefonie, działa też bez zasięgu."),
       pole,
     ];
+
+    /**
+     * Adres z paska przeglądarki bywa nie do wysłania.
+     *
+     * Trener kopiuje to, co widzi — czyli `localhost`. A na telefonie klienta
+     * `localhost` znaczy jego własny telefon: link nie ma prawa zadziałać i nic
+     * tego nie tłumaczy. Klient dostaje „nie można nawiązać połączenia",
+     * trener nie wie dlaczego, i na tym kończy się pierwszy cykl.
+     */
+    const lokalny = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(location.origin);
+    if (lokalny) {
+      const ja = await api("/api/ja");
+      if (ja.tryb === "hasło" && ja.adresyWSieci?.length) {
+        tresc.push(el("p", "wskazowka ostrzezenie",
+          "⚠ Ten adres działa tylko na tym komputerze — „localhost” na telefonie "
+          + "klienta znaczy jego telefon. Z tej samej sieci Wi-Fi zadziała:"));
+        for (const adres of ja.adresyWSieci) {
+          tresc.push(el("code", "", `${adres}${sciezka}`));
+        }
+        tresc.push(el("p", "wskazowka",
+          "Ten komputer musi być włączony, a telefon w tej samej sieci. "
+          + "Żeby klient miał dostęp zawsze i skądkolwiek — postaw konsolę na "
+          + "serwerze (instrukcja WDROZENIE.md)."));
+      } else {
+        tresc.push(el("p", "wskazowka ostrzezenie",
+          "⚠ Ten adres działa tylko na tym komputerze — „localhost” na telefonie "
+          + "klienta znaczy jego telefon, więc link nie zadziała."));
+        tresc.push(el("p", "wskazowka",
+          "Żeby klient mógł wejść: albo ustaw hasło (npm run haslo) i podaj mu "
+          + "adres tego komputera w sieci Wi-Fi, albo postaw konsolę na serwerze "
+          + "— instrukcja w pliku WDROZENIE.md. Bez hasła konsola celowo nie "
+          + "przyjmuje połączeń z innych urządzeń."));
+      }
+    }
     // Szkic nie pokazuje się klientowi — lepiej powiedzieć to teraz niż
     // pozwolić wysłać link do pustej strony.
     tresc.push(widocznyPlan

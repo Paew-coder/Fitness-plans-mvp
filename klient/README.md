@@ -18,6 +18,24 @@ przeliczać przy tym wszystkich cykli. Raz pobrana zapisuje się lokalnie, więc
 następnym razem widać ją od razu, także bez zasięgu. Szkiców klient nie widzi
 także tutaj.
 
+## Zanim wyślesz link — sprawdź, czy jest do wysłania
+
+Konsola uruchomiona na Twoim komputerze stoi pod adresem `localhost`. To słowo
+znaczy „to urządzenie" — więc **na telefonie klienta wskazuje jego telefon**.
+Skopiowany link nie ma prawa zadziałać: klient dostaje „nie można nawiązać
+połączenia", Ty nie wiesz dlaczego, i na tym kończy się pierwszy cykl.
+
+Konsola mówi o tym teraz wprost w okienku z linkiem. Są dwa wyjścia:
+
+**Ta sama sieć Wi-Fi.** Ustaw hasło (`npm run haslo`) — bez niego konsola
+celowo nie przyjmuje połączeń z innych urządzeń. Wtedy w okienku pojawi się
+gotowy adres tego komputera w sieci, na przykład
+`http://192.168.1.23:4173/k/…`. Ten komputer musi być włączony, a telefon
+w tej samej sieci: dobre na spróbowanie z jednym klientem, za mało na co dzień.
+
+**Własny serwer.** Klient wchodzi zawsze i skądkolwiek, niezależnie od tego,
+czy Twój laptop jest włączony. Instrukcja od zera: [`../WDROZENIE.md`](../WDROZENIE.md).
+
 ## Jak to działa u Ciebie
 
 1. W konsoli otwórz kartotekę klienta → **Link dla klienta** → skopiuj adres.

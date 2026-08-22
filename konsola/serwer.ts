@@ -10,7 +10,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync, statSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { networkInterfaces, tmpdir } from "node:os";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -793,6 +793,24 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse, req?: IncomingMe
   return true;
 }
 
+/**
+ * Adresy tej maszyny w sieci lokalnej.
+ *
+ * Trener kopiuje link dla klienta z paska przeglądarki, czyli z `localhost` —
+ * a na telefonie klienta `localhost` znaczy jego własny telefon. Link nie ma
+ * wtedy prawa zadziałać i nic tego nie tłumaczy. Podajemy więc adresy, pod
+ * którymi konsola jest naprawdę widoczna z innego urządzenia w tej samej sieci.
+ *
+ * Tylko w trybie z hasłem: bez niego konsola i tak odmawia połączeń spoza tej
+ * maszyny, więc taki adres byłby obietnicą bez pokrycia.
+ */
+function adresyLokalnejSieci(port: number): string[] {
+  return Object.values(networkInterfaces())
+    .flatMap((lista) => lista ?? [])
+    .filter((i) => i.family === "IPv4" && !i.internal)
+    .map((i) => `http://${i.address}:${port}`);
+}
+
 /** Adresy, do których klient dostaje się samym tokenem — bez konta trenera. */
 function dlaKlienta(sciezka: string): boolean {
   return sciezka.startsWith("/api/klient/")
@@ -872,10 +890,15 @@ const serwer = createServer(async (req, res) => {
 
     if (sciezka === "/api/ja" && req.method === "GET") {
       const trener = auth.trenerPoId(trenerId);
+      const tryb = auth.trybDostepu(TRENER).tryb;
       return json(res, {
         nazwa: trener?.nazwa ?? "Trener",
         email: trener?.email ?? null,
-        tryb: auth.trybDostepu(TRENER).tryb,
+        tryb,
+        // Adresy, pod którymi konsola jest widoczna z innych urządzeń.
+        // Potrzebne przy linku dla klienta: „localhost" na jego telefonie
+        // znaczy jego telefon, więc taki link nie ma prawa zadziałać.
+        adresyWSieci: tryb === "hasło" ? adresyLokalnejSieci(PORT) : [],
       });
     }
 
