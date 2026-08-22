@@ -91,6 +91,11 @@ const TYPY: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
+  // Ikony aplikacji klienta. Bez właściwego typu przeglądarka dostaje
+  // „application/octet-stream" i ma pełne prawo ikonę odrzucić — a wtedy
+  // dodanie do ekranu głównego daje zrzut strony zamiast sztangi.
+  ".png": "image/png",
+  ".webmanifest": "application/manifest+json",
 };
 
 /**
