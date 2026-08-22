@@ -85,6 +85,16 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // jak robił to trener, wpisując liczbę do komórki. Bez tego klient
         // zobaczyłby w arkuszu ciężar policzony, a w konsoli stoi inny.
         ciezar_reczny: p.ciezarOverride ?? null,
+        // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
+        // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
+        // klienta pokazywałby ćwiczenie i ciężar sprzed podmiany.
+        cwiczenie_podmienione: p.cwiczenieIdOverride
+          && p.cwiczenieIdOverride !== slot.cwiczenieId
+          ? (katalog.poId(p.cwiczenieIdOverride)?.nazwa ?? null)
+          : null,
+        // 1RM podmienionego ćwiczenia (kolumna AA) — arkusz nie sięga po jego
+        // serię maksymalną, tylko po tę liczbę.
+        one_rm_reczny: p.oneRMReczny ?? null,
       };
     }
 

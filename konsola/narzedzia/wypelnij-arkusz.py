@@ -26,6 +26,8 @@ KOL_SERIE, KOL_POWT, KOL_RPE = 4, 5, 6
 KOL_CIEZAR = 7
 KOL_FEEDBACK = 8
 KOL_SZKIELET = 10
+# 1RM podmienionego cwiczenia — arkusz liczy z niego ciezar w tym tygodniu.
+KOL_ONE_RM_RECZNY = 27
 
 # Kolumny w START
 KOL_START_CIEZAR, KOL_START_POWT = 3, 4
@@ -94,6 +96,12 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
             # klient dostawalby ciezar policzony, a w konsoli stalby inny.
             if pole.get("ciezar_reczny") is not None:
                 ws.cell(row=r, column=KOL_CIEZAR).value = pole["ciezar_reczny"]
+            # Podmiana cwiczenia w srodku cyklu: w arkuszu to po prostu inna
+            # nazwa w kolumnie CWICZENIE tego tygodnia, plus recznie podany 1RM.
+            if pole.get("cwiczenie_podmienione"):
+                ws.cell(row=r, column=KOL_CWICZENIE).value = pole["cwiczenie_podmienione"]
+            if pole.get("one_rm_reczny") is not None:
+                ws.cell(row=r, column=KOL_ONE_RM_RECZNY).value = pole["one_rm_reczny"]
             licznik["tygodnie"] += 1
 
     # --- TOP SETY: przelacznik i RPE ustawia sie w T1, reszta lustrzy ---

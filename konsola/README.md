@@ -70,6 +70,27 @@ Przez arkusz przechodzi tak samo: w wyeksportowanym pliku w tej komórce staje
 liczba zamiast formuły, a przy wczytaniu z powrotem wraca jako nadpisanie.
 Sprawdza to `npm run sprawdz-kolko`.
 
+**Podmiana ćwiczenia w środku cyklu.** Kontuzja w czwartym tygodniu, zajęty
+stojak, cokolwiek — zmieniasz ćwiczenie w slocie, w którym klient przerobił już
+trzy tygodnie. Konsola pyta wtedy **od którego tygodnia** ma obowiązywać zmiana:
+
+- **Od T4** — przerobione tygodnie zostają takie, jakie były. Tak robi to arkusz
+  i tak wygląda prawda: klient zrobił tamto ćwiczenie, nie to nowe.
+- **Od początku cyklu** — przepisuje wszystko, także tygodnie, które się odbyły.
+  Do prostowania pomyłek, nie do kontuzji.
+
+> **Dlaczego to nie jest drobiazg.** Zanim to powstało, każda podmiana
+> przepisywała cały cykl. Ekran postępu klienta pokazywał wtedy, że podniósł
+> 110, 115 i 120 kg w ćwiczeniu, **którego nigdy nie robił** — a tydzień pierwszy
+> w planie zmieniał ciężar ze 102,5 na 87,5 kg. Zapis tego, co się faktycznie
+> odbyło, był po cichu przepisywany.
+
+Silnik przy podmienionym ćwiczeniu nie sięga po jego serię maksymalną, tylko po
+1RM podany wprost — dokładnie jak arkusz w kolumnie AA. Konsola przepisuje tam
+serię maksymalną nowego ćwiczenia, jeśli jest w planie, więc ciężar liczy się od
+razu. Przez arkusz przechodzi to tak samo: podmieniony tydzień ma w kolumnie
+ĆWICZENIE inną nazwę, a wczytanie z powrotem odtwarza podmianę.
+
 **Podmiana ćwiczenia, które klient już ocenił.** Mnożnik adaptacji liczy się
 z odczuć **slotu**, nie ćwiczenia — tak samo jak w arkuszu. Po podmianie oceny
 zostają i działają dalej: dwa razy „za łatwe" przy przysiadzie podniosłoby

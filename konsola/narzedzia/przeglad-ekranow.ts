@@ -159,15 +159,19 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     && bojA1["6"].serie === 6 && bojA1["6"].powtorzenia === 3,
     `T1 ${bojA1?.["1"]?.serie}×${bojA1?.["1"]?.powtorzenia}@${bojA1?.["1"]?.rpe} · T6 ${bojA1?.["6"]?.serie}×${bojA1?.["6"]?.powtorzenia}@${bojA1?.["6"]?.rpe}`);
 
-  // ── 8. podmiana ćwiczenia, które klient już ocenił ────────────────
-  // Mnożnik adaptacji liczy się z odczuć slotu, nie ćwiczenia. Po podmianie
-  // oceny poprzedniego ćwiczenia działałyby dalej — na ciężar czegoś, czego
-  // klient nie robił. Konsola musi o tym powiedzieć w chwili podmiany.
+  // ── 8. podmiana ćwiczenia w slocie z przerobionymi treningami ─────
+  // Zmiana ćwiczenia przepisywała cały cykl — razem z tygodniami, które klient
+  // już zrobił. Ekran postępu twierdził wtedy, że podniósł te ciężary
+  // w ćwiczeniu, którego nie robił. Konsola musi zapytać, od kiedy.
   const zOcena = await (async () => {
     const { zapisany } = await zBazy();
     const slot = zapisany.plan.sloty.find((x: any) => x.cwiczenieId === "EX-0010");
     slot.tygodnie["1"] = { ...(slot.tygodnie["1"] ?? {}), feedback: "za łatwe" };
     slot.tygodnie["2"] = { ...(slot.tygodnie["2"] ?? {}), feedback: "za łatwe" };
+    zapisany.plan.serieMaksymalne = [
+      ...zapisany.plan.serieMaksymalne.filter((x: any) => x.cwiczenieId !== "EX-0013"),
+      { cwiczenieId: "EX-0013", ciezar: 100, powtorzenia: 3 },
+    ];
     await fetch(`${ADRES}/api/plany/${PLAN}`, {
       method: "PUT", headers: { "content-type": "application/json" },
       body: JSON.stringify({ plan: zapisany.plan, dataStartu: zapisany.dataStartu,
@@ -175,6 +179,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     });
     return slot.positionId;
   })();
+
   // Oceny dopisaliśmy z boku, więc ekran trzeba wczytać na nowo — tą samą
   // drogą, którą trener wraca do planu: lista → kartoteka → cykl.
   await s.reload({ waitUntil: "networkidle" });
@@ -189,24 +194,33 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const doPodmiany = (await wierszZOcena.count()) > 0
     ? wierszZOcena.first()
     : s.locator("#dni tr").filter({ has: s.locator("td.cwiczenie select") }).nth(1);
-  // Wybór po identyfikatorze, nie po nazwie — lista bywa zawężona szkieletem,
-  // a to samo ćwiczenie ma w niej różne podpisy.
+  // Wybór po identyfikatorze, nie po nazwie — lista bywa zawężona szkieletem.
   await doPodmiany.locator("td.cwiczenie select").selectOption("EX-0013");
   await s.waitForSelector("#modal:not(.ukryty)", { timeout: 5000 });
-  // `innerText` oddaje tekst po stylach, a nagłówki modala są wersalikami.
-  sprawdz("podmiana ocenionego ćwiczenia pyta o oceny",
-    (await s.locator("#modal-tytul").innerText()).toLocaleLowerCase("pl").includes("ocenił"),
+  sprawdz("podmiana w przerobionym slocie pyta, od którego tygodnia",
+    (await s.locator("#modal-tytul").innerText()).toLocaleLowerCase("pl").includes("przerobione"),
     await s.locator("#modal-tytul").innerText());
 
-  await s.locator("#modal-body").getByRole("button", { name: "Wyczyść oceny" }).click();
+  await s.locator("#modal-body").getByRole("button", { name: /^Od T3$/ }).click();
   await zapisano();
-  const poWyczyszczeniu = (await zBazy()).zapisany.plan.sloty
-    .find((x: any) => x.positionId === zOcena)?.tygodnie;
-  sprawdz("wyczyszczenie zdejmuje oceny ze slotu",
-    !poWyczyszczeniu?.["1"]?.feedback && !poWyczyszczeniu?.["2"]?.feedback,
-    JSON.stringify(poWyczyszczeniu?.["1"] ?? {}));
-  sprawdz("parametry tygodnia zostają po wyczyszczeniu ocen",
-    poWyczyszczeniu?.["1"]?.serie > 0, JSON.stringify(poWyczyszczeniu?.["1"] ?? {}));
+  const poPodmianie = (await zBazy());
+  const slotPo = poPodmianie.zapisany.plan.sloty.find((x: any) => x.positionId === zOcena);
+  sprawdz("przerobione tygodnie zostają przy dawnym ćwiczeniu",
+    slotPo?.cwiczenieId === "EX-0010"
+    && poPodmianie.wynik.tygodnie[0].sloty
+      .find((x: any) => x.positionId === zOcena)?.cwiczenie?.id === "EX-0010",
+    `T1: ${poPodmianie.wynik.tygodnie[0].sloty
+      .find((x: any) => x.positionId === zOcena)?.cwiczenie?.nazwa}`);
+  sprawdz("od wskazanego tygodnia wchodzi nowe ćwiczenie",
+    [3, 4, 5, 6].every((t) => poPodmianie.wynik.tygodnie[t - 1].sloty
+      .find((x: any) => x.positionId === zOcena)?.cwiczenie?.id === "EX-0013"),
+    `T3: ${poPodmianie.wynik.tygodnie[2].sloty
+      .find((x: any) => x.positionId === zOcena)?.cwiczenie?.nazwa}`);
+  sprawdz("podmienione tygodnie mają policzony ciężar, nie „ustaw ręcznie”",
+    typeof poPodmianie.wynik.tygodnie[3].sloty
+      .find((x: any) => x.positionId === zOcena)?.ciezar === "number",
+    String(poPodmianie.wynik.tygodnie[3].sloty
+      .find((x: any) => x.positionId === zOcena)?.ciezar));
 
   // ── 9. ciężar wpisany ręcznie ─────────────────────────────────────
   // Silnik od początku przyjmował `ciezarOverride`; brakowało miejsca, w którym
@@ -421,10 +435,11 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await s.click("#form-import button[type=submit]");
   await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 60000 });
   const wczytany = await (await fetch(`${ADRES}/api/plany/import-przegladu-1`)).json();
-  // Drugi slot to EX-0013 — ćwiczenie podmienione w kroku 8.
+  // Podmiana z kroku 8 dotyczy tygodni od T3 — samo ćwiczenie slotu zostaje
+  // tym, które klient przerobił, i takie wychodzi do arkusza.
   sprawdz("arkusz wraca z tymi samymi ćwiczeniami",
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(",")
-      === "EX-0016,EX-0013",
+      === "EX-0016,EX-0010",
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(" → ") ?? "brak");
   // Arkusz był potrzebny tylko na tę jedną kontrolę — katalog eksportów należy
   // do trenera i nie ma w nim zostawać plik po przeglądzie.
