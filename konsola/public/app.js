@@ -1047,8 +1047,10 @@ function rysujDni() {
     const tabela = el("table", "sloty");
     const glowa = el("thead");
     const wierszNaglowka = el("tr");
-    for (const [tekst, klasa] of [["Lp.", "lp"], ["Ćwiczenie", ""], ["Szkielet", ""],
-      ["Serie", ""], ["Powt.", ""], ["RPE", ""], ["Ciężar", ""], ["stres t/c/p", ""]]) {
+    // Klasy nagłówków muszą zgadzać się z komórkami niżej — po nich telefon
+    // chowa całe kolumny, których się tam nie czyta.
+    for (const [tekst, klasa] of [["Lp.", "lp"], ["Ćwiczenie", ""], ["Szkielet", "szkielet"],
+      ["Serie", ""], ["Powt.", ""], ["RPE", "rpe"], ["Ciężar", ""], ["stres t/c/p", "stres"]]) {
       wierszNaglowka.append(el("th", klasa, tekst));
     }
     glowa.append(wierszNaglowka);
@@ -1180,7 +1182,9 @@ function rysujSlot(slot, pusty) {
     "1",
     String(wyliczony?.powtorzenia ?? ""),
   ));
-  wiersz.append(poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", "8"));
+  const komorkaRpe = poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", "8");
+  komorkaRpe.classList.add("rpe");
+  wiersz.append(komorkaRpe);
 
   wiersz.append(komorkaCiezaru(parametry, wyliczony));
 

@@ -465,7 +465,29 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 
   /* Tabela slotów dostaje własną, minimalną szerokość i przewija się
      wewnątrz karty dnia. Bez tego kolumny zlepiłyby się w kaszę. */
-  table.sloty { min-width: 44rem; }
+  /* Na telefonie znikają dwie kolumny, których się tam nie czyta: szkielet
+     jest pomocą przy układaniu planu, a stres to analiza z panelu obok.
+     Zostaje to, po co trener zagląda w plan z ręki — ćwiczenie i liczby.
+     Bez tego ciężary stały poza ekranem, za kolumną kategorii. */
+  table.sloty th.szkielet, table.sloty td.szkielet,
+  table.sloty th.stres, table.sloty td.stres,
+  table.sloty th.rpe, table.sloty td.rpe { display: none; }
+
+  /* Pod palec, nie pod kursor: 31 px to rozmiar wygodny dla myszy, na
+     telefonie trafia się w to co drugi raz. */
+  .taby button, .pasek-ustawien select, .pasek-ustawien input,
+  .rzad-formularza button { min-height: 2.75rem; }
+  .taby { gap: .4rem; flex-wrap: wrap; }
+
+  /* Ciasno: kolumny i pola oddają wszystko, co da się oddać, żeby CIĘŻAR
+     zmieścił się bez przewijania w bok. To jest ta jedna liczba, po którą
+     trener zagląda w plan z telefonu. */
+  table.sloty { min-width: 0; font-size: .82rem; }
+  table.sloty th, table.sloty td { padding: .35rem .25rem; }
+  table.sloty td.cwiczenie { width: 99%; }
+  table.sloty td.cwiczenie select { min-width: 0; width: 100%; }
+  table.sloty td.liczba input { width: 2.4rem; }
+  table.sloty td.ciezar input.pole-ciezaru { width: 3.2rem; }
   table.sloty.bieg { min-width: 0; }
 
   .wiersz-sciezki { flex-wrap: wrap; gap: .2rem .8rem; }

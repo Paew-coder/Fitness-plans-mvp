@@ -373,6 +373,25 @@ Sprawdzane jest też to, co przy tej skali najważniejsze: że **panel uwagi
 wybiera, a nie woła wszystkich**. Przy realnym rozrzucie dat startu wywołuje
 czternastu z czterdziestu, pilniejszych wyżej.
 
+## Konsola w telefonie
+
+Konsola jest zrobiona do pracy przy dużym ekranie — plan na sześć tygodni
+z ośmioma kolumnami tego wymaga. Ale zaglądasz do niej też z ręki: sprawdzić,
+co klient ma dzisiaj, zobaczyć kto stanął, przełączyć status.
+
+Zmierzone na ekranie 390 px (iPhone 13): żaden ekran nie przewija się w bok.
+W tabeli planu na telefonie **znikają dwie kolumny, których się tam nie czyta** —
+szkielet jest pomocą przy układaniu, a stres to analiza z panelu obok. Zostaje
+to, po co się tam zagląda: ćwiczenie, serie, powtórzenia i **ciężar**.
+
+> Zanim to powstało, na telefonie mieściły się kolumny ĆWICZENIE i SZKIELET,
+> a ciężary stały poza ekranem — czyli akurat ta liczba, po którą sięga się
+> z ręki. Przy dużym ekranie nic się nie zmieniło: wszystkie kolumny są na
+> swoim miejscu.
+
+Zakładki tygodni i pola paska ustawień mają na telefonie wysokość pod palec,
+a nie pod kursor.
+
 ## Odporność serwera
 
 Konsola obsługuje jednego trenera, ale jego klienci wchodzą z zewnątrz — więc
