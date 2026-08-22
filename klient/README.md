@@ -155,6 +155,24 @@ Rysuje je [`konsola/narzedzia/ikony.py`](../konsola/narzedzia/ikony.py) — bez
 żadnych bibliotek, sam PNG składany z `zlib`. Ikona zapisana bez źródła to
 plik, którego za pół roku nikt nie umie zmienić.
 
+### Klient musi jeszcze wiedzieć, że może ją dodać
+
+Ikona i pełny ekran nic nie dają, jeśli klient do końca cyklu otwiera link
+z SMS-a. **Nikt sam nie odkrywa, że stronę da się dodać do ekranu głównego** —
+na iPhonie to schowane pod ikoną udostępniania, na Androidzie w menu.
+
+Aplikacja mówi o tym sama, ale pod trzema warunkami, żeby to była podpowiedź,
+a nie naganianie:
+
+1. **dopiero po pierwszym domkniętym treningu** — zanim się do czegokolwiek
+   przyda, proszenie o miejsce na ekranie głównym jest bezczelne;
+2. **raz** — „nie teraz" znaczy nigdy więcej;
+3. **nigdy**, gdy aplikacja jest już dodana.
+
+Android pozwala zrobić to jednym przyciskiem i tak też jest zrobione. iOS nie
+daje na to żadnego mechanizmu, więc tam zostaje napisanie wprost, w co dotknąć —
+bez tego podpowiedź byłaby bezużyteczna.
+
 ## Aktualizacje docierają same
 
 Aplikacja klienta zapisuje się w telefonie, żeby otwierała się bez zasięgu —
