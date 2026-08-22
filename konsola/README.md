@@ -288,6 +288,14 @@ Każde zapytanie kosztuje ułamek dolara i konsola pokazuje ile, pod odpowiedzi�
 Katalog 164 ćwiczeń jest oznaczony do cache, więc drugie i kolejne zapytanie
 w ciągu paru minut płaci za niego dziesiątą część ceny.
 
+**Model może przysłać byle co.** Odpowiedź przychodzi w narzuconym schemacie,
+więc *powinna* mieć właściwy kształt — ale weryfikacja istnieje właśnie po to,
+żeby modelowi nie ufać, a sama zakładała, że przynajmniej kształt się zgadza.
+`null` albo lista dni jako tekst kończyły się błędem 500 zamiast zdania po
+polsku. Teraz zły kształt znaczy „model nic sensownego nie przysłał": propozycja
+wychodzi pusta, a trener czyta dlaczego. Lista uwag jest przycięta do dwudziestu
+pozycji plus „i jeszcze N podobnych" — tysiąc linijek to nie jest informacja.
+
 ## Odporność serwera
 
 Konsola obsługuje jednego trenera, ale jego klienci wchodzą z zewnątrz — więc
@@ -617,7 +625,7 @@ npm run kopia
 | `ai/szkielet.ts` | propozycja szkieletu i jej weryfikacja katalogiem |
 | `ai/analiza.ts` | odczytanie policzonych liczb słowami |
 | `ai/sygnaly.ts` | wykrywanie sygnałów zdrowotnych w notatce |
-| `testy/` | 249 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
+| `testy/` | 259 testów magazynu, migracji, eksportu, składni, trybu offline, logowania i asystenta (`npm test`) |
 | `eksport-xlsx.ts` | przygotowanie danych do wypełnienia szablonu |
 | `narzedzia/wypelnij-arkusz.py` | wpisanie ich do 5.18 bez ruszania formuł |
 | `narzedzia/sprawdz-wdrozenie.ts` | cała ścieżka wdrożeniowa na obrazie Dockera |
