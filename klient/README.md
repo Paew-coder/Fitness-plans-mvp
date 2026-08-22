@@ -138,6 +138,23 @@ Trajektoria pokazuje **1RM 127 → 148,1 kg, czyli +16,6%** — i tyle właśnie
 widzi na telefonie. Przejście klikane potwierdza też, że po wysłaniu drugiego
 cyklu **telefon sam na niego przechodzi**, bez nowego linku.
 
+## Na ekranie głównym wygląda jak aplikacja
+
+Klient może dodać link do ekranu głównego telefonu — otwiera się wtedy bez
+paska adresu, na pełnym ekranie, z własną ikoną. Od zwykłej zakładki różni ją
+właśnie ikona, a tu była pułapka: **iOS nie czyta ikon z manifestu**. Bierze
+wyłącznie `apple-touch-icon` i wyłącznie PNG. Bez tego iPhone stawiał na
+ekranie głównym **zrzut strony** — rozmazany prostokąt z fragmentem treningu.
+
+Ikona (sztanga na ciemnym tle, w kolorze akcentu konsoli) leży w trzech
+rozmiarach, razem z wersją maskowalną dla Androida, który przycina ikony do
+własnego kształtu. Wszystkie trafiają do pamięci telefonu razem z aplikacją,
+więc działają bez zasięgu.
+
+Rysuje je [`konsola/narzedzia/ikony.py`](../konsola/narzedzia/ikony.py) — bez
+żadnych bibliotek, sam PNG składany z `zlib`. Ikona zapisana bez źródła to
+plik, którego za pół roku nikt nie umie zmienić.
+
 ## Aktualizacje docierają same
 
 Aplikacja klienta zapisuje się w telefonie, żeby otwierała się bez zasięgu —
