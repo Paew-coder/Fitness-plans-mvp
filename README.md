@@ -162,12 +162,42 @@ TOP SET czytający bój główny zamiast pierwszego slotu, plus dwie brakujące 
 (`START!B7` i `T1!G8`), które wyszły przy testowaniu. Oryginał zostaje nietknięty,
 każda poprawka jest do pominięcia osobno.
 
+## Jak to jest sprawdzane
+
+Sześć poleceń, każde jedną komendą. Nie są ozdobą — każde powstało po błędzie,
+którego poprzednie nie umiały złapać.
+
+```bash
+cd konsola
+npm test                    # 270 testów, bez żadnych narzędzi zewnętrznych
+npm run przeglad-ekranow    # klikanie po konsoli w prawdziwej przeglądarce
+npm run przeglad-klienta    # pętla klienta na telefonie, z trybem offline
+npm run sprawdz-kolko       # konsola → arkusz → konsola, wartość po wartości
+npm run sprawdz-odpornosc   # 92 próby zapytania API źle
+npm run sprawdz-skale       # 40 klientów × 6 cykli — czy nadąża
+npm run sprawdz-wdrozenie   # cała ścieżka wdrożeniowa na obrazie Dockera
+```
+
+Po co tyle rodzajów: **każdy łapie co innego, a żaden nie łapie wszystkiego.**
+Testy jednostkowe nie dotykają przeglądarki i nie wykryły, że zakładki tygodni
+nie działają. Przeglądy klikane chodzą po adresach, które aplikacja generuje
+sama, i nie wykryły, że jedno wejście na `/klient/` kładło serwer. Kontrola
+odporności pytała najpierw tylko o kody odpowiedzi i nie wykryła, że serwer
+przyjmuje ciężar −100 kg. Za każdym razem brakującą kategorię pokazywał
+dopiero błąd, który się przez nią przecisnął.
+
 ## Gdzie to jest
 
 Fazy 0–6 z [`04-roadmapa.md`](docs/04-roadmapa.md) są domknięte: jądro
 sprawdzone przeciwko arkuszowi, konsola trenera, aplikacja klienta, to czego
 arkusz nie umiał, wersja produkcyjna (baza, logowanie, wdrożenie, kopie),
 warstwa AI, kartoteka klienta i progresja z szablonu.
+
+**Czego jeszcze nie było: prawdziwego klienta.** Aplikacja nie poprowadziła
+jeszcze ani jednego cyklu z żywym człowiekiem — i to jest teraz jedyna rzecz,
+która realnie posunie ją dalej. Wszystko, co dało się sprawdzić bez tego,
+zostało sprawdzone; kolejne błędy tej klasy, co dotychczasowe, wychodzą już
+tylko z używania.
 
 Otwarte decyzje — liczenie ćwiczeń jednostronnych i to, czy aplikacja ma kiedyś
 przechowywać dane o zdrowiu — są zapisane na końcu roadmapy. Model SaaS dla
