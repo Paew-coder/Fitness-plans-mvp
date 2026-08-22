@@ -127,12 +127,73 @@ async function wyslij(sciezka, dane, zmienLokalnie, { odswiez = true } = {}) {
   await synchronizuj(odswiez);
 }
 
-// ── ekrany ─────────────────────────────────────────────────────────
+// ── ekrany a przycisk „wstecz" ─────────────────────────────────────
+//
+// Aplikacja ma jeden adres i pięć ekranów przełączanych w miejscu. Bez tego,
+// co niżej, systemowe „wstecz" nie cofało między ekranami, tylko wychodziło
+// ze strony — a w aplikacji dodanej do ekranu głównego po prostu ją zamykało.
+// Klient w środku treningu dotyka „wstecz" odruchowo, żeby wrócić do listy
+// dni; na telefonie to ruch wykonywany bez zastanowienia, więc musi znaczyć
+// to, co znaczy wszędzie indziej.
+//
+// Głębokość jest zawsze jedna: każdy ekran otwiera się z listy tygodni i do
+// niej wraca, więc jeden wpis w historii wystarczy na cały ruch po aplikacji.
+// „Wstecz" z samej listy wychodzi ze strony — i tak ma być. Zatrzymywanie
+// klienta w aplikacji na siłę byłoby gorsze od błędu, który to naprawia.
+const EKRAN_GLOWNY = "#ekran-tygodnie";
+
+/** Co trzeba przygotować przy wejściu — tak samo z dotknięcia, jak z historii. */
+const PRZYGOTUJ = {
+  "#ekran-trening": () => rysujTrening(),
+  "#ekran-postep": async () => { await wczytajHistorie(); rysujPostep(); },
+};
+
+const naPodekranie = () =>
+  Boolean(history.state?.ekran) && history.state.ekran !== EKRAN_GLOWNY;
+
 function pokazEkran(id) {
   for (const e of document.querySelectorAll(".ekran")) e.classList.add("ukryty");
-  $(id).classList.remove("ukryty");
+  // Znak zapytania nie jest ostrożnością na wszelki wypadek: gdy zamiast planu
+  // stoi komunikat („trener przygotowuje plan"), ekranów nie ma w ogóle,
+  // a „wstecz" nadal da się dotknąć.
+  $(id)?.classList.remove("ukryty");
   scrollTo(0, 0);
 }
+
+/** Rysuje ekran. Historii nie dotyka — od tego są `otworz` i `wroc`. */
+function ustawEkran(id) {
+  // Po powrocie z treningu nie ma już wybranego dnia, więc „w przód" pokazałoby
+  // pusty ekran. Zamiast tego wracamy do listy.
+  const cel = id === "#ekran-trening" && !biezacy ? EKRAN_GLOWNY : id;
+  if (cel === EKRAN_GLOWNY) biezacy = null;
+  pokazEkran(cel);
+  PRZYGOTUJ[cel]?.();
+  return cel;
+}
+
+/** Otwarcie ekranu — zostawia ślad w historii, żeby „wstecz" miało dokąd wrócić. */
+function otworz(id) {
+  const glebiej = !naPodekranie();
+  const wpis = { ekran: ustawEkran(id) };
+  if (glebiej && wpis.ekran !== EKRAN_GLOWNY) history.pushState(wpis, "");
+  else history.replaceState(wpis, "");
+}
+
+/** Powrót do listy tygodni — tą samą drogą, co systemowe „wstecz". */
+function wroc() {
+  if (naPodekranie()) history.back();   // resztę dorysuje `popstate`
+  else ustawEkran(EKRAN_GLOWNY);
+}
+
+addEventListener("popstate", (e) => {
+  const cel = ustawEkran(e.state?.ekran ?? EKRAN_GLOWNY);
+  // Gdy trafiliśmy gdzie indziej, niż mówił wpis (trening bez wybranego dnia),
+  // prostujemy wpis — inaczej kolejne „wstecz" liczyłoby ekran, którego nie ma.
+  if (cel !== e.state?.ekran) history.replaceState({ ekran: cel }, "");
+});
+
+// Wejściowy wpis dostaje własny stempel, żeby `popstate` wiedział, gdzie wylądował.
+history.replaceState({ ekran: EKRAN_GLOWNY }, "");
 
 /** `pomiary: false` zostawia pola serii maksymalnych w spokoju — patrz `zapisz` niżej. */
 function rysuj({ pomiary = true } = {}) {
@@ -365,8 +426,7 @@ function rysujTygodnie() {
       if (d.ukonczony) kafel.append(el("span", "ptaszek", "✓"));
       kafel.onclick = () => {
         biezacy = { tydzien: t.tydzien, dzien: d.dzien };
-        rysujTrening();
-        pokazEkran("#ekran-trening");
+        otworz("#ekran-trening");
       };
       blok.append(kafel);
     }
@@ -637,18 +697,14 @@ $("#zainstaluj").onclick = async () => {
 };
 
 // ── obsługa przycisków ─────────────────────────────────────────────
-$("#wroc-z-treningu").onclick = () => { biezacy = null; pokazEkran("#ekran-tygodnie"); };
-$("#wroc-z-pomiarow").onclick = () => pokazEkran("#ekran-tygodnie");
-$("#do-pomiarow").onclick = () => pokazEkran("#ekran-pomiary");
-$("#pokaz-pomiary").onclick = () => pokazEkran("#ekran-pomiary");
-$("#pokaz-moduly").onclick = () => pokazEkran("#ekran-moduly");
-$("#wroc-z-modulow").onclick = () => pokazEkran("#ekran-tygodnie");
-$("#pokaz-postep").onclick = async () => {
-  pokazEkran("#ekran-postep");
-  await wczytajHistorie();
-  rysujPostep();
-};
-$("#wroc-z-postepu").onclick = () => pokazEkran("#ekran-tygodnie");
+$("#wroc-z-treningu").onclick = wroc;
+$("#wroc-z-pomiarow").onclick = wroc;
+$("#wroc-z-modulow").onclick = wroc;
+$("#wroc-z-postepu").onclick = wroc;
+$("#do-pomiarow").onclick = () => otworz("#ekran-pomiary");
+$("#pokaz-pomiary").onclick = () => otworz("#ekran-pomiary");
+$("#pokaz-moduly").onclick = () => otworz("#ekran-moduly");
+$("#pokaz-postep").onclick = () => otworz("#ekran-postep");
 
 $("#zakoncz").onclick = () => {
   const d = dzienBiezacy();
@@ -657,7 +713,7 @@ $("#zakoncz").onclick = () => {
     d.ukonczony = true;
     for (const c of d.cwiczenia) c.feedback ??= "OK";
   });
-  pokazEkran("#ekran-tygodnie");
+  wroc();
 };
 
 /** Cały ekran zastąpiony jednym komunikatem — bez planu nie ma czego rysować. */
