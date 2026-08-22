@@ -99,3 +99,40 @@ describe("aktualizacja aplikacji u klienta", () => {
       `pliki poza szkieletem: ${brakujace.join(", ")}`);
   });
 });
+
+describe("ikona na ekranie głównym", () => {
+  /**
+   * iOS **nie czyta ikon z manifestu**. Bierze wyłącznie `apple-touch-icon`
+   * i wyłącznie PNG — bez tego klient, który doda aplikację do ekranu
+   * głównego iPhone'a, dostaje zrzut strony zamiast ikony. To jest ta jedna
+   * rzecz, która najbardziej odróżnia aplikację od zakładki w przeglądarce.
+   */
+  test("strona podaje ikonę dla iOS, w formacie który iOS czyta", () => {
+    const html = zrodlo("public/klient/index.html");
+    const link = html.match(/<link[^>]*apple-touch-icon[^>]*>/)?.[0] ?? "";
+    assert.ok(link, "brak apple-touch-icon — iPhone pokaże zrzut strony");
+    assert.match(link, /\.png/, "iOS nie przyjmuje SVG jako ikony ekranu głównego");
+  });
+
+  test("manifest podaje ikony PNG, w tym maskowalną", () => {
+    const manifest = JSON.parse(zrodlo("public/klient/manifest.json"));
+    const png = manifest.icons.filter((i: any) => i.type === "image/png");
+    assert.ok(png.length >= 2, "Android potrzebuje ikon rastrowych");
+    assert.ok(png.some((i: any) => i.purpose?.includes("maskable")),
+      "bez maskowalnej system przytnie ikonę po swojemu");
+  });
+
+  test("serwer podaje ikony jako obrazy, nie jako plik do pobrania", () => {
+    // „application/octet-stream" to dla przeglądarki dość powód, żeby ikonę
+    // pominąć — a wygląda to wtedy jak brak ikony, nie jak błąd.
+    const serwer = zrodlo("serwer.ts");
+    assert.match(serwer, /"\.png":\s*"image\/png"/);
+  });
+
+  test("ikony są w pamięci telefonu razem z resztą aplikacji", () => {
+    const sw = zrodlo("public/klient/sw.js");
+    for (const plik of ["ikona-180.png", "ikona-192.png", "ikona-512.png"]) {
+      assert.ok(sw.includes(plik), `${plik} poza szkieletem — zniknie bez zasięgu`);
+    }
+  });
+});
