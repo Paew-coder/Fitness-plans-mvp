@@ -214,7 +214,41 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("trener widzi domknięty trening",
     JSON.stringify(realizacja).includes("true"));
 
-  // ── 13. czy poprawka w ogóle dociera do klienta ───────────────────
+  // ── 13. postęp przez dwa cykle ────────────────────────────────────
+  // Blok „Przez wszystkie cykle" pokazuje się dopiero od drugiego cyklu, więc
+  // jednocyklowe przejście nigdy go nie dotykało. A to jest jedyne miejsce,
+  // w którym klient widzi, że przez pół roku coś się w ogóle zmieniło.
+  const drugi = await api(`/api/plany/${PLAN}/kopia`, "POST", { wersja: 2 });
+  await api(`/api/plany/${drugi.zapisany.id}`, "PUT", {
+    plan: drugi.zapisany.plan, dataStartu: null, status: "wysłany",
+    zmieniony: drugi.zapisany.zmieniony,
+  });
+  // Klient podnosi w drugim cyklu więcej niż w pierwszym — trajektoria ma rosnąć.
+  await api(`/api/klient/${token}/serie`, "POST",
+    { cwiczenieId: "EX-0010", ciezar: 135, powtorzenia: 3 });
+  await api(`/api/klient/${token}/odczucie`, "POST",
+    { positionId: "D1-S01", tydzien: 1, ciezarWykonany: 115, powtorzeniaWykonane: 5, feedback: "OK" });
+
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(600);
+  sprawdz("telefon sam przeszedł na nowy cykl",
+    (await s.locator("#tytul").innerText()).includes("2.0"),
+    await s.locator("#tytul").innerText());
+
+  await s.click("#pokaz-postep");
+  await s.waitForSelector("#ekran-postep:not(.ukryty)");
+  await s.waitForTimeout(800);
+  const postep = (await s.locator("#postep").innerText()).toLocaleLowerCase("pl");
+  sprawdz("ekran postępu pokazuje blok „przez wszystkie cykle”",
+    postep.includes("przez wszystkie cykle"),
+    postep.split("\n").find((l) => l.includes("cykl")) ?? "brak");
+  sprawdz("widać trajektorię 1RM przez cykle",
+    /\d+.*→.*\d+/.test(await s.locator("#postep").innerText()),
+    (await s.locator("#postep").innerText()).split("\n")
+      .find((l) => l.includes("→"))?.slice(0, 60) ?? "brak strzałki");
+  await s.click("#wroc-z-postepu");
+
+  // ── 14. czy poprawka w ogóle dociera do klienta ───────────────────
   // Worker odpowiada z cache, żeby aplikacja otwierała się bez zasięgu — ale
   // gdyby na tym poprzestał, plik raz zapisany zostawałby u klienta na zawsze
   // i żadna poprawka nigdy by do niego nie dotarła. Sprawdzamy to jedynym
