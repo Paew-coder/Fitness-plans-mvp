@@ -108,6 +108,18 @@ zdążył się pobrać.
 > Sprawdzone po naprawie: pierwsze wejście z zasięgiem, potem tryb samolotowy —
 > aplikacja otwiera się, pokazuje plan i historię przez cykle.
 
+## Postęp przez wszystkie cykle — sprawdzony na dwóch
+
+Blok „Przez wszystkie cykle" pojawia się dopiero od drugiego cyklu, więc
+jednocyklowe przejście nigdy go nie dotykało — a to jedyne miejsce, w którym
+klient widzi, że przez pół roku cokolwiek się zmieniło.
+
+Sprawdzone na prawdziwym przebiegu: klient trenuje cykl pierwszy z serią
+maksymalną 120 kg × 3, potem dostaje cykl drugi i wpisuje 140 kg × 3.
+Trajektoria pokazuje **1RM 127 → 148,1 kg, czyli +16,6%** — i tyle właśnie
+widzi na telefonie. Przejście klikane potwierdza też, że po wysłaniu drugiego
+cyklu **telefon sam na niego przechodzi**, bez nowego linku.
+
 ## Aktualizacje docierają same
 
 Aplikacja klienta zapisuje się w telefonie, żeby otwierała się bez zasięgu —
