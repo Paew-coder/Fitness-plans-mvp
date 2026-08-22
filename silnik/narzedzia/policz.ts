@@ -18,11 +18,21 @@ import type { Cwiczenie, Tydzien } from "../src/typy.ts";
 const ARG = process.argv.slice(2);
 const polecenie = ARG[0];
 
+/**
+ * Wartość flagi liczbowej. Wpisana bzdura była dotąd po cichu pomijana —
+ * czyli `--1rm abc` dawało wynik policzony z domyślnego zera, bez słowa
+ * o tym, że parametr został zignorowany. Lepiej powiedzieć wprost.
+ */
 function flaga(nazwa: string): number | undefined {
   const i = ARG.indexOf(`--${nazwa}`);
   if (i === -1) return undefined;
-  const v = Number(ARG[i + 1]?.replace(",", "."));
-  return Number.isFinite(v) ? v : undefined;
+  const surowa = ARG[i + 1];
+  const v = Number(surowa?.replace(",", "."));
+  if (!Number.isFinite(v)) {
+    console.error(`Pomijam --${nazwa}: „${surowa ?? ""}" to nie jest liczba.`);
+    return undefined;
+  }
+  return v;
 }
 
 function pozycyjne(): string[] {
@@ -72,6 +82,13 @@ switch (polecenie) {
     const powt = Number(powtStr);
     if (!Number.isFinite(ciezar) || !Number.isFinite(powt)) {
       console.error("Użycie: policz 1rm <ciężar> <powtórzenia>");
+      process.exit(1);
+    }
+    // Ujemny ciężar dawał ujemne 1RM — liczbę bez sensu podaną z pewnością
+    // siebie. Wzór policzy wszystko, co mu się poda; odsianie tego, co nie
+    // może być prawdą, należy tutaj.
+    if (ciezar <= 0) {
+      console.error(`Ciężar musi być dodatni, a jest ${ciezar}.`);
       process.exit(1);
     }
     const wynik = oblicz1RM(ciezar, powt);
