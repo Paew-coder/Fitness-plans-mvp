@@ -302,6 +302,56 @@ describe("AI — weryfikacja propozycji katalogiem", () => {
   });
 });
 
+describe("AI — odpowiedź, która nie ma kształtu propozycji", () => {
+  /**
+   * Odpowiedź modelu przychodzi w narzuconym schemacie, więc **powinna** mieć
+   * właściwy kształt. Ale cała ta funkcja istnieje po to, żeby modelowi nie
+   * ufać — a jednak sama zakładała, że przynajmniej kształt się zgadza:
+   * `null` i `dni` jako tekst kończyły się wyjątkiem, czyli piątką z serwera
+   * zamiast zdania po polsku. Zły kształt to „model nic sensownego nie
+   * przysłał", a nie awaria konsoli.
+   */
+  const wejscie = { cel: "siła", staz: "średni", dniWTygodniu: 3, sprzet: "siłownia", uwagi: "" } as any;
+  const kontekst = { poprzednieCwiczenia: [] } as any;
+
+  for (const [opis, surowa] of [
+    ["null", null],
+    ["tekst zamiast obiektu", "cokolwiek"],
+    ["tablica zamiast obiektu", [1, 2, 3]],
+    ["obiekt bez dni", {}],
+    ["dni jako tekst", { dni: "nie" }],
+    ["dni jako lista pustek", { dni: [null, null] }],
+    ["dzień bez listy ćwiczeń", { dni: [{}] }],
+    ["ćwiczenia jako tekst", { dni: [{ cwiczenia: "nie" }] }],
+  ] as [string, any][]) {
+    test(`${opis} — propozycja pusta, bez wyjątku`, () => {
+      const wynik = zlozPropozycje(surowa, wejscie, kontekst);
+      assert.equal(wynik.dni.length, 0);
+      assert.ok(wynik.uwagi.length > 0, "trener musi się dowiedzieć, że nic nie wyszło");
+    });
+  }
+
+  test("lawina uwag jest przycięta do czytelnej listy", () => {
+    // Tysiąc pozycji w jednym dniu dawało tysiąc linijek „powtórzone" — listę,
+    // której nikt nie przejrzy, i odpowiedź kilkadziesiąt razy większą od
+    // samej propozycji.
+    const zalew = {
+      dni: [{ cwiczenia: Array.from({ length: 1000 }, () => ({ cwiczenieId: "EX-0010" })) }],
+    } as any;
+    const wynik = zlozPropozycje(zalew, wejscie, kontekst);
+    assert.ok(wynik.uwagi.length <= 21, `${wynik.uwagi.length} uwag na ekranie`);
+    assert.match(wynik.uwagi.at(-1)!, /i jeszcze \d+ podobnych/);
+    assert.equal(wynik.dni[0]!.cwiczenia.length, 1, "zostaje jedno ćwiczenie, reszta to powtórki");
+  });
+
+  test("nadmiar dni dalej jest przycinany do zamówionej liczby", () => {
+    const duzo = {
+      dni: Array.from({ length: 1000 }, () => ({ cwiczenia: [{ cwiczenieId: "EX-0010" }] })),
+    } as any;
+    assert.equal(zlozPropozycje(duzo, wejscie, kontekst).dni.length, 3);
+  });
+});
+
 describe("AI — wstawienie propozycji do planu", () => {
   const propozycja = zlozPropozycje(
     surowa([

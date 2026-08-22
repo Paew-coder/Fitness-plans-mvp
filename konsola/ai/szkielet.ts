@@ -258,13 +258,44 @@ export function zlozPropozycje(
   kontekst: KontekstSzkieletu,
   katalog: Katalog = katalogDomyslny,
 ): Propozycja {
+  /**
+   * Uwagi trafiają na ekran trenera, więc mają być do przeczytania.
+   * Tysiąc pozycji w jednym dniu dawało tysiąc linijek „powtórzone" — czyli
+   * listę, której nikt nie przejrzy, i odpowiedź kilkadziesiąt razy większą
+   * od samej propozycji. Po dwudziestu mówimy, ile jeszcze zostało.
+   */
+  const MAX_UWAG = 20;
+  const wszystkichUwag = { ile: 0 };
   const uwagi: string[] = [];
+  const dodajUwage = (tresc: string) => {
+    wszystkichUwag.ile++;
+    if (uwagi.length < MAX_UWAG) uwagi.push(tresc);
+  };
+
   const poprzednie = new Set(kontekst.poprzednieCwiczenia);
   const oczekiwaneDni = Math.min(Math.max(Math.round(wejscie.dniWTygodniu) || 3, 1), MAX_DNI);
 
-  const surowe = (surowa.dni ?? []).filter((d) => Array.isArray(d?.cwiczenia));
+  /**
+   * Odpowiedź modelu przychodzi w narzuconym schemacie, więc **powinna** mieć
+   * kształt propozycji. Ale cała ta funkcja istnieje po to, żeby modelowi nie
+   * ufać — a jednak sama zakładała, że przynajmniej kształt się zgadza:
+   * `null` i `dni` jako tekst kończyły się wyjątkiem, czyli piątką z serwera
+   * zamiast zdania po polsku. Zły kształt to po prostu „model nic sensownego
+   * nie przysłał", a nie awaria konsoli.
+   */
+  const dniModelu = Array.isArray((surowa as { dni?: unknown } | null)?.dni)
+    ? (surowa as { dni: unknown[] }).dni
+    : [];
+  if (surowa == null || !Array.isArray((surowa as { dni?: unknown }).dni)) {
+    dodajUwage("Model nie przysłał układu dni w oczekiwanym kształcie.");
+  }
+
+  const surowe = dniModelu.filter(
+    (d): d is { cwiczenia: unknown[] } =>
+      Array.isArray((d as { cwiczenia?: unknown } | null)?.cwiczenia),
+  );
   if (surowe.length > oczekiwaneDni) {
-    uwagi.push(`Model zaproponował ${surowe.length} dni zamiast ${oczekiwaneDni} — nadmiar odcięty.`);
+    dodajUwage(`Model zaproponował ${surowe.length} dni zamiast ${oczekiwaneDni} — nadmiar odcięty.`);
   }
 
   const uzyte = new Map<string, number>();
@@ -279,7 +310,7 @@ export function zlozPropozycje(
 
     for (const pozycja of surowyDzien.cwiczenia) {
       if (cwiczenia.length >= MAX_CWICZEN_W_DNIU) {
-        uwagi.push(
+        dodajUwage(
           `Dzień ${dzien}: w planie mieści się ${MAX_CWICZEN_W_DNIU} pozycji, reszta odcięta.`,
         );
         break;
@@ -290,20 +321,20 @@ export function zlozPropozycje(
       const cwiczenie = katalog.poId(String(pozycja?.cwiczenieId ?? ""))
         ?? katalog.poNazwie(String(pozycja?.nazwa ?? ""));
       if (!cwiczenie) {
-        uwagi.push(
+        dodajUwage(
           `Dzień ${dzien}: „${pozycja?.nazwa ?? pozycja?.cwiczenieId ?? "?"}" nie istnieje w katalogu — pominięte.`,
         );
         continue;
       }
 
       if (wTymDniu.has(cwiczenie.id)) {
-        uwagi.push(`Dzień ${dzien}: „${cwiczenie.nazwa}" powtórzone w tym samym dniu — zostawiam jedno.`);
+        dodajUwage(`Dzień ${dzien}: „${cwiczenie.nazwa}" powtórzone w tym samym dniu — zostawiam jedno.`);
         continue;
       }
       wTymDniu.add(cwiczenie.id);
 
       if (pozycja.kategoria !== cwiczenie.kategoria) {
-        uwagi.push(
+        dodajUwage(
           `„${cwiczenie.nazwa}": model podał kategorię ${pozycja.kategoria}, `
           + `w katalogu jest ${cwiczenie.kategoria} — zostaje katalogowa.`,
         );
@@ -331,7 +362,7 @@ export function zlozPropozycje(
     }
 
     if (cwiczenia.length === 0) {
-      uwagi.push(`Dzień ${dzien} wyszedł pusty — pominięty.`);
+      dodajUwage(`Dzień ${dzien} wyszedł pusty — pominięty.`);
       continue;
     }
 
@@ -343,12 +374,12 @@ export function zlozPropozycje(
   }
 
   if (dni.length < oczekiwaneDni) {
-    uwagi.push(`Wyszło ${dni.length} z ${oczekiwaneDni} zamówionych dni.`);
+    dodajUwage(`Wyszło ${dni.length} z ${oczekiwaneDni} zamówionych dni.`);
   }
 
   for (const [id, ile] of uzyte) {
     if (ile >= 3) {
-      uwagi.push(`„${katalog.poId(id)?.nazwa ?? id}" wraca ${ile} razy w tygodniu — sprawdź, czy tak ma być.`);
+      dodajUwage(`„${katalog.poId(id)?.nazwa ?? id}" wraca ${ile} razy w tygodniu — sprawdź, czy tak ma być.`);
     }
   }
 
@@ -356,13 +387,15 @@ export function zlozPropozycje(
   // rozkład, zanim cokolwiek wstawi do planu. Model o niego nie jest pytany.
   const braki = brakujaceWzorce(dni, katalog);
   if (braki.length > 0) {
-    uwagi.push(`Bez żadnej pozycji: ${braki.join(", ")}. Sprawdź, czy to celowe.`);
+    dodajUwage(`Bez żadnej pozycji: ${braki.join(", ")}. Sprawdź, czy to celowe.`);
   }
 
   return {
     dni,
     uzasadnienie: String(surowa?.uzasadnienie ?? "").trim(),
-    uwagi,
+    uwagi: wszystkichUwag.ile > uwagi.length
+      ? [...uwagi, `…i jeszcze ${wszystkichUwag.ile - uwagi.length} podobnych uwag.`]
+      : uwagi,
     sygnal: sygnalZdrowotny(wejscie.notatka),
   };
 }
