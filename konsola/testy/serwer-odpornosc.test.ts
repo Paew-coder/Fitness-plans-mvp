@@ -171,3 +171,23 @@ describe("aktualizacja konsoli u trenera", () => {
       znacznikZ({ size: przed.size + 1, mtimeMs: przed.mtimeMs + 1000 }));
   });
 });
+
+describe("adres, który da się wysłać klientowi", () => {
+  /**
+   * Trener kopiuje link z paska przeglądarki, czyli z `localhost` — a na
+   * telefonie klienta `localhost` znaczy jego własny telefon. Taki link nie ma
+   * prawa zadziałać i nic tego nie tłumaczyło: klient dostawał „nie można
+   * nawiązać połączenia", trener nie wiedział dlaczego, i na tym kończył się
+   * pierwszy cykl.
+   *
+   * W trybie lokalnym konsola i tak odmawia połączeń spoza tej maszyny, więc
+   * podawanie adresu w sieci byłoby obietnicą bez pokrycia. Lista jest wtedy
+   * pusta, a ekran mówi wprost, co zrobić.
+   */
+  test("bez hasła nie obiecujemy adresu w sieci", async () => {
+    const ja = await (await fetch(`${ADRES}/api/ja`)).json() as any;
+    assert.equal(ja.tryb, "lokalny");
+    assert.deepEqual(ja.adresyWSieci, [],
+      "w trybie lokalnym każdy taki adres i tak dostałby odmowę");
+  });
+});
