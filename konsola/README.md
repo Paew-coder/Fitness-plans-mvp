@@ -296,6 +296,36 @@ polsku. Teraz zły kształt znaczy „model nic sensownego nie przysłał": prop
 wychodzi pusta, a trener czyta dlaczego. Lista uwag jest przycięta do dwudziestu
 pozycji plus „i jeszcze N podobnych" — tysiąc linijek to nie jest informacja.
 
+## Skala
+
+```bash
+npm run sprawdz-skale         # ~30 sekund, bez dodatkowych narzędzi
+```
+
+Pozostałe kontrole chodzą po jednym albo dwóch planach. Tymczasem kilka miejsc
+w konsoli **przelicza plany w pętli**: lista klientów, panel „wymaga uwagi"
+i lista cykli. Koszt rośnie razem z książką — a tego nie widać przy dwóch
+klientach na testach, tylko po roku pracy.
+
+Ta kontrola zasiewa **czterdziestu klientów po sześć cykli** (240 planów, każdy
+po czternaście pozycji na sześć tygodni) i mierzy. Zmierzone dziś:
+
+| | |
+|---|---|
+| lista klientów | 56 ms |
+| panel „wymaga uwagi" | 13 ms |
+| lista planów | 64 ms |
+| kartoteka klienta | 5 ms |
+| otwarcie planu | 6 ms |
+
+Progi w kontroli są hojne (0,8–1,5 s). Nie chodzi o milisekundy, tylko o
+wychwycenie zmiany rzędu wielkości — zapytań w pętli albo przeliczania całego
+cyklu tam, gdzie potrzebna jest jedna liczba.
+
+Sprawdzane jest też to, co przy tej skali najważniejsze: że **panel uwagi
+wybiera, a nie woła wszystkich**. Przy realnym rozrzucie dat startu wywołuje
+czternastu z czterdziestu, pilniejszych wyżej.
+
 ## Odporność serwera
 
 Konsola obsługuje jednego trenera, ale jego klienci wchodzą z zewnątrz — więc
@@ -633,6 +663,7 @@ npm run kopia
 | `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
 | `narzedzia/sprawdz-kolko.ts` | kółko konsola → arkusz → konsola, wartość po wartości |
 | `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 92 próby, serwer ma przeżyć i odmówić |
+| `narzedzia/sprawdz-skale.ts` | 40 klientów × 6 cykli — czy konsola nadąża |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
