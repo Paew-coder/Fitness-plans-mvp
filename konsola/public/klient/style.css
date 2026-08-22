@@ -69,11 +69,27 @@ button { font: inherit; cursor: pointer; }
 }
 .szeroki { display: block; width: 100%; margin-top: 1.2rem; }
 
+/*
+ * Wcięcia systemowe (zegar, notch, pasek gestu) w aplikacji dodanej do ekranu
+ * głównego. Strona sięga tam pod sam brzeg ekranu — `viewport-fit=cover` —
+ * więc odstęp od zegara musi wziąć na siebie ten element, który stoi
+ * najwyżej. Ekrany z paskiem przyklejonym do góry robią to w `.gora.sticky`;
+ * zostają dwa miejsca, gdzie na górze stoi co innego.
+ */
 .offline {
   position: sticky; top: 0; z-index: 10;
   background: var(--latwe); color: #1a1300;
-  text-align: center; padding: .5rem; font-size: .85rem; font-weight: 600;
+  text-align: center; font-size: .85rem; font-weight: 600;
+  padding: calc(.5rem + env(safe-area-inset-top)) .5rem .5rem;
 }
+
+/* Lista tygodni jako jedyna nie ma paska przyklejonego do góry — bez tego
+   tytuł planu stał na iPhonie pod zegarem. */
+#ekran-tygodnie .gora { padding-top: calc(1rem + env(safe-area-inset-top)); }
+
+/* Gdy nad listą stoi pasek „offline", to on odsuwa się od zegara. Nagłówek
+   pod nim nie powtarza tego odstępu drugi raz. */
+.offline:not(.ukryty) + #ekran-tygodnie .gora { padding-top: 1rem; }
 
 .baner {
   background: var(--akcent-tlo); border: 1px solid var(--akcent);
