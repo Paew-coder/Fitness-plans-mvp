@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
+import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
@@ -1563,6 +1564,9 @@ serwer.listen(PORT, async () => {
   console.log(`\n  Konsola trenera CraftMyPlan`);
   console.log(`  → http://localhost:${PORT}\n`);
   console.log(`  ${katalog.wszystkie.length} ćwiczeń w bazie · ${magazyn.lista(TRENER).length} planów`);
+  // Gdzie leżą dane — bo aktualizacja z paczki znaczy nowy katalog obok
+  // starego, a wtedy pierwsze pytanie brzmi „gdzie są moi klienci".
+  console.log(`  Dane: ${SCIEZKA_BAZY}`);
   console.log(tryb.tryb === "hasło"
     ? "  Dostęp: hasło wymagane.\n"
     : "  Dostęp: tryb lokalny, bez hasła — połączenia tylko z tego komputera.\n"
