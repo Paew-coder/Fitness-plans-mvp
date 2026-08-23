@@ -1166,7 +1166,22 @@ const serwer = createServer(async (req, res) => {
         Object.assign(slot, trescB);
         Object.assign(cel, trescA);
 
-        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan })));
+        /**
+         * Razem z ćwiczeniem przenosi się to, co klient przy nim zapisał.
+         *
+         * Wpisy klienta są kluczowane pozycją w tabeli, a nie ćwiczeniem —
+         * i zostawione na miejscu rozrywały ocenę na pół. Sprawdzone: po
+         * przestawieniu przysiadu w dół klient widział „wykonane 100 kg × 4"
+         * przy wiosłowaniu zadanym na 52,5 kg, a przy samym przysiadzie —
+         * odczucie bez ciężaru. Parametry tygodni przenosimy wyżej z dokładnie
+         * tego samego powodu; wykonania po prostu o tym zapomniano.
+         */
+        const wykonania = (zapisany.wykonania ?? []).map((w) =>
+          w.positionId === slot.positionId ? { ...w, positionId: cel.positionId }
+            : w.positionId === cel.positionId ? { ...w, positionId: slot.positionId }
+              : w);
+
+        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan, wykonania })));
       }
 
       // Link należy do klienta, nie do planu — raz wysłany działa przez
@@ -1342,11 +1357,17 @@ const serwer = createServer(async (req, res) => {
          * *widzi*, a nie czy wolno zapisać to, co już zrobił.
          */
         const zCiala = await cialo(req);
-        const wskazany = zCiala.planId
-          ? magazyn.wczytaj(osoba.trenerId, String(zCiala.planId))
-          : null;
-        if (!wskazany || wskazany.klientId !== osoba.id) {
+        if (!zCiala.planId) {
+          // Bez wskazania cyklu nie wiadomo, czego zapis dotyczy — a zgadywanie
+          // znaczyłoby dopisanie treningu do nieswojego planu.
           return blad(res, "Nie masz jeszcze aktywnego planu.", 409);
+        }
+        const wskazany = magazyn.wczytaj(osoba.trenerId, String(zCiala.planId));
+        if (!wskazany || wskazany.klientId !== osoba.id) {
+          // Ta sama odpowiedź na „cyklu nie ma" i na „cykl nie jest twój",
+          // ta sama co przy aktywnym planie: cudzy identyfikator nie ma się
+          // czym różnić od nieistniejącego.
+          return blad(res, "Ten plan już nie istnieje.", 404);
         }
         zapisany = wskazany;
       }
