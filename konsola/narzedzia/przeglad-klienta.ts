@@ -428,6 +428,69 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("tekst zamiast wyniku testu jest odrzucany", smieci.status === 400,
     `kod ${smieci.status}`);
 
+  // ── 18. trener poprawia plan, klient stoi na siłowni ──────────────
+  //
+  // Cofnięcie planu do szkicu to zwykła czynność: trener otwiera cykl, żeby go
+  // poprawić. Do tej pory kosztowało to klienta dwie rzeczy naraz. Serwer
+  // odmawiał zapisów kodem 409, a kolejka w telefonie traktuje 4xx jako „tego
+  // nigdy się nie uda zapisać" i **wyrzucała oceny z odbytego treningu**.
+  // Aplikacja zaś zastępowała cały ekran komunikatem „trener przygotowuje
+  // plan" — czyli zabierała klientowi trening, który miał przed sobą.
+  const planTeraz = (await widok()).planId;
+  const przedZmiana = await api(`/api/plany/${planTeraz}`);
+
+  // Poprzednia sekcja zostawiła aplikację na ekranie „Oddech i bieg".
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
+  const bledyPrzedSzkicem = bledy.length;
+  await kontekst.setOffline(true);
+  await s.locator("#tygodnie .dzien-kafel").nth(1).click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await s.locator("#cwiczenia .cwiczenie").first()
+    .getByRole("button", { name: "Za łatwe" }).click();
+  await s.waitForTimeout(400);
+
+  await api(`/api/plany/${planTeraz}`, "PUT", {
+    plan: przedZmiana.zapisany.plan, dataStartu: przedZmiana.zapisany.dataStartu,
+    status: "szkic",
+  });
+
+  await kontekst.setOffline(false);
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(1500);
+
+  sprawdz("klient nie traci treningu, gdy trener poprawia plan",
+    await czekajNa(s, "#ekran-tygodnie:not(.ukryty)")
+      && await s.locator("#tygodnie .tydzien").count() === 6,
+    `${await s.locator("#tygodnie .tydzien").count()} tygodni na ekranie`);
+  sprawdz("aplikacja mówi, dlaczego nie ma nowego planu",
+    await s.locator("#baner-przygotowania:not(.ukryty)").count() === 1);
+
+  const wKolejcePoSzkicu = await s.evaluate(() =>
+    JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
+  sprawdz("zaległa ocena nie zostaje w kolejce", wKolejcePoSzkicu === 0,
+    `${wKolejcePoSzkicu} zadań`);
+
+  const poSzkicu = await api(`/api/plany/${planTeraz}`);
+  sprawdz("ocena z odbytego treningu doszła do trenera",
+    poSzkicu.zapisany.wykonania.some((w: any) => w.feedback === "za łatwe"),
+    `${poSzkicu.zapisany.wykonania.length} wykonań w bazie`);
+  await api(`/api/plany/${planTeraz}`, "PUT", {
+    plan: przedZmiana.zapisany.plan, dataStartu: przedZmiana.zapisany.dataStartu,
+    status: "wysłany",
+  });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("po ponownym wysłaniu plan wraca na telefon",
+    await s.locator("#baner-przygotowania.ukryty").count() === 1
+      && await s.locator("#tygodnie .tydzien").count() === 6);
+
+  // Ten krok celowo rozłącza sieć, więc zgłoszenie przeglądarki o braku
+  // połączenia jest spodziewane. Czyścimy je dopiero tutaj — przy sprzątaniu
+  // od razu po kontrolach błąd dolatywał już po nim i psuł podsumowanie.
+  bledy.splice(bledyPrzedSzkicem);
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

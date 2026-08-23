@@ -4,7 +4,7 @@
  * Trzymamy tylko szkielet (HTML, CSS, JS). Dane planu idą przez localStorage
  * w app.js, bo muszą przetrwać także wtedy, gdy przeglądarka wyczyści cache.
  */
-const CACHE = "trening-v14";
+const CACHE = "trening-v15";
 // `index.html` musi być w tej liście: bez niego pierwsza wizyta zapisuje tylko
 // arkusz stylów i skrypt, a sama strona trafia do cache dopiero przy drugim
 // wejściu — czyli offline działał od trzeciej wizyty, nie od pierwszej.

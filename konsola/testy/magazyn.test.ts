@@ -344,3 +344,62 @@ describe("magazyn — kopia jako nowa wersja", () => {
     assert.deepEqual(magazyn.cwiczeniaZPoprzedniegoCyklu(kopia), ["EX-0011"]);
   });
 });
+
+/**
+ * Który cykl widzi telefon, gdy trener otworzy bieżący do poprawki.
+ *
+ * Sprawdzone na działającej konsoli: cofnięcie cyklu 2 do szkicu sprawiało,
+ * że aktywnym stawał się **cykl 1**. Klient w połowie drugiego cyklu otwierał
+ * aplikację i dostawał plan sprzed sześciu tygodni — ze starymi ciężarami,
+ * bez żadnego znaku, że to nie jest dzisiejszy trening.
+ *
+ * Rozróżnienie, na którym to stoi: szkic, w którym klient **już pracował**,
+ * to poprawiany cykl bieżący — wtedy nie ma czego pokazać i telefon dostaje
+ * „plan w przygotowaniu" (a wyświetla ostatnią wersję, którą ma u siebie).
+ * Szkic bez ani jednego wpisu to zwykły następny cykl, szykowany, gdy klient
+ * kończy poprzedni — ten ma się nie liczyć.
+ */
+describe("magazyn — cykl cofnięty do szkicu", () => {
+  const KLIENT = "Wracajaca Klientka";
+  const klientId = () => magazyn.idKlienta(KLIENT);
+
+  function cykl(wersja: number, status: magazyn.StatusPlanu): magazyn.ZapisanyPlan {
+    const osoba = magazyn.zapewnijKlienta(TRENER, KLIENT);
+    return magazyn.zapisz({
+      id: magazyn.nowyId(KLIENT, wersja), trenerId: TRENER, klientId: osoba.id,
+      klient: osoba.nazwa, wersja, status,
+      dataStartu: null, utworzony: "", zmieniony: "",
+      plan: magazyn.pustyPlan(osoba.nazwa),
+    });
+  }
+
+  test("szkic bez pracy klienta nie zasłania poprzedniego cyklu", () => {
+    cykl(1, "wysłany");
+    cykl(2, "szkic");
+    // Trener szykuje kolejny cykl, klient kończy poprzedni — normalny stan.
+    assert.equal(magazyn.aktywnyPlan(TRENER, klientId())?.wersja, 1);
+  });
+
+  test("szkic, w którym klient już ćwiczył, nie cofa go do starego planu", () => {
+    const drugi = cykl(2, "wysłany");
+    magazyn.zapisz({
+      ...drugi,
+      wykonania: [{ positionId: "D1-S01", tydzien: 1, data: new Date().toISOString(),
+        feedback: "OK" }],
+    });
+    // Trener otwiera bieżący cykl do poprawki.
+    magazyn.zapisz({ ...magazyn.wczytaj(TRENER, drugi.id)!, status: "szkic" });
+
+    assert.equal(magazyn.aktywnyPlan(TRENER, klientId()), null,
+      "telefon dostał plan sprzed sześciu tygodni jako dzisiejszy trening");
+  });
+
+  test("po ponownym wysłaniu wraca ten sam cykl, z zapisami klienta", () => {
+    const drugi = magazyn.wczytaj(TRENER, magazyn.nowyId(KLIENT, 2))!;
+    magazyn.zapisz({ ...drugi, status: "wysłany" });
+
+    const aktywny = magazyn.aktywnyPlan(TRENER, klientId());
+    assert.equal(aktywny?.wersja, 2);
+    assert.equal(aktywny?.wykonania?.length, 1, "praca klienta zniknęła po drodze");
+  });
+});
