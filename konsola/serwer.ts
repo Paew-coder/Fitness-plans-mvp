@@ -18,7 +18,7 @@ import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../siln
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
-import { usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
+import { powodNieuruchomienia, usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
@@ -1558,6 +1558,16 @@ async function kopiaWTle(): Promise<void> {
  */
 serwer.keepAliveTimeout = 65_000;
 serwer.headersTimeout = 70_000;
+
+/**
+ * Zajęty port to najczęstsza przyczyna nieudanego startu — i dotąd kończył się
+ * śladem stosu po angielsku, w oknie, które zaraz potem gasło. Bez tego
+ * uchwytu Node zgłasza nieobsłużone zdarzenie `error` i wywala proces.
+ */
+serwer.on("error", (blad) => {
+  console.error(`\n  ${powodNieuruchomienia(blad, PORT)}\n`);
+  process.exit(1);
+});
 
 serwer.listen(PORT, async () => {
   const tryb = auth.trybDostepu(TRENER);
