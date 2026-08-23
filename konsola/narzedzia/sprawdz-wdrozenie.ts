@@ -210,9 +210,12 @@ async function main(): Promise<void> {
     // inaczej przy przebudowie zniknie razem z powodem, dla którego istnieje.
     const kopie = existsSync(join(katalogDanych, "kopie"))
       ? readdirSync(join(katalogDanych, "kopie")) : [];
-    const przedMigracja = kopie.filter((f) => f.includes("przed-migracja"));
-    sprawdz("kopia przed migracją została na woluminie", przedMigracja.length === 1,
-      przedMigracja[0] ?? (kopie.join(", ") || "brak"));
+    // Po jednej na migrację — baza w starym schemacie przechodzi przez wszystkie
+    // po kolei, więc liczba rośnie z każdą kolejną wersją. Pytanie brzmi „czy
+    // jest kopia z każdego kroku", a nie „czy jest dokładnie jedna".
+    const przedMigracja = kopie.filter((f) => f.includes("przed-migracja")).sort();
+    sprawdz("kopia przed migracją została na woluminie", przedMigracja.length >= 1,
+      przedMigracja.join(", ") || (kopie.join(", ") || "brak"));
     await sprawdzProbujac("kopia sprzed migracji otwiera się jako baza w starym schemacie",
       () => {
         const d = new DatabaseSync(join(katalogDanych, "kopie", przedMigracja[0]!), { readOnly: true });

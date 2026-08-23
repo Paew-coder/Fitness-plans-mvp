@@ -56,7 +56,7 @@ export function baza(): DatabaseSync {
 }
 
 /** Aktualna wersja schematu. Podniesienie = nowa pozycja w `migracje.ts`. */
-export const WERSJA_SCHEMATU = 2;
+export const WERSJA_SCHEMATU = 3;
 
 function wersjaBazy(d: DatabaseSync): number {
   // Baza sprzed wprowadzenia wersjonowania nie ma nawet tej tabeli — a nie

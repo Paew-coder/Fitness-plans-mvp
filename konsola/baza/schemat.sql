@@ -87,6 +87,12 @@ CREATE TABLE IF NOT EXISTS wykonanie (
   position_id          TEXT    NOT NULL,
   tydzien              INTEGER NOT NULL,
   data                 TEXT    NOT NULL,
+  -- Ćwiczenie, które klient FAKTYCZNIE robił. Slot trzyma jedno ćwiczenie na
+  -- wszystkie sześć tygodni, więc podmiana w środku cyklu przepisywała także
+  -- przeszłość: przerobione tygodnie pokazywały nową nazwę, a podniesione
+  -- kilogramy szły do propozycji 1RM dla ćwiczenia, którego klient nie robił.
+  -- `NULL` w starych wierszach znaczy „to, co stoi w slocie" — tak jak dotąd.
+  cwiczenie_id         TEXT,
   ciezar_wykonany      REAL,
   powtorzenia_wykonane INTEGER,
   feedback             TEXT CHECK (feedback IN ('OK', 'za łatwe', 'za trudne')),
