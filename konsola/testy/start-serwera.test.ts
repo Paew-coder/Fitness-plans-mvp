@@ -35,7 +35,15 @@ after(() => {
   rmSync(KATALOG, { recursive: true, force: true });
 });
 
-/** Wolny port — bierzemy go, oglądamy numer i oddajemy. */
+/**
+ * Wolny port — bierzemy go, oglądamy numer i oddajemy.
+ *
+ * Między oddaniem a zajęciem go przez konsolę jest szczelina, w którą może
+ * wejść inny proces. Raz na kilkadziesiąt przebiegów widziałem test, który
+ * padł i nie powtórzył się przez sześć kolejnych uruchomień — a test, który
+ * czasem pada, jest gorszy niż brak testu: uczy przechodzić nad czerwienią
+ * do porządku. Stąd ponawianie na kolejnym porcie zamiast jednej próby.
+ */
 async function wolnyPort(): Promise<number> {
   const s = createServer();
   await new Promise<void>((g) => s.listen(0, "127.0.0.1", g));
@@ -76,9 +84,15 @@ async function wstala(port: number): Promise<boolean> {
 
 describe("druga konsola na zajętym porcie", () => {
   test("mówi po polsku, zamiast wysypać ślad stosu", async () => {
-    const port = await wolnyPort();
-    const pierwsza = konsola(port);
-    assert.ok(await wstala(port), "pierwsza konsola nie wstała");
+    let port = 0;
+    let pierwsza!: ReturnType<typeof konsola>;
+    for (let proba = 1; proba <= 3; proba++) {
+      port = await wolnyPort();
+      pierwsza = konsola(port);
+      if (await wstala(port)) break;
+      pierwsza.proces.kill("SIGKILL");
+      assert.ok(proba < 3, "pierwsza konsola nie wstała przy trzech próbach");
+    }
 
     const druga = await konsola(port).skonczona;
 

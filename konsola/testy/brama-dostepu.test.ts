@@ -38,6 +38,15 @@ const EMAIL = "trener@localhost";
 let proces: ChildProcess;
 let adres = "";
 
+/**
+ * Wolny port — bierzemy go, oglądamy numer i oddajemy.
+ *
+ * Między oddaniem a zajęciem go przez konsolę jest szczelina, w którą może
+ * wejść inny proces. Raz na kilkadziesiąt przebiegów widziałem test, który
+ * padł i nie powtórzył się przez sześć kolejnych uruchomień — a test, który
+ * czasem pada, jest gorszy niż brak testu: uczy przechodzić nad czerwienią
+ * do porządku. Stąd ponawianie na kolejnym porcie zamiast jednej próby.
+ */
 async function wolnyPort(): Promise<number> {
   const s = createServer();
   await new Promise<void>((g) => s.listen(0, "127.0.0.1", g));
@@ -50,17 +59,20 @@ before(async () => {
   auth.ustawHaslo(trenerDomyslny(), HASLO);
   zamknij();   // serwer bierze tę samą bazę — zwalniamy własne połączenie
 
-  const port = await wolnyPort();
-  adres = `http://127.0.0.1:${port}`;
-  proces = spawn(process.execPath, ["--no-warnings", "serwer.ts"], {
-    cwd: KONSOLA, env: { ...process.env, PORT: String(port) },
-    stdio: ["ignore", "ignore", "pipe"],
-  });
-  for (let i = 0; i < 60; i++) {
-    try { if ((await fetch(`${adres}/zdrowie`)).ok) return; } catch { /* jeszcze nie */ }
-    await new Promise((g) => setTimeout(g, 250));
+  for (let proba = 1; proba <= 3; proba++) {
+    const port = await wolnyPort();
+    adres = `http://127.0.0.1:${port}`;
+    proces = spawn(process.execPath, ["--no-warnings", "serwer.ts"], {
+      cwd: KONSOLA, env: { ...process.env, PORT: String(port) },
+      stdio: ["ignore", "ignore", "pipe"],
+    });
+    for (let i = 0; i < 60; i++) {
+      try { if ((await fetch(`${adres}/zdrowie`)).ok) return; } catch { /* jeszcze nie */ }
+      await new Promise((g) => setTimeout(g, 250));
+    }
+    proces.kill("SIGKILL");
   }
-  throw new Error("konsola nie wstała");
+  throw new Error("konsola nie wstała przy trzech próbach");
 });
 
 after(() => {
