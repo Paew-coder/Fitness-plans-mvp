@@ -25,6 +25,10 @@ VOLUME ["/app/konsola/dane"]
 
 ENV PORT=4173
 ENV ZA_HTTPS=1
+# Strefa czasu. Samo liczenie dni jej nie potrzebuje — `czas.ts` pyta jawnie
+# o Europe/Warsaw — ale daty wypisywane w terminalu (np. `npm run przywroc`)
+# i wpisy w logu mają być w tym samym czasie, w którym trener żyje.
+ENV TZ=Europe/Warsaw
 EXPOSE 4173
 
 WORKDIR /app/konsola
