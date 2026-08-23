@@ -694,15 +694,42 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
   const wykonanie = (positionId: string, tydzien: number) =>
     (zapisany.wykonania ?? []).find((w) => w.positionId === positionId && w.tydzien === tydzien);
 
-  /** Wpis klienta, o ile dotyczy ćwiczenia, które w tym slocie stoi teraz. */
+  /** Czy wpis dotyczy ćwiczenia, które w tym slocie stoi teraz. */
+  const zTegoCwiczenia = (
+    w: magazyn.Wykonanie, s: { cwiczenie?: { id: string } | null },
+  ) =>
+    // Wpisy sprzed wprowadzenia kolumny nie wiedzą, czego dotyczyły — wtedy
+    // zostaje przy nich to, co dotąd: przyjmujemy, że to ten slot.
+    !w.cwiczenieId || w.cwiczenieId === s.cwiczenie?.id;
+
   const wykonanieTegoCwiczenia = (
     s: { positionId: string; cwiczenie?: { id: string } | null }, tydzien: number,
   ) => {
     const w = wykonanie(s.positionId, tydzien);
-    if (!w) return undefined;
-    // Wpisy sprzed wprowadzenia tej kolumny nie wiedzą, co to było — wtedy
-    // zostaje przy nich to, co dotąd: przyjmujemy, że to ten slot.
-    return !w.cwiczenieId || w.cwiczenieId === s.cwiczenie?.id ? w : undefined;
+    return w && zTegoCwiczenia(w, s) ? w : undefined;
+  };
+
+  /**
+   * Co klient robił w tym miejscu, **zanim** trener podmienił ćwiczenie.
+   *
+   * Slot trzyma jedno ćwiczenie na cały cykl, więc po podmianie przerobione
+   * tygodnie noszą nową nazwę. Ukrycie tamtych liczb było pierwszym krokiem —
+   * lepsze od przypisania ich nowemu ćwiczeniu, ale klient tracił przez to
+   * własną historię. Pokazujemy ją więc pod prawdziwą nazwą i **tylko do
+   * odczytu**: gdyby wróciła do pól, dałoby się ją zapisać na nowo, już pod
+   * ćwiczeniem, którego nie było.
+   */
+  const wczesniejWTymMiejscu = (
+    s: { positionId: string; cwiczenie?: { id: string } | null }, tydzien: number,
+  ) => {
+    const w = wykonanie(s.positionId, tydzien);
+    if (!w || zTegoCwiczenia(w, s)) return null;
+    return {
+      nazwa: katalog.poId(w.cwiczenieId!)?.nazwa ?? w.cwiczenieId!,
+      ciezarWykonany: w.ciezarWykonany ?? null,
+      powtorzeniaWykonane: w.powtorzeniaWykonane ?? null,
+      feedback: w.feedback ?? null,
+    };
   };
 
   const tygodnie = wynik.tygodnie.map((t) => ({
@@ -726,8 +753,14 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             powtorzenia: s.powtorzenia,
             rpe: s.rpe,
             ciezar: s.ciezar,
-            feedback: zapisany.plan.sloty.find((x) => x.positionId === s.positionId)
-              ?.tygodnie?.[t.tydzien]?.feedback ?? null,
+            // Odczucie też należy do ćwiczenia, nie do miejsca: kopia
+            // w parametrach tygodnia zostaje po podmianie przy slocie,
+            // a opisuje to, co klient robił wcześniej.
+            feedback: wykonanieTegoCwiczenia(s, t.tydzien) === undefined
+              && wykonanie(s.positionId, t.tydzien)
+              ? null
+              : zapisany.plan.sloty.find((x) => x.positionId === s.positionId)
+                ?.tygodnie?.[t.tydzien]?.feedback ?? null,
             // Tylko wtedy, gdy klient podniósł to na TYM ćwiczeniu. Po podmianie
             // w środku cyklu przerobione tygodnie pokazywały nową nazwę nad
             // kilogramami ze starego ćwiczenia — czyli własną historię klienta
@@ -735,6 +768,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             ciezarWykonany: wykonanieTegoCwiczenia(s, t.tydzien)?.ciezarWykonany ?? null,
             powtorzeniaWykonane:
               wykonanieTegoCwiczenia(s, t.tydzien)?.powtorzeniaWykonane ?? null,
+            wczesniej: wczesniejWTymMiejscu(s, t.tydzien),
           })),
       })),
   }));
