@@ -42,6 +42,17 @@ const KLIENT_PO_ZMIANIE = "Przegląd ekranów";
 const KLIENT_Z_ARKUSZA = "Import przegladu";
 const KLIENT_DO_USUNIECIA = "Do usuniecia";
 
+/** iPhone 13 — ten sam ekran, na którym oglądamy aplikację klienta. */
+const TELEFON = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+
+/**
+ * Najmniejszy bok celu, poniżej którego trafianie palcem przestaje być
+ * celowaniem. Zalecane 44 px to rozmiar, którego ciasna tabela planu nie
+ * udźwignie — ten próg jest kompromisem i jest tu wpisany wprost, żeby było
+ * widać, że to wybór, a nie przeoczenie.
+ */
+const MINIMALNY_CEL = 24;
+
 await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await przejdz(przegladarka, srodowisko);
 });
@@ -477,8 +488,149 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     poUsunieciu.length === 1 && poUsunieciu[0].id === "przeglad-ekranu",
     poUsunieciu.map((k: any) => k.nazwa).join(" · "));
 
+  // ── 20. konsola z telefonu ────────────────────────────────────────
+  //
+  // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon
+  // od kilku rund, ale **nikt jej dotąd na telefonie nie oglądał** — a trener
+  // zagląda w plan stojąc na siłowni, nie tylko siedząc przy biurku.
+  //
+  // Znalezione przy pierwszym takim spojrzeniu: strzałki przestawiania
+  // ćwiczeń mają `opacity: 0` do czasu najechania myszą. Na telefonie
+  // najechania nie ma, więc były niewidoczne **zawsze** — a `opacity: 0`
+  // nie odbiera kliknięć, więc w każdym wierszu siedziały dwa niewidzialne
+  // przyciski 14×11 px, gotowe przestawić plan przy nietrafionym dotknięciu.
+  await sekcjaTelefonowa(przegladarka, ADRES, PLAN);
+
   console.log(bledyPrzegladarki.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledyPrzegladarki.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
   doliczBledy(bledyPrzegladarki.length);
+}
+
+
+async function sekcjaTelefonowa(przegladarka: any, adres: string, plan: string): Promise<void> {
+  const kontekst = await przegladarka.newContext(TELEFON);
+  const s = await kontekst.newPage();
+  const bledy = pilnujBledow(s);
+  try {
+    await s.goto(`${adres}/?plan=${plan}`, { waitUntil: "networkidle" });
+    await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
+    await s.locator("#lista-klientow .pozycja").first()
+      .getByRole("button", { name: "Otwórz" }).click();
+    await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+    await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+    await s.waitForTimeout(600);
+
+    // Nic nie może wystawać poza ekran. Sprawdzamy elementy, a nie szerokość
+    // strony: `overflow-x: hidden` na `body` obcina to, co wystaje, więc sama
+    // strona zawsze wygląda na dopasowaną — także wtedy, gdy nie jest.
+    const wystajace = await s.evaluate(() => [...document.querySelectorAll("body *")]
+      .filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.right > document.documentElement.clientWidth + 1;
+      })
+      .map((e) => `${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]}`)
+      .slice(0, 4));
+    sprawdz("na telefonie nic nie wystaje poza ekran", wystajace.length === 0,
+      wystajace.join(", ") || "czysto");
+
+    // Ta jedna liczba jest powodem, dla którego trener otwiera plan z ręki.
+    sprawdz("kolumna z ciężarem jest widoczna",
+      await s.locator("table.sloty td.ciezar").first().isVisible());
+
+    const strzalki = await s.evaluate(() => {
+      const e = document.querySelector("table.sloty .strzalki");
+      if (!e) return null;
+      const st = getComputedStyle(e);
+      return { krycie: Number(st.opacity), klikalne: st.pointerEvents !== "none" };
+    });
+    sprawdz("strzałki przestawiania są na telefonie widoczne",
+      strzalki !== null && strzalki.krycie > 0.9,
+      strzalki ? `opacity ${strzalki.krycie}` : "nie ma ich wcale");
+
+    // Druga strona tej samej sprawy: przycisk niewidoczny nie może być
+    // klikalny. `opacity: 0` sam z siebie kliknięć nie odbiera.
+    //
+    // Pierwsza wersja tej kontroli pytała o `opacity` **samego przycisku** —
+    // a przezroczystość siedzi na jego rodzicu, więc przy przywróconym błędzie
+    // kontrola dalej świeciła na zielono. Krycie trzeba policzyć przez
+    // wszystkich przodków, a zamiast zgadywać, czy da się kliknąć, zapytać
+    // przeglądarkę wprost: co leży pod tym punktem.
+    const ukrytaKlikalna = await s.evaluate(() => {
+      const krycie = (e: Element): number => {
+        let w = 1;
+        for (let p: Element | null = e; p; p = p.parentElement) {
+          w *= Number(getComputedStyle(p).opacity);
+        }
+        return w;
+      };
+      return [...document.querySelectorAll("button, a")]
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+          if (r.width === 0 || krycie(e) > 0.05) return false;
+          const pod = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return pod === e || e.contains(pod);
+        })
+        .map((e) => `${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]}`);
+    });
+    sprawdz("nie ma przycisków niewidocznych, a klikalnych", ukrytaKlikalna.length === 0,
+      ukrytaKlikalna.join(", ") || "czysto");
+
+    const male = await s.evaluate((prog: number) =>
+      [...document.querySelectorAll("button, select, input, a")]
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+          return r.width > 0 && Math.min(r.width, r.height) < prog;
+        })
+        .map((e) => {
+          const r = e.getBoundingClientRect();
+          return `${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]}`
+            + ` ${Math.round(r.width)}×${Math.round(r.height)}`;
+        })
+        .slice(0, 5), MINIMALNY_CEL);
+    // Zalecane 44 px to rozmiar, którego ciasna tabela planu nie udźwignie —
+    // trzymamy próg, poniżej którego celowanie przestaje być celowaniem.
+    sprawdz(`żaden cel nie jest mniejszy niż ${MINIMALNY_CEL} px`, male.length === 0,
+      male.join(", ") || "czysto");
+
+    // Strzałka ma nie tylko wyglądać na klikalną, ale działać — i to z palca.
+    //
+    // `locator.click()` Playwrighta trafia także w przycisk przezroczysty,
+    // bo sprawdza `visibility`, a nie `opacity`. Przy przywróconym błędzie
+    // ta kontrola przechodziła — czyli odpowiadała na pytanie „czy serwer
+    // przyjmie żądanie", a nie „czy człowiek to zrobi". Dlatego najpierw
+    // pytamy przeglądarkę, co leży pod środkiem strzałki, a potem dotykamy
+    // ekranu w tym punkcie, zamiast wołać przycisk po nazwie.
+    const cel = await s.evaluate(() => {
+      const b = document.querySelectorAll("table.sloty tr")[1]
+        ?.querySelectorAll("button.mikro")[1];
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      let krycie = 1;
+      for (let p: Element | null = b; p; p = p.parentElement) {
+        krycie *= Number(getComputedStyle(p).opacity);
+      }
+      return { x, y, krycie, trafia: document.elementFromPoint(x, y) === b };
+    });
+    sprawdz("w strzałkę da się trafić palcem, widząc ją",
+      cel !== null && cel.trafia && cel.krycie > 0.9,
+      cel ? `krycie ${cel.krycie}, pod palcem ${cel.trafia ? "strzałka" : "co innego"}`
+        : "nie ma strzałek");
+
+    const przed = await s.locator("table.sloty td.cwiczenie select").first().inputValue();
+    if (cel) await s.touchscreen.tap(cel.x, cel.y);
+    await s.waitForTimeout(900);
+    const po = await s.locator("table.sloty td.cwiczenie select").first().inputValue();
+    sprawdz("dotknięcie strzałki przestawia ćwiczenie", przed !== po,
+      `${przed || "—"} → ${po || "—"}`);
+  } finally {
+    console.log(bledy.length
+      ? `  błędy na telefonie: ${JSON.stringify(bledy.slice(0, 2))}`
+      : "  błędów na telefonie: brak");
+    doliczBledy(bledy.length);
+    await kontekst.close();
+  }
 }

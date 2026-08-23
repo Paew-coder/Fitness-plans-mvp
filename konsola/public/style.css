@@ -183,8 +183,31 @@ table.sloty tr.pusty td { opacity: .5; }
 
 td.lp { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); width: 4.6rem;
         display: flex; align-items: center; gap: .3rem; }
-.strzalki { display: inline-flex; flex-direction: column; gap: 1px; opacity: 0; transition: opacity .12s; }
-tr:hover .strzalki, .strzalki:focus-within { opacity: 1; }
+/*
+ * Strzałki przestawiania ćwiczeń pokazują się po najechaniu na wiersz — żeby
+ * nie zaśmiecać tabeli, w którą trener patrzy głównie po liczby.
+ *
+ * `pointer-events` musi chodzić razem z `opacity`, bo **niewidoczne i
+ * nieklikalne to nie to samo**. Przezroczysty przycisk dalej łapie kliknięcia:
+ * dało się przestawić ćwiczenie, nie widząc, w co się trafiło — a plan
+ * zmieniał się bez widocznej przyczyny.
+ */
+.strzalki {
+  display: inline-flex; flex-direction: column; gap: 1px;
+  opacity: 0; pointer-events: none; transition: opacity .12s;
+}
+tr:hover .strzalki, .strzalki:focus-within { opacity: 1; pointer-events: auto; }
+
+/*
+ * Na telefonie nie ma najechania. Bez tego strzałki byłyby niewidoczne
+ * **zawsze** — czyli przestawianie ćwiczeń po prostu nie istniałoby z ręki,
+ * a w każdym wierszu siedziałyby dwa niewidzialne przyciski wielkości
+ * 14×11 px, gotowe przestawić plan przy nietrafionym dotknięciu.
+ */
+@media (hover: none) {
+  .strzalki { opacity: 1; pointer-events: auto; }
+}
+
 button.mikro { padding: 0 .2rem; font-size: .55rem; line-height: 1.05;
                border-color: transparent; background: none; color: var(--tekst-blady); }
 button.mikro:hover { color: var(--akcent); border-color: var(--linia-mocna); }
@@ -489,6 +512,23 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
   table.sloty td.liczba input { width: 2.4rem; }
   table.sloty td.ciezar input.pole-ciezaru { width: 3.2rem; }
   table.sloty.bieg { min-width: 0; }
+
+  /* Pod palec, nie pod kursor — ciąg dalszy. Poprzednia runda powiększyła
+     zakładki tygodni i pasek ustawień, ale sama tabela została z rozmiarami
+     dla myszy: strzałki 14×11 px, pola 31 px, kratka TOP SETU 13×13 px.
+     Tabela jest ciasna, więc to jest kompromis, a nie zalecane 44 px —
+     ale różnica między 14 a 32 px to różnica między pułapką a przyciskiem. */
+  table.sloty button.mikro {
+    min-width: 2rem; min-height: 1.6rem; font-size: .75rem; padding: 0 .3rem;
+  }
+  table.sloty .strzalki { gap: .2rem; }
+  /* Wszystko, w co się celuje palcem — a nie lista wyjątków. Pierwsza wersja
+     wymieniała pola tabeli po nazwie i przegapiła pole w oknie „Połącz
+     klienta": lista wyjątków zawsze jest o jeden krótsza, niż trzeba. */
+  select, input:not([type="checkbox"]) { min-height: 2.25rem; }
+  /* `flex: none` nie jest ozdobą: kratka TOP SETU stoi w pasku ustawionym
+     na flex i bez tego ściskała się z powrotem do 16 px szerokości. */
+  input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; }
 
   .wiersz-sciezki { flex-wrap: wrap; gap: .2rem .8rem; }
   .wiersz-sciezki .etykieta-szeroka { flex: 1 0 100%; }
