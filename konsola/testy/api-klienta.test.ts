@@ -363,9 +363,128 @@ describe("zapis, gdy trener właśnie poprawia plan", () => {
     try {
       const { kod } = await api(`/api/klient/${token}/waga`, "POST",
         { planId: "ktos-inny-1", kg: 70 });
-      assert.equal(kod, 409, "link jednego klienta sięgnął do cudzej kartoteki");
+      // 404, ta sama odpowiedź co na cykl nieistniejący i ta sama co przy
+      // aktywnym planie — cudzy identyfikator nie ma się czym różnić.
+      assert.equal(kod, 404, "link jednego klienta sięgnął do cudzej kartoteki");
     } finally {
       await przywroc();
     }
+  });
+
+  test("cykl usunięty przez trenera mówi, że go nie ma", async () => {
+    // Zaległa ocena do skasowanego cyklu nie ma dokąd trafić — ale komunikat
+    // „nie masz jeszcze aktywnego planu" mówił wtedy nieprawdę.
+    const przywroc = await doSzkicu();
+    try {
+      const { kod, dane } = await api(`/api/klient/${token}/odczucie`, "POST",
+        { planId: "ala-testowa-99", positionId: "D1-S01", tydzien: 1, feedback: "OK" });
+      assert.equal(kod, 404);
+      assert.match(dane.blad, /nie istnieje/i);
+    } finally {
+      await przywroc();
+    }
+  });
+});
+
+/**
+ * Unieważnienie linku — jedyna obrona, gdy adres klienta wycieknie.
+ *
+ * Link jest kluczem bez hasła: kto go ma, ten widzi plan. Cała proporcjonalność
+ * tego rozwiązania stoi na tym, że da się go odciąć. Obietnica warta dokładnie
+ * tyle, ile jej sprawdzenie.
+ */
+describe("link, który wyciekł", () => {
+  test("unieważniony przestaje działać, nowy działa, stary zostaje martwy", async () => {
+    const stary = (await api("/api/klienci/ala-testowa/link", "POST")).dane.token;
+    assert.equal((await api(`/api/klient/${stary}`)).kod, 200);
+
+    assert.equal((await api("/api/klienci/ala-testowa/link", "DELETE")).kod, 200);
+    assert.equal((await api(`/api/klient/${stary}`)).kod, 404, "stary link dalej otwiera plan");
+    // Zapis też, nie tylko odczyt — inaczej „unieważniony" znaczyłoby
+    // „nie pokazuje, ale nadal pisze do kartoteki".
+    assert.equal((await api(`/api/klient/${stary}/waga`, "POST", { kg: 80 })).kod, 404);
+
+    const nowy = (await api("/api/klienci/ala-testowa/link", "POST")).dane.token;
+    assert.notEqual(nowy, stary, "wystawiono ten sam token co unieważniony");
+    assert.equal((await api(`/api/klient/${nowy}`)).kod, 200);
+    assert.equal((await api(`/api/klient/${stary}`)).kod, 404);
+    token = nowy;
+  });
+});
+
+/**
+ * Przestawienie ćwiczenia w planie, w którym klient już coś zapisał.
+ *
+ * Trasa przenoszenia zamienia **treść** slotów — ćwiczenie i parametry
+ * tygodni — bo `position_id` i „Lp." należą do miejsca w tabeli, nie do
+ * ćwiczenia. Wpisy klienta też są kluczowane pozycją, i o nich zapomniano.
+ *
+ * Sprawdzone na działającej konsoli: po przestawieniu przysiadu w dół klient
+ * widział „wykonane 100 kg × 4" **przy wiosłowaniu** zadanym na 52,5 kg,
+ * a przy samym przysiadzie — odczucie bez ciężaru. Jedna ocena rozerwana
+ * na pół, obie połówki w niewłaściwym miejscu. A z tych liczb liczy się
+ * ciężary na kolejne tygodnie.
+ */
+describe("przestawienie ćwiczenia zabiera ze sobą zapisy klienta", () => {
+  const KLIENT = "Przestawiana Osoba";
+  const PLAN = "przestawiana-osoba-1";
+  let tokenPrzestawiania = "";
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: KLIENT, wersja: 1 });
+    const { dane } = await api(`/api/plany/${PLAN}`);
+    const plan = dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.sloty[1].cwiczenieId = "EX-0016";
+    plan.serieMaksymalne = [
+      { cwiczenieId: "EX-0010", ciezar: 140, powtorzenia: 3 },
+      { cwiczenieId: "EX-0016", ciezar: 60, powtorzenia: 5 },
+    ];
+    await api(`/api/plany/${PLAN}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    await api(`/api/plany/${PLAN}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
+    tokenPrzestawiania = (await api(`/api/plany/${PLAN}/link`, "POST")).dane.token;
+    await api(`/api/klient/${tokenPrzestawiania}/odczucie`, "POST", {
+      planId: PLAN, positionId: "D1-S01", tydzien: 1,
+      feedback: "za trudne", ciezarWykonany: 100, powtorzeniaWykonane: 4,
+    });
+  });
+
+  test("cała ocena idzie za ćwiczeniem, a nie zostaje na miejscu", async () => {
+    const { kod } = await api(`/api/plany/${PLAN}/przenies`, "POST",
+      { positionId: "D1-S01", kierunek: "dol" });
+    assert.equal(kod, 200);
+
+    const { dane } = await api(`/api/plany/${PLAN}`);
+    const wpisy = dane.zapisany.wykonania;
+    assert.equal(wpisy.length, 1, "wpis się rozmnożył albo zniknął");
+    assert.equal(wpisy[0].positionId, "D1-S02", "wpis został przy starym miejscu");
+    assert.equal(wpisy[0].ciezarWykonany, 100);
+    assert.equal(wpisy[0].feedback, "za trudne");
+  });
+
+  test("klient widzi to, co podniósł, przy ćwiczeniu, które robił", async () => {
+    // Widok klienta podaje nazwę, nie identyfikator — szukamy tak, jak on patrzy.
+    const { dane } = await api(`/api/klient/${tokenPrzestawiania}`);
+    const dzien = dane.tygodnie[0].dni[0].cwiczenia;
+    const przysiad = dzien.find((c: any) => /squat/i.test(c.nazwa));
+    const wioslowanie = dzien.find((c: any) => /row/i.test(c.nazwa));
+    assert.ok(przysiad && wioslowanie,
+      `nie widać obu ćwiczeń: ${dzien.map((c: any) => c.nazwa).join(", ")}`);
+
+    assert.equal(przysiad.ciezarWykonany, 100, "przysiad stracił swój ciężar");
+    assert.equal(przysiad.feedback, "za trudne");
+    // Druga połowa tej samej sprawy: przy ćwiczeniu, którego klient nie robił,
+    // nie ma prawa stać liczba z innego ćwiczenia.
+    assert.equal(wioslowanie.ciezarWykonany, null,
+      "cudzy ciężar przykleił się do wiosłowania");
+    assert.equal(wioslowanie.feedback, null);
+  });
+
+  test("powrót na dawne miejsce przywraca stan sprzed przestawienia", async () => {
+    await api(`/api/plany/${PLAN}/przenies`, "POST",
+      { positionId: "D1-S02", kierunek: "gora" });
+    const { dane } = await api(`/api/plany/${PLAN}`);
+    assert.equal(dane.zapisany.wykonania[0].positionId, "D1-S01");
+    assert.equal(dane.zapisany.plan.sloty[0].cwiczenieId, "EX-0010");
   });
 });
