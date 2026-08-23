@@ -488,3 +488,79 @@ describe("przestawienie ćwiczenia zabiera ze sobą zapisy klienta", () => {
     assert.equal(dane.zapisany.plan.sloty[0].cwiczenieId, "EX-0010");
   });
 });
+
+/**
+ * Podmiana ćwiczenia w środku cyklu, w tygodniach, które klient już przerobił.
+ *
+ * Slot planu trzyma jedno ćwiczenie na wszystkie sześć tygodni. Okienko
+ * „od którego tygodnia" pilnuje, żeby podmiana nie przepisała **parametrów**
+ * tygodni już zrobionych — ale nazwa ćwiczenia jest jedna na cały slot, więc
+ * przeszłość i tak dostawała nową.
+ *
+ * Sprawdzone na działającej konsoli. Klient przerabia dwa tygodnie przysiadu
+ * ze sztangą (105 i 110 kg). Trener podmienia ćwiczenie od tygodnia 3. Po tym
+ * propozycja nowego 1RM przenosiła się na **low bar squat** — ćwiczenie,
+ * którego klient nie robił ani razu. Ta liczba wraca na sztangę w kolejnym
+ * cyklu, więc nie jest to pomyłka kosmetyczna.
+ */
+describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
+  const KLIENT = "Podmieniana Osoba";
+  const PLAN = "podmieniana-osoba-1";
+  let tokenPodmiany = "";
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: KLIENT, wersja: 1 });
+    const { dane } = await api(`/api/plany/${PLAN}`);
+    const plan = dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.serieMaksymalne = [
+      { cwiczenieId: "EX-0010", ciezar: 140, powtorzenia: 3 },
+      { cwiczenieId: "EX-0013", ciezar: 90, powtorzenia: 5 },
+    ];
+    await api(`/api/plany/${PLAN}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    await api(`/api/plany/${PLAN}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
+    tokenPodmiany = (await api(`/api/plany/${PLAN}/link`, "POST")).dane.token;
+    for (const tydzien of [1, 2]) {
+      await api(`/api/klient/${tokenPodmiany}/odczucie`, "POST", {
+        planId: PLAN, positionId: "D1-S01", tydzien, feedback: "OK",
+        ciezarWykonany: 100 + tydzien * 5, powtorzeniaWykonane: 5,
+      });
+    }
+  });
+
+  test("wpis pamięta, które ćwiczenie klient robił", async () => {
+    const { dane } = await api(`/api/plany/${PLAN}`);
+    assert.ok(dane.zapisany.wykonania.every((w: any) => w.cwiczenieId === "EX-0010"),
+      "wpisy nie wiedzą, czego dotyczyły");
+  });
+
+  test("propozycja 1RM zostaje przy ćwiczeniu, które klient faktycznie robił", async () => {
+    const przed = (await api(`/api/plany/${PLAN}`)).dane.propozycje1RM ?? [];
+    assert.ok(przed.some((p: any) => /squat/i.test(p.nazwa) && !/low bar/i.test(p.nazwa)),
+      `bez podmiany propozycji nie ma: ${JSON.stringify(przed)}`);
+
+    // Podmiana od tygodnia 3 — tak, jak robi to okienko w konsoli.
+    const { dane: teraz } = await api(`/api/plany/${PLAN}`);
+    const plan = teraz.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0013";
+    for (const t of [3, 4, 5, 6]) delete plan.sloty[0].tygodnie[t];
+    await api(`/api/plany/${PLAN}`, "PUT", {
+      plan, dataStartu: null, status: "wysłany", zmieniony: teraz.zapisany.zmieniony,
+    });
+
+    const po = (await api(`/api/plany/${PLAN}`)).dane.propozycje1RM ?? [];
+    assert.ok(!po.some((p: any) => /low bar/i.test(p.nazwa)),
+      "kilogramy z przysiadu policzyły się jako nowe ćwiczenie");
+    assert.ok(po.some((p: any) => /squat/i.test(p.nazwa) && !/low bar/i.test(p.nazwa)),
+      "propozycja dla przerobionego ćwiczenia zniknęła");
+  });
+
+  test("klient nie widzi cudzych kilogramów pod nową nazwą", async () => {
+    const { dane } = await api(`/api/klient/${tokenPodmiany}`);
+    const t1 = dane.tygodnie[0].dni[0].cwiczenia[0];
+    assert.match(t1.nazwa, /low bar/i, "slot pokazuje inne ćwiczenie niż podmienione");
+    // Pustka jest tu uczciwsza niż liczba spod innego ćwiczenia.
+    assert.equal(t1.ciezarWykonany, null,
+      "przy nowej nazwie stoją kilogramy ze starego ćwiczenia");
+  });
+});

@@ -156,6 +156,24 @@ function doWersji2(d: DatabaseSync): void {
   `);
 }
 
+/**
+ * Wersja 3 — wykonanie zapamiętuje, które ćwiczenie klient faktycznie robił.
+ *
+ * Slot planu trzyma jedno ćwiczenie na wszystkie sześć tygodni. Podmiana
+ * w środku cyklu przepisywała więc także przeszłość: przerobione tygodnie
+ * pokazywały nową nazwę, a kilogramy podniesione na starym ćwiczeniu zasilały
+ * propozycję 1RM dla nowego — czyli wracały na sztangę w kolejnym cyklu.
+ *
+ * Migracja tylko dokłada kolumnę. Starych wierszy nie wypełnia: `NULL` znaczy
+ * „to, co stoi w slocie", czyli dokładnie tyle, ile było wiadomo do tej pory.
+ * Zgadywanie wstecz byłoby wymyślaniem historii, której nikt nie zapisał.
+ */
+function doWersji3(d: DatabaseSync): void {
+  if (maKolumne(d, "wykonanie", "cwiczenie_id")) return;
+  d.exec("ALTER TABLE wykonanie ADD COLUMN cwiczenie_id TEXT");
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
+  { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
 ];

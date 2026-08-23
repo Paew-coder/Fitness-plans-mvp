@@ -167,7 +167,7 @@ starcie i wypisuje w logu, co przenosi. **Najpierw jednak kopia:**
 ```bash
 docker compose exec konsola npm run kopia
 docker compose pull && docker compose up -d --build
-docker compose logs konsola | head -20      # zobaczysz „Migracja bazy → wersja 2"
+docker compose logs konsola | head -20      # zobaczysz „Migracja bazy → wersja …"
 ```
 
 Migracja niczego nie kasuje: przenosi dane i sprawdza, czy po przeniesieniu nic

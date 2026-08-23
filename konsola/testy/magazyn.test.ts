@@ -50,6 +50,10 @@ describe("magazyn — plan tam i z powrotem", () => {
       { positionId: "D1-S01", tydzien: 1, data: "2026-09-02T10:00:00.000Z", feedback: "OK" },
       {
         positionId: "D1-S02", tydzien: 1, data: "2026-09-02T10:05:00.000Z",
+        // Ćwiczenie zapisane przy wpisie, a nie tylko pozycja w tabeli —
+        // bo slot trzyma jedno ćwiczenie na cały cykl, a podmiana w środku
+        // przepisywałaby przeszłość.
+        cwiczenieId: "EX-0016",
         feedback: "za trudne", ciezarWykonany: 62.5, powtorzeniaWykonane: 8,
       },
     ];
@@ -60,6 +64,8 @@ describe("magazyn — plan tam i z powrotem", () => {
 
     assert.equal(w.wykonania!.length, 2);
     assert.deepEqual(w.wykonania!.find((x) => x.positionId === "D1-S02"), plan.wykonania[1]);
+    // Wpis bez ćwiczenia — sprzed wprowadzenia kolumny — wraca bez zgadywania.
+    assert.equal(w.wykonania!.find((x) => x.positionId === "D1-S01")!.cwiczenieId, undefined);
     assert.deepEqual(w.ukonczoneDni, plan.ukonczoneDni);
   });
 

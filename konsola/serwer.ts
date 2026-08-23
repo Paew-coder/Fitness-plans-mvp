@@ -329,14 +329,20 @@ function propozycje1RM(
   for (const w of wykonania) {
     const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
     if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
-    const lista = wgCwiczenia.get(slot.cwiczenie.id) ?? [];
+    // Ćwiczenie z wpisu, nie ze slotu. Po podmianie w środku cyklu slot mówi,
+    // co klient robi **teraz** — a te kilogramy podniósł na czymś innym
+    // i policzone jako nowe ćwiczenie wróciłyby na sztangę w kolejnym cyklu.
+    // Stare wpisy nie mają tej informacji; dla nich slot to nadal najlepsze,
+    // co mamy.
+    const cwiczenieWykonane = w.cwiczenieId ?? slot.cwiczenie.id;
+    const lista = wgCwiczenia.get(cwiczenieWykonane) ?? [];
     lista.push({
       ciezar: w.ciezarWykonany!,
       powtorzenia: w.powtorzeniaWykonane!,
       rpePlanowane: slot.rpe,
       feedback: w.feedback ?? null,
     });
-    wgCwiczenia.set(slot.cwiczenie.id, lista);
+    wgCwiczenia.set(cwiczenieWykonane, lista);
   }
 
   return [...wgCwiczenia].flatMap(([cwiczenieId, serie]) => {
@@ -688,6 +694,17 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
   const wykonanie = (positionId: string, tydzien: number) =>
     (zapisany.wykonania ?? []).find((w) => w.positionId === positionId && w.tydzien === tydzien);
 
+  /** Wpis klienta, o ile dotyczy ćwiczenia, które w tym slocie stoi teraz. */
+  const wykonanieTegoCwiczenia = (
+    s: { positionId: string; cwiczenie?: { id: string } | null }, tydzien: number,
+  ) => {
+    const w = wykonanie(s.positionId, tydzien);
+    if (!w) return undefined;
+    // Wpisy sprzed wprowadzenia tej kolumny nie wiedzą, co to było — wtedy
+    // zostaje przy nich to, co dotąd: przyjmujemy, że to ten slot.
+    return !w.cwiczenieId || w.cwiczenieId === s.cwiczenie?.id ? w : undefined;
+  };
+
   const tygodnie = wynik.tygodnie.map((t) => ({
     tydzien: t.tydzien,
     dni: [...new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien))]
@@ -711,8 +728,13 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             ciezar: s.ciezar,
             feedback: zapisany.plan.sloty.find((x) => x.positionId === s.positionId)
               ?.tygodnie?.[t.tydzien]?.feedback ?? null,
-            ciezarWykonany: wykonanie(s.positionId, t.tydzien)?.ciezarWykonany ?? null,
-            powtorzeniaWykonane: wykonanie(s.positionId, t.tydzien)?.powtorzeniaWykonane ?? null,
+            // Tylko wtedy, gdy klient podniósł to na TYM ćwiczeniu. Po podmianie
+            // w środku cyklu przerobione tygodnie pokazywały nową nazwę nad
+            // kilogramami ze starego ćwiczenia — czyli własną historię klienta
+            // opowiedzianą nieprawdziwie. Pustka jest tu uczciwsza.
+            ciezarWykonany: wykonanieTegoCwiczenia(s, t.tydzien)?.ciezarWykonany ?? null,
+            powtorzeniaWykonane:
+              wykonanieTegoCwiczenia(s, t.tydzien)?.powtorzeniaWykonane ?? null,
           })),
       })),
   }));
@@ -1466,6 +1488,11 @@ const serwer = createServer(async (req, res) => {
         const i = wykonania.findIndex((w) => w.positionId === positionId && w.tydzien === tydzien);
         const wpis = { ...(i >= 0 ? wykonania[i]! : { positionId, tydzien }) };
         wpis.data = new Date().toISOString();
+        // Które ćwiczenie klient wtedy robił. Slot trzyma jedno ćwiczenie na
+        // cały cykl, więc bez tego podmiana w środku przepisywała przeszłość:
+        // przerobione tygodnie dostawały nową nazwę, a podniesione kilogramy
+        // szły do propozycji 1RM dla ćwiczenia, którego klient nie robił.
+        wpis.cwiczenieId = slot.cwiczenieId;
 
         if ("feedback" in cialoZadania) {
           // Nieznane odczucie kończyło się dotąd błędem 500 na ograniczeniu
