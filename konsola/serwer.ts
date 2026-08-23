@@ -18,6 +18,7 @@ import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../siln
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
+import { usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
@@ -1577,6 +1578,23 @@ serwer.listen(PORT, async () => {
     : "  Dostęp: tryb lokalny, bez hasła — połączenia tylko z tego komputera.\n"
       + "  Zanim wystawisz konsolę na zewnątrz: npm run haslo\n");
 
+  // Ślad dla narzędzia odtwarzającego bazę: numer procesu i port. Bez niego
+  // `npm run przywroc` nie ma jak stwierdzić, że konsola chodzi — i odtworzy
+  // bazę pod działającym serwerem, który przy pierwszym zapisie cofnie
+  // odtworzenie. Sam plik nic nie blokuje; jest tylko odpowiedzią na pytanie.
+  zapiszSlad(PORT);
+
   await kopiaWTle();
   setInterval(kopiaWTle, 6 * 3_600_000).unref();
 });
+
+// Ślad znika razem z konsolą. Zostawiony po ubiciu i tak nie zmyli narzędzia —
+// sprawdza ono, czy proces o tym numerze żyje — ale porządek na dysku jest
+// tańszy niż tłumaczenie, skąd wziął się plik, którego nikt nie zakładał.
+for (const sygnal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(sygnal, () => {
+    usunSlad();
+    process.exit(0);
+  });
+}
+process.on("exit", usunSlad);

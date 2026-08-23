@@ -12,6 +12,7 @@
     "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts",
     "haslo": "node --no-warnings narzedzia/haslo.ts",
     "kopia": "node --no-warnings narzedzia/kopia.ts",
+    "przywroc": "node --no-warnings narzedzia/przywroc.ts",
     "sprawdz-wdrozenie": "node --no-warnings narzedzia/sprawdz-wdrozenie.ts",
     "przeglad-ekranow": "node --no-warnings narzedzia/przeglad-ekranow.ts",
     "przeglad-klienta": "node --no-warnings narzedzia/przeglad-klienta.ts",

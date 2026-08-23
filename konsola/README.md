@@ -546,12 +546,18 @@ konta.
 
 ```
 konsola/dane/craftmyplan.db                 baza SQLite — wszystkie plany
+konsola/dane/konsola-dziala.json            ślad po uruchomionej konsoli
 konsola/dane/eksport/<Klient> <wersja>.0.xlsx
 ```
 
-Jeden plik. Kopia zapasowa to skopiowanie go na Dysk; przeniesienie na inny
-komputer albo na serwer — to samo. Katalog `dane/` jest poza repozytorium,
+Jeden plik z danymi. Kopia zapasowa to `npm run kopia`, powrót z niej —
+`npm run przywroc`; przeniesienie na inny komputer albo na serwer to
+skopiowanie tego samego pliku. Katalog `dane/` jest poza repozytorium,
 plany klientów nie trafiają na GitHub.
+
+`konsola-dziala.json` to numer procesu i port działającej konsoli; znika przy
+jej zatrzymaniu. Niczego nie blokuje — służy wyłącznie do tego, żeby
+odtwarzanie bazy odmówiło, gdy konsola jeszcze chodzi.
 
 **Dlaczego baza, skoro wcześniej wystarczały pliki JSON.** Bo klient odhacza
 trening z telefonu w tej samej chwili, w której Ty otwierasz jego plan.
@@ -584,6 +590,40 @@ npm run kopia -- /sciezka/gdzies # np. na Dysk
 Nie kopiuj pliku `.db` ręcznie w trakcie pracy konsoli: baza chodzi w trybie
 WAL, więc część świeżych zapisów siedzi w pliku obok. `npm run kopia` robi to
 poprawnie na działającej bazie.
+
+**Powrót z kopii — jedna komenda**
+
+```bash
+npm run przywroc                        # co masz do wyboru
+npm run przywroc -- <plik>              # co się stanie, nic nie zmienia
+npm run przywroc -- <plik> --wykonaj    # odtwarza naprawdę
+```
+
+Kopia zapasowa nie jest plikiem — jest obietnicą, że da się wrócić. Dopóki
+nikt tej drogi nie przeszedł, obietnica jest niesprawdzona.
+
+Bez argumentu narzędzie wypisuje kopie **razem z zawartością**: ile klientów,
+ile planów, kiedy ostatnia zmiana. Po nazwie `craftmyplan-2026-08-19T…` nie da
+się wybrać; po „12 klientów, 41 planów, 19 sierpnia" — da się. Ze wskazanym
+plikiem, ale bez `--wykonaj`, pokazuje samą różnicę: ile pracy zniknie.
+
+Obecna baza jest przed nadpisaniem odkładana obok, jako
+`craftmyplan-przed-odtworzeniem-*.db`. Najczęstszy błąd przy odtwarzaniu to
+sięgnięcie po niewłaściwą kopię — z tego pliku wracasz tą samą komendą.
+
+> **Dlaczego nie zwykłe skopiowanie pliku.** Instrukcja wdrożeniowa mówiła
+> dotąd: zatrzymaj konsolę, skopiuj kopię na miejsce bazy, uruchom. **To po
+> cichu nie działało.** Świeże zapisy siedzą w `craftmyplan.db-wal` obok
+> głównego pliku; nadpisanie samego `.db` zostawia je na dysku, a SQLite
+> dokleja je przy pierwszym otwarciu. Sprawdzone na prawdziwej bazie: po takim
+> „odtworzeniu" w środku stał dokładnie ten plan, przed którym się uciekało —
+> bez jednego słowa ostrzeżenia. A gdy kopia pochodzi z innego momentu niż
+> zostawiony WAL, doklejane strony trafiają w plik, do którego nie należą;
+> wtedy to już nie „nic się nie stało", tylko uszkodzona baza.
+>
+> `npm run przywroc` kasuje pliki obok, sprawdza kopię **zanim** cokolwiek
+> nadpisze, odmawia przy uruchomionej konsoli i po odtworzeniu porównuje, czy
+> w bazie faktycznie stoi to, co było w kopii.
 
 **Przeprowadzka z arkuszy — cały katalog naraz**
 

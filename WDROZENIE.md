@@ -208,10 +208,31 @@ scp root@twojadomena.pl:/var/lib/docker/volumes/konsola_dane/_data/kopie/craftmy
 **Odtworzenie z kopii**
 
 ```bash
+docker compose exec konsola npm run przywroc              # co masz do wyboru
+docker compose exec konsola npm run przywroc -- <plik>    # co się stanie
 docker compose stop konsola
-docker compose cp kopia.db konsola:/app/konsola/dane/craftmyplan.db
+docker compose run --rm konsola npm run przywroc -- <plik> --wykonaj
 docker compose start konsola
 ```
+
+Bez argumentu narzędzie wypisuje kopie **razem z ich zawartością** — ile
+klientów, ile planów, kiedy ostatnia zmiana. Po nazwie pliku nie da się
+wybrać; po „12 klientów, 41 planów, 19 sierpnia" — da się.
+
+Ze wskazanym plikiem, ale bez `--wykonaj`, pokazuje tylko, co odtworzenie
+zmieni, łącznie z tym, ile pracy zniknie. Nic nie rusza.
+
+Obecna baza jest odkładana obok — jako `craftmyplan-przed-odtworzeniem-*.db`.
+Gdyby to była nie ta kopia, wracasz z tego pliku tą samą komendą.
+
+> **Nie odtwarzaj bazy zwykłym skopiowaniem pliku.** Ta instrukcja mówiła
+> dotąd „skopiuj kopię na miejsce bazy" i **to po cichu nie działało**. Baza
+> chodzi w trybie WAL: świeże zapisy siedzą w pliku `craftmyplan.db-wal` obok
+> głównego. Nadpisanie samego `.db` zostawia ten plik na dysku, SQLite dokleja
+> go przy pierwszym otwarciu — i w bazie ląduje z powrotem to, przed czym
+> uciekałeś. Sprawdzone: po takim odtworzeniu w bazie stał dokładnie ten plan,
+> który miał zniknąć. `npm run przywroc` kasuje pliki obok bazy, sprawdza kopię
+> przed nadpisaniem czegokolwiek i odmawia, gdy konsola jeszcze chodzi.
 
 ---
 
