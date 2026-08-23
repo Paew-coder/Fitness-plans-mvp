@@ -22,6 +22,7 @@ import { powodNieuruchomienia, usunSlad, zapiszSlad } from "./baza/slad-pracy.ts
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
+import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
@@ -1208,11 +1209,16 @@ const serwer = createServer(async (req, res) => {
       }
 
       if (akcja === "/moduly" && req.method === "PUT") {
-        const { oddech, bieg } = await cialo(req);
+        // Jedyna trasa, która brała ciało żądania i zapisywała je w całości.
+        // Tekst zamiast sekund zapisywał się z kodem 200 — a potem ekran
+        // „Oddech i bieg" po prostu nie pokazywał się klientowi, bo silnik
+        // z tekstu nie umie policzyć dawki. Trener widział, że zapisał.
+        const sprawdzone = sprawdzModuly(await cialo(req));
+        if ("blad" in sprawdzone) return blad(res, sprawdzone.blad);
         return json(res, obrazPlanu(magazyn.zapisz({
           ...zapisany,
-          oddech: oddech ?? zapisany.oddech,
-          bieg: bieg ?? zapisany.bieg,
+          oddech: sprawdzone.oddech ?? zapisany.oddech,
+          bieg: sprawdzone.bieg ?? zapisany.bieg,
         })));
       }
 

@@ -761,7 +761,11 @@ function rysujModuly() {
       w.append(el("td", "mono", `${j.minutRazem} min`));
       w.append(el("td", "mono", j.dystansKm === null ? "—" : `≈ ${liczba(j.dystansKm)} km`));
       w.append(el("td", "mono", j.tempoTekst ?? "—"));
-      w.append(el("td", "mono", j.strefa ? `${j.strefa.odUd}–${j.strefa.doUd}` : "—"));
+      // Bez wieku i bez zmierzonego HR max tętna nie da się policzyć.
+      // Pytamy o liczbę, a nie o sam obiekt strefy — ta bywa i pełna,
+      // i pusta, i z pustymi wartościami w środku.
+      w.append(el("td", "mono",
+        j.strefa?.odUd != null ? `${j.strefa.odUd}–${j.strefa.doUd}` : "—"));
       cialo.append(w);
     }
   }
