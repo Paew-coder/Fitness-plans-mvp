@@ -117,7 +117,9 @@ describe("migracja v1 → v2", () => {
   test("baza podnosi wersję", () => {
     const { w } = polaczenie.baza().prepare("SELECT MAX(wersja) AS w FROM wersja_schematu").get() as { w: number };
     assert.equal(w, polaczenie.WERSJA_SCHEMATU);
-    assert.equal(w, 2);
+    // Liczba wpisana wprost, żeby podniesienie wersji było decyzją, a nie
+    // skutkiem ubocznym — test ma wtedy zapytać, czy migracja rzeczywiście jest.
+    assert.equal(w, 3);
   });
 
   test("z nazw w planach powstali klienci", () => {
@@ -174,9 +176,14 @@ describe("migracja v1 → v2", () => {
   });
 
   test("ponowne otwarcie bazy niczego nie migruje drugi raz", () => {
+    // Liczymy zmianę, a nie wartość bezwzględną: wpisów wersji jest tyle, ile
+    // migracji przeszła ta baza, i ta liczba rośnie przy każdej kolejnej.
+    // Pytanie brzmi „czy przybyło", a nie „czy jest ich dokładnie jeden".
+    const ile = () => (polaczenie.baza().prepare(
+      "SELECT COUNT(*) AS c FROM wersja_schematu").get() as { c: number }).c;
+    const przed = ile();
     polaczenie.migruj(polaczenie.baza());
-    const wersje = polaczenie.baza().prepare("SELECT COUNT(*) AS c FROM wersja_schematu").get() as { c: number };
-    assert.equal(wersje.c, 1, "jeden wpis wersji, nie dwa");
+    assert.equal(ile(), przed, "migracja wykonała się drugi raz");
     assert.equal(magazyn.listaKlientow(1).length, 2);
   });
 });

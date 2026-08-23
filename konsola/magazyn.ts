@@ -32,6 +32,12 @@ export type Wykonanie = {
   tydzien: number;
   /** ISO — kiedy klient to odhaczył. */
   data: string;
+  /**
+   * Ćwiczenie, które klient wtedy faktycznie robił. Slot trzyma jedno
+   * ćwiczenie na cały cykl, więc bez tego podmiana w środku przepisywała
+   * przeszłość. `undefined` w starych wpisach znaczy „to, co stoi w slocie".
+   */
+  cwiczenieId?: string;
   ciezarWykonany?: number;
   powtorzeniaWykonane?: number;
   feedback?: "OK" | "za łatwe" | "za trudne";
@@ -288,10 +294,11 @@ const WYBOR_PLANU = `
 function zWiersza(w: WierszPlanu): ZapisanyPlan {
   const d = baza();
   const wykonania = d.prepare(
-    `SELECT position_id, tydzien, data, ciezar_wykonany, powtorzenia_wykonane, feedback
+    `SELECT position_id, tydzien, data, cwiczenie_id, ciezar_wykonany,
+            powtorzenia_wykonane, feedback
        FROM wykonanie WHERE trener_id = ? AND plan_id = ? ORDER BY data`,
   ).all(w.trener_id, w.id) as {
-    position_id: string; tydzien: number; data: string;
+    position_id: string; tydzien: number; data: string; cwiczenie_id: string | null;
     ciezar_wykonany: number | null; powtorzenia_wykonane: number | null;
     feedback: Wykonanie["feedback"] | null;
   }[];
@@ -320,6 +327,7 @@ function zWiersza(w: WierszPlanu): ZapisanyPlan {
       positionId: x.position_id,
       tydzien: x.tydzien,
       data: x.data,
+      cwiczenieId: x.cwiczenie_id ?? undefined,
       ciezarWykonany: x.ciezar_wykonany ?? undefined,
       powtorzeniaWykonane: x.powtorzenia_wykonane ?? undefined,
       feedback: x.feedback ?? undefined,
@@ -454,12 +462,13 @@ export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
     d.prepare("DELETE FROM wykonanie WHERE trener_id = ? AND plan_id = ?").run(pelny.trenerId, pelny.id);
     const wstawWykonanie = d.prepare(`
       INSERT INTO wykonanie (trener_id, plan_id, position_id, tydzien, data,
-                             ciezar_wykonany, powtorzenia_wykonane, feedback)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                             cwiczenie_id, ciezar_wykonany, powtorzenia_wykonane, feedback)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const w of pelny.wykonania ?? []) {
       wstawWykonanie.run(
         pelny.trenerId, pelny.id, w.positionId, w.tydzien, w.data,
+        w.cwiczenieId ?? null,
         w.ciezarWykonany ?? null, w.powtorzeniaWykonane ?? null, w.feedback ?? null,
       );
     }
