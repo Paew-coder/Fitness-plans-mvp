@@ -405,7 +405,11 @@ function rysujModuly() {
       w.append(el("span", "nazwa", j.opis));
       const dane = [`${j.minutRazem} min`];
       if (j.tempoTekst) dane.push(`${j.tempoTekst} min/km`);
-      if (j.strefa) dane.push(`${j.strefa.odUd}–${j.strefa.doUd} ud/min`);
+      // Bez wieku i bez zmierzonego HR max tętna nie da się policzyć —
+      // a to zwykłe niedopełnione pole, nie awaria. Silnik oddaje wtedy
+      // , więc sam obiekt nie wystarcza za warunek. Pytamy
+      // o liczbę, bo to ona ma się tu pokazać.
+      if (j.strefa?.odUd != null) dane.push(`${j.strefa.odUd}–${j.strefa.doUd} ud/min`);
       if (j.dystansKm !== null) dane.push(`≈ ${liczba(j.dystansKm)} km`);
       w.append(el("span", "dane", dane.join("  ·  ")));
       karta.append(w);
