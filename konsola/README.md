@@ -591,6 +591,22 @@ Nie kopiuj pliku `.db` ręcznie w trakcie pracy konsoli: baza chodzi w trybie
 WAL, więc część świeżych zapisów siedzi w pliku obok. `npm run kopia` robi to
 poprawnie na działającej bazie.
 
+**Dni liczą się w dniach, nie w dobach**
+
+Konsola mówi przy każdym kliencie, kiedy ostatnio ćwiczył: „dziś", „wczoraj",
+„7 dni temu". Ta sama liczba ustawia kolor sygnału i zapala ostrzeżenie
+„stanął" po dziesięciu dniach.
+
+Liczy się ją w **dniach kalendarzowych, w polskiej strefie czasu**. Brzmi jak
+drobiazg, a nie jest: wcześniej liczyło się upływ godzin przez dwadzieścia
+cztery, więc trening domknięty w poniedziałek o 19:00 pokazywał się we wtorek
+rano jako „dziś" — a klient tego dnia nie ćwiczył wcale. Ludzie trenują
+wieczorem, więc to był przypadek typowy, nie brzegowy.
+
+Strefa jest podana wprost, a nie brana z komputera: kontener na serwerze
+chodzi w UTC, laptop w czasie polskim, i między północą a drugą w nocy
+różnią się datą. Zmienna `STREFA_CRAFTMYPLAN` zmienia ją na inną.
+
 **Powrót z kopii — jedna komenda**
 
 ```bash
