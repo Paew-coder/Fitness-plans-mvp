@@ -363,6 +363,30 @@ export function planyKlienta(trenerId: number, klientId: string): ZapisanyPlan[]
  * trenować, a link jest stały i działa cały czas.
  */
 export function aktywnyPlan(trenerId: number, klientId: string): ZapisanyPlan | null {
+  // Cykl, w którym klient **już pracuje**, a który wrócił do szkicu — bo trener
+  // otworzył go, żeby poprawić. Wtedy nie wolno cofnąć telefonu do poprzedniego
+  // cyklu: klient zobaczyłby stary plan ze starymi ciężarami i wziąłby go za
+  // dzisiejszy trening. Lepiej powiedzieć „plan w przygotowaniu" — aplikacja
+  // pokazuje przy tym ostatnią wersję, którą ma u siebie.
+  //
+  // Szkic bez ani jednego wpisu klienta to co innego: zwykły następny cykl,
+  // szykowany, gdy klient kończy poprzedni. Ten ma się nie liczyć.
+  const wPrzygotowaniu = baza().prepare(`
+    SELECT 1
+      FROM plan p
+     WHERE p.trener_id = ? AND p.klient_id = ? AND p.status = 'szkic'
+       AND p.wersja > COALESCE((SELECT MAX(w.wersja) FROM plan w
+                                 WHERE w.trener_id = p.trener_id
+                                   AND w.klient_id = p.klient_id
+                                   AND w.status IN ('wysłany', 'zakończony')), 0)
+       AND (EXISTS (SELECT 1 FROM wykonanie x
+                     WHERE x.trener_id = p.trener_id AND x.plan_id = p.id)
+         OR EXISTS (SELECT 1 FROM ukonczony_dzien u
+                     WHERE u.trener_id = p.trener_id AND u.plan_id = p.id))
+     LIMIT 1
+  `).get(trenerId, klientId);
+  if (wPrzygotowaniu) return null;
+
   const w = baza().prepare(`
     ${WYBOR_PLANU}
      WHERE p.trener_id = ? AND p.klient_id = ? AND p.status IN ('wysłany', 'zakończony')

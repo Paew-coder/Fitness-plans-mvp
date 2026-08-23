@@ -144,9 +144,21 @@ class BladZadania extends Error {
   readonly kod = 400;
 }
 
+/**
+ * Odczytane ciała żądań. Strumienia nie da się przeczytać dwa razy, a od
+ * kiedy trasa klienta zagląda do `planId` **przed** wybraniem obsługi,
+ * to samo ciało czyta się w dwóch miejscach. Bez tej pamięci drugi odczyt
+ * dostawał pustkę — czyli zapis szedł do bazy bez połowy danych.
+ */
+const odczytaneCiala = new WeakMap<IncomingMessage, any>();
+
 async function cialo(req: IncomingMessage): Promise<any> {
+  if (odczytaneCiala.has(req)) return odczytaneCiala.get(req);
   const dane = await bajty(req);
-  if (dane.length === 0) return {};
+  if (dane.length === 0) {
+    odczytaneCiala.set(req, {});
+    return {};
+  }
   let odczytane: unknown;
   try {
     odczytane = JSON.parse(dane.toString("utf-8"));
@@ -159,6 +171,7 @@ async function cialo(req: IncomingMessage): Promise<any> {
   if (odczytane === null || typeof odczytane !== "object" || Array.isArray(odczytane)) {
     throw new BladZadania("Treść żądania musi być obiektem JSON.");
   }
+  odczytaneCiala.set(req, odczytane);
   return odczytane;
 }
 
@@ -1306,13 +1319,36 @@ const serwer = createServer(async (req, res) => {
       const osoba = magazyn.klientPoTokenie(token!);
       if (!osoba) return blad(res, "Link nieaktualny. Poproś trenera o nowy.", 404);
 
-      const zapisany = magazyn.aktywnyPlan(osoba.trenerId, osoba.id);
+      const aktywny = magazyn.aktywnyPlan(osoba.trenerId, osoba.id);
+      let zapisany = aktywny;
+
       if (!zapisany) {
         // Link działa, planu jeszcze nie ma — szkiców klientowi nie pokazujemy.
         if (req.method === "GET") {
           return json(res, { klient: osoba.nazwa, czekaNaPlan: true });
         }
-        return blad(res, "Nie masz jeszcze aktywnego planu.", 409);
+
+        /**
+         * Zapis, choć aktywnego planu nie ma.
+         *
+         * Klient wraca z siłowni z zaległymi ocenami, a trener w międzyczasie
+         * cofnął plan do szkicu — na przykład żeby go poprawić. Odmowa znaczyła
+         * tu **utratę pracy, która się odbyła**: kolejka w telefonie traktuje
+         * 4xx jako „tego nigdy się nie uda zapisać" i wyrzuca zadanie. Trening
+         * był, klient go ocenił, a oceny znikały bez śladu.
+         *
+         * Zadanie niesie `planId` tego, co klient miał na ekranie. Jeśli ten
+         * plan należy do niego — zapisujemy. Status planu mówi, co klient
+         * *widzi*, a nie czy wolno zapisać to, co już zrobił.
+         */
+        const zCiala = await cialo(req);
+        const wskazany = zCiala.planId
+          ? magazyn.wczytaj(osoba.trenerId, String(zCiala.planId))
+          : null;
+        if (!wskazany || wskazany.klientId !== osoba.id) {
+          return blad(res, "Nie masz jeszcze aktywnego planu.", 409);
+        }
+        zapisany = wskazany;
       }
 
       if (!akcja && req.method === "GET") {
@@ -1339,8 +1375,16 @@ const serwer = createServer(async (req, res) => {
         if (!stary || stary.klientId !== osoba.id) return null;
         return stary;
       };
+      /**
+       * Co wraca na ekran po zapisie. Zawsze cykl **aktywny**, żeby telefon
+       * sam przeszedł na nowy plan. A gdy aktywnego nie ma — bo trener właśnie
+       * poprawia plan — wraca to samo, co przy zwykłym wejściu: informacja,
+       * że plan jest w przygotowaniu. Zapis się odbył, tylko nie ma czego pokazać.
+       */
       const naEkran = (zapisanyWynik: magazyn.ZapisanyPlan) =>
-        zapisanyWynik.id === zapisany.id ? zapisanyWynik : zapisany;
+        aktywny
+          ? widokKlienta(zapisanyWynik.id === aktywny.id ? zapisanyWynik : aktywny)
+          : { klient: osoba.nazwa, czekaNaPlan: true };
 
       /**
        * Historia klienta przez wszystkie jego cykle — dla niego samego.
@@ -1429,7 +1473,7 @@ const serwer = createServer(async (req, res) => {
         }
 
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);
-        return json(res, widokKlienta(naEkran(magazyn.zapisz({ ...cel, wykonania }))));
+        return json(res, naEkran(magazyn.zapisz({ ...cel, wykonania })));
       }
 
       if (akcja === "/dzien" && req.method === "POST") {
@@ -1471,7 +1515,7 @@ const serwer = createServer(async (req, res) => {
         }
 
         return json(res,
-          widokKlienta(naEkran(magazyn.zapisz({ ...cel, ukonczoneDni, wykonania }))));
+          naEkran(magazyn.zapisz({ ...cel, ukonczoneDni, wykonania })));
       }
 
       // Waga ciała. Jeden wpis na dzień — kolejny tego samego dnia nadpisuje
@@ -1481,7 +1525,9 @@ const serwer = createServer(async (req, res) => {
         const kg = wZakresie((await cialo(req)).kg, GRANICE.waga, false);
         if (kg === null) return blad(res, "Waga musi być z zakresu 20–400 kg");
         magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj(), kg);
-        return json(res, widokKlienta(magazyn.wczytaj(zapisany.trenerId, zapisany.id)!));
+        // Przez `naEkran`, jak wszystkie zapisy: waga należy do klienta, więc
+        // zapisuje się także wtedy, gdy aktywnego planu akurat nie ma.
+        return json(res, naEkran(magazyn.wczytaj(zapisany.trenerId, zapisany.id)!));
       }
 
       if (akcja === "/serie" && req.method === "POST") {
@@ -1505,7 +1551,7 @@ const serwer = createServer(async (req, res) => {
           serieMaksymalne.push({ cwiczenieId, ciezar, powtorzenia });
         }
         cel.plan.serieMaksymalne = serieMaksymalne;
-        return json(res, widokKlienta(naEkran(magazyn.zapisz(cel))));
+        return json(res, naEkran(magazyn.zapisz(cel)));
       }
     }
 

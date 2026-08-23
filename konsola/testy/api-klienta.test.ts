@@ -268,3 +268,104 @@ describe("zapis, którego nie da się przyjąć", () => {
     assert.equal(kod, 400);
   });
 });
+
+/**
+ * Trener cofa plan do szkicu, żeby go poprawić — a klient stoi właśnie na
+ * siłowni albo wraca z niej z zaległymi ocenami.
+ *
+ * Sprawdzone na działającej konsoli: każdy taki zapis wracał z kodem 409
+ * „Nie masz jeszcze aktywnego planu". Kolejka w telefonie traktuje 4xx jako
+ * „tego nigdy się nie uda zapisać" i **wyrzuca zadanie**. Trening był, klient
+ * go ocenił, a oceny znikały bez śladu — z winy zwykłej czynności trenera.
+ *
+ * Status planu mówi, co klient *widzi*, a nie czy wolno zapisać to, co już
+ * zrobił. Zapis ze wskazanym `planId` idzie więc do tego planu, a na ekran
+ * wraca informacja, że nowy jest w przygotowaniu.
+ */
+describe("zapis, gdy trener właśnie poprawia plan", () => {
+  /**
+   * Odstawia **wszystkie** cykle klienta do szkicu i oddaje funkcję
+   * przywracającą stan. Wszystkie, bo chodzi o stan „nie ma czego pokazać":
+   * dopóki którykolwiek jest wysłany, klient ma aktywny plan i nic tu nie
+   * jest wyjątkowe. Pierwsza wersja odstawiała tylko cykl pierwszy i przez
+   * to sprawdzała zwykłą drogę, a nie tę, o którą chodzi.
+   */
+  async function doSzkicu(): Promise<() => Promise<void>> {
+    const cykle = [planCyklu1, planCyklu2].filter(Boolean);
+    const stan: { id: string; plan: unknown; status: string }[] = [];
+    for (const id of cykle) {
+      const { dane } = await api(`/api/plany/${id}`);
+      stan.push({ id, plan: dane.zapisany.plan, status: dane.zapisany.status });
+      await api(`/api/plany/${id}`, "PUT",
+        { plan: dane.zapisany.plan, dataStartu: null, status: "szkic" });
+    }
+    return async () => {
+      for (const s of stan) {
+        await api(`/api/plany/${s.id}`, "PUT",
+          { plan: s.plan, dataStartu: null, status: s.status });
+      }
+    };
+  }
+
+  test("ocena ze wskazanym cyklem zostaje zapisana", async () => {
+    const przywroc = await doSzkicu();
+    try {
+      const { kod, dane } = await api(`/api/klient/${token}/odczucie`, "POST",
+        { planId: planCyklu1, positionId: "D1-S01", tydzien: 4,
+          feedback: "za trudne", ciezarWykonany: 97.5, powtorzeniaWykonane: 4 });
+      assert.equal(kod, 200, "ocena odrzucona, choć trening się odbył");
+
+      // Na ekranie nie ma czego pokazać — i to jest właściwa odpowiedź.
+      assert.equal(dane.czekaNaPlan, true);
+      assert.equal(dane.planId, undefined, "szkic nie ma prawa trafić na telefon");
+
+      const { dane: stan } = await api(`/api/plany/${planCyklu1}`);
+      const wpis = stan.zapisany.wykonania
+        .find((w: any) => w.positionId === "D1-S01" && w.tydzien === 4);
+      assert.ok(wpis, "ocena nie doszła do bazy");
+      assert.equal(wpis.ciezarWykonany, 97.5);
+    } finally {
+      await przywroc();
+    }
+  });
+
+  test("domknięcie dnia i waga też dochodzą", async () => {
+    const przywroc = await doSzkicu();
+    try {
+      assert.equal((await api(`/api/klient/${token}/dzien`, "POST",
+        { planId: planCyklu1, dzien: 1, tydzien: 5 })).kod, 200);
+      assert.equal((await api(`/api/klient/${token}/waga`, "POST",
+        { planId: planCyklu1, kg: 79.5 })).kod, 200);
+
+      const { dane } = await api(`/api/plany/${planCyklu1}`);
+      assert.ok(dane.zapisany.ukonczoneDni.some((d: any) => d.tydzien === 5));
+      assert.ok(dane.zapisany.waga.some((w: any) => w.kg === 79.5));
+    } finally {
+      await przywroc();
+    }
+  });
+
+  test("zapis bez wskazania cyklu dalej jest odmawiany", async () => {
+    // Bez `planId` nie wiadomo, czego dotyczy — a zgadywanie w tym miejscu
+    // znaczyłoby dopisywanie treningu do cudzego albo nieistniejącego cyklu.
+    const przywroc = await doSzkicu();
+    try {
+      const { kod } = await api(`/api/klient/${token}/odczucie`, "POST",
+        { positionId: "D1-S01", tydzien: 1, feedback: "OK" });
+      assert.equal(kod, 409);
+    } finally {
+      await przywroc();
+    }
+  });
+
+  test("cudzy cykl zostaje nie do ruszenia także wtedy", async () => {
+    const przywroc = await doSzkicu();
+    try {
+      const { kod } = await api(`/api/klient/${token}/waga`, "POST",
+        { planId: "ktos-inny-1", kg: 70 });
+      assert.equal(kod, 409, "link jednego klienta sięgnął do cudzej kartoteki");
+    } finally {
+      await przywroc();
+    }
+  });
+});

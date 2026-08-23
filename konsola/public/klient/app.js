@@ -62,8 +62,14 @@ const kolejka = {
         return { wyslane: false, odrzucone };   // brak sieci — próbujemy później
       }
       if (odp.ok) {
-        widok = await odp.json();
-        zapiszWidokLokalnie();
+        const swiezy = await odp.json();
+        // Odpowiedź bez planu znaczy „zapisane, ale trener właśnie poprawia
+        // cykl". Podmiana widoku na taką odpowiedź skasowałaby klientowi
+        // z pamięci trening, który ma przed sobą na ekranie.
+        if (swiezy?.planId) {
+          widok = swiezy;
+          zapiszWidokLokalnie();
+        }
       } else if (odp.status >= 500) {
         return { wyslane: false, odrzucone };   // serwer ma zły dzień, nie zadanie
       } else {
@@ -746,12 +752,24 @@ function komunikat(tytul, tresc) {
       const swiezy = await odp.json();
 
       // Link działa, ale trener nie wysłał jeszcze planu. To normalny stan
-      // między cyklami: link jest stały, plan się zmienia. Nie kasujemy tego,
-      // co zapisane lokalnie — poprzedni cykl zostaje do wglądu offline.
+      // między cyklami — i drugi, mniej oczywisty: trener cofnął plan do
+      // szkicu, żeby go poprawić, a klient stoi właśnie na siłowni.
+      //
+      // Dopóki nie ma nic zapisanego, zostaje komunikat. Ale gdy klient ma
+      // u siebie poprzedni cykl, zabranie mu go z ekranu jest najgorszym
+      // z możliwych wyjść: traci trening, który miał przed sobą, a kolejka
+      // z ocenami nie zostaje nawet wysłana — bo `return` był przed nią.
       if (swiezy.czekaNaPlan) {
-        komunikat(`Cześć ${swiezy.klient}!`,
-          "Trener przygotowuje Twój plan. Ten link zostaje ten sam — "
-          + "otwórz go ponownie, gdy dostaniesz wiadomość.");
+        if (!zapamietany) {
+          komunikat(`Cześć ${swiezy.klient}!`,
+            "Trener przygotowuje Twój plan. Ten link zostaje ten sam — "
+            + "otwórz go ponownie, gdy dostaniesz wiadomość.");
+          return;
+        }
+        $("#baner-przygotowania").classList.remove("ukryty");
+        pokazStanPolaczenia(true);
+        await synchronizuj();
+        zarejestrujWorkera();
         return;
       }
 
@@ -772,6 +790,10 @@ function komunikat(tytul, tresc) {
   }
 
   await synchronizuj();
+  zarejestrujWorkera();
+})();
+
+function zarejestrujWorkera() {
   if ("serviceWorker" in navigator) {
     // Zakres jawnie z korzenia, bo klient otwiera `/k/<token>`, a plik workera
     // leży w `/klient/`. Domyślny zakres to katalog pliku — worker rejestrował
@@ -782,4 +804,4 @@ function komunikat(tytul, tresc) {
     navigator.serviceWorker.register("/klient/sw.js", { scope: "/" })
       .catch(() => { /* nieistotne — aplikacja działa, tylko bez trybu offline */ });
   }
-})();
+}
