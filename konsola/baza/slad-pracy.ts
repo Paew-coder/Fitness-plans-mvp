@@ -34,8 +34,19 @@ export function zapiszSlad(port: number): void {
   } catch { /* brak prawa zapisu do katalogu danych — konsola ma działać dalej */ }
 }
 
+/**
+ * Kasuje ślad — ale **tylko własny**.
+ *
+ * Bez tego warunku druga konsola, uruchomiona przy zajętym porcie, kasowała
+ * przy wyjściu ślad tej pierwszej, działającej. Odtwarzanie bazy przestałoby
+ * wtedy widzieć, że konsola chodzi — czyli sprzątanie po nieudanym starcie
+ * odbierałoby zabezpieczenie działającej instalacji.
+ */
 export function usunSlad(): void {
-  try { rmSync(sciezkaSladu(), { force: true }); } catch { /* jak wyżej */ }
+  try {
+    if (czytajSlad()?.pid !== process.pid) return;
+    rmSync(sciezkaSladu(), { force: true });
+  } catch { /* jak wyżej */ }
 }
 
 export function czytajSlad(): Slad | null {
@@ -86,4 +97,43 @@ export async function konsolaChodzi(): Promise<number | null> {
     if (await odpowiada(port)) return port;
   }
   return null;
+}
+
+/**
+ * Zdanie po polsku zamiast śladu stosu, gdy serwer nie może zająć portu.
+ *
+ * Odtworzone: drugie kliknięcie ikony przy działającej konsoli wypisywało
+ * „Unhandled 'error' event", ścieżki z dysku i `node:net:1940:16` — po czym
+ * okno się zamykało. Podwójne kliknięcie to najczęstsza rzecz, jaka się temu
+ * plikowi przydarza, więc był to najczęstszy komunikat, jaki trener widział.
+ *
+ * Ślad pozwala odróżnić dwa różne kłopoty, które wyglądają tak samo: własną
+ * konsolę już działającą (wtedy nie ma czego naprawiać — wystarczy otworzyć
+ * przeglądarkę) od cudzego programu na tym porcie (wtedy trzeba zmienić port).
+ */
+export function powodNieuruchomienia(blad: unknown, port: number): string {
+  const kod = (blad as { code?: string })?.code;
+
+  if (kod === "EADDRINUSE") {
+    const s = czytajSlad();
+    if (s && s.port === port && procesZyje(s.pid)) {
+      const od = s.od ? new Date(s.od) : null;
+      const kiedy = od && !Number.isNaN(od.getTime())
+        ? ` (chodzi od ${od.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })})`
+        : "";
+      return `Konsola już działa${kiedy} — nie ma potrzeby uruchamiać jej drugi raz.\n`
+        + `  Otwórz http://localhost:${port}\n`
+        + "  Żeby ją zatrzymać, wróć do okna, w którym chodzi, i naciśnij Ctrl+C.";
+    }
+    return `Port ${port} jest zajęty przez inny program.\n`
+      + `  Jeśli to konsola w innym oknie — otwórz http://localhost:${port}\n`
+      + `  Jeśli nie — uruchom ją na innym porcie:  PORT=${port + 1} npm start`;
+  }
+
+  if (kod === "EACCES") {
+    return `Brak uprawnień do portu ${port}. Porty poniżej 1024 są zastrzeżone.\n`
+      + "  Uruchom konsolę na porcie 4173 albo wyższym:  PORT=4173 npm start";
+  }
+
+  return `Konsola nie wystartowała: ${blad instanceof Error ? blad.message : String(blad)}`;
 }

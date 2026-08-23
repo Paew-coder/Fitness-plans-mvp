@@ -89,6 +89,11 @@ Sprawdza wersję Node'a, uruchamia konsolę i sam otwiera przeglądarkę pod
 wyłącza aplikację. Gdy czegoś brakuje, plik mówi po polsku czego i zostawia
 okno otwarte, zamiast zniknąć.
 
+**Kliknięcie drugi raz nic nie psuje.** Gdy konsola już chodzi, plik po prostu
+otwiera przeglądarkę i kończy pracę — nie próbuje uruchomić drugiej. Gdy port
+zajmuje inny program, mówi to wprost i podpowiada, jak uruchomić konsolę na
+innym porcie.
+
 > Na Macu przy pierwszym kliknięciu system może odmówić otwarcia pliku
 > pobranego z internetu. Wtedy: **prawy przycisk → Otwórz → Otwórz**. Raz.
 

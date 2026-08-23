@@ -72,6 +72,24 @@ if not defined PYCMD (
   echo.
 )
 
+rem -- konsola juz chodzi? -------------------------------------------
+rem
+rem Podwojne klikniecie ikony przy dzialajacej konsoli to najczestsza rzecz,
+rem jaka sie temu plikowi przydarza. Uruchamianie wtedy drugiej nie ma sensu:
+rem port jest zajety. Zwyczajnie otwieramy przegladarke.
+rem
+rem Przelacznik -f jest konieczny: bez niego curl uznaje za sukces takze
+rem odpowiedz "nie znaleziono", czyli obcy program na tym porcie wygladalby
+rem jak nasza konsola.
+where curl >nul 2>nul
+if errorlevel 1 goto poczatek
+curl -sf -o nul "http://localhost:%PORT%/zdrowie" >nul 2>nul
+if errorlevel 1 goto poczatek
+echo Konsola juz dziala - otwieram http://localhost:%PORT%
+start "" http://localhost:%PORT%
+exit /b 0
+
+:poczatek
 rem -- start ---------------------------------------------------------
 echo Uruchamiam konsole CraftMyPlan...
 echo.
@@ -83,11 +101,10 @@ start "" /min "%~f0" --otworz-przegladarke
 
 node --no-warnings serwer.ts
 if errorlevel 1 (
+  rem Serwer sam wypisuje powod po polsku - takze wtedy, gdy port jest zajety.
+  rem Wczesniej stalo tu zgadywanie, a nad nim slad stosu po angielsku.
   echo.
-  echo Konsola przestala dzialac.
-  echo Jesli zamknelo sie od razu po starcie, najczestsza przyczyna jest taka,
-  echo ze port %PORT% jest juz zajety - czyli aplikacja JUZ CHODZI w innym oknie.
-  echo Sprawdz http://localhost:%PORT%
+  echo Konsola nie wystartowala - powod jest wypisany wyzej.
   echo.
   pause
   exit /b 1

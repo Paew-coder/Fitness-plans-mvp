@@ -66,6 +66,28 @@ else
   echo
 fi
 
+otworz_przegladarke() {
+  if command -v open > /dev/null 2>&1; then open "$ADRES"
+  elif command -v xdg-open > /dev/null 2>&1; then xdg-open "$ADRES" > /dev/null 2>&1
+  fi
+}
+
+# ── konsola już chodzi? ────────────────────────────────────────────
+#
+# Podwójne kliknięcie ikony przy działającej konsoli to najczęstsza rzecz,
+# jaka się temu plikowi przydarza. Uruchamianie wtedy drugiej nie ma sensu:
+# port jest zajęty i kończy się to błędem. Zwyczajnie otwieramy przeglądarkę.
+#
+# `-f` jest tu konieczne: bez niego `curl` uznaje za sukces także odpowiedź
+# „nie znaleziono", czyli obcy program na tym porcie wyglądałby jak nasza
+# konsola — a wtedy kliknięcie ikony nie robiłoby nic poza otwarciem pustej
+# strony.
+if curl -sf -o /dev/null "$ADRES/zdrowie" 2> /dev/null; then
+  echo "Konsola już działa — otwieram $ADRES"
+  otworz_przegladarke
+  exit 0
+fi
+
 # ── start ──────────────────────────────────────────────────────────
 echo "Uruchamiam konsolę CraftMyPlan…"
 echo
@@ -77,21 +99,22 @@ SERWER=$!
 # pierwsze, co widzi trener, to „nie można nawiązać połączenia”.
 for _ in $(seq 1 60); do
   if ! kill -0 "$SERWER" 2> /dev/null; then break; fi
-  if curl -s -o /dev/null "$ADRES/api/cwiczenia"; then
-    if command -v open > /dev/null 2>&1; then open "$ADRES"
-    elif command -v xdg-open > /dev/null 2>&1; then xdg-open "$ADRES" > /dev/null 2>&1
-    fi
+  if curl -sf -o /dev/null "$ADRES/zdrowie" 2> /dev/null; then
+    otworz_przegladarke
     break
   fi
   sleep 0.25
 done
 
+# Chwila zwłoki, zanim ogłosimy sukces: serwer, który nie zdołał zająć portu,
+# umiera ułamek sekundy po tym, jak przestaje odpowiadać. Bez tej pauzy
+# launcher zdążył napisać „Gotowe”, a dopiero potem okno gasło.
+sleep 1
+
 if ! kill -0 "$SERWER" 2> /dev/null; then
   wait "$SERWER"
   echo
-  echo "Konsola nie wystartowała."
-  echo "Najczęstsza przyczyna: port $PORT jest już zajęty — czyli aplikacja"
-  echo "prawdopodobnie **już chodzi** w innym oknie. Sprawdź $ADRES"
+  echo "Konsola nie wystartowała — powód jest wypisany wyżej."
   czekaj_i_zamknij
 fi
 
