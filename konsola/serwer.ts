@@ -21,7 +21,8 @@ import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
 import { powodNieuruchomienia, usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
-import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
+import { bladKsztaltuPlanu, bladKsztaltuPropozycji, bladDatyStartu }
+  from "./ksztalt-planu.ts";
 import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
 import { katalog } from "../silnik/src/katalog.ts";
@@ -1264,7 +1265,10 @@ const serwer = createServer(async (req, res) => {
 
       if (akcja === "/ai-wstaw" && req.method === "POST") {
         const { propozycja } = await cialo(req) as { propozycja: Propozycja };
-        if (!propozycja?.dni?.length) return blad(res, "Pusta propozycja");
+        // To, że propozycja była odpowiedzią modelu, nie czyni jej zaufaną —
+        // do serwera wraca przez tę samą sieć, co każde inne żądanie.
+        const bladKsztaltu = bladKsztaltuPropozycji(propozycja);
+        if (bladKsztaltu) return blad(res, bladKsztaltu);
         const sprawdzona = przeliczPropozycje(propozycja, {
           poprzednieCwiczenia: magazyn.cwiczeniaZPoprzedniegoCyklu(zapisany),
         });

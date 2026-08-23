@@ -106,6 +106,24 @@ function proby(token: string): Proba[] {
       ["powtórzenia spoza tabeli", '{"cwiczenieId": "EX-0010", "ciezar": 100, "powtorzenia": 999}'],
     ]),
 
+    // ── asystent: propozycja wracająca z przeglądarki ─────────────────
+    //
+    // `/ai-wstaw` nie pyta modelu o nic — bierze propozycję z ciała żądania
+    // i wstawia ją do planu. Czyli jest to zwykła trasa przyjmująca dane
+    // z sieci, a nie „coś od AI", i podlega tym samym regułom.
+    ...jsonowe(`/api/plany/${PLAN}/ai-wstaw`, [
+      ["puste ciało", ""],
+      ["bez propozycji", "{}"],
+      ["propozycja jako tekst", '{"propozycja": "zrób mi plan"}'],
+      ["dni jako tekst", '{"propozycja": {"dni": "poniedziałek"}}'],
+      ["dzień bez numeru", '{"propozycja": {"dni": [{"nazwa": "A", "cwiczenia": []}]}}'],
+      ["dzień jako liczba w tekście", '{"propozycja": {"dni": [{"dzien": "jeden", "cwiczenia": []}]}}'],
+      ["ćwiczenia jako tekst", '{"propozycja": {"dni": [{"dzien": 1, "cwiczenia": "przysiad"}]}}'],
+      ["pozycja jako tekst", '{"propozycja": {"dni": [{"dzien": 1, "cwiczenia": ["przysiad"]}]}}'],
+      ["tysiąc dni", `{"propozycja": {"dni": ${JSON.stringify(
+        Array.from({ length: 1000 }, () => ({ dzien: 1, cwiczenia: [] })))}}}`],
+    ]),
+
     // ── import: to, co nie jest arkuszem ──────────────────────────────
     { opis: "/api/import — pusty plik", sciezka: "/api/import?klient=X&wersja=1",
       metoda: "POST", cialo: "", typ: "application/octet-stream" },
@@ -189,7 +207,24 @@ function proby(token: string): Proba[] {
 }
 
 /** Ślady wnętrza, których w odpowiedzi dla klienta być nie może. */
-const ZDRADLIWE = [/\/home\//, /\bat [A-Za-z]+ \(/, /\.ts:\d+/, /node:internal/];
+/**
+ * Czego trenerowi pokazać nie wolno.
+ *
+ * Pierwsza wersja szukała wyłącznie ścieżek z dysku i ramek stosu — i przez
+ * to przepuściła komunikat „((intermediate value) ?? []).map is not a
+ * function". Ścieżki w nim nie było, więc kontrola zapaliła się na zielono,
+ * choć na ekranie trenera stało wnętrze silnika JavaScriptu.
+ *
+ * Kontrola odpowiadała na węższe pytanie, niż mówi jej nazwa: „czy jest tu
+ * ścieżka" zamiast „czy to jest zdanie dla człowieka". Druga grupa wzorców
+ * łapie komunikaty samego JavaScriptu — żaden polski komunikat konsoli tak
+ * nie brzmi, więc fałszywych trafień tu nie ma.
+ */
+const ZDRADLIWE = [
+  /\/home\//, /\bat [A-Za-z]+ \(/, /\.ts:\d+/, /node:internal/,
+  /is not a function/, /Cannot read propert/, /intermediate value/,
+  /undefined is not/, /\b(TypeError|ReferenceError|SyntaxError|RangeError)\b/,
+];
 
 await zSerwerem(PORT, async ({ adres, api }: Srodowisko) => {
   // Plan i klient z linkiem — żeby próby trafiały w istniejące zasoby.
