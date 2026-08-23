@@ -22,6 +22,7 @@ import { usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladDatyStartu } from "./ksztalt-planu.ts";
+import { dniOd, dzisiaj } from "./czas.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
@@ -238,9 +239,9 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
   const daty = [...ukonczone.map((u) => u.data), ...wykonania.map((w) => w.data)].sort();
   const ostatniaAktywnosc = daty.at(-1) ?? null;
 
-  const dniOdOstatniej = ostatniaAktywnosc
-    ? Math.floor((Date.now() - Date.parse(ostatniaAktywnosc)) / 86_400_000)
-    : null;
+  // W dniach kalendarzowych, nie w dobach: trening z wczorajszego wieczoru ma
+  // być „wczoraj", a nie „dziś" tylko dlatego, że nie minęły jeszcze 24 godziny.
+  const dniOdOstatniej = dniOd(ostatniaAktywnosc);
 
   // Dzień „rozpoczęty" to taki, w którym klient cokolwiek ocenił — nawet jeśli
   // zapomniał kliknąć „Zakończ trening". Na siłowni to się zdarza notorycznie,
@@ -361,12 +362,6 @@ function propozycjeZPoprzedniegoCyklu(zapisany: magazyn.ZapisanyPlan) {
   return propozycje1RM(poprzedni, przeliczPlan(poprzedni.plan), zapisany.plan.serieMaksymalne)
     .filter((p) => zapisany.plan.sloty.some((s) => s.cwiczenieId === p.cwiczenieId))
     .map((p) => ({ ...p, zPoprzedniegoCyklu: poprzedni.wersja }));
-}
-
-/** Ile dni od `data`. `null`, gdy daty nie ma. */
-function dniOd(data: string | null | undefined): number | null {
-  if (!data) return null;
-  return Math.floor((Date.now() - Date.parse(data)) / 86_400_000);
 }
 
 /**
@@ -1475,8 +1470,7 @@ const serwer = createServer(async (req, res) => {
       if (akcja === "/waga" && req.method === "POST") {
         const kg = wZakresie((await cialo(req)).kg, GRANICE.waga, false);
         if (kg === null) return blad(res, "Waga musi być z zakresu 20–400 kg");
-        const dzisiaj = new Date().toISOString().slice(0, 10);
-        magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj, kg);
+        magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj(), kg);
         return json(res, widokKlienta(magazyn.wczytaj(zapisany.trenerId, zapisany.id)!));
       }
 

@@ -319,7 +319,10 @@ function rysujPostep() {
     const kg = Number(wKg.value) || 0;
     if (kg <= 0) return;
     wyslij("/waga", { kg }, () => {
-      const dzisiaj = new Date().toISOString().slice(0, 10);
+      // Dzień lokalny telefonu, nie UTC. Ważenie o wpół do pierwszej w nocy
+      // lądowało pod wczorajszą datą, bo w UTC to jeszcze wczoraj — a serwer
+      // zapisywał je pod dzisiejszą. Na ekranie pojawiały się dwa wpisy.
+      const dzisiaj = new Date().toLocaleDateString("sv-SE");
       p.waga.punkty = [...p.waga.punkty.filter((x) => x.data !== dzisiaj), { data: dzisiaj, kg }];
     }, { odswiez: false });
     wKg.value = "";
