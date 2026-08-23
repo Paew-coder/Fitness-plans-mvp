@@ -265,6 +265,28 @@ async function main(): Promise<void> {
       () => docker("exec", KONTENER, "npm", "run", "kopia"),
       (w) => w.includes("Kopia:"));
 
+    // Kopia jest warta dokładnie tyle, ile droga powrotna z niej. Sprawdzamy
+    // oba końce tej drogi w kontenerze, bo tam właśnie się jej użyje.
+    await sprawdzProbujac("lista kopii mówi, co jest w środku, a nie tylko jak się nazywa",
+      () => docker("exec", KONTENER, "npm", "run", "--silent", "przywroc"),
+      (w) => ({ ok: /Kopie w /.test(w) && /klient/.test(w),
+        szczegol: w.split("\n").find((l) => l.includes("klient"))?.trim().slice(0, 70) ?? "" }));
+
+    // Odtwarzanie pod działającym serwerem daje najgorszy możliwy wynik:
+    // serwer trzyma otwarte połączenie ze starym plikiem i przy pierwszym
+    // zapisie przywraca to, co przed chwilą zostało nadpisane.
+    const doOdtworzenia = readdirSync(join(katalogDanych, "kopie"))
+      .filter((f) => f.endsWith(".db")).sort().at(-1);
+    await sprawdzProbujac("odtworzenie odmawia, dopóki konsola chodzi", () => {
+      try {
+        docker("exec", KONTENER, "npm", "run", "--silent", "przywroc",
+          "--", doOdtworzenia!, "--wykonaj");
+        return "wykonało się mimo działającej konsoli";
+      } catch (e) {
+        return String((e as { stderr?: Buffer }).stderr ?? e);
+      }
+    }, (w) => ({ ok: /Konsola jest uruchomiona/.test(w), szczegol: pierwszaLinia(w) }));
+
     console.log("\nBRAMKA DOSTĘPU");
     const bezHasla = await fetch(adres("/api/klienci"));
     sprawdz("bez hasła konsola odmawia połączeń z zewnątrz", bezHasla.status === 403,
