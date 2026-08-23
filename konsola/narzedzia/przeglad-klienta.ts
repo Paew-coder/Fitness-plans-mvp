@@ -364,6 +364,70 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   }
   await t2.close();
 
+  // ── 17. oddech i bieg ─────────────────────────────────────────────
+  // Praca obok siłowni: drabina oddechowa i sześciotygodniowy plan biegowy.
+  // Matematyka obu ma testy w silniku, ale **cała droga od trenera do telefonu
+  // nie była dotąd przejechana ani razu** — ani trasa `/moduly`, ani ekran.
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  sprawdz("bez modułów przycisk „Oddech i bieg” milczy",
+    await s.locator("#pokaz-moduly.ukryty").count() === 1);
+
+  const biezacyPlan = (await widok()).planId;
+  await api(`/api/plany/${biezacyPlan}/moduly`, "PUT", {
+    oddech: { twot: 28, przeciwwskazania: false },
+    bieg: { wiek: 34, dystansTestowy: 3, czasTestowy: 18, jednostekWTygodniu: 3 },
+  });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#pokaz-moduly:not(.ukryty)", { timeout: 3000 });
+  await s.click("#pokaz-moduly");
+  await s.waitForSelector("#ekran-moduly:not(.ukryty)");
+
+  // Tytuły modułów idą przez `text-transform: uppercase`, więc porównanie
+  // z tekstem źródłowym odpowiadałoby na pytanie o kod, a nie o ekran.
+  const modulyNaEkranie = async () =>
+    (await s.locator("#moduly").innerText()).toLocaleLowerCase("pl");
+
+  const moduly = await modulyNaEkranie();
+  sprawdz("klient widzi dawkę oddechową",
+    moduly.includes("oddech") && /rozgrzewka|praca|wyciszenie/.test(moduly),
+    moduly.split("\n").find((l) => l.includes("·"))?.slice(0, 60) ?? "brak");
+  sprawdz("klient widzi sześć tygodni biegu",
+    (moduly.match(/bieg · tydzień/g) ?? []).length === 6,
+    `${(moduly.match(/bieg · tydzień/g) ?? []).length} tygodni`);
+  sprawdz("tydzień czwarty jest oznaczony jako lżejszy",
+    moduly.includes("(lżejszy)"));
+  sprawdz("przy podanym wieku widać zakres tętna",
+    /\d+–\d+ ud\/min/.test(moduly),
+    moduly.split("\n").find((l) => l.includes("ud/min"))?.slice(0, 60) ?? "brak");
+
+  // Wiek i zmierzone HR max to pola, których trener bardzo często nie ma.
+  // Bez żadnego z nich tętna nie da się policzyć — i na telefonie wyświetlało
+  // się wtedy „null–null ud/min", bo warunek stał na obiekcie strefy zamiast
+  // na liczbie. Reszta planu biegowego jest wtedy nadal poprawna.
+  await api(`/api/plany/${biezacyPlan}/moduly`, "PUT", {
+    bieg: { wiek: null, hrMaxZmierzone: null, dystansTestowy: 3, czasTestowy: 18,
+      jednostekWTygodniu: 3 },
+  });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.click("#pokaz-moduly");
+  await s.waitForSelector("#ekran-moduly:not(.ukryty)");
+  const bezWieku = await modulyNaEkranie();
+  sprawdz("bez wieku i tętna nie pokazujemy „null”",
+    !/null|undefined|nan\b/.test(bezWieku),
+    bezWieku.split("\n").find((l) => /null|undefined|nan\b/.test(l))?.slice(0, 60) ?? "czysto");
+  sprawdz("plan biegowy bez tętna dalej ma treść",
+    (bezWieku.match(/bieg · tydzień/g) ?? []).length === 6 && /\d+ min/.test(bezWieku),
+    `${(bezWieku.match(/bieg · tydzień/g) ?? []).length} tygodni`);
+
+  // Trasa `/moduly` zapisywała dotąd cokolwiek, co przyszło.
+  const smieci = await fetch(`${adres}/api/plany/${biezacyPlan}/moduly`, {
+    method: "PUT", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ oddech: "trzydzieści sekund" }),
+  });
+  sprawdz("tekst zamiast wyniku testu jest odrzucany", smieci.status === 400,
+    `kod ${smieci.status}`);
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
