@@ -559,8 +559,26 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     const { dane } = await api(`/api/klient/${tokenPodmiany}`);
     const t1 = dane.tygodnie[0].dni[0].cwiczenia[0];
     assert.match(t1.nazwa, /low bar/i, "slot pokazuje inne ćwiczenie niż podmienione");
-    // Pustka jest tu uczciwsza niż liczba spod innego ćwiczenia.
+    // Pustka w polach jest tu uczciwsza niż liczba spod innego ćwiczenia.
     assert.equal(t1.ciezarWykonany, null,
       "przy nowej nazwie stoją kilogramy ze starego ćwiczenia");
+    assert.equal(t1.feedback, null, "przy nowej nazwie stoi ocena starego ćwiczenia");
+  });
+
+  test("ale swoją historię widzi — pod prawdziwą nazwą", async () => {
+    // Samo ukrycie kosztowało klienta własną historię: przerobione tygodnie
+    // wyglądały na nietknięte. Liczby wracają, tylko opisane tym, czego
+    // naprawdę dotyczą, i wyłącznie do odczytu.
+    const { dane } = await api(`/api/klient/${tokenPodmiany}`);
+    const t1 = dane.tygodnie[0].dni[0].cwiczenia[0];
+    assert.ok(t1.wczesniej, "przerobiony tydzień wygląda na pusty");
+    assert.match(t1.wczesniej.nazwa, /back squat/i);
+    assert.equal(t1.wczesniej.ciezarWykonany, 105);
+    assert.equal(t1.wczesniej.powtorzeniaWykonane, 5);
+    assert.equal(t1.wczesniej.feedback, "OK");
+
+    // Tygodnie nietknięte podmianą nie mają czego wspominać.
+    const t3 = dane.tygodnie[2].dni[0].cwiczenia[0];
+    assert.equal(t3.wczesniej, null);
   });
 });

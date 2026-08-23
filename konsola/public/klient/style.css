@@ -91,6 +91,14 @@ button { font: inherit; cursor: pointer; }
    pod nim nie powtarza tego odstępu drugi raz. */
 .offline:not(.ukryty) + #ekran-tygodnie .gora { padding-top: 1rem; }
 
+/* Ślad po ćwiczeniu, które stało tu przed podmianą — informacja, nie pole. */
+.wczesniej {
+  font-size: .82rem; color: var(--tekst-blady);
+  margin: .1rem 0 .5rem; line-height: 1.4;
+}
+.wczesniej .etykieta { font-family: var(--mono); font-size: .74rem; }
+.wczesniej .nazwa { color: var(--tekst); }
+
 .baner {
   background: var(--akcent-tlo); border: 1px solid var(--akcent);
   border-radius: 12px; padding: 1rem; margin-bottom: 1.2rem;

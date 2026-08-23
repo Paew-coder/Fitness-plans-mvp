@@ -541,6 +541,27 @@ function rysujTrening() {
  */
 function polaWykonania(c) {
   const blok = el("div", "wykonanie");
+
+  /**
+   * Co klient robił w tym miejscu, zanim trener podmienił ćwiczenie.
+   *
+   * Tylko do odczytu i pod prawdziwą nazwą. Wpuszczenie tych liczb do pól
+   * niżej dałoby się zapisać na nowo — już pod ćwiczeniem, którego wtedy
+   * nie było.
+   */
+  if (c.wczesniej) {
+    const w = c.wczesniej;
+    const ile = [
+      w.ciezarWykonany != null ? `${liczba(w.ciezarWykonany)} kg` : null,
+      w.powtorzeniaWykonane != null ? `× ${w.powtorzeniaWykonane}` : null,
+      w.feedback,
+    ].filter(Boolean).join(" ");
+    const wiersz = el("p", "wczesniej");
+    wiersz.append(el("span", "etykieta", "Wcześniej tutaj: "),
+      el("span", "nazwa", w.nazwa), el("span", "", ile ? ` — ${ile}` : ""));
+    blok.append(wiersz);
+  }
+
   const maDane = c.ciezarWykonany != null || c.powtorzeniaWykonane != null;
   const otwarte = maDane || otwarteWykonania.has(c.positionId);
 

@@ -491,6 +491,50 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // od razu po kontrolach błąd dolatywał już po nim i psuł podsumowanie.
   bledy.splice(bledyPrzedSzkicem);
 
+  // ── 19. podmiana ćwiczenia w przerobionym tygodniu ────────────────
+  //
+  // Slot trzyma jedno ćwiczenie na cały cykl, więc podmiana w środku opisuje
+  // nową nazwą także tygodnie już zrobione. Kilogramy z nich nie mogą stać
+  // pod cudzą nazwą — ale i nie mogą po prostu zniknąć, bo to jest własna
+  // historia klienta. Wracają jako wpis do odczytu, pod prawdziwą nazwą.
+  const planDoPodmiany = (await widok()).planId;
+  const stanPrzed = await api(`/api/plany/${planDoPodmiany}`);
+  const slotPierwszy = stanPrzed.zapisany.plan.sloty
+    .find((s: any) => s.cwiczenieId)!;
+
+  await api(`/api/klient/${sciezka.replace("/k/", "")}/odczucie`, "POST", {
+    planId: planDoPodmiany, positionId: slotPierwszy.positionId, tydzien: 1,
+    feedback: "OK", ciezarWykonany: 88, powtorzeniaWykonane: 6,
+  });
+
+  const zPodmiana = (await api(`/api/plany/${planDoPodmiany}`)).zapisany;
+  const staraNazwa = (await api("/api/cwiczenia"))
+    .find((c: any) => c.id === slotPierwszy.cwiczenieId)!.nazwa;
+  const slot = zPodmiana.plan.sloty.find((s: any) => s.positionId === slotPierwszy.positionId)!;
+  slot.cwiczenieId = "EX-0013";
+  for (const tydzien of [2, 3, 4, 5, 6]) delete slot.tygodnie[tydzien];
+  await api(`/api/plany/${planDoPodmiany}`, "PUT", {
+    plan: zPodmiana.plan, dataStartu: zPodmiana.dataStartu, status: "wysłany",
+    zmieniony: zPodmiana.zmieniony,
+  });
+
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await s.waitForTimeout(400);
+
+  const slad = await s.locator("#cwiczenia .wczesniej").first().innerText()
+    .catch(() => "");
+  sprawdz("klient widzi, co robił w tym miejscu przed podmianą",
+    slad.includes(staraNazwa) && /88/.test(slad), slad.replace(/\s+/g, " ").slice(0, 70));
+
+  const polaPierwszego = s.locator("#cwiczenia .cwiczenie").first()
+    .locator(".wykonanie-pola input");
+  sprawdz("pola nowego ćwiczenia zostają puste",
+    await polaPierwszego.count() === 0 || await polaPierwszego.nth(0).inputValue() === "",
+    await polaPierwszego.count() ? await polaPierwszego.nth(0).inputValue() : "pola zwinięte");
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
