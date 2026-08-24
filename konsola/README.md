@@ -607,6 +607,21 @@ Strefa jest podana wprost, a nie brana z komputera: kontener na serwerze
 chodzi w UTC, laptop w czasie polskim, i między północą a drugą w nocy
 różnią się datą. Zmienna `STREFA_CRAFTMYPLAN` zmienia ją na inną.
 
+**Gdy plik z danymi przestanie się otwierać**
+
+Konsola nie wstanie i powie dlaczego — po polsku, razem z tym, co wpisać:
+
+```
+  Plik z danymi jest uszkodzony i nie da się go otworzyć.
+  /Users/ty/CraftMyPlan/konsola/dane/craftmyplan.db
+
+  Kopie zapasowe robią się same. Żeby zobaczyć, co masz do wyboru:
+      npm run przywroc
+```
+
+Tak samo przy braku miejsca na dysku, braku praw do katalogu i pliku tylko
+do odczytu. Diagnoza bez następnego kroku byłaby w takiej chwili bezużyteczna.
+
 **Powrót z kopii — jedna komenda**
 
 ```bash

@@ -19,6 +19,7 @@ import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
 import { powodNieuruchomienia, usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
+import { powodNieotwarciaBazy } from "./baza/blad-bazy.ts";
 import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladKsztaltuPropozycji, bladDatyStartu }
@@ -59,7 +60,21 @@ const PORT = Number(process.env.PORT ?? 4173);
  * poniżej już zwraca id z sesji — zmieni się tylko to, że przestanie mieć
  * awaryjny tryb lokalny.
  */
-const TRENER = trenerDomyslny();
+/**
+ * Pierwsze dotknięcie bazy. Idzie przez `try`, bo to tutaj wychodzi uszkodzony
+ * plik, brak praw do katalogu albo pełny dysk — a każde z nich kończyło się
+ * śladem stosu po angielsku w oknie, które zaraz potem gasło.
+ */
+function pierwszeOtwarcieBazy(): number {
+  try {
+    return trenerDomyslny();
+  } catch (blad) {
+    console.error(`\n  ${powodNieotwarciaBazy(blad, SCIEZKA_BAZY)}\n`);
+    process.exit(1);
+  }
+}
+
+const TRENER = pierwszeOtwarcieBazy();
 
 /** Czy odpowiedzi mogą oznaczać ciasteczko jako `Secure`. */
 const ZA_HTTPS = process.env.ZA_HTTPS === "1";
