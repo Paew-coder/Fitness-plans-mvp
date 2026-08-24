@@ -17,6 +17,7 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync, spawn, type ChildProcess } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync } from "node:fs";
 import { createServer } from "node:http";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
@@ -26,6 +27,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KONSOLA = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+const { powodNieotwarciaBazy } = await import("../baza/blad-bazy.ts");
 const KATALOG = mkdtempSync(join(tmpdir(), "uszkodzona-test-"));
 const BAZA = join(KATALOG, "craftmyplan.db");
 const KOPIE = join(KATALOG, "kopie");
@@ -152,4 +155,93 @@ describe("powrót", () => {
       proces.kill("SIGKILL");
     }
   });
+});
+
+/**
+ * Awarie, które przychodzą **przed** SQLite — z zakładania katalogu albo
+ * z otwarcia pliku. Mają własny kod systemowy i wołają o co innego niż
+ * uszkodzenie: odtworzenie z kopii nie pomaga, gdy nie ma gdzie zapisać.
+ *
+ * Sprawdzone na katalogu bez prawa zapisu, uruchomionym z konta bez
+ * uprawnień: komunikat brzmiał „Powód podany przez bazę: EACCES: permission
+ * denied, mkdir …", a pod spodem stała rada, żeby sięgnąć po kopię — czyli
+ * porada na zupełnie inny kłopot.
+ */
+describe("kiedy nie ma gdzie zapisać", () => {
+  const zdanie = (kod: string, wiadomosc = "cokolwiek") => {
+    const b = new Error(wiadomosc) as Error & { code?: string };
+    b.code = kod;
+    return powodNieotwarciaBazy(b, "/gdzies/craftmyplan.db");
+  };
+
+  test("brak praw mówi, co przenieść, a nie żeby odtwarzać kopię", () => {
+    const tresc = zdanie("EACCES", "EACCES: permission denied, mkdir '/gdzies'");
+    assert.match(tresc, /praw do katalogu/i);
+    assert.match(tresc, /Przenieś/);
+    // Rada z innego kłopotu byłaby tu ślepym zaułkiem.
+    assert.doesNotMatch(tresc, /npm run przywroc/);
+    // I bez surowego komunikatu systemu — po polsku, nie po angielsku.
+    assert.doesNotMatch(tresc, /EACCES|permission denied/);
+  });
+
+  test("pełny dysk i dysk tylko do odczytu mają własne zdania", () => {
+    assert.match(zdanie("ENOSPC"), /miejsc[ea] na dysku/i);
+    assert.match(zdanie("EROFS"), /tylko do odczytu/i);
+  });
+
+  test("brak katalogu mówi o katalogu, nie o bazie", () => {
+    assert.match(zdanie("ENOENT"), /katalog/i);
+  });
+
+  test("uszkodzenie dalej kieruje do kopii", () => {
+    // Druga strona tego samego rozróżnienia: tu odtworzenie JEST odpowiedzią.
+    const tresc = powodNieotwarciaBazy(new Error("file is not a database"), "/gdzies/x.db");
+    assert.match(tresc, /uszkodzon/i);
+    assert.match(tresc, /npm run przywroc/);
+  });
+
+  test("nierozpoznana przyczyna też kończy się po polsku", () => {
+    const tresc = powodNieotwarciaBazy(new Error("coś zupełnie nowego"), "/gdzies/x.db");
+    assert.match(tresc, /Nie udało się otworzyć/);
+    assert.match(tresc, /npm run przywroc/);
+  });
+});
+
+/**
+ * To samo, ale naprawdę: konsola uruchomiona na katalogu bez prawa zapisu.
+ *
+ * Wymaga `setpriv` i praw roota do zrzucenia uprawnień — bez tego test nie ma
+ * jak odtworzyć sytuacji, bo root omija uprawnienia. Pomijamy z podaniem
+ * powodu, zamiast udawać, że sprawdziliśmy.
+ */
+describe("konsola na katalogu bez prawa zapisu", () => {
+  const mozliwe = process.getuid?.() === 0
+    && spawnSync("which", ["setpriv"], { encoding: "utf-8" }).status === 0;
+
+  test("mówi o uprawnieniach, a nie o kopii zapasowej",
+    { skip: mozliwe ? false : "wymaga roota i `setpriv` do zrzucenia uprawnień" },
+    async () => {
+      const zamkniety = join(KATALOG, "zamkniety");
+      if (!existsSync(zamkniety)) mkdirSync(zamkniety);
+      chmodSync(zamkniety, 0o555);
+      try {
+        const wynik = spawnSync("setpriv",
+          ["--reuid=65534", "--regid=65534", "--clear-groups",
+            process.execPath, "--no-warnings", "serwer.ts"],
+          {
+            cwd: KONSOLA, encoding: "utf-8", timeout: 20_000,
+            env: {
+              ...process.env,
+              BAZA_CRAFTMYPLAN: join(zamkniety, "dane", "craftmyplan.db"),
+              KOPIE_CRAFTMYPLAN: join(zamkniety, "dane", "kopie"),
+              PORT: String(await wolnyPort()),
+            },
+          });
+        const wyjscie = `${wynik.stdout}${wynik.stderr}`;
+        assert.match(wyjscie, /praw do katalogu/i, wyjscie.slice(0, 300));
+        assert.doesNotMatch(wyjscie, /EACCES|^\s+at /m, wyjscie.slice(0, 300));
+      } finally {
+        chmodSync(zamkniety, 0o755);
+      }
+    });
 });
