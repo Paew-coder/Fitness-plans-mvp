@@ -15,6 +15,34 @@ const DROGA_POWROTU =
   "  Kopie zapasowe robią się same. Żeby zobaczyć, co masz do wyboru:\n"
   + "      npm run przywroc";
 
+/**
+ * Awarie systemu plików — te przychodzą **przed** SQLite, z zakładania katalogu
+ * albo otwierania pliku, i mają własny kod. Sprawdzone: katalog bez prawa
+ * zapisu kończył się zdaniem „Powód podany przez bazę: EACCES: permission
+ * denied, mkdir …", a pod spodem radą, żeby odtworzyć z kopii — czyli poradą
+ * na zupełnie inny kłopot. Odtworzenie nie pomaga, gdy nie ma gdzie zapisać.
+ */
+const AWARIE_SYSTEMU: Readonly<Record<string, (sciezka: string) => string>> = {
+  EACCES: (s) => "Brak praw do katalogu z danymi — konsola nie ma gdzie zapisać.\n"
+    + `  ${s}\n\n`
+    + "  Zdarza się to po uruchomieniu aplikacji prosto z pobranego archiwum\n"
+    + "  albo z katalogu, do którego system nie pozwala pisać. Przenieś cały\n"
+    + "  katalog aplikacji do swoich dokumentów i uruchom ponownie.",
+  EPERM: (s) => AWARIE_SYSTEMU.EACCES!(s),
+  EROFS: (s) => "Dysk, na którym leżą dane, jest tylko do odczytu.\n"
+    + `  ${s}\n\n`
+    + "  Przenieś katalog aplikacji na dysk, na którym da się zapisywać.",
+  ENOSPC: (s) => "Skończyło się miejsce na dysku.\n"
+    + `  ${s}\n\n`
+    + "  Zwolnij miejsce i uruchom konsolę ponownie. Dane nie zniknęły —\n"
+    + "  ostatni zapis mógł się jednak nie udać.",
+  ENOENT: (s) => "Nie ma katalogu, w którym miałyby leżeć dane, i nie da się go założyć.\n"
+    + `  ${s}\n\n`
+    + "  Sprawdź, czy ścieżka jest poprawna — a jeśli przenosiłeś aplikację,\n"
+    + "  czy katalog `dane` pojechał razem z nią.",
+  ENOTDIR: (s) => AWARIE_SYSTEMU.ENOENT!(s),
+};
+
 /** Rozpoznajemy po treści, bo `node:sqlite` oddaje jeden kod na wszystko. */
 const PRZYCZYNY: readonly { wzor: RegExp; zdanie: (sciezka: string) => string }[] = [
   {
@@ -49,10 +77,16 @@ const PRZYCZYNY: readonly { wzor: RegExp; zdanie: (sciezka: string) => string }[
  * skończyć się po polsku, bo trener i tak nie przeczyta stosu wywołań.
  */
 export function powodNieotwarciaBazy(blad: unknown, sciezka: string): string {
+  // Najpierw system plików: te awarie przychodzą wcześniej niż SQLite i wołają
+  // o co innego. Radzenie odtworzenia z kopii, gdy nie ma gdzie zapisać,
+  // wysłałoby trenera w ślepy zaułek.
+  const kod = (blad as { code?: string })?.code;
+  if (kod && kod in AWARIE_SYSTEMU) return AWARIE_SYSTEMU[kod]!(sciezka);
+
   const tresc = blad instanceof Error ? blad.message : String(blad);
   for (const { wzor, zdanie } of PRZYCZYNY) {
     if (wzor.test(tresc)) return zdanie(sciezka);
   }
   return `Nie udało się otworzyć pliku z danymi.\n  ${sciezka}\n`
-    + `  Powód podany przez bazę: ${tresc}\n\n${DROGA_POWROTU}`;
+    + `  Powód podany przez system: ${tresc}\n\n${DROGA_POWROTU}`;
 }

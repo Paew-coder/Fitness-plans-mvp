@@ -619,8 +619,17 @@ Konsola nie wstanie i powie dlaczego — po polsku, razem z tym, co wpisać:
       npm run przywroc
 ```
 
-Tak samo przy braku miejsca na dysku, braku praw do katalogu i pliku tylko
-do odczytu. Diagnoza bez następnego kroku byłaby w takiej chwili bezużyteczna.
+Diagnoza bez następnego kroku byłaby w takiej chwili bezużyteczna — dlatego
+każdy z tych komunikatów kończy się tym, co wpisać albo co zrobić.
+
+Rada zależy od przyczyny, bo przyczyny wołają o co innego. Uszkodzony plik →
+odtworzenie z kopii. Brak praw do katalogu, pełny dysk, dysk tylko do
+odczytu → naprawienie tego, a nie sięganie po kopię: odtworzenie nie pomaga,
+gdy nie ma gdzie zapisać.
+
+> Na Macu najczęstszy przypadek to uruchomienie aplikacji prosto z pobranego
+> archiwum. Konsola mówi wtedy wprost: przenieś cały katalog aplikacji do
+> swoich dokumentów i uruchom ponownie.
 
 **Powrót z kopii — jedna komenda**
 
