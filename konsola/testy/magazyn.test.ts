@@ -349,6 +349,65 @@ describe("magazyn — kopia jako nowa wersja", () => {
     const kopia = magazyn.zapisz(magazyn.kopiaJakoNowaWersja(zapisany, 3));
     assert.deepEqual(magazyn.cwiczeniaZPoprzedniegoCyklu(kopia), ["EX-0011"]);
   });
+
+  test("wpisy klienta zostają w cyklu, w którym powstały", () => {
+    // Test wyżej pilnuje kopii odczucia w parametrach tygodnia. Tabela wykonań
+    // to osobne miejsce — a wpisy przeniesione do nowego cyklu znaczyłyby, że
+    // pierwszy tydzień jest „zrobiony", zanim klient cokolwiek zrobił, i że
+    // z tych liczb policzą się ciężary na resztę.
+    const zrodlo = magazyn.wczytaj(TRENER, "kopia-zrodlo")!;
+    magazyn.zapisz({
+      ...zrodlo,
+      wykonania: [{ positionId: "D1-S01", tydzien: 1, data: "2026-09-02T10:00:00.000Z",
+        cwiczenieId: "EX-0011", ciezarWykonany: 111, powtorzeniaWykonane: 5, feedback: "OK" }],
+      ukonczoneDni: [{ dzien: 1, tydzien: 1, data: "2026-09-02T10:30:00.000Z" }],
+    });
+
+    const kopia = magazyn.zapisz(
+      magazyn.kopiaJakoNowaWersja(magazyn.wczytaj(TRENER, "kopia-zrodlo")!, 4));
+    assert.deepEqual(kopia.wykonania ?? [], [], "wykonania przeszły do nowego cyklu");
+    assert.deepEqual(kopia.ukonczoneDni ?? [], [], "domknięte dni przeszły do nowego cyklu");
+    // I zostały tam, gdzie powstały.
+    assert.equal(magazyn.wczytaj(TRENER, "kopia-zrodlo")!.wykonania!.length, 1);
+  });
+});
+
+/**
+ * Scalanie kartotek, gdy w obu jest praca klienta.
+ *
+ * Literówka w nazwisku zakłada drugą osobę, a orientuje się to zwykle po cyklu
+ * pracy — czyli wtedy, gdy po obu stronach są już wykonania i waga. Scalenie
+ * ma je zachować; od tego jest, zamiast „usuń i wpisz od nowa".
+ */
+describe("magazyn — scalanie zachowuje pracę z obu stron", () => {
+  test("plany i wpisy klienta przechodzą w komplecie", () => {
+    for (const [nazwa, id, ciezar] of [
+      ["Scalana Osoba", "scalana-a", 100], ["Scalana Osoba B", "scalana-b", 120],
+    ] as [string, string, number][]) {
+      const osoba = magazyn.zapewnijKlienta(TRENER, nazwa);
+      magazyn.zapisz({
+        id, trenerId: TRENER, klientId: osoba.id, klient: osoba.nazwa, wersja: 1,
+        status: "wysłany", dataStartu: null, utworzony: "", zmieniony: "",
+        plan: magazyn.pustyPlan(osoba.nazwa),
+        wykonania: [{ positionId: "D1-S01", tydzien: 1, data: "2026-09-02T10:00:00.000Z",
+          cwiczenieId: "EX-0010", ciezarWykonany: ciezar, powtorzeniaWykonane: 5 }],
+      });
+    }
+
+    const wynik = magazyn.scalKlientow(TRENER, magazyn.idKlienta("Scalana Osoba B"),
+      magazyn.idKlienta("Scalana Osoba"));
+    assert.equal(wynik.przeniesionePlany, 1);
+
+    const cel = magazyn.idKlienta("Scalana Osoba");
+    assert.equal(magazyn.wczytajKlienta(TRENER, magazyn.idKlienta("Scalana Osoba B")), null,
+      "kartoteka źródłowa została");
+    for (const [id, ciezar] of [["scalana-a", 100], ["scalana-b", 120]] as [string, number][]) {
+      const p = magazyn.wczytaj(TRENER, id)!;
+      assert.equal(p.klientId, cel, `${id} nie przeszedł do celu`);
+      assert.equal(p.wykonania![0]!.ciezarWykonany, ciezar,
+        `${id} stracił to, co klient podniósł`);
+    }
+  });
 });
 
 /**
