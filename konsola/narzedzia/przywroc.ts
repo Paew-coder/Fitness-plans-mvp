@@ -42,21 +42,31 @@ function wierszOpisu(o: OpisBazy): string {
     + `${o.wykonan} zapisanych serii${zmiana}`;
 }
 
-/** Stan obecnej bazy albo `null`, gdy jej nie ma lub nie da się jej przeczytać. */
-function obecna(): OpisBazy | null {
+/**
+ * Stan obecnej bazy — najpierw pytanie, czy w ogóle da się jej ufać.
+ *
+ * Bez tego kroku uszkodzony plik wyglądał na **pusty**: SQLite otwiera go bez
+ * protestu, a liczenie wierszy wywala się po cichu na każdej tabeli z osobna
+ * i wychodzi „0 klientów, 0 planów". To jest zupełnie inne zdanie niż
+ * „plik jest uszkodzony" — i dokładnie to drugie trener musi wtedy przeczytać.
+ */
+function obecna(): { opis: OpisBazy } | { blad: string } | null {
   if (!existsSync(SCIEZKA_BAZY)) return null;
+  const blad = bladKopii(SCIEZKA_BAZY);
+  if (blad) return { blad };
   try {
-    return opisz(SCIEZKA_BAZY);
+    return { opis: opisz(SCIEZKA_BAZY) };
   } catch {
-    return null;
+    return { blad: "Nie da się jej przeczytać" };
   }
 }
 
 function pokazObecna(): void {
-  const o = obecna();
+  const stan = obecna();
   console.log(`  Baza teraz: ${SCIEZKA_BAZY}`);
-  console.log(o ? `              ${wierszOpisu(o)}\n`
-    : "              nie ma jej albo nie da się jej otworzyć\n");
+  console.log(stan === null ? "              nie ma jej jeszcze\n"
+    : "blad" in stan ? `              ⚠ ${stan.blad}\n`
+      : `              ${wierszOpisu(stan.opis)}\n`);
 }
 
 function wypiszListe(): never {
@@ -100,7 +110,8 @@ if (blad) {
 }
 
 const wKopii = opisz(zrodlo);
-const teraz = obecna();
+const stanObecnej = obecna();
+const teraz = stanObecnej && "opis" in stanObecnej ? stanObecnej.opis : null;
 
 console.log(`\n  Kopia:  ${zrodlo}`);
 console.log(`          ${kiedy(statSync(zrodlo).mtime)} · ${kB(statSync(zrodlo).size)}`);
@@ -109,7 +120,12 @@ pokazObecna();
 
 // Różnica wprost, a nie do policzenia z dwóch akapitów. To jedyna liczba,
 // która przy odtwarzaniu naprawdę interesuje: ile pracy zniknie.
-if (teraz) {
+if (stanObecnej && "blad" in stanObecnej) {
+  // Odtwarzanie na uszkodzonej bazie to najczęstszy powód, dla którego ktoś
+  // w ogóle po to narzędzie sięga. Porównywanie liczb nie ma tu sensu.
+  console.log("  Obecnej bazy nie da się przeczytać — odtworzenie jest jedyną drogą.");
+  console.log("  Zostanie odłożona obok, taka jaka jest.\n");
+} else if (teraz) {
   const ubytek = teraz.planow - wKopii.planow;
   const ubytekKlientow = teraz.klientow - wKopii.klientow;
   console.log(ubytek > 0 || ubytekKlientow > 0
