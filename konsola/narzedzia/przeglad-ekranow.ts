@@ -488,6 +488,64 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     poUsunieciu.length === 1 && poUsunieciu[0].id === "przeglad-ekranu",
     poUsunieciu.map((k: any) => k.nazwa).join(" · "));
 
+  // ── 19b. przeciwwskazania oddechowe ───────────────────────────────
+  //
+  // „Któreś z przeciwwskazań" to twarde zatrzymanie modułu: po zaznaczeniu
+  // drabina oddechowa przestaje być zadaniem, a staje się poleceniem ustalenia
+  // ćwiczenia indywidualnie. Przez pierwsze wersje pole stało samo, bez listy —
+  // trener musiał z pamięci wiedzieć, co się liczy. Lista ma iść z silnika,
+  // bo przepisana do szablonu strony rozjechałaby się z tą, według której
+  // moduł faktycznie się zatrzymuje.
+  //
+  // Sekcja pracuje na **własnym kliencie**. Pierwsza wersja otwierała klienta
+  // z wcześniejszych kroków i sprawdzała plan po stałym identyfikatorze —
+  // a po scaleniu kartotek ten klient ma trzy cykle i na ekranie stał inny
+  // plan niż ten, o który pytałem przez API. Kontrola odpowiadała wtedy
+  // na pytanie o cudzy rekord.
+  const KLIENT_ODDECHU = "Oddech Test";
+  const PLAN_ODDECHU = "oddech-test-1";
+  await api("/api/plany", "POST", { klient: KLIENT_ODDECHU, wersja: 1 });
+
+  await s.click("#wroc-do-klientow").catch(() => {});
+  await s.waitForSelector("#ekran-lista:not(.ukryty)");
+  await s.reload({ waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja", { hasText: KLIENT_ODDECHU })
+    .getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)");
+  await s.waitForTimeout(400);
+
+  const ileWSilniku = (await api(`/api/plany/${PLAN_ODDECHU}`))
+    .moduly.oddech.przeciwwskazaniaLista.length;
+  const pozycje = await s.locator("#oddech-lista li").count();
+  sprawdz("lista przeciwwskazań jest w konsoli, nie tylko w kodzie",
+    pozycje === ileWSilniku && pozycje > 0, `${pozycje} z ${ileWSilniku}`);
+
+  // `innerText` czyta to, co widać — a zwinięte `<details>` nie pokazuje nic.
+  // Rozwinięcie jest częścią sprawdzenia: lista ma być do wywołania jednym
+  // kliknięciem, a nie schowana na zawsze.
+  await s.locator(".przeciwwskazania summary").click();
+  const tresc = (await s.locator("#oddech-lista").innerText()).toLocaleLowerCase("pl");
+  sprawdz("wymienia to, czego trener nie zgadnie z głowy",
+    tresc.includes("padaczka") && tresc.includes("ciąża"),
+    tresc.split("\n").slice(0, 2).join(" · "));
+
+  // Zaznaczenie ma zatrzymać moduł, a nie tylko podkolorować pole.
+  await s.fill("#oddech-twot", "28");
+  await s.locator("#oddech-twot").blur();
+  await s.waitForTimeout(700);
+  sprawdz("wpisany wynik testu zapisuje się",
+    (await api(`/api/plany/${PLAN_ODDECHU}`)).moduly.oddech.wejscie.twot === 28,
+    String((await api(`/api/plany/${PLAN_ODDECHU}`)).moduly.oddech.wejscie.twot));
+
+  await s.check("#oddech-przeciwwskazania");
+  await s.waitForTimeout(900);
+  const wynik = (await s.locator("#oddech-wynik").innerText()).toLocaleLowerCase("pl");
+  sprawdz("zaznaczone przeciwwskazanie zatrzymuje drabinę oddechową",
+    wynik.includes("indywidualnie") || wynik.includes("nie realizuj"),
+    wynik.replace(/\s+/g, " ").slice(0, 60));
+
   // ── 20. konsola z telefonu ────────────────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon
@@ -499,7 +557,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   // najechania nie ma, więc były niewidoczne **zawsze** — a `opacity: 0`
   // nie odbiera kliknięć, więc w każdym wierszu siedziały dwa niewidzialne
   // przyciski 14×11 px, gotowe przestawić plan przy nietrafionym dotknięciu.
-  await sekcjaTelefonowa(przegladarka, ADRES, PLAN);
+  await sekcjaTelefonowa(przegladarka, ADRES, PLAN, KLIENT_PO_ZMIANIE);
 
   console.log(bledyPrzegladarki.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledyPrzegladarki.slice(0, 3))}`
@@ -508,15 +566,19 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
 }
 
 
-async function sekcjaTelefonowa(przegladarka: any, adres: string, plan: string): Promise<void> {
+async function sekcjaTelefonowa(
+  przegladarka: any, adres: string, plan: string, klient: string,
+): Promise<void> {
   const kontekst = await przegladarka.newContext(TELEFON);
   const s = await kontekst.newPage();
   const bledy = pilnujBledow(s);
   try {
     await s.goto(`${adres}/?plan=${plan}`, { waitUntil: "networkidle" });
     await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
-    await s.locator("#lista-klientow .pozycja").first()
-      .getByRole("button", { name: "Otwórz" }).click();
+    // Po nazwisku, nie „pierwszy z listy": kolejność jest alfabetyczna, więc
+    // dołożenie klienta w innej sekcji podkładało tu plan bez ćwiczeń.
+    await s.locator("#lista-klientow .pozycja", { hasText: klient })
+      .getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
     await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });

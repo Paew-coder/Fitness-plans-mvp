@@ -30,7 +30,7 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
-import { dawkaOddechowa } from "../silnik/src/oddech.ts";
+import { PRZECIWWSKAZANIA, dawkaOddechowa } from "../silnik/src/oddech.ts";
 import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
@@ -574,6 +574,10 @@ function moduly(zapisany: magazyn.ZapisanyPlan) {
     oddech: {
       wejscie: o ?? { twot: null, przeciwwskazania: false },
       dawka: o?.twot != null ? dawkaOddechowa(o.twot, o.przeciwwskazania) : null,
+      // Lista idzie z silnika, a nie z szablonu strony. Przepisana do HTML-a
+      // rozjechałaby się z tą, według której moduł faktycznie się zatrzymuje —
+      // a to jest pole, przy którym rozjazd znaczy zdrowie klienta.
+      przeciwwskazaniaLista: PRZECIWWSKAZANIA,
     },
     bieg: {
       wejscie: b ?? {},

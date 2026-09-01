@@ -694,6 +694,16 @@ function rysujModuly() {
   $("#oddech-twot").value = m.oddech.wejscie.twot ?? "";
   $("#oddech-przeciwwskazania").checked = Boolean(m.oddech.wejscie.przeciwwskazania);
 
+  // Pole „któreś z przeciwwskazań" jest twardym zatrzymaniem modułu, a przez
+  // pierwsze wersje stało samo — trener musiał z pamięci wiedzieć, co się
+  // liczy. Lista przychodzi z silnika, tego samego, który potem zatrzymuje
+  // dawkę, więc nie ma jak się rozjechać.
+  const lista = $("#oddech-lista");
+  if (lista.children.length === 0) {
+    lista.replaceChildren(
+      ...(m.oddech.przeciwwskazaniaLista ?? []).map((p) => el("li", "", p)));
+  }
+
   const wyOddech = $("#oddech-wynik");
   wyOddech.replaceChildren();
   const d = m.oddech.dawka;
