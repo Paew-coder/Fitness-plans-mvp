@@ -457,6 +457,20 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
    Lp. i ćwiczenie zostają na widoku, reszta dojeżdża palcem. */
 .dzien { overflow-x: auto; }
 
+/* Lista przeciwwskazań: pod ręką, gdy trzeba, cicha przez resztę czasu. */
+.przeciwwskazania { margin: -.2rem 0 .2rem; font-size: .85rem; }
+.przeciwwskazania summary {
+  cursor: pointer; color: var(--akcent); list-style: none;
+  padding: .35rem 0; width: fit-content;
+}
+.przeciwwskazania summary::-webkit-details-marker { display: none; }
+.przeciwwskazania summary::before { content: "› "; }
+.przeciwwskazania[open] summary::before { content: "⌄ "; }
+.przeciwwskazania ul {
+  margin: .1rem 0 .3rem; padding-left: 1.1rem;
+  color: var(--tekst-blady); line-height: 1.55;
+}
+
 @media (max-width: 760px) {
   html, body { overflow-x: hidden; }
   .ekran { padding: 1rem .8rem; }
