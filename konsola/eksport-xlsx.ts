@@ -18,10 +18,19 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { przeliczPlan, TYGODNIE } from "../silnik/src/plan.ts";
 import { jestBojemGlownym } from "../silnik/src/import-arkusza.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
-import { bladSrodowiskaPythona, pierwszaLiniaBledu } from "./blad-pythona.ts";
+import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
+  from "./blad-pythona.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 const SZABLON = join(KATALOG, "..", "arkusz", "MasterTemplate-5-18.xlsx");
+
+/**
+ * Awaria, za którą odpowiada środowisko, nie serwer.
+ *
+ * Rozróżnienie ma skutek: kod 500 znaczy „spróbuj za chwilę", a brakującego
+ * Pythona żadne czekanie nie doinstaluje. Trener klikałby „Eksportuj" w kółko.
+ */
+export class BladEksportu extends Error {}
 const WYJSCIE = join(KATALOG, "dane", "eksport");
 
 /** `D3-S07` → `{ dzien: 3, pozycja: 7 }` */
@@ -161,8 +170,11 @@ export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string
     } catch (blad) {
       // Pełny ślad zostaje w logu serwera; do trenera idzie jedno zdanie.
       console.error(blad);
-      throw new Error(bladSrodowiskaPythona(blad)
-        ?? `Nie udało się zapisać arkusza: ${pierwszaLiniaBledu(blad)}`);
+      const powod = pierwszaLiniaBledu(blad);
+      throw new BladEksportu(bladSrodowiskaPythona(blad)
+        ?? (powod === "nieznany błąd"
+          ? bladBezWyjasnienia()
+          : `Nie udało się zapisać arkusza: ${powod}`));
     }
   } finally {
     rmSync(tymczasowy, { recursive: true, force: true });

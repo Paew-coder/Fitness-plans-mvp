@@ -60,6 +60,24 @@ export function bladSrodowiskaPythona(blad: unknown): string | null {
 }
 
 /**
+ * Ostatnia deska: Python padł, ale nie powiedział czym.
+ *
+ * Sprawdzone na podstawionym `python3`, który kończy się kodem 127 bez słowa
+ * na wyjściu — a to jest realny przypadek, nie wymyślony: na Macu `python3`
+ * bywa zaślepką, która namawia do doinstalowania narzędzi i wychodzi błędem.
+ * Trener widział wtedy „Nie udało się zapisać arkusza: nieznany błąd", czyli
+ * zdanie bez żadnej wartości.
+ *
+ * Skoro cała ta droga prowadzi przez Pythona, brak wyjaśnienia i tak najlepiej
+ * tłumaczy się jego stanem — mówimy więc, co sprawdzić, zamiast rozkładać ręce.
+ */
+export function bladBezWyjasnienia(): string {
+  return "Nie udało się zapisać arkusza — Python nie podał powodu. "
+    + "Sprawdź, czy działa: w terminalu wpisz  python3 -c \"import openpyxl\"  "
+    + "Jeśli to nie wypisze błędu, napisz do mnie — wtedy przyczyna jest inna.";
+}
+
+/**
  * Pierwsza linia, która niesie treść — ślad stosu bywa na trzydzieści linijek,
  * a interesuje nas ostatnia, bo Python tam wypisuje właściwy błąd.
  */
