@@ -212,6 +212,22 @@ function rysuj({ pomiary = true } = {}) {
   const wszystkie = widok.tygodnie.flatMap((t) => t.dni).length;
   $("#podtytul").textContent = `${zrobione} z ${wszystkie} treningów za Tobą`;
 
+  // Domknięcie cyklu. Ostatni trening kończył się dotąd tak samo jak każdy
+  // inny — lista samych ptaszków i cisza. To jest ta chwila, w której klient
+  // ma prawo wiedzieć, że skończył i że trener już o tym wie.
+  const domkniety = wszystkie > 0 && zrobione >= wszystkie;
+  $("#baner-koniec").classList.toggle("ukryty", !domkniety);
+  if (domkniety) {
+    const serie = widok.tygodnie
+      .flatMap((t) => t.dni).flatMap((d) => d.cwiczenia)
+      .filter((c) => c.ciezarWykonany != null).length;
+    $("#koniec-tresc").textContent =
+      `Sześć tygodni, ${wszystkie} treningów`
+      + (serie ? `, ${serie} zapisanych serii` : "")
+      + ". Trener widzi, że skończyłeś, i przygotuje kolejny cykl — "
+      + "ten sam link pokaże go, gdy będzie gotowy.";
+  }
+
   rysujTygodnie();
   rysujInstalacje();
   if (biezacy) rysujTrening();

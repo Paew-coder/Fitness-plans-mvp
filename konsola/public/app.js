@@ -222,6 +222,8 @@ function rysujUwage(pozycje) {
   if (pozycje.length === 0) return;
 
   const opisPowodu = (p) => ({
+    // Najpilniejszy powód na tej liście: klient nie ma już czego trenować.
+    "zrobiony": `przerobił cały cykl (${p.ukonczonych} treningów) — czas na nowy`,
     "stanal": `${p.dni} dni bez treningu`,
     "nie zaczal": `plan wysłany ${p.dni} dni temu, klient jeszcze nie zaczął`,
     "bez linku": "wysłany, ale klient nie ma linku",

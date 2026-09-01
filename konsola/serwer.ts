@@ -424,6 +424,7 @@ export const PROG_STANAL = 10;
 
 export type Powod =
   | { rodzaj: "stanal"; dni: number }
+  | { rodzaj: "zrobiony"; ukonczonych: number }
   | { rodzaj: "koniec cyklu"; doKonca: number }
   | { rodzaj: "po cyklu"; dni: number }
   | { rodzaj: "bez linku" }
@@ -463,8 +464,20 @@ function wymagajaUwagi(trenerId: number) {
       powody.push({ rodzaj: "stanal", dni: r.dniOdOstatniej });
     }
 
-    if (c.poCyklu) powody.push({ rodzaj: "po cyklu", dni: -c.doKonca! });
-    else if (c.doKonca !== null && c.doKonca <= 7) {
+    /**
+     * Cykl przerobiony do końca — najpilniejszy powód, jaki może się tu pojawić,
+     * bo klient **nie ma już czego trenować**.
+     *
+     * Pozostałe powody „końca cyklu" liczą się z daty startu, a ta bywa pusta:
+     * plan bez wpisanej daty nie wołał więc o uwagę nigdy. Sprawdzone —
+     * klient z 12 z 12 domkniętych treningów nie pojawiał się na liście
+     * ani razu, choć to jest dokładnie ta chwila, w której trener ma zadziałać.
+     */
+    if (r.zaplanowanych > 0 && r.ukonczonych >= r.zaplanowanych) {
+      powody.push({ rodzaj: "zrobiony", ukonczonych: r.ukonczonych });
+    } else if (c.poCyklu) {
+      powody.push({ rodzaj: "po cyklu", dni: -c.doKonca! });
+    } else if (c.doKonca !== null && c.doKonca <= 7) {
       powody.push({ rodzaj: "koniec cyklu", doKonca: c.doKonca });
     }
 
@@ -476,10 +489,12 @@ function wymagajaUwagi(trenerId: number) {
     }
   }
 
-  // Najpierw ci, którzy zniknęli — reszta poczeka.
+  // Najpierw ci, którzy skończyli — bo nie mają już czego robić. Potem ci,
+  // którzy zniknęli. Reszta poczeka.
   const waga = (p: Powod) =>
-    p.rodzaj === "stanal" ? 0 : p.rodzaj === "nie zaczal" ? 1
-      : p.rodzaj === "bez linku" ? 2 : p.rodzaj === "po cyklu" ? 3 : 4;
+    p.rodzaj === "zrobiony" ? 0 : p.rodzaj === "stanal" ? 1
+      : p.rodzaj === "nie zaczal" ? 2 : p.rodzaj === "bez linku" ? 3
+        : p.rodzaj === "po cyklu" ? 4 : 5;
   return wynik.sort((a, b) => Math.min(...a.powody.map(waga)) - Math.min(...b.powody.map(waga)));
 }
 
