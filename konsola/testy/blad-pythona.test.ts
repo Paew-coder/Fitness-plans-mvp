@@ -13,7 +13,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { bladSrodowiskaPythona, pierwszaLiniaBledu } from "../blad-pythona.ts";
+import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
+  from "../blad-pythona.ts";
 
 /** Błąd taki, jaki rzuca `execFileSync`: treść w `stderr`, kod w `code`. */
 function awaria(stderr: string, code?: string): Error {
@@ -89,5 +90,28 @@ describe("komunikat, który trafia do trenera", () => {
     // Komunikat Node'a niesie pełną komendę razem ze ścieżkami z dysku.
     const cichy = pierwszaLiniaBledu(awaria("", "ENOENT"));
     assert.doesNotMatch(cichy, /\/jakas\/sciezka|Command failed/, cichy);
+  });
+});
+
+/**
+ * Python padł, ale nie powiedział czym.
+ *
+ * Sprawdzone na podstawionym `python3`, który kończy się kodem 127 bez słowa
+ * na wyjściu. To nie jest przypadek wymyślony: na Macu `python3` bywa
+ * zaślepką, która namawia do doinstalowania narzędzi i wychodzi błędem.
+ * Trener widział wtedy „Nie udało się zapisać arkusza: nieznany błąd" —
+ * zdanie, z którym nie da się zrobić absolutnie nic.
+ */
+describe("gdy Python milczy", () => {
+  test("„nieznany błąd” ustępuje miejsca czemuś, co da się sprawdzić", () => {
+    const cichy = awaria("");
+    assert.equal(pierwszaLiniaBledu(cichy), "nieznany błąd",
+      "test opisuje inny przypadek niż ten, o który chodzi");
+
+    const tresc = bladBezWyjasnienia();
+    assert.match(tresc, /python3 -c/, "brak komendy do sprawdzenia");
+    assert.match(tresc, /openpyxl/);
+    // I uczciwe zastrzeżenie: jeśli to przejdzie, przyczyna jest gdzie indziej.
+    assert.match(tresc, /napisz do mnie|przyczyna jest inna/i);
   });
 });

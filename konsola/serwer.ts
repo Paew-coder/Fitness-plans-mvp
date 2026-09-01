@@ -40,7 +40,7 @@ import { skopiujTydzien, zastosujProgresje } from "../silnik/src/progresja.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
-import { eksportujDoArkusza } from "./eksport-xlsx.ts";
+import { BladEksportu, eksportujDoArkusza } from "./eksport-xlsx.ts";
 import { BladAI, stan as stanAI } from "./ai/klient.ts";
 import {
   iluNadpisze, przeliczPropozycje, zaproponujSzkielet, zastosujPropozycje,
@@ -1279,8 +1279,14 @@ const serwer = createServer(async (req, res) => {
       }
 
       if (akcja === "/eksport" && req.method === "POST") {
-        const plik = await eksportujDoArkusza(zapisany);
-        return json(res, { plik });
+        try {
+          return json(res, { plik: await eksportujDoArkusza(zapisany) });
+        } catch (e) {
+          // 503, nie 500: brakującego Pythona nie naprawi ponowienie za chwilę,
+          // a tak właśnie kod 500 rozumie każdy, kto go dostaje.
+          if (e instanceof BladEksportu) return blad(res, e.message, 503);
+          throw e;
+        }
       }
 
       /**
