@@ -11,6 +11,7 @@
   --akcent: #7B93FF;
   --akcent-tlo: #1E2440;
   --ok: #3FBE83;
+  --ok-tlo: #14291F;
   --latwe: #D19A3E;
   --trudne: #F2837B;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -22,7 +23,7 @@
     --tlo: #FAFAFC; --karta: #FFFFFF; --karta-2: #F1F3F8;
     --tekst: #15171F; --tekst-slaby: #5C6274; --tekst-blady: #878DA0;
     --linia: #DEE2EC; --akcent: #1F3FD8; --akcent-tlo: #E8ECFD;
-    --ok: #0E7C4A; --latwe: #9A6100; --trudne: #B3261E;
+    --ok: #0E7C4A; --ok-tlo: #E8F4EE; --latwe: #9A6100; --trudne: #B3261E;
   }
 }
 
@@ -98,6 +99,10 @@ button { font: inherit; cursor: pointer; }
 }
 .wczesniej .etykieta { font-family: var(--mono); font-size: .74rem; }
 .wczesniej .nazwa { color: var(--tekst); }
+
+/* Domknięcie cyklu — jedyny baner, który jest nagrodą, a nie zadaniem.
+   Stąd kolor „zrobione", a nie akcent, którym woła reszta komunikatów. */
+.baner.koniec { background: var(--ok-tlo); border-color: var(--ok); }
 
 .baner {
   background: var(--akcent-tlo); border: 1px solid var(--akcent);
