@@ -171,3 +171,63 @@ describe("kolejność i łączenie powodów", () => {
     assert.deepEqual(lista.filter((w: any) => cisi.includes(w.klient)), []);
   });
 });
+
+/**
+ * Klient, który przerobił cały cykl.
+ *
+ * To jest **najpilniejsza** rzecz, jaka może stać na tej liście: klient nie ma
+ * już czego trenować, a sam sobie planu nie napisze. A przez cały czas był
+ * niewidzialny: powody „koniec cyklu" i „po cyklu" liczą się z daty startu,
+ * a data startu bywa pusta — bo nie jest wymagana i trener często jej nie
+ * wpisuje. Sprawdzone na działającej konsoli: klient z 12 z 12 domkniętych
+ * treningów nie pojawiał się w panelu ani razu.
+ */
+describe("kto skończył cykl", () => {
+  /** Odhacza wszystkie dni planu we wszystkich sześciu tygodniach. */
+  async function przerobCaly(id: string): Promise<number> {
+    const { zapisany } = await api(`/api/plany/${id}`);
+    const dni = [...new Set(zapisany.plan.sloty
+      .filter((s: any) => s.cwiczenieId).map((s: any) => s.dzien))] as number[];
+    for (let tydzien = 1; tydzien <= 6; tydzien++) {
+      for (const dzien of dni) {
+        wBazie(
+          `INSERT OR REPLACE INTO ukonczony_dzien (trener_id, plan_id, tydzien, dzien, data)
+           VALUES (1, ?, ?, ?, ?)`, id, tydzien, dzien, dniTemu(1));
+      }
+    }
+    return dni.length * 6;
+  }
+
+  test("plan bez daty startu też woła, gdy jest przerobiony", async () => {
+    // Bez daty startu żaden powód „końca cyklu" nie ma się z czego policzyć.
+    const id = await klientZPlanem("Przerobil Wszystko", { dniOdStartu: null });
+    const ile = await przerobCaly(id);
+
+    const lista = await api("/api/uwaga");
+    assert.deepEqual(powody(lista, "Przerobil Wszystko"), ["zrobiony"]);
+    const wpis = lista.find((w: any) => w.klient === "Przerobil Wszystko");
+    assert.equal(wpis.powody[0].ukonczonych, ile,
+      "liczba w komunikacie nie zgadza się z tym, co klient odhaczył");
+  });
+
+  test("niedokończony cykl dalej milczy", async () => {
+    // Cała wartość panelu polega na tym, że nie woła bez powodu.
+    const id = await klientZPlanem("Jeszcze W Trakcie", { dniOdStartu: 7, trenowalDniTemu: 1 });
+    wBazie(
+      `INSERT INTO ukonczony_dzien (trener_id, plan_id, tydzien, dzien, data)
+       VALUES (1, ?, 1, 1, ?)`, id, dniTemu(1));
+    assert.deepEqual(powody(await api("/api/uwaga"), "Jeszcze W Trakcie"), []);
+  });
+
+  test("przerobiony cykl stoi wyżej niż ten, który stanął", async () => {
+    // Klient bez planu czeka na trenera; klient, który zniknął, czeka na siebie.
+    await klientZPlanem("Zniknal Dawno", { dniOdStartu: 20, trenowalDniTemu: 30 });
+    const lista = await api("/api/uwaga");
+    const kolejnosc = lista.map((w: any) => w.powody[0].rodzaj);
+    const gdzie = (r: string) => kolejnosc.indexOf(r);
+    assert.ok(gdzie("zrobiony") >= 0 && gdzie("stanal") >= 0,
+      `brakuje powodów do porównania: ${kolejnosc.join(", ")}`);
+    assert.ok(gdzie("zrobiony") < gdzie("stanal"),
+      `zła kolejność: ${kolejnosc.join(" → ")}`);
+  });
+});

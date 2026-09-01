@@ -535,6 +535,42 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await polaPierwszego.count() === 0 || await polaPierwszego.nth(0).inputValue() === "",
     await polaPierwszego.count() ? await polaPierwszego.nth(0).inputValue() : "pola zwinięte");
 
+  // ── 20. domknięcie cyklu ──────────────────────────────────────────
+  //
+  // Ostatni trening kończył się dotąd tak samo jak każdy inny: lista samych
+  // ptaszków i cisza. Klient zostawał bez odpowiedzi na pytanie „i co teraz",
+  // a trener — bez sygnału, że ma pisać kolejny cykl. Sprawdzone: klient
+  // z kompletem domkniętych treningów nie pojawiał się w panelu „wymaga
+  // uwagi" ani razu, bo powody końca cyklu liczą się z daty startu, a ta
+  // bywa pusta.
+  const planDomykany = (await widok()).planId;
+  sprawdz("przed końcem cyklu domknięcie milczy",
+    await s.locator("#baner-koniec.ukryty").count() === 1);
+
+  const doOdhaczenia = (await api(`/api/plany/${planDomykany}`)).zapisany.plan.sloty
+    .filter((s: any) => s.cwiczenieId);
+  const dniPlanu = [...new Set(doOdhaczenia.map((s: any) => s.dzien))] as number[];
+  for (let tydzien = 1; tydzien <= 6; tydzien++) {
+    for (const dzien of dniPlanu) {
+      await api(`/api/klient/${sciezka.replace("/k/", "")}/dzien`, "POST",
+        { planId: planDomykany, dzien, tydzien });
+    }
+  }
+
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(800);
+  const domkniecie = await s.locator("#baner-koniec:not(.ukryty)").innerText().catch(() => "");
+  sprawdz("po ostatnim treningu klient wie, że skończył",
+    domkniecie.toLocaleLowerCase("pl").includes("cykl zrobiony"),
+    domkniecie.replace(/\s+/g, " ").slice(0, 60));
+  sprawdz("i wie, co dalej — bez szukania nowego linku",
+    /ten sam link/i.test(domkniecie));
+
+  const wUwadze = await api("/api/uwaga");
+  sprawdz("trener widzi, że jest komu napisać nowy cykl",
+    wUwadze.some((w: any) => w.powody.some((p: any) => p.rodzaj === "zrobiony")),
+    JSON.stringify(wUwadze.flatMap((w: any) => w.powody.map((p: any) => p.rodzaj))));
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
