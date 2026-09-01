@@ -66,8 +66,13 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   // Playwright odrzuca pytanie po cichu i wychodzi, że przycisk nie działa.
   const pytania: string[] = [];
   const odpowiedzi: string[] = [];   // dla `prompt()` — po kolei, jak padają
+  // Domyślnie zgadzamy się na wszystko. `odrzucaj` przestawia to na czas
+  // jednej kontroli — bo przy ostrzeżeniu przed wysyłką połowa sprawy polega
+  // na tym, że „nie" naprawdę zatrzymuje operację.
+  let odrzucaj = false;
   s.on("dialog", (d: any) => {
     pytania.push(d.message());
+    if (odrzucaj && d.type() !== "prompt") return void d.dismiss();
     d.accept(d.type() === "prompt" ? (odpowiedzi.shift() ?? "") : undefined);
   });
 
@@ -545,6 +550,60 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("zaznaczone przeciwwskazanie zatrzymuje drabinę oddechową",
     wynik.includes("indywidualnie") || wynik.includes("nie realizuj"),
     wynik.replace(/\s+/g, " ").slice(0, 60));
+
+  // ── 19c. wysłanie planu, który nie jest gotowy ────────────────────
+  //
+  // Kontrola planu **nie blokuje** wysyłki — to jest decyzja trenera i tak ma
+  // zostać. Ale musi paść wprost, bo klient zobaczy plan dokładnie takim,
+  // jaki jest: bez serii maksymalnej nie ma z czego policzyć ciężaru i na
+  // telefonie stanie „— brak 1RM" zamiast liczby.
+  //
+  // Ostrzeżenie żyło dotąd wyłącznie w przeglądarce i nie sprawdzało go nic.
+  // Gdyby cicho przestało działać, trener wysyłałby niedokończone plany,
+  // nie wiedząc o tym.
+  const KLIENT_NIEGOTOWY = "Niegotowy Plan";
+  const PLAN_NIEGOTOWY = "niegotowy-plan-1";
+  {
+    const { zapisany } = await api("/api/plany", "POST",
+      { klient: KLIENT_NIEGOTOWY, wersja: 1 });
+    const plan = zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.serieMaksymalne = [];   // trener zapomniał serii maksymalnej
+    await api(`/api/plany/${PLAN_NIEGOTOWY}`, "PUT",
+      { plan, dataStartu: null, status: "szkic" });
+  }
+
+  // Poprzednia sekcja zostawiła nas na ekranie planu — wracamy przeładowaniem.
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-lista:not(.ukryty)");
+  await s.locator("#lista-klientow .pozycja", { hasText: KLIENT_NIEGOTOWY })
+    .getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)");
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)");
+  await s.waitForTimeout(400);
+
+  const pytanDo = pytania.length;
+  odrzucaj = true;
+  await s.selectOption("#status-wybor", "wysłany");
+  await s.waitForTimeout(700);
+  odrzucaj = false;
+
+  const ostrzezenie = pytania.slice(pytanDo).join(" ");
+  sprawdz("przed wysłaniem niedokończonego planu pada pytanie",
+    ostrzezenie.toLocaleLowerCase("pl").includes("serii maksymalnej"),
+    ostrzezenie.replace(/\s+/g, " ").slice(0, 70) || "nie zapytało wcale");
+
+  // Połowa wartości ostrzeżenia to możliwość powiedzenia „nie".
+  sprawdz("odmowa naprawdę zatrzymuje wysyłkę",
+    (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.status === "szkic",
+    (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.status);
+
+  await s.selectOption("#status-wybor", "wysłany");
+  await s.waitForTimeout(800);
+  sprawdz("zgoda wysyła — kontrola ostrzega, nie zabrania",
+    (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.status === "wysłany",
+    (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.status);
 
   // ── 20. konsola z telefonu ────────────────────────────────────────
   //
