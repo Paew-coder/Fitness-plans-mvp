@@ -1,0 +1,565 @@
+/* Konsola trenera — arkusz przeniesiony na ekran, nie „aplikacja fitness". */
+
+:root {
+  --tlo: #FAFAFC;
+  --plaszczyzna: #FFFFFF;
+  --panel: #F1F3F8;
+  --tekst: #15171F;
+  --tekst-slaby: #5C6274;
+  --tekst-blady: #878DA0;
+  --linia: #DEE2EC;
+  --linia-mocna: #C3C9D8;
+  --akcent: #1F3FD8;
+  --akcent-tlo: #E8ECFD;
+  --dobrze: #0E7C4A;
+  --uwaga: #9A6100;
+  --zle: #B3261E;
+  --uwaga-tlo: #FDF6E7;
+  --zle-tlo: #FCEDEC;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tlo: #0F1117;
+    --plaszczyzna: #171A22;
+    --panel: #1C1F29;
+    --tekst: #E9EBF2;
+    --tekst-slaby: #969DB1;
+    --tekst-blady: #6E7688;
+    --linia: #2A2F3B;
+    --linia-mocna: #3A4152;
+    --akcent: #7B93FF;
+    --akcent-tlo: #1E2440;
+    --dobrze: #3FBE83;
+    --uwaga: #D19A3E;
+    --zle: #F2837B;
+    --uwaga-tlo: #2A2317;
+    --zle-tlo: #2B1A19;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1 { font-size: 1.4rem; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 1.05rem; margin: 0 0 .9rem; }
+h3 { font-size: .8rem; margin: 0 0 .7rem; text-transform: uppercase;
+     letter-spacing: .08em; color: var(--tekst-blady); font-family: var(--mono); font-weight: 500; }
+
+.ekran { max-width: 1500px; margin: 0 auto; padding: 1.5rem; }
+.ukryty { display: none !important; }
+
+/* ── formularze i przyciski ─────────────────────────────────────── */
+button {
+  font: inherit; cursor: pointer; border-radius: 4px;
+  border: 1px solid var(--linia-mocna); background: var(--plaszczyzna);
+  color: var(--tekst); padding: .42rem .85rem;
+}
+button:hover { border-color: var(--akcent); color: var(--akcent); }
+button.glowny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+button.glowny:hover { filter: brightness(1.1); color: #fff; }
+button.link { border: none; background: none; color: var(--tekst-slaby); padding: .3rem 0; }
+button.link:hover { color: var(--akcent); }
+button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--akcent); outline-offset: 1px;
+}
+
+input, select {
+  font: inherit; padding: .38rem .5rem; border-radius: 4px;
+  border: 1px solid var(--linia-mocna); background: var(--plaszczyzna); color: var(--tekst);
+}
+label { display: flex; flex-direction: column; gap: .3rem;
+        font-size: .76rem; color: var(--tekst-blady);
+        font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+
+.rzad-formularza { display: flex; gap: .9rem; align-items: flex-end; flex-wrap: wrap; }
+
+/* To samo, co daje <label>, ale bez jego zachowania: kliknięcie w label
+   uruchamia pierwszą kontrolkę w środku, co przy grupie przycisków znaczy,
+   że zawsze wygrywa pierwszy z nich. */
+.pole { display: flex; flex-direction: column; gap: .3rem; }
+.etykieta-pola {
+  font-size: .76rem; color: var(--tekst-blady);
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em;
+}
+.wskazowka { font-size: .82rem; color: var(--tekst-blady); margin: .8rem 0 0; }
+
+.panel {
+  background: var(--plaszczyzna); border: 1px solid var(--linia);
+  border-radius: 6px; padding: 1.2rem; margin-bottom: 1.2rem;
+}
+
+.naglowek-glowny { margin-bottom: 1.5rem; }
+.podtytul { color: var(--tekst-slaby); margin: .3rem 0 0; }
+
+/* ── lista planów ───────────────────────────────────────────────── */
+.lista { display: flex; flex-direction: column; }
+.pozycja {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .75rem .2rem; border-bottom: 1px solid var(--linia);
+}
+.pozycja:last-child { border-bottom: none; }
+.pozycja .nazwa { font-weight: 600; flex: 1; }
+.pozycja .meta { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); }
+
+.odznaka {
+  font-family: var(--mono); font-size: .68rem; text-transform: uppercase;
+  letter-spacing: .07em; padding: .12rem .45rem; border-radius: 3px;
+  border: 1px solid currentColor;
+}
+.odznaka.szkic { color: var(--tekst-blady); }
+.odznaka.wyslany { color: var(--dobrze); }
+.odznaka.zakonczony { color: var(--tekst-blady); }
+
+.sygnal {
+  font-family: var(--mono); font-size: .74rem; white-space: nowrap;
+  padding: .1rem .4rem; border-radius: 3px;
+}
+.sygnal.aktywny { color: var(--dobrze); }
+.sygnal.zwolnil { color: var(--tekst-blady); }
+.sygnal.stanal  { color: var(--uwaga); background: var(--uwaga-tlo); font-weight: 600; }
+.sygnal.brak, .sygnal.czeka { color: var(--tekst-blady); opacity: .7; }
+
+.kropka { color: var(--linia-mocna); letter-spacing: .1em; }
+.kropka.zrobiona { color: var(--dobrze); }
+.kropka.zaczeta { color: var(--dobrze); opacity: .45; }
+
+/* ── nagłówek planu ─────────────────────────────────────────────── */
+.naglowek-planu {
+  display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+  padding-bottom: 1rem; border-bottom: 1px solid var(--linia-mocna); margin-bottom: 1rem;
+}
+.tytul-planu { display: flex; align-items: center; gap: .7rem; flex: 1; }
+.akcje { display: flex; align-items: center; gap: .8rem; }
+.zapis { font-family: var(--mono); font-size: .72rem; color: var(--tekst-blady); }
+
+.pasek-ustawien {
+  display: flex; gap: 1.4rem; align-items: flex-end; flex-wrap: wrap;
+  padding: .9rem 1rem; background: var(--panel);
+  border: 1px solid var(--linia); border-radius: 6px; margin-bottom: 1.2rem;
+}
+.taby { display: flex; gap: .25rem; }
+.taby button { padding: .3rem .6rem; font-family: var(--mono); font-size: .8rem; }
+.taby button.aktywny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+
+/* ── układ główny ───────────────────────────────────────────────── */
+.uklad { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 1.2rem; align-items: start; }
+@media (max-width: 1100px) { .uklad { grid-template-columns: 1fr; } }
+
+.dzien {
+  background: var(--plaszczyzna); border: 1px solid var(--linia);
+  border-radius: 6px; margin-bottom: 1rem; overflow: hidden;
+}
+.dzien-naglowek {
+  display: flex; align-items: center; gap: .8rem; padding: .6rem .9rem;
+  background: var(--panel); border-bottom: 1px solid var(--linia);
+}
+.dzien-naglowek .tytul { font-family: var(--mono); font-size: .78rem;
+  text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+.dzien-naglowek .suma { margin-left: auto; font-family: var(--mono);
+  font-size: .74rem; color: var(--tekst-blady); }
+
+table.sloty { width: 100%; border-collapse: collapse; font-size: .85rem; }
+table.sloty th {
+  font-family: var(--mono); font-size: .64rem; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--tekst-blady); font-weight: 500;
+  text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--linia);
+}
+table.sloty td { padding: .22rem .5rem; border-bottom: 1px solid var(--linia); vertical-align: middle; }
+table.sloty tr:last-child td { border-bottom: none; }
+table.sloty tr.grupa-b { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+table.sloty tr.pusty td { opacity: .5; }
+
+td.lp { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); width: 4.6rem;
+        display: flex; align-items: center; gap: .3rem; }
+/*
+ * Strzałki przestawiania ćwiczeń pokazują się po najechaniu na wiersz — żeby
+ * nie zaśmiecać tabeli, w którą trener patrzy głównie po liczby.
+ *
+ * `pointer-events` musi chodzić razem z `opacity`, bo **niewidoczne i
+ * nieklikalne to nie to samo**. Przezroczysty przycisk dalej łapie kliknięcia:
+ * dało się przestawić ćwiczenie, nie widząc, w co się trafiło — a plan
+ * zmieniał się bez widocznej przyczyny.
+ */
+.strzalki {
+  display: inline-flex; flex-direction: column; gap: 1px;
+  opacity: 0; pointer-events: none; transition: opacity .12s;
+}
+tr:hover .strzalki, .strzalki:focus-within { opacity: 1; pointer-events: auto; }
+
+/*
+ * Na telefonie nie ma najechania. Bez tego strzałki byłyby niewidoczne
+ * **zawsze** — czyli przestawianie ćwiczeń po prostu nie istniałoby z ręki,
+ * a w każdym wierszu siedziałyby dwa niewidzialne przyciski wielkości
+ * 14×11 px, gotowe przestawić plan przy nietrafionym dotknięciu.
+ */
+@media (hover: none) {
+  .strzalki { opacity: 1; pointer-events: auto; }
+}
+
+button.mikro { padding: 0 .2rem; font-size: .55rem; line-height: 1.05;
+               border-color: transparent; background: none; color: var(--tekst-blady); }
+button.mikro:hover { color: var(--akcent); border-color: var(--linia-mocna); }
+td.cwiczenie select { width: 100%; min-width: 12rem; }
+td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
+td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
+td.ciezar { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+td.ciezar.brak { color: var(--uwaga); font-weight: 400; font-size: .8rem; }
+td.stres { font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady); white-space: nowrap; }
+.znacznik-jedn { color: var(--akcent); font-size: .8rem; }
+
+/* Ciężar liczony i ciężar wpisany ręcznie muszą się różnić na pierwszy rzut
+   oka — ten drugi nie reaguje ani na 1RM, ani na oceny klienta. Pusta wartość
+   to ciężar liczony, więc podpowiedź jest tu treścią, nie ozdobą. */
+td.ciezar input.pole-ciezaru {
+  width: 4.2rem; text-align: right; font-family: var(--mono); font-weight: 600;
+}
+td.ciezar input.pole-ciezaru::placeholder { color: var(--tekst); opacity: 1; font-weight: 600; }
+td.ciezar.brak input.pole-ciezaru::placeholder {
+  color: var(--uwaga); font-weight: 400; font-size: .8rem;
+}
+td.ciezar.reczny input.pole-ciezaru { border-color: var(--akcent); }
+.znacznik-reczny { color: var(--akcent); font-size: .7rem; margin-left: .15rem; }
+
+.topset {
+  display: flex; align-items: center; gap: .7rem; padding: .45rem .9rem;
+  background: var(--akcent-tlo); border-bottom: 1px solid var(--linia);
+  font-size: .82rem;
+}
+.topset .etykieta { font-family: var(--mono); font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--akcent); font-weight: 600; }
+.topset .wynik { margin-left: auto; font-family: var(--mono); font-weight: 600; }
+
+/* ── panel boczny ───────────────────────────────────────────────── */
+.bok { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+.karta { background: var(--plaszczyzna); border: 1px solid var(--linia);
+         border-radius: 6px; padding: 1rem; }
+
+.uwaga-wpis {
+  border-left: 3px solid var(--linia-mocna); padding: .45rem .7rem;
+  margin-bottom: .5rem; border-radius: 0 4px 4px 0; font-size: .84rem;
+}
+.uwaga-wpis.blad { border-color: var(--zle); background: var(--zle-tlo); }
+.uwaga-wpis.ostrzezenie { border-color: var(--uwaga); background: var(--uwaga-tlo); }
+.uwaga-wpis .opis { font-weight: 600; }
+.uwaga-wpis ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); font-size: .8rem; }
+
+/* ── wymaga uwagi ───────────────────────────────────────────────── */
+#panel-uwaga { border-left: 3px solid var(--uwaga); }
+.pozycja .meta.powody { flex: 1; text-align: right; color: var(--uwaga); }
+
+/* ── moduły ODDECH i BIEG ───────────────────────────────────────── */
+.pola-modulu { display: grid; gap: .5rem; margin-bottom: .8rem; }
+.pola-modulu label {
+  display: flex; flex-direction: row; align-items: center; gap: .5rem;
+  font-size: .74rem; color: var(--tekst-blady);
+  font-family: var(--mono); text-transform: none; letter-spacing: 0;
+}
+.pola-modulu label input[type="number"] {
+  margin-left: auto; width: 6.5rem; text-align: right;
+  font-family: var(--mono); font-size: .8rem;
+  padding: .35rem .5rem; border-radius: 5px;
+  border: 1px solid var(--linia); background: var(--tlo); color: var(--tekst);
+}
+.pola-modulu label.ptaszek { gap: .45rem; }
+.pola-modulu label.ptaszek input { margin: 0; }
+
+.poziom-modulu {
+  font-family: var(--mono); font-size: .82rem; font-weight: 600;
+  color: var(--akcent); margin: 0 0 .5rem;
+}
+.wiersz-modulu { display: flex; gap: .6rem; padding: .2rem 0; font-size: .78rem; }
+.wiersz-modulu .etykieta {
+  flex: 0 0 9rem; font-family: var(--mono); font-size: .72rem;
+  color: var(--tekst-blady);
+}
+.wiersz-modulu .tresc { flex: 1; color: var(--tekst-slaby); }
+.wiersz-modulu .tresc.mono { font-family: var(--mono); }
+
+table.sloty.bieg { margin-top: .8rem; font-size: .72rem; }
+table.sloty.bieg td, table.sloty.bieg th { padding: .22rem .3rem; white-space: nowrap; }
+table.sloty.bieg td:nth-child(2) { color: var(--tekst-slaby); white-space: normal; }
+table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
+
+/* ── propozycje 1RM ─────────────────────────────────────────────── */
+.propozycja { padding: .7rem 0; border-bottom: 1px solid var(--linia); }
+.propozycja:last-child { border-bottom: none; padding-bottom: 0; }
+.propozycja-gora { display: flex; align-items: baseline; gap: .6rem; }
+.propozycja-gora .nazwa { flex: 1; font-size: .88rem; }
+.propozycja-gora .wartosc {
+  font-family: var(--mono); font-size: .82rem; font-weight: 600;
+  color: var(--akcent); white-space: nowrap;
+}
+.propozycja .wskazowka { margin-top: .3rem; font-family: var(--mono); font-size: .72rem; }
+.propozycja .wskazowka.ostrzezenie { color: var(--uwaga); }
+.propozycja button { margin-top: .5rem; }
+
+.wiersz-miary {
+  display: flex; align-items: center; gap: .6rem; padding: .22rem 0;
+  font-family: var(--mono); font-size: .78rem;
+}
+.wiersz-miary .etykieta { width: 3.4rem; color: var(--tekst-blady); }
+.wiersz-miary .pasek { flex: 1; color: var(--akcent); letter-spacing: -1px; }
+.wiersz-miary .wartosc { width: 3.4rem; text-align: right; font-variant-numeric: tabular-nums; }
+.wiersz-miary .ocena { width: 5.6rem; font-size: .72rem; }
+.ocena.pod { color: var(--tekst-blady); }
+.ocena.ok { color: var(--dobrze); }
+.ocena.nad { color: var(--uwaga); }
+
+.serie-max-wiersz {
+  display: grid; grid-template-columns: 1fr 3.2rem 3.2rem 3.6rem;
+  gap: .35rem; align-items: center; padding: .18rem 0; font-size: .8rem;
+}
+.serie-max-wiersz .nazwa { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serie-max-wiersz input { width: 100%; text-align: center; font-family: var(--mono); padding: .25rem; }
+.serie-max-wiersz .rm { font-family: var(--mono); text-align: right; color: var(--akcent); font-weight: 600; }
+
+/* ── modal ──────────────────────────────────────────────────────── */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.45);
+         display: flex; align-items: center; justify-content: center; z-index: 20; }
+.modal-tresc { background: var(--plaszczyzna); border-radius: 8px; padding: 1.5rem;
+               max-width: 34rem; width: calc(100% - 2rem); max-height: 80vh; overflow: auto; }
+.modal-tresc code { font-family: var(--mono); font-size: .84rem;
+  background: var(--panel); padding: .15rem .4rem; border-radius: 3px;
+  display: block; margin: .6rem 0; word-break: break-all; }
+
+/* ── logowanie ──────────────────────────────────────────────────── */
+.ekran-logowania {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.ekran-logowania .karta { width: 100%; max-width: 22rem; }
+.ekran-logowania h1 { font-size: 1.15rem; margin: 0; }
+.ekran-logowania label { margin-top: .9rem; }
+.ekran-logowania input {
+  font: inherit; font-family: var(--mono); font-size: .9rem;
+  padding: .55rem .65rem; border-radius: 6px;
+  border: 1px solid var(--linia); background: var(--tlo); color: var(--tekst);
+}
+.ekran-logowania button { margin-top: 1.1rem; }
+.wskazowka.ostrzezenie { color: var(--uwaga); }
+.ekran-logowania button.szeroki { display: block; width: 100%; padding: .6rem; }
+.naglowek-glowny { display: flex; align-items: flex-start; gap: 1rem; }
+.naglowek-glowny > div { flex: 1; }
+
+/* ── kartoteka klienta ──────────────────────────────────────────── */
+.podsumowanie-klienta {
+  margin: 0 0 1.2rem; color: var(--tekst-slaby); font-size: .92rem;
+}
+
+.pozycja .znacznik-aktywny {
+  margin-left: .6rem; font-family: var(--mono); font-size: .68rem;
+  font-weight: 400; color: var(--akcent); white-space: nowrap;
+}
+
+#lista-cykli .pozycja .nazwa { flex: 0 0 auto; min-width: 8rem; font-family: var(--mono); }
+
+.wiersz-sciezki {
+  display: flex; align-items: baseline; gap: .8rem;
+  padding: .3rem 0; border-bottom: 1px solid var(--linia); font-size: .86rem;
+}
+.wiersz-sciezki:last-child { border-bottom: none; }
+.wiersz-sciezki .etykieta-szeroka { flex: 1; }
+.wiersz-sciezki .tresc.mono { font-family: var(--mono); color: var(--tekst-slaby); white-space: nowrap; }
+.wiersz-sciezki .wartosc {
+  width: 4.4rem; text-align: right; font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Karty historii mają etykiety słowami („wiosłowanie"), a nie krótkie „T3" —
+   domyślne 3,4 rem z panelu planu jest tu za wąskie i wartości zawijają się. */
+#historia-obciazenia .wiersz-miary .etykieta { width: 2.6rem; }
+#historia-obciazenia .wiersz-miary .tresc { flex: 1; }
+#historia-obciazenia .wiersz-miary .wartosc { width: 4.6rem; }
+#historia-wzorcow .wiersz-miary .etykieta { width: 6.2rem; }
+#historia-wzorcow .wiersz-miary .tresc { flex: 1; text-align: right; }
+#historia-frekwencji .wiersz-miary .etykieta { width: 2.6rem; }
+#historia-frekwencji .wiersz-miary .tresc { flex: 1; }
+.wartosc.wzrost { color: var(--dobrze); }
+.wartosc.spadek { color: var(--uwaga); }
+
+/* ── asystent AI ────────────────────────────────────────────────── */
+.akcje-asystenta { display: flex; gap: .5rem; flex-wrap: wrap; }
+.akcje-asystenta button { font-size: .82rem; padding: .35rem .7rem; }
+.akcje-asystenta button:disabled { opacity: .5; cursor: default; border-color: var(--linia); color: var(--tekst-blady); }
+
+.podsumowanie-ai { margin: .7rem 0 0; font-size: .88rem; font-weight: 600; }
+
+/* Waga spostrzeżenia widać kolorem paska, nie wykrzyknikiem — to jest opis
+   liczb, a nie alarm. Alarmy ma „Kontrola planu" obok. */
+.spostrzezenie {
+  border-left: 3px solid var(--linia-mocna); padding: .1rem .7rem;
+  margin: .7rem 0; font-size: .84rem;
+}
+.spostrzezenie.waga-wysoka { border-color: var(--akcent); }
+.spostrzezenie.waga-srednia { border-color: var(--linia-mocna); }
+.spostrzezenie.waga-niska { border-color: var(--linia); }
+.spostrzezenie .nazwa { font-weight: 600; font-size: .82rem; }
+.spostrzezenie p { margin: .2rem 0 0; color: var(--tekst-slaby); }
+
+.akcje-modala { display: flex; gap: .5rem; margin-top: .9rem; }
+.lista-uwag { margin: .3rem 0 0; padding-left: 1.1rem; }
+.lista-uwag li { margin: .2rem 0; }
+
+/* Formularz asystenta stoi w modalu, gdzie jest miejsce — pola idą pod etykietą,
+   inaczej niż w wąskich kartach ODDECH/BIEG. */
+.modal-tresc .pola-modulu label { flex-direction: column; align-items: stretch; gap: .25rem; }
+.modal-tresc .pola-modulu label input,
+.modal-tresc .pola-modulu label textarea {
+  font: inherit; font-size: .88rem; width: 100%; margin-left: 0; text-align: left;
+  padding: .4rem .55rem; border-radius: 5px;
+  border: 1px solid var(--linia-mocna); background: var(--tlo); color: var(--tekst);
+}
+.modal-tresc .pola-modulu label textarea { resize: vertical; font-family: inherit; }
+
+.propozycja-szkieletu h4 {
+  font-family: var(--mono); font-size: .74rem; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--tekst-blady); font-weight: 500;
+  margin: 1.1rem 0 .2rem;
+}
+.propozycja-szkieletu table.sloty td { vertical-align: top; padding: .35rem .5rem .35rem 0; }
+.propozycja-szkieletu td.mono { font-family: var(--mono); color: var(--tekst-blady); width: 2.6rem; }
+.propozycja-szkieletu .nazwa { font-weight: 600; }
+.propozycja-szkieletu .wskazowka { margin: .1rem 0 0; font-size: .78rem; }
+.propozycja-szkieletu td:last-child { text-align: right; white-space: nowrap; }
+
+/* ── porównanie cykli ───────────────────────────────────────────── */
+#porownanie .wiersz-miary .etykieta { flex: 0 0 6rem; }
+#porownanie .wiersz-miary .etykieta-szeroka {
+  flex: 1; font-size: .78rem; color: var(--tekst-slaby);
+}
+#porownanie .wiersz-miary .tresc { flex: 1; text-align: right; color: var(--tekst-blady); }
+#porownanie .wiersz-miary .wartosc { width: 5.4rem; white-space: nowrap; }
+#porownanie .wiersz-miary .wartosc.szeroka { width: auto; }
+#porownanie .wartosc.wzrost { color: var(--dobrze); }
+#porownanie .wartosc.spadek { color: var(--uwaga); }
+#porownanie .wskazowka { margin-top: .9rem; }
+
+
+/* ── telefon ────────────────────────────────────────────────────────
+   Trener nie siedzi przy biurku — między klientami zagląda tu z telefonu.
+   Zasada jest jedna: **strona nigdy nie jedzie w bok**. Co jest za szerokie
+   (tabela slotów), przewija się we własnym pudełku, nie całą stroną. */
+
+/* Tabela dnia jest z natury szeroka: osiem kolumn z polami do wpisywania.
+   Zamiast ją zgniatać, pozwalamy jej przewijać się wewnątrz karty dnia —
+   Lp. i ćwiczenie zostają na widoku, reszta dojeżdża palcem. */
+.dzien { overflow-x: auto; }
+
+/* Lista przeciwwskazań: pod ręką, gdy trzeba, cicha przez resztę czasu. */
+.przeciwwskazania { margin: -.2rem 0 .2rem; font-size: .85rem; }
+.przeciwwskazania summary {
+  cursor: pointer; color: var(--akcent); list-style: none;
+  padding: .35rem 0; width: fit-content;
+}
+.przeciwwskazania summary::-webkit-details-marker { display: none; }
+.przeciwwskazania summary::before { content: "› "; }
+.przeciwwskazania[open] summary::before { content: "⌄ "; }
+.przeciwwskazania ul {
+  margin: .1rem 0 .3rem; padding-left: 1.1rem;
+  color: var(--tekst-blady); line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  html, body { overflow-x: hidden; }
+  .ekran { padding: 1rem .8rem; }
+  .panel { padding: 1rem .9rem; }
+
+  /* Nagłówki układają się w kolumnę zamiast walczyć o szerokość. */
+  .naglowek-glowny, .naglowek-planu { flex-direction: column; align-items: stretch; gap: .7rem; }
+  .naglowek-planu .akcje { flex-wrap: wrap; }
+  .naglowek-planu .akcje button { flex: 1 1 auto; }
+  .tytul-planu { flex-wrap: wrap; }
+
+  /* Wiersz listy: nazwa w jednej linii, opis w drugiej, przyciski w trzeciej.
+     Inaczej „Nowa wersja" wypycha wiersz poza ekran. */
+  .pozycja { flex-wrap: wrap; gap: .5rem .7rem; padding: .9rem .1rem; }
+  .pozycja .nazwa { flex: 1 0 100%; }
+  .pozycja .meta, .pozycja .meta.powody { flex: 1 1 auto; text-align: left; }
+  .pozycja button { flex: 1 1 auto; }
+  .pozycja button.link { flex: 0 0 auto; }
+  #lista-cykli .pozycja .nazwa { min-width: 0; }
+
+  /* Formularze: pole na całą szerokość, bo na 390 px trzy w rzędzie to nic. */
+  .rzad-formularza { flex-direction: column; align-items: stretch; }
+  .rzad-formularza label, .rzad-formularza button { width: 100%; }
+  .pasek-ustawien { gap: .8rem 1rem; padding: .8rem; }
+
+  /* Panel boczny przestaje być przyklejony — na telefonie stoi po prostu
+     pod planem, a `sticky` zamrażałby go w połowie przewijania. */
+  .bok { position: static; }
+
+  /* Tabela slotów dostaje własną, minimalną szerokość i przewija się
+     wewnątrz karty dnia. Bez tego kolumny zlepiłyby się w kaszę. */
+  /* Na telefonie znikają dwie kolumny, których się tam nie czyta: szkielet
+     jest pomocą przy układaniu planu, a stres to analiza z panelu obok.
+     Zostaje to, po co trener zagląda w plan z ręki — ćwiczenie i liczby.
+     Bez tego ciężary stały poza ekranem, za kolumną kategorii. */
+  table.sloty th.szkielet, table.sloty td.szkielet,
+  table.sloty th.stres, table.sloty td.stres,
+  table.sloty th.rpe, table.sloty td.rpe { display: none; }
+
+  /* Pod palec, nie pod kursor: 31 px to rozmiar wygodny dla myszy, na
+     telefonie trafia się w to co drugi raz. */
+  .taby button, .pasek-ustawien select, .pasek-ustawien input,
+  .rzad-formularza button { min-height: 2.75rem; }
+  .taby { gap: .4rem; flex-wrap: wrap; }
+
+  /* Ciasno: kolumny i pola oddają wszystko, co da się oddać, żeby CIĘŻAR
+     zmieścił się bez przewijania w bok. To jest ta jedna liczba, po którą
+     trener zagląda w plan z telefonu. */
+  table.sloty { min-width: 0; font-size: .82rem; }
+  table.sloty th, table.sloty td { padding: .35rem .25rem; }
+  table.sloty td.cwiczenie { width: 99%; }
+  table.sloty td.cwiczenie select { min-width: 0; width: 100%; }
+  table.sloty td.liczba input { width: 2.4rem; }
+  table.sloty td.ciezar input.pole-ciezaru { width: 3.2rem; }
+  table.sloty.bieg { min-width: 0; }
+
+  /* Pod palec, nie pod kursor — ciąg dalszy. Poprzednia runda powiększyła
+     zakładki tygodni i pasek ustawień, ale sama tabela została z rozmiarami
+     dla myszy: strzałki 14×11 px, pola 31 px, kratka TOP SETU 13×13 px.
+     Tabela jest ciasna, więc to jest kompromis, a nie zalecane 44 px —
+     ale różnica między 14 a 32 px to różnica między pułapką a przyciskiem. */
+  table.sloty button.mikro {
+    min-width: 2rem; min-height: 1.6rem; font-size: .75rem; padding: 0 .3rem;
+  }
+  table.sloty .strzalki { gap: .2rem; }
+  /* Wszystko, w co się celuje palcem — a nie lista wyjątków. Pierwsza wersja
+     wymieniała pola tabeli po nazwie i przegapiła pole w oknie „Połącz
+     klienta": lista wyjątków zawsze jest o jeden krótsza, niż trzeba. */
+  select, input:not([type="checkbox"]) { min-height: 2.25rem; }
+  /* `flex: none` nie jest ozdobą: kratka TOP SETU stoi w pasku ustawionym
+     na flex i bez tego ściskała się z powrotem do 16 px szerokości. */
+  input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; }
+
+  .wiersz-sciezki { flex-wrap: wrap; gap: .2rem .8rem; }
+  .wiersz-sciezki .etykieta-szeroka { flex: 1 0 100%; }
+  .wiersz-sciezki .tresc.mono { flex: 1; }
+  .wiersz-sciezki .wartosc { width: auto; }
+
+  /* Kolejność na telefonie: kto wymaga uwagi, potem klienci, a formularze
+     na końcu. Z telefonu się zagląda, a nie zakłada nowe plany — dwa duże
+     formularze na wejściu spychały listę klientów poniżej ekranu. */
+  #ekran-lista { display: flex; flex-direction: column; }
+  #ekran-lista > .naglowek-glowny { order: 0; }
+  #ekran-lista > #panel-uwaga { order: 1; }
+  #ekran-lista > #panel-klienci { order: 2; }
+  #ekran-lista > .panel { order: 3; }
+
+  .modal-tresc { width: calc(100% - 1rem); padding: 1.1rem; max-height: 88vh; }
+  .modal-tresc code { font-size: .76rem; }
+  .akcje-modala { flex-wrap: wrap; }
+  .akcje-modala button { flex: 1 1 auto; }
+}

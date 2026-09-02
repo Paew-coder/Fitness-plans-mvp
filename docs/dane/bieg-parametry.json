@@ -1,0 +1,37 @@
+{
+ "opis": "Parametry kalkulatora biegowego (zakładka BIEG 5.17/5.18).",
+ "hrmax": {
+  "wzor": "ROUND(208 - 0,7 × wiek; 0)",
+  "zrodlo": "BIEG!B13"
+ },
+ "strefy": [
+  { "nazwa": "Strefa 1 — regeneracja", "od": 0.6, "do": 0.7, "zrodlo": "BIEG!B18" },
+  { "nazwa": "Strefa 2 — baza tlenowa", "od": 0.7, "do": 0.8, "zrodlo": "BIEG!B19" },
+  { "nazwa": "Strefa 3 — tempo ciągłe", "od": 0.8, "do": 0.87, "zrodlo": "BIEG!B20" },
+  { "nazwa": "Strefa 4 — próg", "od": 0.87, "do": 0.93, "zrodlo": "BIEG!B21" },
+  { "nazwa": "Strefa 5 — VO2max", "od": 0.93, "do": 1.0, "zrodlo": "BIEG!B22" }
+ ],
+ "tempa": [
+  { "klucz": "spokojne", "nazwa": "Bieg spokojny (Z2)", "offset_min_km": 1.25, "zrodlo": "BIEG!B25" },
+  { "klucz": "ciagle", "nazwa": "Bieg ciągły (Z3)", "offset_min_km": 0.6667, "zrodlo": "BIEG!B26" },
+  { "klucz": "progowe", "nazwa": "Tempo progowe (Z4)", "offset_min_km": 0.25, "zrodlo": "BIEG!B27" },
+  { "klucz": "interwal", "nazwa": "Interwał (Z5)", "offset_min_km": -0.1667, "zrodlo": "BIEG!B28" }
+ ],
+ "mnoznik_tygodnia": [1.0, 1.1, 1.2, 0.9, 1.2, 1.3],
+ "mnoznik_liczby_jednostek": [1.2, 1.1, 1.0, 0.95, 0.9],
+ "jednostki": [
+  { "nr": 1, "typ": "Bieg spokojny — ciągły", "bazaMin": 30, "tempo": "spokojne", "strefa": 1, "etykieta": "spokojny (Z2)", "dodatkoweMin": 0, "przerwy": "brak" },
+  { "nr": 2, "typ": "Bieg spokojny — ciągły", "bazaMin": 30, "tempo": "spokojne", "strefa": 1, "etykieta": "spokojny (Z2)", "dodatkoweMin": 0, "przerwy": "brak" },
+  { "nr": 3, "typ": "Bieg ciągły", "bazaMin": 20, "tempo": "ciagle", "strefa": 2, "etykieta": "ciągły (Z3)", "dodatkoweMin": 20, "przerwy": "brak" },
+  { "nr": 4, "typ": "Długie wybieganie — ciągły", "bazaMin": 45, "tempo": "spokojne", "strefa": 1, "etykieta": "długie wybieganie (Z2)", "dodatkoweMin": 0, "przerwy": "brak" },
+  { "nr": 5, "typ": "Interwał progowy", "bazaMin": 16, "tempo": "progowe", "strefa": 3, "etykieta": "interwał progowy (Z4)", "dodatkoweMin": 20, "przerwy": "2 min truchtu na powtórzenie 4-minutowe" }
+ ],
+ "przeciwwskazania": [
+  "ból w klatce piersiowej, duszność albo zawroty głowy przy wysiłku",
+  "niekontrolowane nadciśnienie",
+  "zdiagnozowana choroba serca",
+  "świeża kontuzja kończyny dolnej"
+ ],
+ "uwaga": "Tydzień 4 jest celowo lżejszy — to odciążenie, nie błąd. Tempa są punktem wyjścia: jeśli bieg spokojny wymusza oddech, przy którym nie da się mówić pełnym zdaniem, zwolnij niezależnie od zegarka. Dystans jest szacunkiem z tempa — biegnij czas, nie kilometry. Powtórz bieg testowy po sześciu tygodniach.",
+ "rozbieznosc": "Jednostki opisane jako Z2/Z3/Z4 wskazują na wiersze strefy 1/2/3 z tabeli powyżej. Procenty (60–70 dla spokojnego) zgadzają się z klasycznym modelem pięciostrefowym, więc przesunięte są nazwy w tabeli, nie przypisania jednostek."
+}

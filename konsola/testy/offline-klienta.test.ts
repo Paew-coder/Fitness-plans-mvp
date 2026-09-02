@@ -1,0 +1,138 @@
+/**
+ * Tryb offline aplikacji klienta — umowa między trzema plikami.
+ *
+ * Test czyta źródła, a nie zachowanie, i to jest świadomy wybór: prawdziwe
+ * sprawdzenie wymaga przeglądarki z service workerem, a błąd, po którym ten
+ * plik powstał, polegał właśnie na **rozjeździe między plikami**, nie na złej
+ * logice w żadnym z nich.
+ *
+ * Co się stało: worker leży w `/klient/`, więc rejestrował się z domyślnym
+ * zakresem `/klient/`. Klient otwiera `/k/<token>` — adres spoza tego zakresu.
+ * Worker instalował się poprawnie i **nigdy nie przejmował strony**, którą
+ * klient faktycznie otwiera. Tryb offline, reklamowany jako „działa bez
+ * zasięgu", nie działał wcale: bez sieci przeglądarka pokazywała własny błąd,
+ * a zapisanego lokalnie planu nie miał kto odczytać.
+ *
+ * Naprawa wymaga zgody trzech miejsc naraz — i to pilnują poniższe testy.
+ */
+import { test, describe } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const KONSOLA = join(dirname(fileURLToPath(import.meta.url)), "..");
+const zrodlo = (sciezka: string) => readFileSync(join(KONSOLA, sciezka), "utf-8");
+
+describe("offline klienta — zakres service workera", () => {
+  test("aplikacja rejestruje workera z zakresu korzenia", () => {
+    const app = zrodlo("public/klient/app.js");
+    const rejestracja = app.match(/serviceWorker\.register\([^)]*\)/s)?.[0] ?? "";
+    assert.match(rejestracja, /["']\/klient\/sw\.js["']/, "worker leży w /klient/");
+    assert.match(rejestracja, /scope:\s*["']\/["']/,
+      "bez jawnego zakresu worker nie obejmuje /k/<token>, czyli adresu klienta");
+  });
+
+  test("serwer pozwala workerowi na szerszy zakres", () => {
+    const serwer = zrodlo("serwer.ts");
+    assert.match(serwer, /service-worker-allowed/i,
+      "przeglądarka odrzuci zakres '/' bez zgody serwera");
+    assert.match(serwer, /\/klient\/sw\.js/,
+      "nagłówek ma dotyczyć wyłącznie pliku workera");
+  });
+
+  test("worker nie dotyka adresów konsoli trenera", () => {
+    const sw = zrodlo("public/klient/sw.js");
+    // Zakres "/" obejmuje też konsolę — gdyby worker serwował ją ze swojego
+    // cache, trener dostałby aplikację klienta zamiast swojego ekranu.
+    assert.match(sw, /startsWith\("\/k\/"\)/);
+    assert.match(sw, /startsWith\("\/klient\/"\)/);
+    assert.match(sw, /if \(!nasze\(url\.pathname\)\) return;/,
+      "wszystko poza aplikacją klienta ma iść do sieci normalną drogą");
+  });
+
+  test("szkielet zawiera samą stronę, nie tylko style i skrypt", () => {
+    const sw = zrodlo("public/klient/sw.js");
+    const szkielet = sw.match(/const SZKIELET = \[[^\]]*\]/s)?.[0] ?? "";
+    for (const plik of ["/klient/index.html", "/klient/style.css", "/klient/app.js"]) {
+      assert.ok(szkielet.includes(plik), `${plik} musi być w szkielecie`);
+    }
+  });
+
+  test("wersja cache jest podbita przy zmianie szkieletu", () => {
+    // Nie sprawdzamy konkretnego numeru — tylko tego, że stała istnieje
+    // i że aktywacja kasuje wszystko, co do niej nie należy.
+    const sw = zrodlo("public/klient/sw.js");
+    assert.match(sw, /const CACHE = "trening-v\d+"/);
+    assert.match(sw, /caches\.delete/, "stare cache mają znikać przy aktywacji");
+    assert.match(sw, /clients\.claim/, "worker ma przejmować stronę od razu");
+  });
+});
+
+describe("aktualizacja aplikacji u klienta", () => {
+  /**
+   * Worker odpowiadał wcześniej „z cache, a jak nie ma, to z sieci" — czyli
+   * plik raz zapisany zostawał u klienta **na zawsze**. Nowa wersja docierała
+   * wyłącznie wtedy, gdy ktoś pamiętał podbić `CACHE`. Zabezpieczenie oparte
+   * na pamięci: jedno przeoczenie i wszyscy klienci zostają ze starym kodem,
+   * bez żadnego objawu po stronie trenera. Teraz odświeżenie leci w tle.
+   */
+  test("odpowiedź z cache idzie w parze z odświeżeniem z sieci", () => {
+    const sw = zrodlo("public/klient/sw.js");
+    assert.match(sw, /caches\.open\(CACHE\)/, "worker nie sięga po swój magazyn");
+    assert.match(sw, /magazyn\.put\(zapytanie, odp\.clone\(\)\)/,
+      "worker nie zapisuje świeżej odpowiedzi do cache");
+    assert.match(sw, /e\.waitUntil\(zSieci\)/,
+      "odświeżenie musi dokończyć się także po oddaniu odpowiedzi z cache");
+  });
+
+  test("szkielet do zapisania obejmuje wszystkie pliki aplikacji klienta", () => {
+    // Dołożony plik, którego nie ma na tej liście, nie trafi do cache — czyli
+    // aplikacja przestanie działać bez zasięgu dokładnie w tym miejscu.
+    const sw = zrodlo("public/klient/sw.js");
+    const wSzkielecie = new Set(
+      [...sw.matchAll(/"\/klient\/([^"]+)"/g)].map((m) => m[1]!));
+    const naDysku = readdirSync(join(KONSOLA, "public", "klient"))
+      .filter((f) => f !== "sw.js");   // worker sam siebie nie cache'uje
+    const brakujace = naDysku.filter((f) => !wSzkielecie.has(f));
+    assert.deepEqual(brakujace, [],
+      `pliki poza szkieletem: ${brakujace.join(", ")}`);
+  });
+});
+
+describe("ikona na ekranie głównym", () => {
+  /**
+   * iOS **nie czyta ikon z manifestu**. Bierze wyłącznie `apple-touch-icon`
+   * i wyłącznie PNG — bez tego klient, który doda aplikację do ekranu
+   * głównego iPhone'a, dostaje zrzut strony zamiast ikony. To jest ta jedna
+   * rzecz, która najbardziej odróżnia aplikację od zakładki w przeglądarce.
+   */
+  test("strona podaje ikonę dla iOS, w formacie który iOS czyta", () => {
+    const html = zrodlo("public/klient/index.html");
+    const link = html.match(/<link[^>]*apple-touch-icon[^>]*>/)?.[0] ?? "";
+    assert.ok(link, "brak apple-touch-icon — iPhone pokaże zrzut strony");
+    assert.match(link, /\.png/, "iOS nie przyjmuje SVG jako ikony ekranu głównego");
+  });
+
+  test("manifest podaje ikony PNG, w tym maskowalną", () => {
+    const manifest = JSON.parse(zrodlo("public/klient/manifest.json"));
+    const png = manifest.icons.filter((i: any) => i.type === "image/png");
+    assert.ok(png.length >= 2, "Android potrzebuje ikon rastrowych");
+    assert.ok(png.some((i: any) => i.purpose?.includes("maskable")),
+      "bez maskowalnej system przytnie ikonę po swojemu");
+  });
+
+  test("serwer podaje ikony jako obrazy, nie jako plik do pobrania", () => {
+    // „application/octet-stream" to dla przeglądarki dość powód, żeby ikonę
+    // pominąć — a wygląda to wtedy jak brak ikony, nie jak błąd.
+    const serwer = zrodlo("serwer.ts");
+    assert.match(serwer, /"\.png":\s*"image\/png"/);
+  });
+
+  test("ikony są w pamięci telefonu razem z resztą aplikacji", () => {
+    const sw = zrodlo("public/klient/sw.js");
+    for (const plik of ["ikona-180.png", "ikona-192.png", "ikona-512.png"]) {
+      assert.ok(sw.includes(plik), `${plik} poza szkieletem — zniknie bez zasięgu`);
+    }
+  });
+});

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Konsola trenera — CraftMyPlan</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div id="ekran-lista" class="ekran">
+  <header class="naglowek-glowny">
+    <div>
+      <h1>Konsola trenera</h1>
+      <p class="podtytul">Plany powstają tutaj, do klienta idą jako arkusz.</p>
+    </div>
+    <button id="wyloguj" class="link ukryty">Wyloguj</button>
+  </header>
+
+  <section class="panel ukryty" id="panel-uwaga">
+    <h2>Wymaga uwagi</h2>
+    <div id="uwaga-lista" class="lista"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Nowy plan</h2>
+    <form id="form-nowy" class="rzad-formularza">
+      <label>Klient
+        <input name="klient" required placeholder="np. Zuzanna C" autocomplete="off" list="klienci-podpowiedzi">
+      </label>
+      <label>Wersja
+        <input name="wersja" type="number" min="1" value="1" required>
+      </label>
+      <label>Poprzedni cykl
+        <select name="poprzedniId">
+          <option value="">— brak —</option>
+        </select>
+      </label>
+      <button type="submit" class="glowny">Utwórz</button>
+    </form>
+    <p class="wskazowka">
+      Nazwa istniejącego klienta dopisuje cykl do jego kartoteki — nie zakłada
+      drugiej osoby. Wskazanie poprzedniego cyklu włącza ostrzeżenie
+      o powtórkach ćwiczeń.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Wczytaj plan z arkusza</h2>
+    <form id="form-import" class="rzad-formularza">
+      <label>Klient
+        <input name="klient" required placeholder="np. Maciek Tabakowski" autocomplete="off" list="klienci-podpowiedzi">
+      </label>
+      <label>Wersja
+        <input name="wersja" type="number" min="1" value="1" required>
+      </label>
+      <label>Plik .xlsx
+        <input name="plik" type="file" accept=".xlsx" required>
+      </label>
+      <button type="submit">Wczytaj</button>
+    </form>
+    <p class="wskazowka">
+      Plik musi być w układzie 5.17 lub 5.18 i przeliczony przed eksportem.
+      Plany 4.0, warianty 3-dniowe i Rehab mają inny układ — tych nie wczyta.
+    </p>
+  </section>
+
+  <section class="panel" id="panel-klienci">
+    <h2>Klienci</h2>
+    <div id="lista-klientow" class="lista"></div>
+  </section>
+</div>
+
+<div id="ekran-klient" class="ekran ukryty">
+  <header class="naglowek-planu">
+    <button class="link" id="wroc-do-klientow">← klienci</button>
+    <div class="tytul-planu">
+      <h1 id="nazwa-klienta">—</h1>
+      <span id="cykli-klienta" class="odznaka"></span>
+    </div>
+    <div class="akcje">
+      <button id="zmien-nazwe" class="link">zmień nazwę</button>
+      <button id="polacz-klienta" class="link">połącz</button>
+      <button id="usun-klienta" class="link">usuń</button>
+      <button id="link-klienta-karta">Link dla klienta</button>
+      <button id="nowy-cykl" class="glowny">Nowy cykl</button>
+    </div>
+  </header>
+
+  <p class="podsumowanie-klienta" id="podsumowanie-klienta"></p>
+
+  <div class="uklad">
+    <main class="dni">
+      <section class="panel">
+        <h2>Cykle</h2>
+        <div id="lista-cykli" class="lista"></div>
+      </section>
+
+      <section class="panel">
+        <h2>1RM przez cykle</h2>
+        <div id="sciezki-1rm"></div>
+      </section>
+    </main>
+
+    <aside class="bok">
+      <section class="karta">
+        <h3>Obciążenie cykl po cyklu</h3>
+        <div id="historia-obciazenia"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Wzorce ruchu</h3>
+        <div id="historia-wzorcow"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Frekwencja</h3>
+        <div id="historia-frekwencji"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Waga ciała</h3>
+        <div id="historia-wagi"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div id="ekran-plan" class="ekran ukryty">
+  <header class="naglowek-planu">
+    <button class="link" id="wroc">← klient</button>
+    <div class="tytul-planu">
+      <h1 id="nazwa-planu">—</h1>
+      <span id="status-planu" class="odznaka"></span>
+    </div>
+    <div class="akcje">
+      <span id="zapis" class="zapis"></span>
+      <button id="link-klienta">Link dla klienta</button>
+      <button id="eksportuj" class="glowny">Eksportuj arkusz</button>
+    </div>
+  </header>
+
+  <div class="pasek-ustawien">
+    <!-- Grupy przycisków NIE mogą stać w <label>. Kliknięcie w label uruchamia
+         jego kontrolkę, czyli pierwszy przycisk w środku — przez co kliknięcie
+         w „T4" wracało natychmiast na „T1" i przełączanie tygodni nie działało
+         wcale. <label> zostaje tam, gdzie opisuje jedno pole formularza. -->
+    <div class="pole">
+      <span class="etykieta-pola">Tydzień</span>
+      <span id="taby-tygodni" class="taby"></span>
+    </div>
+    <div class="pole">
+      <span class="etykieta-pola">Wypełnij tygodnie</span>
+      <span class="taby">
+        <button type="button" id="progresja-szablonu" title="Wpisze do wszystkich sześciu tygodni progresję z szablonu 5.18">progresja 5.18</button>
+        <button type="button" id="kopiuj-tydzien" title="Skopiuje parametry z bieżącego tygodnia do pozostałych">kopiuj ten tydzień</button>
+      </span>
+    </div>
+    <label>Akcesoria
+      <select id="tryb-akcesoriow">
+        <option value="trzymaj z bloku">trzymaj z bloku</option>
+        <option value="licz z RPE">licz z RPE</option>
+      </select>
+    </label>
+    <label>Część planu
+      <select id="czesc-planu">
+        <option value="objętość">objętość</option>
+        <option value="intensywność">intensywność</option>
+      </select>
+    </label>
+    <label>Start
+      <input type="date" id="data-startu">
+    </label>
+    <label>Status
+      <select id="status-wybor">
+        <option value="szkic">szkic</option>
+        <option value="wysłany">wysłany</option>
+        <option value="zakończony">zakończony</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="uklad">
+    <main class="dni" id="dni"></main>
+
+    <aside class="bok">
+      <section class="karta" id="karta-uwagi">
+        <h3>Kontrola planu</h3>
+        <div id="uwagi"></div>
+      </section>
+
+      <section class="karta" id="karta-asystent">
+        <h3>Asystent</h3>
+        <div class="akcje-asystenta">
+          <button id="ai-szkielet">Zaproponuj szkielet</button>
+          <button id="ai-analiza">Odczytaj analizę</button>
+        </div>
+        <div id="ai-wynik"></div>
+      </section>
+
+      <section class="karta" id="karta-realizacja">
+        <h3>Realizacja</h3>
+        <div id="realizacja"></div>
+      </section>
+
+      <section class="karta ukryty" id="karta-porownanie">
+        <h3>Wobec poprzedniego cyklu</h3>
+        <div id="porownanie"></div>
+      </section>
+
+      <section class="karta ukryty" id="karta-1rm">
+        <h3>1RM z serii roboczych</h3>
+        <div id="propozycje-1rm"></div>
+      </section>
+
+      <section class="karta" id="karta-oddech">
+        <h3>Oddech</h3>
+        <div class="pola-modulu">
+          <label>Wynik TWOT (s)
+            <input type="number" id="oddech-twot" min="0" step="1" placeholder="np. 22">
+          </label>
+          <label class="ptaszek">
+            <input type="checkbox" id="oddech-przeciwwskazania">
+            <span>Któreś z przeciwwskazań</span>
+          </label>
+          <!-- Lista wypełnia się z silnika — patrz `rysujModuly` w app.js. -->
+          <details class="przeciwwskazania">
+            <summary>Które to są?</summary>
+            <ul id="oddech-lista"></ul>
+          </details>
+        </div>
+        <div id="oddech-wynik"></div>
+      </section>
+
+      <section class="karta" id="karta-bieg">
+        <h3>Bieg</h3>
+        <div class="pola-modulu">
+          <label>Wiek <input type="number" id="bieg-wiek" min="0" step="1" placeholder="lata"></label>
+          <label>HR max <input type="number" id="bieg-hrmax" min="0" step="1" placeholder="jeśli znasz"></label>
+          <label>Bieg testowy — dystans <input type="number" id="bieg-dystans" min="0" step="0.1" placeholder="km"></label>
+          <label>Bieg testowy — czas <input type="number" id="bieg-czas" min="0" step="0.1" placeholder="minuty"></label>
+          <label>Jednostek w tygodniu <input type="number" id="bieg-jednostek" min="0" max="5" step="1" placeholder="1–5"></label>
+        </div>
+        <div id="bieg-wynik"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Obciążenie</h3>
+        <div id="obciazenie"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Wzorce ruchu</h3>
+        <div id="wzorce"></div>
+      </section>
+
+      <section class="karta">
+        <h3>Serie maksymalne</h3>
+        <p class="wskazowka">1RM liczy się z jednej serii do odmowy.</p>
+        <div id="serie-max"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<datalist id="klienci-podpowiedzi"></datalist>
+
+<div id="modal" class="modal ukryty">
+  <div class="modal-tresc">
+    <h3 id="modal-tytul"></h3>
+    <div id="modal-body"></div>
+    <button id="modal-zamknij" class="glowny">Zamknij</button>
+  </div>
+</div>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>
