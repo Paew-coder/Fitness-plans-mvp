@@ -73,9 +73,23 @@ zapadnie, wszystkie instrukcje wskazują gałąź wprost.
 
 ## Uruchomienie
 
+> **Konsola trenera potrzebuje komputera — Maca albo Windowsa.** Na iPadzie
+> ani na telefonie nie uruchomi się, bo Node.js na nich nie istnieje. To nie
+> jest ograniczenie do obejścia: iOS nie pozwala uruchamiać takich programów.
+>
+> Aplikacja klienta to co innego — ta działa na telefonie i tablecie, bo jest
+> zwykłą stroną otwieraną z linku. Na iPadzie zobaczysz więc to, co widzi
+> klient; planu ułożysz na komputerze.
+
 Jedyne, co trzeba mieć zainstalowane, to **Node 22** ze strony
 [nodejs.org](https://nodejs.org) (wersja LTS). Aplikacja nie ma ani jednej
 zewnętrznej biblioteki — nie ma czego doinstalowywać.
+
+Instalator Node'a na Macu to plik `.pkg`. Po dwukliku ma otworzyć się **okno
+instalatora** z przyciskami „Kontynuuj" i „Zainstaluj", a na końcu napis
+„Instalacja zakończyła się pomyślnie". Jeśli zamiast okna widzisz samą stronę
+z tekstem („This package has installed: Node.js…"), to znaczy, że plik został
+tylko **otwarty do podglądu** — nic się nie zainstalowało.
 
 Potem wystarczy kliknąć plik w głównym katalogu projektu:
 
