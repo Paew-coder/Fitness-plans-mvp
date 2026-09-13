@@ -1,0 +1,26 @@
+{
+  "name": "@craftmyplan/konsola",
+  "version": "0.1.0",
+  "description": "Konsola trenera — plany powstaja tutaj, do klienta ida jako arkusz",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "start": "node --no-warnings serwer.ts",
+    "test": "node --no-warnings --test \"testy/*.test.ts\"",
+    "migruj": "node --no-warnings narzedzia/migruj-do-bazy.ts",
+    "haslo": "node --no-warnings narzedzia/haslo.ts",
+    "kopia": "node --no-warnings narzedzia/kopia.ts",
+    "przywroc": "node --no-warnings narzedzia/przywroc.ts",
+    "sprawdz-wdrozenie": "node --no-warnings narzedzia/sprawdz-wdrozenie.ts",
+    "przeglad-ekranow": "node --no-warnings narzedzia/przeglad-ekranow.ts",
+    "przeglad-klienta": "node --no-warnings narzedzia/przeglad-klienta.ts",
+    "sprawdz-kolko": "node --no-warnings narzedzia/sprawdz-kolko.ts",
+    "sprawdz-odpornosc": "node --no-warnings narzedzia/sprawdz-odpornosc.ts",
+    "sprawdz-skale": "node --no-warnings narzedzia/sprawdz-skale.ts",
+    "wczytaj-arkusze": "node --no-warnings narzedzia/wczytaj-arkusze.ts"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

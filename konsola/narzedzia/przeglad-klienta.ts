@@ -1,0 +1,580 @@
+#!/usr/bin/env node
+/**
+ * Przegląd aplikacji klienta — klikanie po telefonie, po kolei.
+ *
+ *   npm run przeglad-klienta
+ *
+ * To jedyny ekran w całym projekcie, którego **nie ogląda trener**. Klient
+ * otwiera link na siłowni, między seriami, często bez zasięgu — i albo działa,
+ * albo nie ma komu tego zgłosić. Przegląd konsoli wykrył cztery błędy
+ * niewidoczne w testach; ta powierzchnia zasługuje na to samo traktowanie.
+ *
+ * Idzie pętlą, dla której cała aplikacja powstała: klient dostaje policzony
+ * ciężar → ocenia serię → **ocena zmienia ciężar w kolejnym tygodniu**.
+ * Ostatni krok jest tu najważniejszy: to jest ta jedna rzecz, której arkusz
+ * nie umiał, i jedyna, przez którą warto było to przepisywać.
+ *
+ * Wymaga Playwrighta z Chromium. Nie chodzi w `npm test`, bo tam przeglądarki
+ * nie ma — to kontrola do puszczenia po zmianach w `public/klient/`.
+ */
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { czekajNa, doliczBledy, pilnujBledow, podsumuj, sprawdz, zKonsola, type Srodowisko }
+  from "./przegladarka.ts";
+
+const PORT = 4192;
+const KLIENT = "Klient telefon";
+const PLAN = "klient-telefon-1";
+/** iPhone 13 — realny ekran, na którym to naprawdę bywa otwierane. */
+const TELEFON = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+
+/**
+ * Plan gotowy do wysłania: bój główny, akcesorium, serie maksymalne dla obu
+ * i progresja z szablonu. Sianie idzie przez API konsoli, a nie przez klikanie —
+ * układanie planu sprawdza `przeglad-ekranow.ts`, tu chodzi o telefon.
+ */
+async function zasiej({ api }: Srodowisko): Promise<string> {
+  await api("/api/plany", "POST", { klient: KLIENT, wersja: 1 });
+
+  const { zapisany } = await api(`/api/plany/${PLAN}`);
+  const plan = zapisany.plan;
+  plan.sloty[0].cwiczenieId = "EX-0010";   // A1. bój główny
+  plan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
+  plan.serieMaksymalne = [
+    { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
+    { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
+  ];
+  await api(`/api/plany/${PLAN}`, "PUT", { plan, dataStartu: null, status: "szkic" });
+  await api(`/api/plany/${PLAN}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
+
+  const zProgresja = (await api(`/api/plany/${PLAN}`)).zapisany.plan;
+  await api(`/api/plany/${PLAN}`, "PUT",
+    { plan: zProgresja, dataStartu: null, status: "wysłany" });
+
+  return (await api(`/api/plany/${PLAN}/link`, "POST")).sciezka;
+}
+
+await zKonsola(PORT, async (przegladarka, srodowisko) => {
+  const sciezka = await zasiej(srodowisko);
+  const { adres, api } = srodowisko;
+  const kontekst = await przegladarka.newContext(TELEFON);
+  const s = await kontekst.newPage();
+  const bledy = pilnujBledow(s);
+
+  /** Widok prosto z serwera — sprawdzamy skutek dotknięcia, nie sam ekran. */
+  const token = sciezka.replace("/k/", "");
+  const widok = async () => await api(`/api/klient/${token}`);
+  const cwiczenie = (w: any, tydzien: number, i = 0) =>
+    w.tygodnie[tydzien - 1].dni[0].cwiczenia[i];
+
+  await s.goto(`${adres}${sciezka}`, { waitUntil: "networkidle" });
+
+  // ── 1. wejście z linku ────────────────────────────────────────────
+  sprawdz("link otwiera plan klienta",
+    (await s.locator("#tytul").innerText()).includes(KLIENT),
+    await s.locator("#tytul").innerText());
+
+  // Podpowiedź o dodaniu do ekranu głównego ma milczeć, dopóki aplikacja się
+  // do czegoś nie przyda. Sprawdzamy to tutaj, zanim klient cokolwiek zrobi.
+  sprawdz("przed pierwszym treningiem podpowiedź o instalacji milczy",
+    !(await s.locator("#baner-instalacji").isVisible()));
+
+  const przedStart = await widok();
+  sprawdz("tygodnie są do wyboru",
+    await s.locator("#tygodnie .tydzien").count() === 6,
+    `${await s.locator("#tygodnie .tydzien").count()} tygodni`);
+
+  // ── 2. otwarcie treningu ──────────────────────────────────────────
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const karty = s.locator("#cwiczenia .cwiczenie");
+  sprawdz("trening pokazuje ćwiczenia z planu", await karty.count() === 2,
+    `${await karty.count()} ćwiczenia`);
+
+  // ── 3. ciężar na ekranie to ciężar policzony ──────────────────────
+  // Umowa całej aplikacji: klient widzi dokładnie tę liczbę, którą policzył
+  // silnik. Rozjazd tutaj znaczy, że ktoś trenuje wg innych liczb niż trener.
+  // Aplikacja pisze liczby po polsku, z przecinkiem — porównujemy wartości,
+  // nie zapis.
+  const naEkranie = await karty.first().locator(".zadanie .ciezar").innerText();
+  sprawdz("ciężar na telefonie zgadza się z policzonym",
+    Number(naEkranie.replace(",", ".").replace(/[^\d.]/g, "")) === cwiczenie(przedStart, 1).ciezar,
+    `${naEkranie} ↔ ${cwiczenie(przedStart, 1).ciezar} kg`);
+
+  // ── 4. ocena serii ────────────────────────────────────────────────
+  await karty.first().getByRole("button", { name: "Za łatwe" }).click();
+  await s.waitForTimeout(600);
+  sprawdz("ocena zapisuje się", cwiczenie(await widok(), 1).feedback === "za łatwe",
+    String(cwiczenie(await widok(), 1).feedback));
+
+  // ── 5. pętla adaptacji ────────────────────────────────────────────
+  // Rzecz, dla której to powstało: „za łatwe" ma podnieść ciężar w T2.
+  const poOcenie = await widok();
+  sprawdz("ocena zmienia ciężar w kolejnym tygodniu",
+    cwiczenie(poOcenie, 2).ciezar > cwiczenie(przedStart, 2).ciezar,
+    `T2: ${cwiczenie(przedStart, 2).ciezar} → ${cwiczenie(poOcenie, 2).ciezar} kg`);
+
+  // ── 6. co faktycznie poszło ───────────────────────────────────────
+  await karty.first().getByRole("button", { name: /zapisz, co poszło/ }).click();
+  const pola = karty.first().locator(".wykonanie-pola input");
+  await pola.nth(0).fill("95");
+  await pola.nth(1).fill("5");
+  await pola.nth(1).blur();
+  await s.waitForTimeout(600);
+  const wykonane = cwiczenie(await widok(), 1);
+  sprawdz("wykonanie zapisuje się w komplecie",
+    wykonane.ciezarWykonany === 95 && wykonane.powtorzeniaWykonane === 5,
+    `${wykonane.ciezarWykonany} kg × ${wykonane.powtorzeniaWykonane}`);
+
+  // ── 7. domknięcie treningu ────────────────────────────────────────
+  await s.click("#zakoncz");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  const poZakonczeniu = await widok();
+  sprawdz("zakończony trening jest zakończony",
+    poZakonczeniu.tygodnie[0].dni[0].ukonczony === true);
+  sprawdz("nieocenione ćwiczenia dostają OK, nie pustkę",
+    cwiczenie(poZakonczeniu, 1, 1).feedback === "OK",
+    String(cwiczenie(poZakonczeniu, 1, 1).feedback));
+
+  // ── 8. podpowiedź o dodaniu do ekranu głównego ────────────────────
+  // Aplikacja ma ikonę i działa bez zasięgu, ale nikt sam nie odkrywa, że da
+  // się ją dodać. Podpowiedź ma się jednak odezwać dopiero wtedy, gdy zdążyła
+  // się do czegoś przydać — i tylko raz.
+  // (trening domknięty w kroku 7, więc teraz podpowiedź ma prawo się pojawić)
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("po domkniętym treningu podpowiedź się pokazuje",
+    await s.locator("#baner-instalacji").isVisible(),
+    (await s.locator("#instalacja-tresc").innerText()).slice(0, 60));
+
+  await s.click("#instalacja-nie");
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("„nie teraz” znaczy nigdy więcej",
+    !(await s.locator("#baner-instalacji").isVisible()));
+
+  // ── 9. seria maksymalna z telefonu ────────────────────────────────
+  await s.click("#pokaz-pomiary");
+  await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
+  const pomiar = s.locator("#pomiary .pomiar").first().locator("input");
+  await pomiar.nth(0).fill("125");
+  await pomiar.nth(1).fill("2");
+  await pomiar.nth(1).blur();
+  await s.waitForTimeout(700);
+  const poPomiarze = await widok();
+  const zmierzone = poPomiarze.doZmierzenia[0];
+  sprawdz("seria maksymalna z telefonu daje nowe 1RM",
+    zmierzone.ciezar === 125 && zmierzone.powtorzenia === 2 && zmierzone.oneRM > 127,
+    `${zmierzone.ciezar}×${zmierzone.powtorzenia} → 1RM ${zmierzone.oneRM}`);
+
+  // ── 10. ekran postępu ──────────────────────────────────────────────
+  await s.click("#wroc-z-pomiarow");
+  await s.click("#pokaz-postep");
+  await s.waitForSelector("#ekran-postep:not(.ukryty)");
+  await s.waitForTimeout(600);
+  // `innerText` oddaje tekst po stylach, a nagłówki kart są wersalikami —
+  // porównanie wprost szukałoby napisu, którego na ekranie nie ma.
+  const tekstPostepu = await s.locator("#postep").innerText();
+  sprawdz("ekran postępu pokazuje wykonaną pracę",
+    tekstPostepu.toLocaleLowerCase("pl").includes("barbell back squat"),
+    tekstPostepu.replace(/\n/g, " · ").slice(0, 160));
+
+  // ── 11. waga ──────────────────────────────────────────────────────
+  const poleWagi = s.locator("#postep input").last();
+  await poleWagi.fill("81.5");
+  await poleWagi.blur();
+  await s.waitForTimeout(600);
+  const waga = (await widok()).postep.waga.punkty;
+  sprawdz("waga zapisuje się i widać ją u trenera",
+    waga.at(-1)?.kg === 81.5, `${waga.length} pomiar(ów), ostatni ${waga.at(-1)?.kg} kg`);
+
+  // ── 12. kolejka offline nie blokuje się na odrzuconym zadaniu ─────
+  // Scenariusz z życia: klient ocenia trening bez zasięgu, a w tym czasie
+  // trener wyjmuje jedno z ćwiczeń z planu. Ocena tego ćwiczenia nie da się
+  // już zapisać nigdy — i wcześniej zostawała na czele kolejki, blokując
+  // wszystko, co klient ocenił po niej.
+  await s.click("#wroc-z-postepu");
+  const bledyPrzedOffline = bledy.length;
+  await kontekst.setOffline(true);
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await karty.nth(0).getByRole("button", { name: "Za trudne" }).click();
+  await karty.nth(1).getByRole("button", { name: "Za trudne" }).click();
+  await s.waitForTimeout(400);
+  const wKolejce = await s.evaluate(() =>
+    JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
+  sprawdz("bez zasięgu oceny czekają w kolejce", wKolejce === 2, `${wKolejce} zadania`);
+
+  const { zapisany } = await api(`/api/plany/${PLAN}`);
+  zapisany.plan.sloty[0].cwiczenieId = null;
+  await api(`/api/plany/${PLAN}`, "PUT",
+    { plan: zapisany.plan, dataStartu: zapisany.dataStartu, status: zapisany.status });
+
+  await kontekst.setOffline(false);
+  await s.waitForTimeout(2500);
+  const poSynchronizacji = await s.evaluate(() =>
+    JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
+  sprawdz("odrzucone zadanie nie blokuje kolejki", poSynchronizacji === 0,
+    `${poSynchronizacji} zadań zostało w kolejce`);
+  sprawdz("ocena, którą dało się zapisać, doszła do trenera",
+    cwiczenie(await widok(), 1, 0).feedback === "za trudne",
+    String(cwiczenie(await widok(), 1, 0).feedback));
+  // Ten krok celowo rozłącza sieć i celowo wysyła zapis, który serwer musi
+  // odrzucić — zgłoszenia przeglądarki z tego okna są spodziewane. Reszta
+  // przebiegu dalej ma być czysta.
+  bledy.splice(bledyPrzedOffline);
+
+  // ── 13. druga strona pętli: konsola trenera ───────────────────────
+  // Ocena z telefonu ma dojść do trenera jako realizacja, nie tylko jako liczba
+  // w bazie — inaczej nie ma po czym poznać, że klient w ogóle ćwiczy.
+  const uTrenera = await api(`/api/plany/${PLAN}`);
+  const realizacja = uTrenera.realizacja ?? uTrenera.zapisany.plan;
+  sprawdz("trener widzi ocenę klienta w swoim planie",
+    uTrenera.zapisany.plan.sloty[0].tygodnie["1"].feedback === "za łatwe",
+    String(uTrenera.zapisany.plan.sloty[0].tygodnie["1"].feedback));
+  sprawdz("trener widzi domknięty trening",
+    JSON.stringify(realizacja).includes("true"));
+
+  // ── 14. postęp przez dwa cykle ────────────────────────────────────
+  // Blok „Przez wszystkie cykle" pokazuje się dopiero od drugiego cyklu, więc
+  // jednocyklowe przejście nigdy go nie dotykało. A to jest jedyne miejsce,
+  // w którym klient widzi, że przez pół roku coś się w ogóle zmieniło.
+  const drugi = await api(`/api/plany/${PLAN}/kopia`, "POST", { wersja: 2 });
+  await api(`/api/plany/${drugi.zapisany.id}`, "PUT", {
+    plan: drugi.zapisany.plan, dataStartu: null, status: "wysłany",
+    zmieniony: drugi.zapisany.zmieniony,
+  });
+  // Klient podnosi w drugim cyklu więcej niż w pierwszym — trajektoria ma rosnąć.
+  await api(`/api/klient/${token}/serie`, "POST",
+    { cwiczenieId: "EX-0010", ciezar: 135, powtorzenia: 3 });
+  await api(`/api/klient/${token}/odczucie`, "POST",
+    { positionId: "D1-S01", tydzien: 1, ciezarWykonany: 115, powtorzeniaWykonane: 5, feedback: "OK" });
+
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(600);
+  sprawdz("telefon sam przeszedł na nowy cykl",
+    (await s.locator("#tytul").innerText()).includes("2.0"),
+    await s.locator("#tytul").innerText());
+
+  await s.click("#pokaz-postep");
+  await s.waitForSelector("#ekran-postep:not(.ukryty)");
+  await s.waitForTimeout(800);
+  const postep = (await s.locator("#postep").innerText()).toLocaleLowerCase("pl");
+  sprawdz("ekran postępu pokazuje blok „przez wszystkie cykle”",
+    postep.includes("przez wszystkie cykle"),
+    postep.split("\n").find((l) => l.includes("cykl")) ?? "brak");
+  sprawdz("widać trajektorię 1RM przez cykle",
+    /\d+.*→.*\d+/.test(await s.locator("#postep").innerText()),
+    (await s.locator("#postep").innerText()).split("\n")
+      .find((l) => l.includes("→"))?.slice(0, 60) ?? "brak strzałki");
+  await s.click("#wroc-z-postepu");
+
+  // ── 15. czy poprawka w ogóle dociera do klienta ───────────────────
+  // Worker odpowiada z cache, żeby aplikacja otwierała się bez zasięgu — ale
+  // gdyby na tym poprzestał, plik raz zapisany zostawałby u klienta na zawsze
+  // i żadna poprawka nigdy by do niego nie dotarła. Sprawdzamy to jedynym
+  // sposobem, który cokolwiek dowodzi: podmieniając plik na dysku.
+  const plikAplikacji = join(import.meta.dirname, "..", "public", "klient", "app.js");
+  const oryginal = readFileSync(plikAplikacji, "utf-8");
+  try {
+    writeFileSync(plikAplikacji, `${oryginal}\nwindow.__nowaWersja = true;\n`);
+
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(1200);   // odświeżenie w tle ma zdążyć zapisać
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(400);
+
+    const doszlo = await s.evaluate(() => (window as any).__nowaWersja === true);
+    sprawdz("nowa wersja aplikacji dociera do klienta z cache",
+      doszlo, doszlo ? "przy drugim otwarciu" : "nie doszła wcale");
+  } finally {
+    writeFileSync(plikAplikacji, oryginal);
+  }
+
+  // ── 16. przycisk „wstecz" telefonu ────────────────────────────────
+  // Aplikacja przełącza ekrany w miejscu, pod jednym adresem. Dopóki nie
+  // zostawiała po sobie śladu w historii, systemowe „wstecz" z otwartego
+  // treningu nie wracało do listy dni, tylko wychodziło ze strony — a po
+  // dodaniu aplikacji do ekranu głównego po prostu ją zamykało. To ruch,
+  // który klient na siłowni wykonuje odruchowo.
+  //
+  // Druga strona tego samego: aplikacja nie ma prawa zatrzymywać klienta
+  // u siebie. „Wstecz" z listy tygodni musi wyjść — pułapka byłaby gorsza
+  // od błędu, który to naprawia. Dlatego wchodzimy tu z innej strony,
+  // żeby w ogóle było dokąd wyjść.
+  const t2 = await kontekst.newPage();
+  await t2.goto(`${adres}/klient/manifest.json`, { waitUntil: "load" });
+  await t2.goto(`${adres}${sciezka}`, { waitUntil: "networkidle" });
+  await t2.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
+  await t2.goBack({ waitUntil: "load" });
+  sprawdz("„wstecz” z listy tygodni wychodzi z aplikacji",
+    !t2.url().includes("/k/"), t2.url().replace(adres, ""));
+
+  await t2.goForward({ waitUntil: "networkidle" });
+  await t2.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await t2.locator("#tygodnie .dzien-kafel").first().click();
+  await t2.waitForSelector("#ekran-trening:not(.ukryty)");
+
+  // Tak samo, jak zadziałałby przycisk telefonu — bez pośrednictwa Playwrighta.
+  await t2.evaluate(() => history.back());
+  const wrocilo = await czekajNa(t2, "#ekran-tygodnie:not(.ukryty)");
+  sprawdz("„wstecz” z treningu wraca do listy dni, a nie zamyka aplikacji",
+    wrocilo && t2.url().includes("/k/"),
+    t2.url().includes("/k/") ? t2.url().replace(adres, "") : "wyszło z aplikacji");
+
+  // Gdy poprzednia kontrola padła, aplikacji nie ma już na ekranie i dalsze
+  // „wstecz" nie miałoby czego dotykać. Zamiast zgłaszać przy tym trzy kolejne
+  // fałszywe ✓, mówimy wprost, że dalej nie ma po czym chodzić.
+  if (!wrocilo) {
+    console.log("      dalsze kontrole „wstecz” pomijam — aplikacja wyszła z ekranu");
+    doliczBledy(3);
+  } else {
+    // „W przód" po powrocie: wybranego dnia już nie ma, więc ekran treningu
+    // byłby pusty. Zamiast pustki ma zostać lista.
+    await t2.evaluate(() => history.forward());
+    await t2.waitForTimeout(300);
+    sprawdz("„w przód” nie pokazuje treningu bez wybranego dnia",
+      await t2.locator("#ekran-tygodnie:not(.ukryty)").count() === 1,
+      await t2.locator("#ekran-trening:not(.ukryty)").count() === 1
+        ? "pusty ekran treningu" : "lista tygodni");
+
+    // Ekrany poboczne tak samo — postęp klient otwiera częściej niż trening.
+    await t2.click("#pokaz-postep");
+    await t2.waitForSelector("#ekran-postep:not(.ukryty)");
+    await t2.evaluate(() => history.back());
+    sprawdz("„wstecz” z postępu też wraca do listy",
+      await czekajNa(t2, "#ekran-tygodnie:not(.ukryty)")
+        && t2.url().includes("/k/"));
+
+    // Chodzenie po aplikacji nie może puchnąć w historii: gdyby każdy ekran
+    // dokładał wpis, klient po kwadransie klikania musiałby dotknąć „wstecz"
+    // trzydzieści razy, żeby wyjść.
+    const przed = await t2.evaluate(() => history.length);
+    for (const gdzie of ["#pokaz-pomiary", "#pokaz-postep", "#pokaz-pomiary"]) {
+      await t2.click(gdzie);
+      await t2.waitForTimeout(150);
+      await t2.evaluate(() => history.back());
+      await t2.waitForTimeout(150);
+    }
+    const po = await t2.evaluate(() => history.length);
+    sprawdz("chodzenie po ekranach nie zapycha historii", po === przed,
+      `${przed} → ${po} wpisów`);
+  }
+  await t2.close();
+
+  // ── 17. oddech i bieg ─────────────────────────────────────────────
+  // Praca obok siłowni: drabina oddechowa i sześciotygodniowy plan biegowy.
+  // Matematyka obu ma testy w silniku, ale **cała droga od trenera do telefonu
+  // nie była dotąd przejechana ani razu** — ani trasa `/moduly`, ani ekran.
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  sprawdz("bez modułów przycisk „Oddech i bieg” milczy",
+    await s.locator("#pokaz-moduly.ukryty").count() === 1);
+
+  const biezacyPlan = (await widok()).planId;
+  await api(`/api/plany/${biezacyPlan}/moduly`, "PUT", {
+    oddech: { twot: 28, przeciwwskazania: false },
+    bieg: { wiek: 34, dystansTestowy: 3, czasTestowy: 18, jednostekWTygodniu: 3 },
+  });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#pokaz-moduly:not(.ukryty)", { timeout: 3000 });
+  await s.click("#pokaz-moduly");
+  await s.waitForSelector("#ekran-moduly:not(.ukryty)");
+
+  // Tytuły modułów idą przez `text-transform: uppercase`, więc porównanie
+  // z tekstem źródłowym odpowiadałoby na pytanie o kod, a nie o ekran.
+  const modulyNaEkranie = async () =>
+    (await s.locator("#moduly").innerText()).toLocaleLowerCase("pl");
+
+  const moduly = await modulyNaEkranie();
+  sprawdz("klient widzi dawkę oddechową",
+    moduly.includes("oddech") && /rozgrzewka|praca|wyciszenie/.test(moduly),
+    moduly.split("\n").find((l) => l.includes("·"))?.slice(0, 60) ?? "brak");
+  sprawdz("klient widzi sześć tygodni biegu",
+    (moduly.match(/bieg · tydzień/g) ?? []).length === 6,
+    `${(moduly.match(/bieg · tydzień/g) ?? []).length} tygodni`);
+  sprawdz("tydzień czwarty jest oznaczony jako lżejszy",
+    moduly.includes("(lżejszy)"));
+  sprawdz("przy podanym wieku widać zakres tętna",
+    /\d+–\d+ ud\/min/.test(moduly),
+    moduly.split("\n").find((l) => l.includes("ud/min"))?.slice(0, 60) ?? "brak");
+
+  // Wiek i zmierzone HR max to pola, których trener bardzo często nie ma.
+  // Bez żadnego z nich tętna nie da się policzyć — i na telefonie wyświetlało
+  // się wtedy „null–null ud/min", bo warunek stał na obiekcie strefy zamiast
+  // na liczbie. Reszta planu biegowego jest wtedy nadal poprawna.
+  await api(`/api/plany/${biezacyPlan}/moduly`, "PUT", {
+    bieg: { wiek: null, hrMaxZmierzone: null, dystansTestowy: 3, czasTestowy: 18,
+      jednostekWTygodniu: 3 },
+  });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.click("#pokaz-moduly");
+  await s.waitForSelector("#ekran-moduly:not(.ukryty)");
+  const bezWieku = await modulyNaEkranie();
+  sprawdz("bez wieku i tętna nie pokazujemy „null”",
+    !/null|undefined|nan\b/.test(bezWieku),
+    bezWieku.split("\n").find((l) => /null|undefined|nan\b/.test(l))?.slice(0, 60) ?? "czysto");
+  sprawdz("plan biegowy bez tętna dalej ma treść",
+    (bezWieku.match(/bieg · tydzień/g) ?? []).length === 6 && /\d+ min/.test(bezWieku),
+    `${(bezWieku.match(/bieg · tydzień/g) ?? []).length} tygodni`);
+
+  // Trasa `/moduly` zapisywała dotąd cokolwiek, co przyszło.
+  const smieci = await fetch(`${adres}/api/plany/${biezacyPlan}/moduly`, {
+    method: "PUT", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ oddech: "trzydzieści sekund" }),
+  });
+  sprawdz("tekst zamiast wyniku testu jest odrzucany", smieci.status === 400,
+    `kod ${smieci.status}`);
+
+  // ── 18. trener poprawia plan, klient stoi na siłowni ──────────────
+  //
+  // Cofnięcie planu do szkicu to zwykła czynność: trener otwiera cykl, żeby go
+  // poprawić. Do tej pory kosztowało to klienta dwie rzeczy naraz. Serwer
+  // odmawiał zapisów kodem 409, a kolejka w telefonie traktuje 4xx jako „tego
+  // nigdy się nie uda zapisać" i **wyrzucała oceny z odbytego treningu**.
+  // Aplikacja zaś zastępowała cały ekran komunikatem „trener przygotowuje
+  // plan" — czyli zabierała klientowi trening, który miał przed sobą.
+  const planTeraz = (await widok()).planId;
+  const przedZmiana = await api(`/api/plany/${planTeraz}`);
+
+  // Poprzednia sekcja zostawiła aplikację na ekranie „Oddech i bieg".
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
+  const bledyPrzedSzkicem = bledy.length;
+  await kontekst.setOffline(true);
+  await s.locator("#tygodnie .dzien-kafel").nth(1).click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await s.locator("#cwiczenia .cwiczenie").first()
+    .getByRole("button", { name: "Za łatwe" }).click();
+  await s.waitForTimeout(400);
+
+  await api(`/api/plany/${planTeraz}`, "PUT", {
+    plan: przedZmiana.zapisany.plan, dataStartu: przedZmiana.zapisany.dataStartu,
+    status: "szkic",
+  });
+
+  await kontekst.setOffline(false);
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(1500);
+
+  sprawdz("klient nie traci treningu, gdy trener poprawia plan",
+    await czekajNa(s, "#ekran-tygodnie:not(.ukryty)")
+      && await s.locator("#tygodnie .tydzien").count() === 6,
+    `${await s.locator("#tygodnie .tydzien").count()} tygodni na ekranie`);
+  sprawdz("aplikacja mówi, dlaczego nie ma nowego planu",
+    await s.locator("#baner-przygotowania:not(.ukryty)").count() === 1);
+
+  const wKolejcePoSzkicu = await s.evaluate(() =>
+    JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
+  sprawdz("zaległa ocena nie zostaje w kolejce", wKolejcePoSzkicu === 0,
+    `${wKolejcePoSzkicu} zadań`);
+
+  const poSzkicu = await api(`/api/plany/${planTeraz}`);
+  sprawdz("ocena z odbytego treningu doszła do trenera",
+    poSzkicu.zapisany.wykonania.some((w: any) => w.feedback === "za łatwe"),
+    `${poSzkicu.zapisany.wykonania.length} wykonań w bazie`);
+  await api(`/api/plany/${planTeraz}`, "PUT", {
+    plan: przedZmiana.zapisany.plan, dataStartu: przedZmiana.zapisany.dataStartu,
+    status: "wysłany",
+  });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("po ponownym wysłaniu plan wraca na telefon",
+    await s.locator("#baner-przygotowania.ukryty").count() === 1
+      && await s.locator("#tygodnie .tydzien").count() === 6);
+
+  // Ten krok celowo rozłącza sieć, więc zgłoszenie przeglądarki o braku
+  // połączenia jest spodziewane. Czyścimy je dopiero tutaj — przy sprzątaniu
+  // od razu po kontrolach błąd dolatywał już po nim i psuł podsumowanie.
+  bledy.splice(bledyPrzedSzkicem);
+
+  // ── 19. podmiana ćwiczenia w przerobionym tygodniu ────────────────
+  //
+  // Slot trzyma jedno ćwiczenie na cały cykl, więc podmiana w środku opisuje
+  // nową nazwą także tygodnie już zrobione. Kilogramy z nich nie mogą stać
+  // pod cudzą nazwą — ale i nie mogą po prostu zniknąć, bo to jest własna
+  // historia klienta. Wracają jako wpis do odczytu, pod prawdziwą nazwą.
+  const planDoPodmiany = (await widok()).planId;
+  const stanPrzed = await api(`/api/plany/${planDoPodmiany}`);
+  const slotPierwszy = stanPrzed.zapisany.plan.sloty
+    .find((s: any) => s.cwiczenieId)!;
+
+  await api(`/api/klient/${sciezka.replace("/k/", "")}/odczucie`, "POST", {
+    planId: planDoPodmiany, positionId: slotPierwszy.positionId, tydzien: 1,
+    feedback: "OK", ciezarWykonany: 88, powtorzeniaWykonane: 6,
+  });
+
+  const zPodmiana = (await api(`/api/plany/${planDoPodmiany}`)).zapisany;
+  const staraNazwa = (await api("/api/cwiczenia"))
+    .find((c: any) => c.id === slotPierwszy.cwiczenieId)!.nazwa;
+  const slot = zPodmiana.plan.sloty.find((s: any) => s.positionId === slotPierwszy.positionId)!;
+  slot.cwiczenieId = "EX-0013";
+  for (const tydzien of [2, 3, 4, 5, 6]) delete slot.tygodnie[tydzien];
+  await api(`/api/plany/${planDoPodmiany}`, "PUT", {
+    plan: zPodmiana.plan, dataStartu: zPodmiana.dataStartu, status: "wysłany",
+    zmieniony: zPodmiana.zmieniony,
+  });
+
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await s.waitForTimeout(400);
+
+  const slad = await s.locator("#cwiczenia .wczesniej").first().innerText()
+    .catch(() => "");
+  sprawdz("klient widzi, co robił w tym miejscu przed podmianą",
+    slad.includes(staraNazwa) && /88/.test(slad), slad.replace(/\s+/g, " ").slice(0, 70));
+
+  const polaPierwszego = s.locator("#cwiczenia .cwiczenie").first()
+    .locator(".wykonanie-pola input");
+  sprawdz("pola nowego ćwiczenia zostają puste",
+    await polaPierwszego.count() === 0 || await polaPierwszego.nth(0).inputValue() === "",
+    await polaPierwszego.count() ? await polaPierwszego.nth(0).inputValue() : "pola zwinięte");
+
+  // ── 20. domknięcie cyklu ──────────────────────────────────────────
+  //
+  // Ostatni trening kończył się dotąd tak samo jak każdy inny: lista samych
+  // ptaszków i cisza. Klient zostawał bez odpowiedzi na pytanie „i co teraz",
+  // a trener — bez sygnału, że ma pisać kolejny cykl. Sprawdzone: klient
+  // z kompletem domkniętych treningów nie pojawiał się w panelu „wymaga
+  // uwagi" ani razu, bo powody końca cyklu liczą się z daty startu, a ta
+  // bywa pusta.
+  const planDomykany = (await widok()).planId;
+  sprawdz("przed końcem cyklu domknięcie milczy",
+    await s.locator("#baner-koniec.ukryty").count() === 1);
+
+  const doOdhaczenia = (await api(`/api/plany/${planDomykany}`)).zapisany.plan.sloty
+    .filter((s: any) => s.cwiczenieId);
+  const dniPlanu = [...new Set(doOdhaczenia.map((s: any) => s.dzien))] as number[];
+  for (let tydzien = 1; tydzien <= 6; tydzien++) {
+    for (const dzien of dniPlanu) {
+      await api(`/api/klient/${sciezka.replace("/k/", "")}/dzien`, "POST",
+        { planId: planDomykany, dzien, tydzien });
+    }
+  }
+
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(800);
+  const domkniecie = await s.locator("#baner-koniec:not(.ukryty)").innerText().catch(() => "");
+  sprawdz("po ostatnim treningu klient wie, że skończył",
+    domkniecie.toLocaleLowerCase("pl").includes("cykl zrobiony"),
+    domkniecie.replace(/\s+/g, " ").slice(0, 60));
+  sprawdz("i wie, co dalej — bez szukania nowego linku",
+    /ten sam link/i.test(domkniecie));
+
+  const wUwadze = await api("/api/uwaga");
+  sprawdz("trener widzi, że jest komu napisać nowy cykl",
+    wUwadze.some((w: any) => w.powody.some((p: any) => p.rodzaj === "zrobiony")),
+    JSON.stringify(wUwadze.flatMap((w: any) => w.powody.map((p: any) => p.rodzaj))));
+
+  console.log(bledy.length
+    ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
+    : "\n  błędów w przeglądarce: brak");
+  doliczBledy(bledy.length);
+});
+
+podsumuj("cała pętla klienta działa");
