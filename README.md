@@ -127,6 +127,25 @@ innym porcie.
 > bo obok niego nie ma reszty projektu; program powie wtedy wprost, że nie
 > znalazł katalogu `konsola`.
 
+### Żeby wejść na konsolę z telefonu
+
+Bez hasła konsola przyjmuje połączenia **tylko z tego komputera** — celowo,
+inaczej każdy w tej samej sieci Wi-Fi oglądałby plany klientów. Żeby wpuścić
+telefon albo tablet, kliknij plik obok launchera:
+
+| System | Plik |
+|---|---|
+| Mac | `Dostep z telefonu.command` |
+| Windows | `Dostep z telefonu.bat` |
+
+Pyta o e-mail i hasło (minimum 10 znaków), a na końcu wypisuje adresy, pod
+którymi konsola jest widoczna w sieci — te do wpisania na telefonie. Od tej
+chwili konsola prosi o logowanie także na komputerze; `npm run haslo -- --usun`
+cofa to.
+
+Hasło działa od razu, bez restartu konsoli — wystarczy odświeżyć stronę.
+To samo hasło jest warunkiem wystawienia konsoli na serwer (`WDROZENIE.md`).
+
 Z terminala, dla tych którzy wolą:
 
 ```bash

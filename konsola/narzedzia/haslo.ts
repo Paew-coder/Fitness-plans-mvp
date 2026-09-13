@@ -16,6 +16,7 @@ import { stdin, stdout } from "node:process";
 
 import { trenerDomyslny, baza } from "../baza/polaczenie.ts";
 import { ustawHaslo, trenerPoId, trenerPoEmailu } from "../uwierzytelnianie.ts";
+import { adresyLokalnejSieci } from "../adresy.ts";
 
 const DLUGOSC_MINIMALNA = 10;
 
@@ -29,12 +30,41 @@ if (process.argv.includes("--usun")) {
   process.exit(0);
 }
 
+/*
+ * Bez klawiatury to narzędzie nie ma o co zapytać.
+ *
+ * `rl.question()` czeka wtedy na odpowiedź, która nigdy nie przyjdzie: proces
+ * wisi, aż Node ubije go po cichu kodem 13, bez jednego słowa wyjaśnienia.
+ * Zdarza się to za każdym razem, gdy ktoś uruchomi to z potoku albo kliknięciem
+ * w środowisku bez konsoli — a wtedy wygląda to jak zepsuty program.
+ */
+if (!stdin.isTTY) {
+  console.error("\n  To narzędzie pyta o hasło i potrzebuje klawiatury.");
+  console.error("  Uruchom je w oknie terminala — albo kliknij plik");
+  console.error("  „Dostep z telefonu” w głównym katalogu projektu.\n");
+  process.exit(1);
+}
+
 const rl = createInterface({ input: stdin, output: stdout });
 
 console.log("\n  Ustawianie hasła do konsoli\n");
 console.log(`  Konto: ${trener.email}${trener.hashHasla ? "  (hasło już ustawione)" : ""}`);
 
-const email = (await rl.question(`  E-mail [${trener.email}]: `)).trim() || trener.email;
+/*
+ * Ctrl+D (na Windows Ctrl+Z) w trakcie pytania to zwyczajne „rozmyśliłem się".
+ * Bez tej obsługi readline rzuca `AbortError` i całe okno zalewa ślad stosu po
+ * angielsku — ostatnia rzecz, jakiej ktoś potrzebuje w narzędziu do hasła.
+ */
+async function zapytaj(pytanie: string): Promise<string> {
+  try {
+    return await rl.question(pytanie);
+  } catch {
+    console.error("\n\n  Przerwane. Nic nie zmieniono.\n");
+    process.exit(1);
+  }
+}
+
+const email = (await zapytaj(`  E-mail [${trener.email}]: `)).trim() || trener.email;
 if (email !== trener.email) {
   const zajety = trenerPoEmailu(email);
   if (zajety && zajety.id !== trenerId) {
@@ -46,8 +76,8 @@ if (email !== trener.email) {
 // Terminal nie zawsze pozwala schować wpisywane znaki, więc mówimy wprost,
 // czego się spodziewać, zamiast udawać, że hasło jest niewidoczne.
 console.log("\n  Uwaga: hasło będzie widoczne podczas wpisywania.");
-const haslo = await rl.question("  Nowe hasło: ");
-const powtorzone = await rl.question("  Powtórz hasło: ");
+const haslo = await zapytaj("  Nowe hasło: ");
+const powtorzone = await zapytaj("  Powtórz hasło: ");
 rl.close();
 
 if (haslo !== powtorzone) {
@@ -64,5 +94,22 @@ ustawHaslo(trenerId, haslo);
 
 console.log("\n  Gotowe. Konsola wymaga teraz logowania.");
 console.log("  Wszystkie zalogowane urządzenia zostały wylogowane.\n");
+
+/*
+ * Hasło ustawia się po to, żeby wpuścić telefon — więc adres dla telefonu
+ * podajemy od razu, zamiast kazać go szukać. Bez hasła konsola i tak odmawia
+ * połączeń spoza tej maszyny, więc dopiero tutaj ten adres zaczyna działać.
+ */
+const port = Number(process.env.PORT) || 4173;
+const wSieci = adresyLokalnejSieci(port);
+if (wSieci.length > 0) {
+  console.log("  Z telefonu w tej samej sieci Wi-Fi konsola jest teraz pod:");
+  for (const adres of wSieci) console.log(`    ${adres}`);
+  console.log("  Ten komputer musi być włączony, a konsola uruchomiona.\n");
+} else {
+  console.log("  Nie widzę tego komputera w żadnej sieci — sprawdź Wi-Fi,");
+  console.log("  jeśli chcesz wejść na konsolę z telefonu.\n");
+}
+
 console.log("  Wystawiając konsolę na świat, ustaw ZA_HTTPS=1 i postaw ją za HTTPS —");
 console.log("  link klienta zawiera token w adresie.\n");

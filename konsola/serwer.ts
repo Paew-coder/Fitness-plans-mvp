@@ -10,7 +10,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync, statSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
-import { networkInterfaces, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,6 +26,7 @@ import { bladKsztaltuPlanu, bladKsztaltuPropozycji, bladDatyStartu }
   from "./ksztalt-planu.ts";
 import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
+import { adresyLokalnejSieci } from "./adresy.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
@@ -900,23 +901,12 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse, req?: IncomingMe
   return true;
 }
 
-/**
- * Adresy tej maszyny w sieci lokalnej.
- *
- * Trener kopiuje link dla klienta z paska przeglądarki, czyli z `localhost` —
- * a na telefonie klienta `localhost` znaczy jego własny telefon. Link nie ma
- * wtedy prawa zadziałać i nic tego nie tłumaczy. Podajemy więc adresy, pod
- * którymi konsola jest naprawdę widoczna z innego urządzenia w tej samej sieci.
- *
- * Tylko w trybie z hasłem: bez niego konsola i tak odmawia połączeń spoza tej
- * maszyny, więc taki adres byłby obietnicą bez pokrycia.
+/*
+ * Adresy tej maszyny w sieci lokalnej mieszkają w `adresy.ts` — potrzebuje ich
+ * też narzędzie do ustawiania hasła. Podajemy je tylko w trybie z hasłem: bez
+ * niego konsola i tak odmawia połączeń spoza tej maszyny, więc taki adres
+ * byłby obietnicą bez pokrycia.
  */
-function adresyLokalnejSieci(port: number): string[] {
-  return Object.values(networkInterfaces())
-    .flatMap((lista) => lista ?? [])
-    .filter((i) => i.family === "IPv4" && !i.internal)
-    .map((i) => `http://${i.address}:${port}`);
-}
 
 /** Adresy, do których klient dostaje się samym tokenem — bez konta trenera. */
 function dlaKlienta(sciezka: string): boolean {
