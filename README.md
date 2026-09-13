@@ -138,6 +138,35 @@ telefonie znaczy *ten telefon*, więc nie da się go wysłać. Okno „Link dla
 klienta" podaje pod spodem właściwy adres — ten z numerami, na przykład
 `http://192.168.0.14:4173/k/…`. Ten trzeba przepisać albo wysłać.
 
+Ten sam adres wypisuje się w czarnym oknie zaraz po uruchomieniu konsoli,
+pod nagłówkiem „Z telefonu w tej samej sieci".
+
+#### Telefon ładuje stronę bez końca
+
+Biała strona i pasek postępu, który stoi — to nie jest zły adres. Zły adres
+kończy się natychmiastowym „nie można połączyć". Ładowanie bez końca znaczy,
+że pakiety **znikają po drodze**, i ma zwykle jedną z trzech przyczyn:
+
+1. **Profil sieci ustawiony na „Publiczna".** Windows ukrywa wtedy komputer
+   przed wszystkim w sieci lokalnej, telefonem włącznie. Ustawienia → Sieć
+   i internet → kliknij połączenie z dopiskiem „Połączono" (**uwaga: jeśli
+   komputer stoi na kablu, to `Ethernet`, a nie Wi-Fi — na stronie Wi-Fi tej
+   opcji wtedy w ogóle nie ma**) → „Typ profilu sieciowego" → **Prywatna**.
+2. **Zapora nie zna Node'a.** Wyszukaj „zapora" → Zapora Windows Defender →
+   „Zezwalaj aplikacji…" → „Zmień ustawienia" → **Node.js JavaScript Runtime**,
+   kolumna **Prywatna**. Gdy Node'a nie ma na liście: „Zezwól na dostęp innej
+   aplikacji" → `C:\Program Files\nodejs\node.exe`.
+3. **Router rozdziela urządzenia.** Rzadsze, zwykle na sieciach dla gości.
+
+Zanim zaczniesz szukać u siebie, rozstrzygnij, po której stronie jest problem:
+otwórz **na komputerze** adres `http://ADRES-Z-NUMERAMI:4173/zdrowie`
+(z numerami, nie `localhost`). Słowo `ok` znaczy, że konsola nasłuchuje
+poprawnie i szukać trzeba między telefonem a komputerem. Brak odpowiedzi —
+że problem jest po stronie samej konsoli.
+
+Przeglądarka wbudowana w Messengera czy WhatsAppa bywa osobną przyczyną:
+otwórz link w zwykłej przeglądarce (••• → „Otwórz w przeglądarce").
+
 ### Hasło do konsoli trenera
 
 To osobna sprawa. Sama konsola — ekrany, na których układasz plany — bez hasła
