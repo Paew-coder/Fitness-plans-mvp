@@ -22,6 +22,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { adresyLokalnejSieci } from "../adresy.ts";
+
 const KONSOLA = join(dirname(fileURLToPath(import.meta.url)), "..");
 const KATALOG = mkdtempSync(join(tmpdir(), "start-test-"));
 process.env.BAZA_CRAFTMYPLAN = join(KATALOG, "craftmyplan.db");
@@ -152,5 +154,42 @@ describe("zdanie dobrane do kłopotu", () => {
   test("awaria spoza tej listy nie jest zgadywana", () => {
     const tresc = slad.powodNieuruchomienia(new Error("dysk pełny"), 4173);
     assert.match(tresc, /dysk pełny/);
+  });
+});
+
+describe("adres dla telefonu przy starcie", () => {
+  /**
+   * Odtworzone na prawdziwym uruchomieniu, nie wymyślone.
+   *
+   * Trener miał ułożony plan, wygenerowany link i telefon w tej samej sieci.
+   * Utknął na jednej rzeczy: nie wiedział, jaki numer ma jego komputer. Przeszedł
+   * przez cztery ekrany Ustawień Windows, żeby znaleźć liczbę, którą konsola zna
+   * od pierwszej sekundy działania — i której wcześniej nie wypisywała.
+   */
+  test("start wypisuje adres, który da się wpisać na telefonie", async () => {
+    const wSieci = adresyLokalnejSieci(0);
+    if (wSieci.length === 0) return;   // maszyna bez sieci — nie ma co sprawdzać
+
+    let port = 0;
+    let start!: ReturnType<typeof konsola>;
+    for (let proba = 1; proba <= 3; proba++) {
+      port = await wolnyPort();
+      start = konsola(port);
+      if (await wstala(port)) break;
+      start.proces.kill("SIGKILL");
+      assert.ok(proba < 3, "konsola nie wstała przy trzech próbach");
+    }
+
+    start.proces.kill("SIGTERM");
+    const { wyjscie } = await start.skonczona;
+
+    for (const adres of adresyLokalnejSieci(port)) {
+      assert.ok(wyjscie.includes(adres),
+        `w wyjściu brakuje adresu ${adres}:\n${wyjscie}`);
+    }
+
+    // Sam `localhost` był tu dotąd jedyną podpowiedzią, a na cudzym telefonie
+    // znaczy jego telefon — czyli podpowiedzią prowadzącą donikąd.
+    assert.match(wyjscie, /telefon/i);
   });
 });

@@ -1757,8 +1757,24 @@ serwer.listen(PORT, async () => {
   console.log(`  Dane: ${SCIEZKA_BAZY}`);
   console.log(tryb.tryb === "hasło"
     ? "  Dostęp: hasło wymagane.\n"
-    : "  Dostęp: tryb lokalny, bez hasła — połączenia tylko z tego komputera.\n"
+    : "  Dostęp: tryb lokalny, bez hasła — ekrany trenera tylko z tego komputera.\n"
       + "  Zanim wystawisz konsolę na zewnątrz: npm run haslo\n");
+
+  /*
+   * Adres dla telefonu — wypisany od razu, bo inaczej trzeba go szukać
+   * w ustawieniach systemu.
+   *
+   * Odtworzone na prawdziwym uruchomieniu: trener miał plan, miał link, miał
+   * telefon w tej samej sieci — i utknął na tym, że nie wiedział, jaki numer
+   * ma jego komputer. Przeszedł przez cztery ekrany Ustawień, żeby znaleźć
+   * jedną liczbę, którą konsola zna od pierwszej sekundy.
+   */
+  const wSieci = adresyLokalnejSieci(PORT);
+  if (wSieci.length > 0) {
+    console.log("  Z telefonu w tej samej sieci — link klienta zaczyna się od:");
+    for (const adres of wSieci) console.log(`    ${adres}`);
+    console.log("  („localhost” na cudzym telefonie znaczy jego telefon.)\n");
+  }
 
   // Ślad dla narzędzia odtwarzającego bazę: numer procesu i port. Bez niego
   // `npm run przywroc` nie ma jak stwierdzić, że konsola chodzi — i odtworzy
