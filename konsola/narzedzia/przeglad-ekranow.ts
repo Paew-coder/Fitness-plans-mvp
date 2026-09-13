@@ -370,8 +370,18 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
-  const link = (await s.locator("#modal-body").innerText()).match(/\/k\/\S+/)?.[0] ?? "";
+  const trescLinku = await s.locator("#modal-body").innerText();
+  const link = trescLinku.match(/\/k\/\S+/)?.[0] ?? "";
   sprawdz("link dla klienta pokazuje adres", /^\/k\/[\w-]{16,}$/.test(link), link || "brak");
+
+  // Sam `localhost` na telefonie klienta znaczy jego telefon — z takiego linku
+  // nie da się skorzystać i nic tego nie tłumaczyło. Okno ma podać adres,
+  // który da się wysłać: z numerami zamiast „localhost".
+  const doWyslania = trescLinku
+    .match(/http:\/\/\d+\.\d+\.\d+\.\d+:\d+\/k\/\S+/g)
+    ?.find((a) => !a.startsWith("http://127.")) ?? "";
+  sprawdz("okno podaje adres, który da się wysłać na telefon",
+    doWyslania !== "", doWyslania || "tylko localhost");
   await s.click("#modal-zamknij");
 
   // ── 15. eksport arkusza ───────────────────────────────────────────
