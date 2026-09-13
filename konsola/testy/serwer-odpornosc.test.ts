@@ -24,6 +24,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { adresyLokalnejSieci } from "../adresy.ts";
 
 const KONSOLA = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 4196;
@@ -180,14 +181,20 @@ describe("adres, który da się wysłać klientowi", () => {
    * nawiązać połączenia", trener nie wiedział dlaczego, i na tym kończył się
    * pierwszy cykl.
    *
-   * W trybie lokalnym konsola i tak odmawia połączeń spoza tej maszyny, więc
-   * podawanie adresu w sieci byłoby obietnicą bez pokrycia. Lista jest wtedy
-   * pusta, a ekran mówi wprost, co zrobić.
+   * Ten test stał tu wcześniej odwrócony: sprawdzał, że **bez hasła adresu
+   * nie podajemy**, bo „konsola i tak odmawia połączeń spoza tej maszyny".
+   * Zdanie prawdziwe o ekranach trenera i fałszywe o aplikacji klienta —
+   * ścieżki klienta idą obok bramki, bo ich kluczem jest token w adresie.
+   * Test przez to pilnował błędu zamiast zachowania, a trener czytał na
+   * ekranie, że musi ustawić hasło, żeby zrobić coś, co działało od razu.
+   *
+   * Pełna droga — plan otwarty z adresu spoza tej maszyny przy jednoczesnej
+   * odmowie dla ekranów trenera — jest w `link-z-telefonu.test.ts`.
    */
-  test("bez hasła nie obiecujemy adresu w sieci", async () => {
+  test("adres w sieci wychodzi także bez hasła", async () => {
     const ja = await (await fetch(`${ADRES}/api/ja`)).json() as any;
     assert.equal(ja.tryb, "lokalny");
-    assert.deepEqual(ja.adresyWSieci, [],
-      "w trybie lokalnym każdy taki adres i tak dostałby odmowę");
+    assert.deepEqual(ja.adresyWSieci, adresyLokalnejSieci(PORT),
+      "bez tego okno linku ma do pokazania sam „localhost”");
   });
 });

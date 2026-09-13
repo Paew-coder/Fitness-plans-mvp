@@ -992,10 +992,20 @@ const serwer = createServer(async (req, res) => {
         nazwa: trener?.nazwa ?? "Trener",
         email: trener?.email ?? null,
         tryb,
-        // Adresy, pod którymi konsola jest widoczna z innych urządzeń.
-        // Potrzebne przy linku dla klienta: „localhost" na jego telefonie
-        // znaczy jego telefon, więc taki link nie ma prawa zadziałać.
-        adresyWSieci: tryb === "hasło" ? adresyLokalnejSieci(PORT) : [],
+        /*
+         * Adresy, pod którymi ta maszyna jest widoczna z innych urządzeń.
+         * Potrzebne przy linku dla klienta: „localhost" na jego telefonie
+         * znaczy jego telefon, więc taki link nie ma prawa zadziałać.
+         *
+         * Podajemy je ZAWSZE, także bez hasła. Wcześniej wychodziły tylko
+         * w trybie z hasłem — przez pomylenie konsoli z aplikacją klienta.
+         * To są dwie różne bramki: `rozpoznajTrenera` pilnuje ekranów trenera
+         * i bez hasła odcina wszystko spoza tej maszyny, ale ścieżki klienta
+         * (`dlaKlienta`) idą obok niej, bo ich kluczem jest token w adresie.
+         * Link klienta działa więc z telefonu w tej samej sieci od razu, bez
+         * żadnego hasła — a konsola mówiła trenerowi, że nie zadziała.
+         */
+        adresyWSieci: adresyLokalnejSieci(PORT),
       });
     }
 

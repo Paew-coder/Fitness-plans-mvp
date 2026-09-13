@@ -1,18 +1,21 @@
 @echo off
 rem
-rem Wpuszczenie telefonu do konsoli CraftMyPlan - Windows.
+rem Ustawienie hasla do konsoli CraftMyPlan - Windows.
 rem
-rem Konsola bez hasla przyjmuje polaczenia tylko z tego komputera. To jest
-rem celowe: inaczej kazdy w tej samej sieci Wi-Fi ogladalby plany klientow.
-rem Zeby wejsc na nia z telefonu, trzeba najpierw ustawic haslo - i po to
-rem jest ten plik. Wczesniej dalo sie to zrobic wylacznie z terminala, czyli
-rem dla kogos, kto terminala nie otwiera, wcale.
+rem Konsola bez hasla obsluguje tylko ten komputer: ekrany trenera sa odciete
+rem dla wszystkich innych urzadzen w sieci. Haslo to zdejmuje - i jest tez
+rem warunkiem postawienia konsoli na serwerze. Wczesniej dalo sie je ustawic
+rem wylacznie komenda w terminalu, czyli dla kogos, kto terminala nie otwiera,
+rem wcale.
+rem
+rem Uwaga na to, czego ten plik NIE dotyczy: link dla klienta dziala z telefonu
+rem w tej samej sieci takze bez hasla, bo jego kluczem jest token w adresie.
 rem
 rem Ten plik jest bez polskich ogonkow z tego samego powodu co launcher:
 rem okno wiersza polecen potrafi pokazac je jako krzaki.
 rem
 setlocal
-title CraftMyPlan - dostep z telefonu
+title CraftMyPlan - haslo do konsoli
 
 cd /d "%~dp0konsola" 2>nul
 if errorlevel 1 (
@@ -36,13 +39,19 @@ if errorlevel 1 (
 )
 
 echo.
-echo   Dostep z telefonu - ustawienie hasla
+echo   Haslo do konsoli trenera
 echo.
-echo   Co sie zmieni:
-echo     - konsola zacznie prosic o e-mail i haslo przy kazdym otwarciu,
-echo       takze na tym komputerze;
-echo     - w zamian wpusci telefon i tablet z tej samej sieci Wi-Fi;
-echo     - link dla klienta zacznie pokazywac adres, ktory da sie wyslac.
+echo   Po co:
+echo     - zeby otworzyc konsole na tablecie albo drugim komputerze;
+echo     - zeby postawic ja na serwerze - bez hasla odmawia;
+echo     - zeby nikt z tej samej sieci Wi-Fi na nia nie wszedl.
+echo.
+echo   Czego NIE zmienia: link dla klienta i tak dziala z telefonu w tej
+echo   samej sieci, takze bez hasla. Jesli chcesz tylko go sprawdzic -
+echo   zamknij to okno, haslo nie jest do tego potrzebne.
+echo.
+echo   Co sie zmieni: konsola zacznie prosic o e-mail i haslo przy kazdym
+echo   otwarciu, takze na tym komputerze.
 echo.
 echo   Haslo musi miec co najmniej 10 znakow i bedzie widoczne
 echo   podczas wpisywania. Zapisz je sobie - nie da sie go odczytac pozniej.
@@ -64,10 +73,9 @@ if errorlevel 1 (
 )
 
 echo   Co teraz:
-echo     1. Wroc do okna przegladarki z konsola i odswiez strone (F5).
+echo     1. Wroc do okna przegladarki z konsola i odswiez strone - klawisz F5.
 echo     2. Zaloguj sie e-mailem i haslem, ktore przed chwila ustawiles.
-echo     3. Otworz plan, kliknij "Link dla klienta" - pod linkiem beda
-echo        teraz adresy do wpisania na telefonie.
+echo     3. Na tablecie wpisz adres wypisany wyzej i zaloguj sie tak samo.
 echo.
 echo   Zeby wrocic do trybu bez hasla, uruchom w terminalu:
 echo     npm run haslo -- --usun

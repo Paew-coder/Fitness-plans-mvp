@@ -1879,26 +1879,27 @@ async function pokazLinkKlienta(klientId) {
     const lokalny = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(location.origin);
     if (lokalny) {
       const ja = await api("/api/ja");
-      if (ja.tryb === "hasło" && ja.adresyWSieci?.length) {
+      if (ja.adresyWSieci?.length) {
         tresc.push(el("p", "wskazowka ostrzezenie",
           "⚠ Ten adres działa tylko na tym komputerze — „localhost” na telefonie "
-          + "klienta znaczy jego telefon. Z tej samej sieci Wi-Fi zadziała:"));
+          + "klienta znaczy jego telefon. Wyślij mu ten:"));
         for (const adres of ja.adresyWSieci) {
           tresc.push(el("code", "", `${adres}${sciezka}`));
         }
         tresc.push(el("p", "wskazowka",
-          "Ten komputer musi być włączony, a telefon w tej samej sieci. "
-          + "Żeby klient miał dostęp zawsze i skądkolwiek — postaw konsolę na "
-          + "serwerze (instrukcja WDROZENIE.md)."));
+          "Działa z telefonu w tej samej sieci Wi-Fi — także bez hasła do "
+          + "konsoli, bo kluczem do planu jest sam link. Ten komputer musi być "
+          + "włączony, a konsola uruchomiona. Żeby klient miał dostęp zawsze "
+          + "i skądkolwiek — postaw konsolę na serwerze (instrukcja "
+          + "WDROZENIE.md)."));
       } else {
         tresc.push(el("p", "wskazowka ostrzezenie",
           "⚠ Ten adres działa tylko na tym komputerze — „localhost” na telefonie "
           + "klienta znaczy jego telefon, więc link nie zadziała."));
         tresc.push(el("p", "wskazowka",
-          "Żeby klient mógł wejść: albo ustaw hasło (npm run haslo) i podaj mu "
-          + "adres tego komputera w sieci Wi-Fi, albo postaw konsolę na serwerze "
-          + "— instrukcja w pliku WDROZENIE.md. Bez hasła konsola celowo nie "
-          + "przyjmuje połączeń z innych urządzeń."));
+          "Nie widzę tego komputera w żadnej sieci — sprawdź Wi-Fi. Żeby klient "
+          + "miał dostęp zawsze i skądkolwiek, postaw konsolę na serwerze: "
+          + "instrukcja w pliku WDROZENIE.md."));
       }
     }
     // Szkic nie pokazuje się klientowi — lepiej powiedzieć to teraz niż

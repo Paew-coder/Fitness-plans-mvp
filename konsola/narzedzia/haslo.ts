@@ -41,7 +41,7 @@ if (process.argv.includes("--usun")) {
 if (!stdin.isTTY) {
   console.error("\n  To narzędzie pyta o hasło i potrzebuje klawiatury.");
   console.error("  Uruchom je w oknie terminala — albo kliknij plik");
-  console.error("  „Dostep z telefonu” w głównym katalogu projektu.\n");
+  console.error("  „Ustaw haslo konsoli” w głównym katalogu projektu.\n");
   process.exit(1);
 }
 

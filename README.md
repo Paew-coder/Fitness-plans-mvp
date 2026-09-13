@@ -127,24 +127,33 @@ innym porcie.
 > bo obok niego nie ma reszty projektu; program powie wtedy wprost, że nie
 > znalazł katalogu `konsola`.
 
-### Żeby wejść na konsolę z telefonu
+### Telefon klienta
 
-Bez hasła konsola przyjmuje połączenia **tylko z tego komputera** — celowo,
-inaczej każdy w tej samej sieci Wi-Fi oglądałby plany klientów. Żeby wpuścić
-telefon albo tablet, kliknij plik obok launchera:
+Link dla klienta **działa z telefonu od razu** — wystarczy, że telefon jest
+w tej samej sieci Wi-Fi, a komputer z konsolą włączony. Hasło nie jest do tego
+potrzebne: kluczem do planu jest sam link.
+
+Jedno zastrzeżenie: adres z paska przeglądarki (`localhost`) na cudzym
+telefonie znaczy *ten telefon*, więc nie da się go wysłać. Okno „Link dla
+klienta" podaje pod spodem właściwy adres — ten z numerami, na przykład
+`http://192.168.0.14:4173/k/…`. Ten trzeba przepisać albo wysłać.
+
+### Hasło do konsoli trenera
+
+To osobna sprawa. Sama konsola — ekrany, na których układasz plany — bez hasła
+obsługuje **tylko ten komputer**; każde inne urządzenie w sieci dostaje odmowę.
+Hasło zdejmuje to ograniczenie i jest warunkiem postawienia konsoli na serwerze
+(`WDROZENIE.md`). Ustawia się je kliknięciem:
 
 | System | Plik |
 |---|---|
-| Mac | `Dostep z telefonu.command` |
-| Windows | `Dostep z telefonu.bat` |
+| Mac | `Ustaw haslo konsoli.command` |
+| Windows | `Ustaw haslo konsoli.bat` |
 
-Pyta o e-mail i hasło (minimum 10 znaków), a na końcu wypisuje adresy, pod
-którymi konsola jest widoczna w sieci — te do wpisania na telefonie. Od tej
-chwili konsola prosi o logowanie także na komputerze; `npm run haslo -- --usun`
-cofa to.
-
-Hasło działa od razu, bez restartu konsoli — wystarczy odświeżyć stronę.
-To samo hasło jest warunkiem wystawienia konsoli na serwer (`WDROZENIE.md`).
+Pyta o e-mail i hasło (minimum 10 znaków) i wypisuje adresy, pod którymi
+konsola jest widoczna w sieci. Od tej chwili prosi o logowanie także na tym
+komputerze; `npm run haslo -- --usun` cofa to. Hasło działa natychmiast, bez
+restartu konsoli — wystarczy odświeżyć stronę.
 
 Z terminala, dla tych którzy wolą:
 
