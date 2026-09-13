@@ -91,6 +91,14 @@ instalatora** z przyciskami „Kontynuuj" i „Zainstaluj", a na końcu napis
 z tekstem („This package has installed: Node.js…"), to znaczy, że plik został
 tylko **otwarty do podglądu** — nic się nie zainstalowało.
 
+Instalator na Windowsie na końcu proponuje **„Install Additional Tools for
+Node.js"** — czarne okno z napisem „Press any key to continue". Tego okna nie
+trzeba. Doinstalowuje ono Pythona i narzędzia Microsoftu do kompilowania
+bibliotek (siedem gigabajtów plus aktualizacje Windowsa), a CraftMyPlan nie ma
+ani jednej biblioteki do skompilowania. **Zamknij to okno krzyżykiem** — Node
+jest już wtedy zainstalowany, sam napis o tym mówi („You can close this window
+to stop now").
+
 Potem wystarczy kliknąć plik w głównym katalogu projektu:
 
 | System | Plik |
@@ -110,6 +118,14 @@ innym porcie.
 
 > Na Macu przy pierwszym kliknięciu system może odmówić otwarcia pliku
 > pobranego z internetu. Wtedy: **prawy przycisk → Otwórz → Otwórz**. Raz.
+
+> Na Windowsie może wyskoczyć niebieskie okno „System Windows ochronił Twój
+> komputer". Wtedy: **Więcej informacji → Uruchom mimo to**. Też raz.
+>
+> Pobraną paczkę trzeba najpierw **rozpakować** — prawy przycisk na pliku ZIP →
+> „Wyodrębnij wszystkie". Kliknięcie pliku w podglądzie ZIP-a nie zadziała,
+> bo obok niego nie ma reszty projektu; program powie wtedy wprost, że nie
+> znalazł katalogu `konsola`.
 
 Z terminala, dla tych którzy wolą:
 
