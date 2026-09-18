@@ -232,14 +232,29 @@ Konsola wypisuje przy starcie, gdzie trzyma bazę:
 To jest **jedyny plik, na którym Ci zależy**: wszyscy klienci, wszystkie cykle,
 oceny i waga. Reszta katalogu to program, który da się odtworzyć w każdej chwili.
 
-> **Uwaga przy aktualizacji z paczki ZIP.** Nowa paczka rozpakowuje się do
-> **nowego katalogu obok starego**, razem z pustym `dane/`. Twoi klienci
-> zostają w starym — konsola z nowego katalogu wystartuje pusta. Zanim
-> skasujesz stary folder, przenieś z niego cały katalog `konsola/dane/`.
+### Aktualizacja jednym kliknięciem
 
-Prościej jest tego uniknąć: jeśli pobierzesz projekt przez `git clone`
-(polecenie w sekcji wyżej), aktualizacja to jedna komenda w tym samym
-katalogu, a dane w ogóle się nie ruszają:
+| System | Plik |
+|---|---|
+| Mac | `Aktualizuj CraftMyPlan.command` |
+| Windows | `Aktualizuj CraftMyPlan.bat` |
+
+Pobiera najnowszą wersję programu i podmienia pliki **w tym samym katalogu**.
+Katalogu `konsola/dane/` nie dotyka w ogóle — klienci, plany, oceny i waga
+zostają na miejscu. Przed podmianą robi kopię bazy, a pliki, których nie ma
+już w paczce, tylko wypisuje, zamiast je kasować. Konsola musi być wtedy
+zamknięta; jeśli działa, narzędzie odmawia i mówi dlaczego.
+
+Z terminala to samo: `npm run aktualizuj` pokazuje, co by się zmieniło,
+`npm run aktualizuj -- --wykonaj` zmienia naprawdę.
+
+> **Jeśli zamiast tego pobierasz ZIP z przeglądarki** — uważaj. Nowa paczka
+> rozpakowuje się do **nowego katalogu obok starego**, razem z pustym `dane/`.
+> Twoi klienci zostają w starym, a konsola z nowego katalogu wystartuje pusta.
+> Zanim skasujesz stary folder, przenieś z niego cały katalog `konsola/dane/`.
+
+Kto pobrał projekt przez `git clone` (polecenie w sekcji wyżej), ma jeszcze
+trzecią drogę — jedna komenda, dane nietknięte:
 
 ```bash
 git pull origin claude/craftmyplan-training-app-hokugh
