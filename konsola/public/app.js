@@ -1344,7 +1344,37 @@ function komorkaCiezaru(parametry, wyliczony) {
   if (wyliczony?.cwiczenie?.jednostronne && typeof wyliczony?.ciezar === "number") {
     komorka.append(el("span", "znacznik-jedn", "↔"));
   }
+  komorka.append(...znacznikOcen(wyliczony));
   return komorka;
+}
+
+/**
+ * Ile oceny klienta przesuwają ciężar w tym tygodniu.
+ *
+ * Bez tego ocena potrafi wyglądać na zignorowaną. Zgłoszone z użycia: klient
+ * ocenił Barbell SLDL jako „za trudne", a ciężar w T2 został ten sam. I słusznie
+ * — korekta to 5%, a ciężar zaokrągla się do skoku z BAZY, który przy sztandze
+ * wynosi 2,5 kg. Poniżej 25 kg pięć procent nie sięga połowy skoku, więc liczba
+ * nie ma jak drgnąć. To jest zachowanie arkusza (MROUND), nie awaria — ale
+ * dopóki nigdzie nie stało, że korekta w ogóle zadziałała, wyglądało na jedno
+ * i drugie tak samo.
+ */
+function znacznikOcen(wyliczony) {
+  const mnoznik = wyliczony?.mnoznik;
+  if (typeof mnoznik !== "number" || mnoznik === 1) return [];
+
+  const procent = Math.round((mnoznik - 1) * 100);
+  if (procent === 0) return [];
+  const skok = Math.max(wyliczony?.cwiczenie?.skokKg ?? 0, 0.5);
+
+  const znacznik = el("span",
+    `znacznik-ocena ${procent > 0 ? "wyzej" : "nizej"}`,
+    `${procent > 0 ? "+" : "−"}${Math.abs(procent)}%`);
+  znacznik.title =
+    `Oceny klienta z wcześniejszych tygodni przesuwają ciężar o ${procent > 0 ? "+" : "−"}`
+    + `${Math.abs(procent)}%. Wynik zaokrągla się do skoku ${liczba(skok)} kg z BAZY, `
+    + `więc przy małych ciężarach liczba może zostać ta sama.`;
+  return [znacznik];
 }
 
 /**
