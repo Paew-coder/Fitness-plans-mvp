@@ -20,9 +20,9 @@ import { fileURLToPath } from "node:url";
 const GLOWNY = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const NA_MACU = ["Uruchom CraftMyPlan.command", "Ustaw haslo konsoli.command",
-                 "Aktualizuj CraftMyPlan.command"];
+                 "Aktualizuj CraftMyPlan.command", "Odzyskaj dane.command"];
 const NA_WINDOWS = ["Uruchom CraftMyPlan.bat", "Ustaw haslo konsoli.bat",
-                    "Aktualizuj CraftMyPlan.bat"];
+                    "Aktualizuj CraftMyPlan.bat", "Odzyskaj dane.bat"];
 
 const tresc = (nazwa: string) => readFileSync(join(GLOWNY, nazwa), "utf-8");
 
