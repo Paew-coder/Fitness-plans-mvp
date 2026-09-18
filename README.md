@@ -253,6 +253,32 @@ Z terminala to samo: `npm run aktualizuj` pokazuje, co by się zmieniło,
 > Twoi klienci zostają w starym, a konsola z nowego katalogu wystartuje pusta.
 > Zanim skasujesz stary folder, przenieś z niego cały katalog `konsola/dane/`.
 
+### Klienci zostali w poprzedniej paczce
+
+Jeśli konsola wystartowała pusta, bo dane zostały w starym katalogu — nie
+szukaj ich po dysku ręcznie. Od tego jest osobny plik:
+
+| System | Plik |
+|---|---|
+| Mac | `Odzyskaj dane.command` |
+| Windows | `Odzyskaj dane.bat` |
+
+Przeszukuje katalog domowy i okolice projektu, otwiera każdą znalezioną bazę
+i wypisuje, ilu jest w niej klientów i kiedy była ostatnio używana. Wybierasz
+numer, resztę robi sam — razem z plikami obocznymi, o które najłatwiej się
+potknąć. Dotychczasową bazę odkłada wcześniej do `kopie/`, więc pomyłka
+w wyborze jest do cofnięcia.
+
+Z terminala: `npm run znajdz-dane` wypisuje listę, `npm run znajdz-dane --
+--wykonaj 2` przenosi drugą pozycję.
+
+Dlaczego to w ogóle powstało: pierwsze ręczne przeniesienie danych między
+paczkami zajęło u trenera godzinę i skończyło się folderem „dane — kopia"
+wklejonym sam w siebie. Po drodze było sześć kopii projektu w dwóch miejscach,
+schowek skasowany przez skopiowanie ścieżki i baza, w której `craftmyplan.db`
+miał cztery kilobajty, a plik obok niego 1,7 MB. Każdy z tych kroków da się
+zrobić źle po cichu.
+
 > **Przenoś cały katalog `dane/`, nigdy sam plik `craftmyplan.db`.** Baza
 > chodzi w trybie WAL: świeże zapisy siedzą w pliku obok, `craftmyplan.db-wal`,
 > i trafiają do głównego dopiero co jakiś czas. Zdarza się, że `.db` ma cztery
