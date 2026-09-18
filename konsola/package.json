@@ -20,7 +20,8 @@
     "sprawdz-odpornosc": "node --no-warnings narzedzia/sprawdz-odpornosc.ts",
     "sprawdz-skale": "node --no-warnings narzedzia/sprawdz-skale.ts",
     "wczytaj-arkusze": "node --no-warnings narzedzia/wczytaj-arkusze.ts",
-    "aktualizuj": "node --no-warnings narzedzia/aktualizuj.ts"
+    "aktualizuj": "node --no-warnings narzedzia/aktualizuj.ts",
+    "znajdz-dane": "node --no-warnings narzedzia/znajdz-dane.ts"
   },
   "license": "UNLICENSED",
   "private": true
