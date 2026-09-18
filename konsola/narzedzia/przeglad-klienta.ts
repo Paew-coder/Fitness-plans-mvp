@@ -571,6 +571,43 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     wUwadze.some((w: any) => w.powody.some((p: any) => p.rodzaj === "zrobiony")),
     JSON.stringify(wUwadze.flatMap((w: any) => w.powody.map((p: any) => p.rodzaj))));
 
+  // ── 21. plan, którego trener nie wypełnił ─────────────────────────
+  //
+  // Wszystkie sekcje powyżej sieją plan **z progresją**, więc żadna nie
+  // dotykała drogi, którą trener idzie naprawdę: wybiera ćwiczenia, wpisuje
+  // serie maksymalne i wysyła. Tą drogą bój główny trafiał na telefon jako
+  // `1 × 6` — jedna seria. Zgłoszone z prawdziwego użycia, nie z testu.
+  const GOLY = "goly-plan";
+  await api("/api/plany", "POST", { klient: GOLY, wersja: 1 });
+  const idGolego = (await api("/api/plany")).find((p: any) => p.klient === GOLY).id;
+  const golyPlan = (await api(`/api/plany/${idGolego}`)).zapisany.plan;
+  golyPlan.sloty[0].cwiczenieId = "EX-0010";   // A1. bój główny
+  golyPlan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
+  golyPlan.serieMaksymalne = [
+    { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
+    { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
+  ];
+  // Żadnej progresji, żadnego wpisanego pola — dokładnie tak, jak wyszedł
+  // plan Tomka.
+  await api(`/api/plany/${idGolego}`, "PUT",
+    { plan: golyPlan, dataStartu: null, status: "wysłany" });
+  const golySciezka = (await api(`/api/plany/${idGolego}/link`, "POST")).sciezka;
+
+  await s.goto(`${adres}${golySciezka}`, { waitUntil: "networkidle" });
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const schematy = await s.locator("#cwiczenia .schemat").allInnerTexts();
+
+  sprawdz("niewypełniony plan nie każe robić jednej serii",
+    schematy.length > 0 && schematy.every((t) => !/^\s*1\s*×/.test(t)),
+    schematy.join(" | ") || "brak ćwiczeń");
+
+  const golyWidok = await api(`/api/klient/${golySciezka.replace("/k/", "")}`);
+  const golyBoj = golyWidok.tygodnie[0].dni[0].cwiczenia[0];
+  sprawdz("bój główny dostaje liczby z szablonu 5.18",
+    golyBoj.serie === 6 && golyBoj.powtorzenia === 6 && golyBoj.rpe === 6.5,
+    `${golyBoj.serie} × ${golyBoj.powtorzenia} · RPE ${golyBoj.rpe}`);
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
