@@ -143,29 +143,56 @@ pod nagłówkiem „Z telefonu w tej samej sieci".
 
 #### Telefon ładuje stronę bez końca
 
-Biała strona i pasek postępu, który stoi — to nie jest zły adres. Zły adres
-kończy się natychmiastowym „nie można połączyć". Ładowanie bez końca znaczy,
-że pakiety **znikają po drodze**, i ma zwykle jedną z trzech przyczyn:
+Biała strona i pasek postępu, który stoi, albo „serwer przestał odpowiadać" —
+to **nie jest zły adres**. Zły adres kończy się natychmiastowym „nie można
+połączyć". Zawieszenie znaczy, że pakiety **znikają po drodze**.
 
-1. **Profil sieci ustawiony na „Publiczna".** Windows ukrywa wtedy komputer
-   przed wszystkim w sieci lokalnej, telefonem włącznie. Ustawienia → Sieć
-   i internet → kliknij połączenie z dopiskiem „Połączono" (**uwaga: jeśli
-   komputer stoi na kablu, to `Ethernet`, a nie Wi-Fi — na stronie Wi-Fi tej
-   opcji wtedy w ogóle nie ma**) → „Typ profilu sieciowego" → **Prywatna**.
-2. **Zapora nie zna Node'a.** Wyszukaj „zapora" → Zapora Windows Defender →
-   „Zezwalaj aplikacji…" → „Zmień ustawienia" → **Node.js JavaScript Runtime**,
-   kolumna **Prywatna**. Gdy Node'a nie ma na liście: „Zezwól na dostęp innej
-   aplikacji" → `C:\Program Files\nodejs\node.exe`.
-3. **Router rozdziela urządzenia.** Rzadsze, zwykle na sieciach dla gości.
+Poniżej kolejność, która to rozstrzyga. Spisana po pierwszym prawdziwym
+uruchomieniu u trenera, gdzie zajęło to półtorej godziny — bo dwie pierwsze
+rzeczy z tej listy wyglądają na zrobione, kiedy zrobione nie są.
 
-Zanim zaczniesz szukać u siebie, rozstrzygnij, po której stronie jest problem:
-otwórz **na komputerze** adres `http://ADRES-Z-NUMERAMI:4173/zdrowie`
-(z numerami, nie `localhost`). Słowo `ok` znaczy, że konsola nasłuchuje
-poprawnie i szukać trzeba między telefonem a komputerem. Brak odpowiedzi —
-że problem jest po stronie samej konsoli.
+**1. Czy konsola w ogóle odpowiada.** Na **komputerze** otwórz
+`http://ADRES-Z-NUMERAMI:4173/zdrowie` (z numerami, nie `localhost`). Słowo
+`ok` znaczy, że szukać trzeba między urządzeniami. Cisza — że konsola nie
+chodzi (zamknięte czarne okno, wyłączony komputer) albo adres jest nieaktualny.
 
-Przeglądarka wbudowana w Messengera czy WhatsAppa bywa osobną przyczyną:
-otwórz link w zwykłej przeglądarce (••• → „Otwórz w przeglądarce").
+**2. Czy oba urządzenia są w jednej sieci.** Adres telefonu: iOS — Ustawienia →
+Wi-Fi → ⓘ → „Adres IP"; Android — Ustawienia → Wi-Fi → nazwa sieci. Pierwsze
+trzy liczby muszą się zgadzać z adresem komputera (`192.168.100.` **.19** vs
+`192.168.100.` **.6** — zgadza się). Jeśli nie — telefon siedzi w sieci
+gościnnej albo na wzmacniaczu z własnym adresowaniem i żadne ustawienie
+Windows tego nie naprawi.
+
+**3. Profil sieci na karcie, która jest naprawdę używana.** To jest ta pułapka,
+która kosztuje najwięcej. Adres IP **i** ustawienie „Publiczna/Prywatna"
+należą do **karty sieciowej**, nie do komputera. Kabel ma własne, Wi-Fi ma
+własne. Przepięcie się z jednego na drugie zmienia oba naraz — a strony
+ustawień Wi-Fi w ogóle nie pokazują „Typu profilu sieciowego", dopóki Wi-Fi
+nie jest używane, więc można go tam szukać do wieczora.
+
+Ustawienia → Sieć i internet → kliknij połączenie z dopiskiem **„Połączono"**
+(`Ethernet` przy kablu, nazwa sieci przy Wi-Fi) → **„Typ profilu sieciowego"**
+→ **Prywatna**. Na „Publicznej" Windows celowo ukrywa komputer przed całą
+siecią lokalną.
+
+**4. Zgoda dla Node'a w zaporze.** Wyszukaj „zapora" → Zapora Windows Defender
+→ „Zezwalaj aplikacji…" → **„Zmień ustawienia"** (bez tego kwadraciki są
+zablokowane) → **Node.js JavaScript Runtime**, kolumna **Prywatne**.
+
+Na liście potrafią być **dwa wpisy o tej samej nazwie, z odwrotnie
+zaznaczonymi kolumnami** — jeden z „Prywatne", drugi z „Publiczne". Zaznaczyć
+trzeba **Prywatne przy obu**; wystarczy jeden wpis bez tego, żeby połączenie
+nie przechodziło. Gdy Node'a nie ma wcale: „Zezwól na dostęp innej aplikacji"
+→ `C:\Program Files\nodejs\node.exe`.
+
+**5. Router rozdziela urządzenia.** Rzadsze, zwykle na sieciach dla gości
+(*izolacja klientów*, *AP isolation*). Sprawdza się to najszybciej hotspotem
+z telefonu: podłącz do niego komputer i telefon, odczytaj nowy adres komputera
+i spróbuj linku. Jeśli tam działa — winny jest router.
+
+Osobna przyczyna, niezwiązana z siecią: **przeglądarka wbudowana w Messengera
+czy WhatsAppa**. Otwórz link w zwykłej przeglądarce (••• → „Otwórz
+w przeglądarce").
 
 ### Hasło do konsoli trenera
 
@@ -301,7 +328,7 @@ którego poprzednie nie umiały złapać.
 
 ```bash
 cd konsola
-npm test                    # 270 testów, bez żadnych narzędzi zewnętrznych
+npm test                    # 472 testy, bez żadnych narzędzi zewnętrznych
 npm run przeglad-ekranow    # klikanie po konsoli w prawdziwej przeglądarce
 npm run przeglad-klienta    # pętla klienta na telefonie, z trybem offline
 npm run sprawdz-kolko       # konsola → arkusz → konsola, wartość po wartości
