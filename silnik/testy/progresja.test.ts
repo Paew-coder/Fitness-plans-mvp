@@ -144,3 +144,60 @@ describe("progresja — kopiowanie tygodnia", () => {
     assert.equal(s.tygodnie![1]!.feedback, "za łatwe", "źródłowy tydzień bez zmian");
   });
 });
+
+describe("plan, którego trener nie wypełnił", () => {
+  /**
+   * Zgłoszone z prawdziwego użycia, nie wymyślone.
+   *
+   * Trener wybrał ćwiczenia, wysłał plan i otworzył go na tablecie. Bój główny
+   * pokazał `1 × 6` — jedną serię. Silnik miał w tym miejscu liczby wzięte
+   * znikąd: jedna seria i sześć powtórzeń dla boju, trzy serie i RPE 8 dla
+   * reszty. Dla akcesoriów wychodziło to przypadkiem na szablon, dla boju —
+   * nie: szablon mówi w T1 sześć serii po sześć powtórzeń na RPE 6,5.
+   *
+   * Dla klienta nie ma czegoś takiego jak „wartość domyślna". Na jego telefonie
+   * każda liczba jest poleceniem do wykonania.
+   */
+  test("bój główny nigdy nie schodzi do jednej serii", () => {
+    const wynik = przeliczPlan(planTestowy());
+    for (const t of wynik.tygodnie) {
+      const boj = t.sloty.find((s) => s.lp === "A1." && s.cwiczenie)!;
+      assert.equal(boj.serie, PROGRESJA_BOJU[t.tydzien - 1]!.serie,
+        `T${t.tydzien}: bój główny ma ${boj.serie} serii zamiast szablonowych`);
+      assert.ok(boj.serie >= 4, `T${t.tydzien}: ${boj.serie} serii to nie jest plan`);
+    }
+  });
+
+  test("przycisk progresji niczego nie zmienia — tylko pokazuje", () => {
+    // Najmocniejsza postać tej samej zasady: liczba niewpisana i liczba
+    // wpisana przyciskiem mają być tą samą liczbą. Gdy się rozjadą, trener
+    // widzi w konsoli co innego niż klient na telefonie — a to jest dokładnie
+    // ta pułapka, przez którą arkusz pokazywał kiedyś inne ciężary niż konsola.
+    const goly = przeliczPlan(planTestowy());
+    const wypelniony = przeliczPlan(zastosujProgresje(planTestowy()));
+
+    for (const [i, t] of goly.tygodnie.entries()) {
+      for (const s of t.sloty) {
+        if (!s.cwiczenie) continue;
+        const po = wypelniony.tygodnie[i]!.sloty.find((x) => x.positionId === s.positionId)!;
+        assert.deepEqual(
+          { serie: s.serie, powtorzenia: s.powtorzenia, rpe: s.rpe, ciezar: s.ciezar },
+          { serie: po.serie, powtorzenia: po.powtorzenia, rpe: po.rpe, ciezar: po.ciezar },
+          `T${t.tydzien} ${s.lp} ${s.cwiczenie.nazwa}`);
+      }
+    }
+  });
+
+  test("wpisana liczba zawsze wygrywa z szablonem", () => {
+    // Druga strona umowy: szablon jest podkładem, nie nadpisywaczem.
+    const plan = planTestowy();
+    plan.sloty.find((s) => s.positionId === "D1-S01")!.tygodnie = {
+      1: { serie: 2, powtorzenia: 12, rpe: 9 },
+    } as Plan["sloty"][number]["tygodnie"];
+
+    const boj = przeliczPlan(plan).tygodnie[0]!.sloty.find((s) => s.lp === "A1.")!;
+    assert.equal(boj.serie, 2);
+    assert.equal(boj.powtorzenia, 12);
+    assert.equal(boj.rpe, 9);
+  });
+});
