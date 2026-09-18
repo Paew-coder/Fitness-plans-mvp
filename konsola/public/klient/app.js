@@ -325,7 +325,7 @@ function rysujPostep() {
 
   // waga
   const waga = el("div", "cwiczenie");
-  waga.append(el("div", "modul-tytul", "Waga"));
+  waga.append(el("div", "modul-tytul", "Waga ciała"));
   const ostatnia = p.waga.punkty.at(-1);
   waga.append(el("div", "modul-poziom", ostatnia
     ? `${liczba(ostatnia.kg)} kg${p.waga.zmianaKg ? `  (${zeZnakiem(p.waga.zmianaKg)} kg)` : ""}`
@@ -351,6 +351,8 @@ function rysujPostep() {
   };
   poleWagi.append(wKg, el("span", "razy", "dziś"));
   waga.append(poleWagi);
+  waga.append(el("p", "brama",
+    "Ile ważysz Ty, nie sztanga. Najlepiej rano, po przebudzeniu."));
   if (p.waga.punkty.length > 1) {
     waga.append(el("p", "brama", p.waga.punkty
       .slice(-6)
@@ -360,9 +362,18 @@ function rysujPostep() {
   kontener.append(waga);
 
   // ćwiczenia
+  //
+  // To zdanie stało wcześniej luzem pod kartą wagi — i czytało się jak jej
+  // podpis. „Waga" znaczy wtedy dwie różne rzeczy w odległości dwóch linijek:
+  // wagę ciała w polu wyżej i ciężar na sztandze w zdaniu niżej. Pierwsze
+  // pytanie trenera po otwarciu tego ekranu brzmiało dokładnie „o co tu chodzi
+  // z tą wagą". Zdanie dostaje więc własną kartę z własnym tytułem.
   if (p.cwiczenia.length === 0) {
-    kontener.append(el("p", "drobne srodek",
+    const pusta = el("div", "cwiczenie");
+    pusta.append(el("div", "modul-tytul", "Ciężary na ćwiczeniach"));
+    pusta.append(el("p", "brama",
       "Wpisuj przy ćwiczeniach, ile faktycznie podniosłeś — tutaj zobaczysz, jak to rośnie."));
+    kontener.append(pusta);
     return;
   }
   for (const c of p.cwiczenia) {
