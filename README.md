@@ -253,6 +253,20 @@ Z terminala to samo: `npm run aktualizuj` pokazuje, co by się zmieniło,
 > Twoi klienci zostają w starym, a konsola z nowego katalogu wystartuje pusta.
 > Zanim skasujesz stary folder, przenieś z niego cały katalog `konsola/dane/`.
 
+> **Przenoś cały katalog `dane/`, nigdy sam plik `craftmyplan.db`.** Baza
+> chodzi w trybie WAL: świeże zapisy siedzą w pliku obok, `craftmyplan.db-wal`,
+> i trafiają do głównego dopiero co jakiś czas. Zdarza się, że `.db` ma cztery
+> kilobajty i datę sprzed tygodnia, a `-wal` obok niego prawie dwa megabajty
+> z dzisiaj — wtedy skopiowanie samego `.db` daje bazę sprzed tygodnia i nic
+> tego nie sygnalizuje. Katalog `dane/` zawiera oba pliki plus kopie zapasowe.
+
+> **Nie trzymaj projektu w OneDrive, na Dysku Google ani w Dropboxie** —
+> także nie na Pulpicie, jeśli Twój Pulpit jest synchronizowany (ścieżka
+> `C:\Users\…\OneDrive\Pulpit`). Synchronizacja podmienia i blokuje pliki
+> w trakcie pracy, a baza otwarta w tej samej chwili potrafi się przez to
+> uszkodzić. Dobre miejsce to zwykły katalog na dysku, na przykład
+> `C:\CraftMyPlan`. Kopie zapasowe konsola robi sama.
+
 Kto pobrał projekt przez `git clone` (polecenie w sekcji wyżej), ma jeszcze
 trzecią drogę — jedna komenda, dane nietknięte:
 
