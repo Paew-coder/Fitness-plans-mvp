@@ -232,6 +232,15 @@ td.ciezar.brak input.pole-ciezaru::placeholder {
 td.ciezar.reczny input.pole-ciezaru { border-color: var(--akcent); }
 .znacznik-reczny { color: var(--akcent); font-size: .7rem; margin-left: .15rem; }
 
+/* Ile oceny klienta przesuwają ciężar. Nie ozdoba: bez tego ocena, która nie
+   przebiła zaokrąglenia, wygląda dokładnie tak samo jak ocena zignorowana. */
+.znacznik-ocena {
+  font-family: var(--mono); font-size: .62rem; font-weight: 600;
+  margin-left: .2rem; letter-spacing: -.02em; white-space: nowrap;
+}
+.znacznik-ocena.wyzej { color: var(--dobrze); }
+.znacznik-ocena.nizej { color: var(--uwaga); }
+
 .topset {
   display: flex; align-items: center; gap: .7rem; padding: .45rem .9rem;
   background: var(--akcent-tlo); border-bottom: 1px solid var(--linia);
