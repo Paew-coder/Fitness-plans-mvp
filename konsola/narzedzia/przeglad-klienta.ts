@@ -181,6 +181,18 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     tekstPostepu.replace(/\n/g, " · ").slice(0, 160));
 
   // ── 11. waga ──────────────────────────────────────────────────────
+  //
+  // „Waga" na tym ekranie znaczyła dwie rzeczy naraz: wagę ciała w polu
+  // i ciężar na sztandze w zdaniu tuż pod nim. Zdanie o ciężarach stało luzem
+  // pod kartą wagi i czytało się jak jej podpis — pierwsze pytanie trenera po
+  // otwarciu tego ekranu brzmiało dokładnie „o co tu chodzi z tą wagą".
+  const kartaWagi = s.locator("#postep .cwiczenie").filter({ has: s.locator("input") });
+  const tekstWagi = (await kartaWagi.innerText()).toLocaleLowerCase("pl");
+  sprawdz("karta wagi mówi, że chodzi o ciało, nie o sztangę",
+    tekstWagi.includes("ważysz ty"), tekstWagi.replace(/\n/g, " · ").slice(0, 90));
+  sprawdz("zdanie o podnoszonych ciężarach nie stoi w karcie wagi",
+    !tekstWagi.includes("podniosłeś"), tekstWagi.replace(/\n/g, " · ").slice(0, 90));
+
   const poleWagi = s.locator("#postep input").last();
   await poleWagi.fill("81.5");
   await poleWagi.blur();
