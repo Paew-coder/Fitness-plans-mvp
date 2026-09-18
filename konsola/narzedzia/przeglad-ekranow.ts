@@ -338,6 +338,19 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("zmiana trenera też weszła",
     poZapisie.zapisany.plan.czescPlanu === "intensywność",
     poZapisie.zapisany.plan.czescPlanu);
+
+  // Ocena musi być widoczna także wtedy, gdy nie przebiła zaokrąglenia.
+  // Zgłoszone z użycia: „za trudne" przy sztandze poniżej 25 kg nie rusza
+  // liczby, bo 5% nie sięga połowy skoku 2,5 kg — i wyglądało to dokładnie
+  // tak samo jak ocena, której aplikacja nie przyjęła.
+  await s.locator('#taby-tygodni button:has-text("T2")').first().click();
+  await s.waitForTimeout(500);
+  const znacznik = await s.locator("td.ciezar .znacznik-ocena").first()
+    .innerText().catch(() => "");
+  sprawdz("konsola pokazuje, o ile oceny przesuwają ciężar",
+    /^\+5\s*%$/.test(znacznik.trim()), znacznik.trim() || "brak znacznika");
+  await s.locator('#taby-tygodni button:has-text("T1")').first().click();
+  await s.waitForTimeout(400);
   // Odrzucony zapis (409) jest tu **celem sprawdzenia**, nie awarią —
   // przeglądarka wypisuje go do konsoli i to jest w porządku.
   bledyPrzegladarki.splice(bledyPrzedWyscigiem);
