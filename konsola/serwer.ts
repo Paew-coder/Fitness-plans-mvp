@@ -1769,6 +1769,20 @@ serwer.listen(PORT, async () => {
    * ma jego komputer. Przeszedł przez cztery ekrany Ustawień, żeby znaleźć
    * jedną liczbę, którą konsola zna od pierwszej sekundy.
    */
+  /*
+   * Pusta lista planów przy starcie to dwie zupełnie różne sytuacje: pierwsze
+   * uruchomienie albo aktualizacja, w której dane zostały w poprzednim
+   * katalogu. Druga zdarzyła się naprawdę — trener rozpakował nową paczkę
+   * obok starej, kliknął launcher i zobaczył pustą listę klientów; baza leżała
+   * całe cztery katalogi wcześniej. Konsola wie o tym wcześniej niż on
+   * i nic go to nie kosztuje, żeby powiedziała to wprost.
+   */
+  if (magazyn.lista(TRENER).length === 0) {
+    console.log("  Baza jest pusta — to pierwsze uruchomienie w tym katalogu.");
+    console.log("  Jeśli masz już klientów gdzie indziej: zamknij konsolę, przenieś");
+    console.log("  z tamtego katalogu cały folder konsola/dane i uruchom ponownie.\n");
+  }
+
   const wSieci = adresyLokalnejSieci(PORT);
   if (wSieci.length > 0) {
     console.log("  Z telefonu w tej samej sieci — link klienta zaczyna się od:");

@@ -193,3 +193,62 @@ describe("adres dla telefonu przy starcie", () => {
     assert.match(wyjscie, /telefon/i);
   });
 });
+
+describe("pusta baza przy starcie", () => {
+  /**
+   * Odtworzone na prawdziwej aktualizacji, nie wymyślone.
+   *
+   * Trener rozpakował nową paczkę obok starej, kliknął launcher i zobaczył
+   * pustą listę klientów. Baza z jego planami leżała cztery katalogi wcześniej,
+   * w poprzedniej paczce — a czarne okno wypisało „0 planów" i nic poza tym.
+   * Ta jedna liczba znaczy dwie zupełnie różne rzeczy: pierwsze uruchomienie
+   * albo dane zostawione w poprzednim katalogu. Konsola wie, gdzie trzyma bazę,
+   * i nic jej nie kosztuje, żeby powiedzieć to wprost.
+   */
+  test("mówi, co zrobić, gdy klienci zostali w poprzednim katalogu", async () => {
+    let port = 0;
+    let start!: ReturnType<typeof konsola>;
+    for (let proba = 1; proba <= 3; proba++) {
+      port = await wolnyPort();
+      start = konsola(port);
+      if (await wstala(port)) break;
+      start.proces.kill("SIGKILL");
+      assert.ok(proba < 3, "konsola nie wstała przy trzech próbach");
+    }
+    start.proces.kill("SIGTERM");
+    const { wyjscie } = await start.skonczona;
+
+    assert.match(wyjscie, /0 planów/);
+    assert.match(wyjscie, /Baza jest pusta/);
+    assert.match(wyjscie, /konsola\/dane/,
+      `podpowiedź ma nazwać katalog do przeniesienia:\n${wyjscie}`);
+  });
+
+  test("przy zapisanym planie już nie nagabuje", async () => {
+    let port = 0;
+    let pierwsza!: ReturnType<typeof konsola>;
+    for (let proba = 1; proba <= 3; proba++) {
+      port = await wolnyPort();
+      pierwsza = konsola(port);
+      if (await wstala(port)) break;
+      pierwsza.proces.kill("SIGKILL");
+      assert.ok(proba < 3, "konsola nie wstała przy trzech próbach");
+    }
+    const zalozony = await fetch(`http://127.0.0.1:${port}/api/plany`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ klient: "Tomasz", wersja: 1 }),
+    });
+    assert.equal(zalozony.status, 201);
+    pierwsza.proces.kill("SIGTERM");
+    await pierwsza.skonczona;
+
+    // Drugi start na tej samej bazie — podpowiedź ma zniknąć, bo problemu nie ma.
+    const druga = konsola(port);
+    assert.ok(await wstala(port), "druga konsola nie wstała");
+    druga.proces.kill("SIGTERM");
+    const { wyjscie } = await druga.skonczona;
+
+    assert.match(wyjscie, /1 planów/);
+    assert.doesNotMatch(wyjscie, /Baza jest pusta/);
+  });
+});
