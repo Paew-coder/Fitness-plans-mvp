@@ -1190,15 +1190,24 @@ function rysujSlot(slot, pusty) {
     return komorka;
   };
 
-  wiersz.append(poleLiczbowe(parametry.serie, (v) => { parametry.serie = v; }, "1", "3"));
-  // Puste pole = licz automatem; podpowiedź pokazuje, co z tego wychodzi.
+  // Puste pole = licz automatem; szara podpowiedź pokazuje, co z tego wychodzi.
+  // Musi to być liczba **policzona**, nie wpisana tu na sztywno: wcześniej
+  // przy seriach stało „3", a bój główny liczył się z sześciu — trener widział
+  // w podpowiedzi jedno, klient na telefonie dostawał drugie.
+  wiersz.append(poleLiczbowe(
+    parametry.serie,
+    (v) => { parametry.serie = v; },
+    "1",
+    String(wyliczony?.serie ?? ""),
+  ));
   wiersz.append(poleLiczbowe(
     parametry.powtorzenia,
     (v) => { parametry.powtorzenia = v; },
     "1",
     String(wyliczony?.powtorzenia ?? ""),
   ));
-  const komorkaRpe = poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", "8");
+  const komorkaRpe = poleLiczbowe(
+    parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", String(wyliczony?.rpe ?? ""));
   komorkaRpe.classList.add("rpe");
   wiersz.append(komorkaRpe);
 

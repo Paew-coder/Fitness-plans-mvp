@@ -12,6 +12,7 @@ import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
+import { jestBojemGlownym, progresjaSlotu } from "./szablon-boju.ts";
 import {
   bilansTygodnia,
   NORMY,
@@ -126,10 +127,6 @@ export type PlanWyliczony = {
   ocenaObjetosci: Record<string, { srednia: number; ocena: OcenaNormy }>;
 };
 
-function jestBojemGlownym(lp: string): boolean {
-  return lp.trim().toUpperCase().startsWith("A");
-}
-
 function parametry(slot: SlotPlanu, tydzien: Tydzien): ParametryTygodnia {
   return slot.tygodnie?.[tydzien] ?? {};
 }
@@ -185,21 +182,32 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       ) as Partial<Record<Tydzien, Feedback | undefined>>;
       const mnoznik = mnoznikNaTydzien(tydzien, odczucia);
 
-      const serie = p.serie ?? (bojGlowny ? 1 : 3);
+      /*
+       * Czego trener nie wpisał, to bierze się z szablonu 5.18 — z tych samych
+       * liczb, które wpisuje przycisk „progresja 5.18". Dzięki temu kliknięcie
+       * przycisku nie zmienia planu, tylko czyni go widocznym.
+       *
+       * Wcześniej stały tu liczby wzięte znikąd i bój główny bez wpisanych
+       * serii szedł do klienta jako `1 × 6`, czyli **jedna seria** — podczas
+       * gdy szablon mówi sześć. Na telefonie było to zwykłe polecenie do
+       * wykonania i tak też zostało odczytane: „mam robić jedną serię".
+       */
+      const szablon = progresjaSlotu(slot.lp, tydzien);
+
+      const serie = p.serie ?? szablon.serie!;
       const efektywne = serieEfektywne(
         serie, cwiczenie.jednostronne, plan.liczenieJednostronnych ?? "jak w arkuszu",
       );
-      const rpe = p.rpe ?? 8;
+      const rpe = p.rpe ?? szablon.rpe!;
       const powtorzenia =
         p.powtorzenia ??
-        (bojGlowny
-          ? 6
-          : powtorzeniaAkcesorium({
-              coeff: cwiczenie.coeff,
-              czesc: plan.czescPlanu,
-              tydzien,
-              korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
-            }));
+        szablon.powtorzenia ??
+        powtorzeniaAkcesorium({
+          coeff: cwiczenie.coeff,
+          czesc: plan.czescPlanu,
+          tydzien,
+          korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
+        });
 
       const zmienione = p.cwiczenieIdOverride !== undefined && p.cwiczenieIdOverride !== slot.cwiczenieId;
       const oneRM = rozwiaz1RM(cwiczenie.id, plan.serieMaksymalne);
