@@ -194,13 +194,18 @@ docker compose up -d --build
 
 Dane zostają — leżą na osobnym woluminie, nie w obrazie.
 
-**Aktualizacje same, raz na dobę**
+**Aktualizacje same, co kwadrans**
 
 Powyższe trzeba pamiętać i wpisać. Poniższe ustawia się raz:
 
 ```bash
-(crontab -l 2>/dev/null; echo "30 4 * * * $HOME/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh") | crontab -
+(crontab -l 2>/dev/null; echo "*/15 * * * * $HOME/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh") | crontab -
 ```
+
+Co kwadrans, a nie raz na dobę, bo poprawka zgłoszona w poniedziałek ma wejść
+w poniedziałek. Sprawdzenie jest tanie: jedno zapytanie do GitHuba o numer
+najnowszej wersji. Przebudowa — ta kosztowna — dzieje się wyłącznie wtedy, gdy
+faktycznie coś przyszło, czyli kilka razy w tygodniu, nie 96 razy dziennie.
 
 Skrypt sprawdza, czy jest nowa wersja; jeśli nie ma, kończy bez robienia
 czegokolwiek. Jeśli jest — **najpierw robi kopię bazy**, i dopiero wtedy
