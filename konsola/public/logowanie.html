@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Konsola trenera — logowanie</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="ekran-logowania">
+  <form id="form-logowania" class="karta">
+    <h1>Konsola trenera</h1>
+    <p class="wskazowka">Plany klientów. Zaloguj się, żeby wejść.</p>
+
+    <label>E-mail
+      <input name="email" type="email" required autocomplete="username" autofocus>
+    </label>
+    <label>Hasło
+      <input name="haslo" type="password" required autocomplete="current-password">
+    </label>
+
+    <p id="blad-logowania" class="wskazowka ostrzezenie ukryty"></p>
+    <button type="submit" class="glowny szeroki">Zaloguj</button>
+  </form>
+</div>
+
+<script type="module">
+  const form = document.querySelector("#form-logowania");
+  const blad = document.querySelector("#blad-logowania");
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    blad.classList.add("ukryty");
+    const dane = Object.fromEntries(new FormData(form));
+    const przycisk = form.querySelector("button");
+    przycisk.disabled = true;
+    try {
+      const odp = await fetch("/api/logowanie", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(dane),
+      });
+      if (!odp.ok) throw new Error((await odp.json()).blad ?? "Nie udało się zalogować.");
+      location.href = "/";
+    } catch (err) {
+      blad.textContent = err.message;
+      blad.classList.remove("ukryty");
+      form.querySelector('[name="haslo"]').value = "";
+    } finally {
+      przycisk.disabled = false;
+    }
+  };
+</script>
+</body>
+</html>
