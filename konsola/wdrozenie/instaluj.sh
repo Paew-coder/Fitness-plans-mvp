@@ -61,13 +61,27 @@ docker compose up -d --build
 echo "kontenery wstały"
 
 krok "5/5  Automat aktualizacji"
+#
+# Ten krok nie może położyć całej instalacji. Na świeżym obrazie chmurowym
+# `cron` bywa niezainstalowany albo wyłączony, a wtedy `set -e` przerywał
+# skrypt tutaj — po postawieniu działającej konsoli, tuż przed wypisaniem, co
+# robić dalej. Trener widział wtedy urwane wyjście i nie miał skąd wiedzieć,
+# że aplikacja już stoi. Automat jest wygodą; konsola działa bez niego.
+set +e
 WPIS="*/15 * * * * $KATALOG/konsola/wdrozenie/aktualizuj-serwer.sh"
-if crontab -l 2>/dev/null | grep -qF "aktualizuj-serwer.sh"; then
+command -v crontab > /dev/null 2>&1 || apt-get install -y --no-install-recommends cron > /dev/null 2>&1
+systemctl enable --now cron > /dev/null 2>&1
+
+if ! command -v crontab > /dev/null 2>&1; then
+  echo "nie udało się — brak polecenia crontab; aktualizacje trzeba będzie uruchamiać ręcznie"
+elif crontab -l 2>/dev/null | grep -qF "aktualizuj-serwer.sh"; then
   echo "już ustawiony"
-else
-  (crontab -l 2>/dev/null; echo "$WPIS") | crontab -
+elif (crontab -l 2>/dev/null; echo "$WPIS") | crontab -; then
   echo "co kwadrans sprawdzana jest nowa wersja"
+else
+  echo "nie udało się dopisać zadania do crona — aktualizacje trzeba będzie uruchamiać ręcznie"
 fi
+set -e
 
 cat <<KONIEC
 
