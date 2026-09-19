@@ -194,6 +194,35 @@ docker compose up -d --build
 
 Dane zostają — leżą na osobnym woluminie, nie w obrazie.
 
+**Aktualizacje same, raz na dobę**
+
+Powyższe trzeba pamiętać i wpisać. Poniższe ustawia się raz:
+
+```bash
+(crontab -l 2>/dev/null; echo "30 4 * * * $HOME/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh") | crontab -
+```
+
+Skrypt sprawdza, czy jest nowa wersja; jeśli nie ma, kończy bez robienia
+czegokolwiek. Jeśli jest — **najpierw robi kopię bazy**, i dopiero wtedy
+pobiera kod i przebudowuje. Nieudana kopia przerywa całość: lepiej zostać na
+starej wersji niż aktualizować bez możliwości cofnięcia.
+
+Każdy przebieg dopisuje się do `~/Fitness-plans-mvp/aktualizacja.log` razem
+z powodem, dla którego się skończył:
+
+```bash
+tail -20 ~/Fitness-plans-mvp/aktualizacja.log
+```
+
+Żeby pobrać zmiany od razu, nie czekając do rana:
+
+```bash
+~/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh
+```
+
+To jest cała różnica między serwerem a konsolą na laptopie: tam każda poprawka
+znaczy pobranie paczki i przeniesienie danych, tutaj — nic.
+
 **Kopie zapasowe**
 
 Robią się same, raz na dobę, i trzymają 30 ostatnich. Ale kopia na tym samym
