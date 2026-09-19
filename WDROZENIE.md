@@ -23,6 +23,26 @@ konsola jest lekka, a baza to jeden plik.
 
 ---
 
+## Szybka droga — jedna komenda
+
+Kroki 3–6 poniżej są opisane po to, żeby było wiadomo, co się dzieje. Jeśli
+nie chcesz wiedzieć, tylko mieć — po zalogowaniu na serwer wklej to:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Paew-coder/Fitness-plans-mvp/claude/craftmyplan-training-app-hokugh/konsola/wdrozenie/instaluj.sh | bash -s -- twojadomena.pl twoj@email.pl
+```
+
+Zainstaluje Dockera, pobierze kod, zapisze konfigurację, uruchomi konsolę
+i ustawi automat aktualizacji. Zostanie jedno — hasło, o które trzeba zapytać
+osobno, bo wpisuje się je z klawiatury (Krok 7).
+
+Da się ją powtórzyć na działającej instalacji: pobiera wtedy zmiany
+i przebudowuje, zamiast zakładać wszystko od nowa. Danych nie dotyka.
+
+Kroki 1 i 2 — serwer, domena i zalogowanie — i tak trzeba zrobić samemu.
+
+---
+
 ## Krok 1 — serwer i domena
 
 1. Wykup VPS. Wybierz **Ubuntu 24.04**. Dostaniesz adres IP i hasło do konta
