@@ -18,11 +18,12 @@
 import type { Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
 import type { Tydzien } from "./typy.ts";
+import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { progresjaSlotu } from "./szablon-boju.ts";
 
 export {
   PROGRESJA_BOJU, SERIE_AKCESORIUM, RPE_AKCESORIUM,
-  LP_PODWYZSZONE, drugiBlok, progresjaSlotu,
+  LP_PODWYZSZONE, drugiBlok, progresjaSlotu, pozycjaBoju, jestBojemGlownym,
 } from "./szablon-boju.ts";
 
 /**
@@ -33,17 +34,20 @@ export {
  * nadpisane ciężary zostają nietknięte — należą do wykonanego treningu,
  * a nie do szkieletu planu.
  */
-export function zastosujProgresje(plan: Plan): Plan {
+export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny): Plan {
   return {
     ...plan,
     sloty: plan.sloty.map((slot): SlotPlanu => {
       if (!slot.cwiczenieId) return { ...slot };
 
+      // Szablon boju należy się ćwiczeniu złożonemu, nie miejscu w tabeli —
+      // dlatego progresja musi wiedzieć, co w tym slocie stoi.
+      const coeff = katalog.poId(slot.cwiczenieId)?.coeff;
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
         const { feedback, ciezarOverride } = tygodnie[t] ?? {};
         tygodnie[t] = {
-          ...progresjaSlotu(slot.lp, t),
+          ...progresjaSlotu(slot.lp, t, coeff),
           ...(feedback !== undefined ? { feedback } : {}),
           ...(ciezarOverride !== undefined ? { ciezarOverride } : {}),
         };

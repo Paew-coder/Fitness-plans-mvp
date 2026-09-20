@@ -1,5 +1,6 @@
 import type { Uwaga } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
+import { pozycjaBoju } from "./szablon-boju.ts";
 import { konfliktSeriiMaksymalnych } from "./rpe.ts";
 import { POWT_MAX } from "./rpe.ts";
 import type { Plan, PlanWyliczony } from "./plan.ts";
@@ -29,6 +30,25 @@ export function sprawdzPlan(
     String(plan.serieMaksymalne.length),
   ]);
   dodaj("DNI_TRENINGOWE", "info", "Dni treningowe w planie", [String(wynik.dniTreningowe)]);
+
+  /*
+   * W pozycji A stoi coś, co nie jest bojem głównym.
+   *
+   * Aplikacja liczy to wtedy jak akcesorium — 3 serie, powtórzenia z coeff,
+   * RPE 8 — i nie daje TOP SETU. To jest właściwe zachowanie, ale byłoby
+   * ciche: trener widzi ćwiczenie na pierwszym miejscu dnia i ma prawo
+   * zakładać, że prowadzi blok. Mówimy więc wprost, że nie prowadzi.
+   *
+   * Bojem głównym jest ćwiczenie z coeff 1,0 — w BAZIE ma je dokładnie
+   * dziewiętnaście pozycji złożonych.
+   */
+  const pozycjaANieZlozona = zCwiczeniem
+    .filter((s) => pozycjaBoju(s.lp) && s.cwiczenie!.coeff !== 1)
+    .map((s) => `${s.positionId} ${s.cwiczenie!.nazwa}`);
+  dodaj("POZYCJA_A_BEZ_BOJU", "ostrzezenie",
+    "Na pierwszym miejscu dnia stoi ćwiczenie, które nie jest złożone — "
+    + "liczy się jak akcesorium i nie ma TOP SETU",
+    pozycjaANieZlozona);
 
   // Ciężar wpisany ręcznie nie reaguje ani na 1RM, ani na oceny klienta.
   // W tabeli widać go przy konkretnym tygodniu, ale trener patrzy zwykle na

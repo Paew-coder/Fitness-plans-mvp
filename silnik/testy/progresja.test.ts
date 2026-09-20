@@ -70,7 +70,21 @@ describe("progresja — liczby zgodne z szablonem 5.18", () => {
 
   test("akcesorium nie dostaje powtórzeń — liczy je automat", () => {
     assert.equal(progresjaSlotu("C1.", 2).powtorzenia, undefined);
-    assert.equal(progresjaSlotu("A1.", 2).powtorzenia, 6);
+    assert.equal(progresjaSlotu("A1.", 2, 1).powtorzenia, 6);
+  });
+
+  test("bojem głównym jest ćwiczenie złożone, nie samo miejsce w tabeli", () => {
+    /*
+     * Zgłoszone z używania: „SLDL balance" wstawiony jako pierwszy w dniu
+     * dostawał progresję bloku i TOP SET. W BAZIE ma coeff 0,25 i progresję
+     * „ręczne ustawienie" — 6 serii po 6 powtórzeń na RPE 6,5 jest dla niego
+     * poleceniem bez sensu. Arkusz rozstrzygał miejscem w tabeli, bo trener
+     * po prostu nie wstawiał tam takich rzeczy; aplikacja pozwala, więc musi
+     * patrzeć na ćwiczenie.
+     */
+    assert.deepEqual(progresjaSlotu("A1.", 1, 1), { serie: 6, powtorzenia: 6, rpe: 6.5 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, 0.25), { serie: 3, rpe: 8 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, 0.75), { serie: 3, rpe: 8 });
   });
 });
 

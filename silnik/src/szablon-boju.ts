@@ -19,7 +19,7 @@
  * otwiera drugi blok.
  */
 import type { ParametryTygodnia } from "./plan.ts";
-import type { Tydzien } from "./typy.ts";
+import type { Coeff, Tydzien } from "./typy.ts";
 
 export const PROGRESJA_BOJU: readonly { serie: number; powtorzenia: number; rpe: number }[] = [
   { serie: 6, powtorzenia: 6, rpe: 6.5 },   // T1
@@ -47,9 +47,27 @@ export function drugiBlok(tydzien: Tydzien): boolean {
   return tydzien >= 4;
 }
 
-/** Bojem głównym jest pozycja A — tak numeruje je arkusz. */
-export function jestBojemGlownym(lp: string): boolean {
+/** Pozycja A — miejsce boju głównego w numeracji arkusza. */
+export function pozycjaBoju(lp: string): boolean {
   return lp.trim().toUpperCase().startsWith("A");
+}
+
+/**
+ * Bój główny: pozycja A **i** ćwiczenie złożone.
+ *
+ * Sama pozycja nie wystarcza i to jest tu sedno. Arkusz rozstrzygał o tym
+ * miejscem w tabeli, bo trener wypełniał go ręcznie i po prostu nie wstawiał
+ * w A1 ćwiczenia balansowego. Aplikacja pozwala wstawić tam cokolwiek —
+ * i wstawiała: „SLDL balance" w A1 dostawał progresję bloku (6×6 na RPE 6,5)
+ * i TOP SET na jedno powtórzenie. Dla ćwiczenia, które w BAZIE ma coeff 0,25
+ * i progresję „ręczne ustawienie", jest to polecenie bez sensu.
+ *
+ * Rozstrzyga `coeff` z BAZY, bo tam ta wiedza już jest: **1,0 mają dokładnie
+ * te dziewiętnaście ćwiczeń złożonych** — przysiady, martwe ciągi, wyciskania
+ * ze sztangą, podciąganie z obciążeniem, dipy, clean. Nic innego.
+ */
+export function jestBojemGlownym(lp: string, coeff?: Coeff): boolean {
+  return pozycjaBoju(lp) && coeff === 1;
 }
 
 /**
@@ -63,8 +81,8 @@ export function jestBojemGlownym(lp: string): boolean {
  * bo niczym innym nie są — to jedyne miejsce, w którym wychodzimy poza
  * dosłowną treść arkusza, i dlatego stoi to tu napisane.
  */
-export function progresjaSlotu(lp: string, tydzien: Tydzien): ParametryTygodnia {
-  if (jestBojemGlownym(lp)) {
+export function progresjaSlotu(lp: string, tydzien: Tydzien, coeff?: Coeff): ParametryTygodnia {
+  if (jestBojemGlownym(lp, coeff)) {
     const p = PROGRESJA_BOJU[tydzien - 1]!;
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }

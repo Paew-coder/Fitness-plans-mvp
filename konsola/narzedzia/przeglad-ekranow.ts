@@ -174,6 +174,14 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("strzałka przenosi ćwiczenie", kolejnosc[0] === "EX-0016", kolejnosc.join(" → "));
 
   // ── 7. progresja z szablonu i kopiowanie tygodnia ─────────────────
+  //
+  // A1 musi trzymać ćwiczenie ZŁOŻONE, bo od tego zależy, czy dostanie
+  // progresję bloku. Po przestawianiu wierszy w poprzedniej sekcji stoi tam
+  // akcesorium — a akcesorium na pierwszym miejscu dnia bojem głównym nie jest
+  // i nie ma być.
+  await wiersz(0).locator("td.cwiczenie select").selectOption({ label: "Barbell bench press" });
+  await zapisano();
+
   pytania.length = 0;
   await s.click("#progresja-szablonu");
   await s.waitForTimeout(800);
@@ -192,6 +200,10 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     bojA1?.["1"]?.serie === 6 && bojA1["1"].powtorzenia === 6 && bojA1["1"].rpe === 6.5
     && bojA1["6"].serie === 6 && bojA1["6"].powtorzenia === 3,
     `T1 ${bojA1?.["1"]?.serie}×${bojA1?.["1"]?.powtorzenia}@${bojA1?.["1"]?.rpe} · T6 ${bojA1?.["6"]?.serie}×${bojA1?.["6"]?.powtorzenia}@${bojA1?.["6"]?.rpe}`);
+
+  // I z powrotem to, co tu stało — dalsze sekcje liczą na ten sam plan.
+  await wiersz(0).locator("td.cwiczenie select").selectOption({ label: "Barbell row" });
+  await zapisano();
 
   // ── 8. podmiana ćwiczenia w slocie z przerobionymi treningami ─────
   // Zmiana ćwiczenia przepisywała cały cykl — razem z tygodniami, które klient
@@ -426,6 +438,48 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("i nie dotyka pozostałych ćwiczeń",
     JSON.stringify(poKopii.zapisany.plan.sloty
       .find((x: any) => x.positionId === "D1-S02")?.tygodnie) === sasiadPrzed);
+
+  // ── 13c. akcesorium na pierwszym miejscu dnia ─────────────────────
+  //
+  // Zgłoszone z używania: „SLDL balance" wstawiony jako pierwszy w dniu
+  // dostawał progresję boju (6×6 na RPE 6,5) i TOP SET na jedno powtórzenie.
+  // W BAZIE ma coeff 0,25 — to polecenie, którego nie da się wykonać sensownie.
+  // Bojem głównym jest ćwiczenie złożone, nie miejsce w tabeli.
+  //
+  // Na osobnym planie, żeby nie ruszać tego, na którym stoi reszta przeglądu.
+  await api("/api/plany", "POST", { klient: "Akcesorium w A1", wersja: 1 });
+  const PLAN_AKC = "akcesorium-w-a1-1";
+  const wAkc = await (await fetch(`${ADRES}/api/plany/${PLAN_AKC}`)).json();
+  wAkc.zapisany.plan.sloty[0].cwiczenieId = "EX-0183";   // SLDL balance, coeff 0,25
+  await fetch(`${ADRES}/api/plany/${PLAN_AKC}`, {
+    method: "PUT", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      plan: wAkc.zapisany.plan, dataStartu: null, status: "szkic",
+      zmieniony: wAkc.zapisany.zmieniony,
+    }),
+  });
+  const zAkcesorium = await (await fetch(`${ADRES}/api/plany/${PLAN_AKC}`)).json();
+  const a1Akc = zAkcesorium.wynik.tygodnie[0].sloty.find((x: any) => x.lp === "A1." && x.cwiczenie);
+
+  sprawdz("akcesorium w A1 liczy się jak akcesorium, nie jak bój główny",
+    a1Akc?.serie === 3 && a1Akc?.rpe === 8,
+    `${a1Akc?.serie} × ${a1Akc?.powtorzenia} @ RPE ${a1Akc?.rpe}`);
+
+  const topAkc = zAkcesorium.wynik.tygodnie[0].topSety.find((t: any) => t.dzien === 1);
+  sprawdz("i nie dostaje TOP SETU", !topAkc?.cwiczenie, topAkc?.cwiczenie?.nazwa ?? "brak");
+
+  sprawdz("a kontrola planu mówi o tym wprost",
+    zAkcesorium.uwagi.some((u: any) => u.kod === "POZYCJA_A_BEZ_BOJU"
+      && u.pozycje.some((x: string) => x.includes("SLDL balance"))),
+    zAkcesorium.uwagi.find((u: any) => u.kod === "POZYCJA_A_BEZ_BOJU")?.pozycje.join(", ") ?? "brak uwagi");
+
+  // Sprzątamy po sobie: dalsze sekcje liczą kartoteki na liście.
+  await fetch(`${ADRES}/api/plany/${PLAN_AKC}`, { method: "DELETE" });
+  const doUsuniecia = (await (await fetch(`${ADRES}/api/klienci`)).json())
+    .find((k: any) => k.nazwa === "Akcesorium w A1");
+  if (doUsuniecia) {
+    await fetch(`${ADRES}/api/klienci/${doUsuniecia.id}`, { method: "DELETE" });
+  }
 
   // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
