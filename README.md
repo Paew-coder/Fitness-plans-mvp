@@ -371,10 +371,12 @@ się nie pamięta.
 
 ## Poprawki do arkusza
 
-[`arkusz/`](arkusz/README.md) robi z 5.17 plik **5.18** z trzema poprawkami:
-TOP SET czytający bój główny zamiast pierwszego slotu, plus dwie brakujące formuły
-(`START!B7` i `T1!G8`), które wyszły przy testowaniu. Oryginał zostaje nietknięty,
-każda poprawka jest do pominięcia osobno.
+[`arkusz/`](arkusz/README.md) robi z 5.17 plik **5.18** z czterema poprawkami:
+TOP SET czytający bój główny zamiast pierwszego slotu, dwie brakujące formuły
+(`START!B7` i `T1!G8`), które wyszły przy testowaniu, oraz pusty RPE znaczący
+„w tym tygodniu TOP SETU nie ma" — bez tego wyczyszczona komórka dawała TOP SET
+na 0 kg zamiast pustego wiersza. Oryginał zostaje nietknięty, każda poprawka
+jest do pominięcia osobno.
 
 ## Jak to jest sprawdzane
 
