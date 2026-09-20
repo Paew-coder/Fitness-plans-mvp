@@ -21,6 +21,15 @@ METODA
 
 UZYCIE
     python3 arkusz/napraw-topset.py MasterTemplate517.xlsx MasterTemplate518.xlsx
+
+    Cztery poprawki, kazda do pominiecia osobno:
+      1. TOP SET czyta boj glowny, nie pierwszy slot  (cel skryptu)
+      2. brakujaca formula START!B7                   --bez-startu
+      3. brakujaca formula ciezaru T1!G8              --bez-ciezarow
+      4. pusty RPE = brak TOP SETU w tym tygodniu     --bez-pustego-rpe
+
+    Poprawke 4 mozna dolozyc do gotowego pliku 5.18:
+      python3 arkusz/napraw-topset.py 518.xlsx 518-nowy.xlsx --tylko-puste-rpe
 """
 import re, shutil, sys, zipfile
 from pathlib import Path
@@ -212,6 +221,83 @@ def napraw_arkusz(xml: str, nazwa: str, zmiany: list) -> str:
     return xml
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# POPRAWKA 4 — pusty RPE znaczy „w tym tygodniu TOP SETU nie ma"
+# ─────────────────────────────────────────────────────────────────────────
+#
+# Przelacznik TOP SETU (kolumna B) stoi w T1, a pozostale tygodnie go lustrza —
+# jest wiec jeden na caly cykl. RPE (kolumna F) ma za to kazdy tydzien wlasne
+# i tam wlasnie jest zapisana rampa: 6 -> 6,5 -> 7 -> 7,5 -> 8.
+#
+# Brakowalo jednego: sposobu na powiedzenie „w TYM tygodniu TOP SETU nie ma".
+# A tak wlasnie wygladaja szablony trenera — pierwszy tydzien idzie bez TOP SETU,
+# wchodzi on dopiero w drugim. W ukladzie 5.17/5.18 nie dalo sie tego zapisac:
+# wyczyszczenie F daje MATCH bez trafienia, IFERROR zwraca 0, a MROUND z zera
+# to **0 kg** — czyli zamiast „nie ma" klient dostaje polecenie „podnies 0 kg".
+#
+# Po poprawce puste F znaczy dokladnie to, co powinno znaczyc: caly wiersz
+# TOP SET jest pusty. Podsumowanie dnia (D19) juz dzis liczy TOP SET tylko
+# przy niepustym C, wiec samo przestaje go doliczac.
+
+def _warianty_cudzyslowu(wzorzec: str) -> list[str]:
+    """Ta sama formula w dwoch zapisach — z encja &quot; i z golym cudzyslowem."""
+    return [wzorzec.replace("{Q}", "&quot;"), wzorzec.replace("{Q}", '"')]
+
+
+def _podmien_w_komorce(xml: str, adres: str, pary: list[tuple[str, str]],
+                       zmiany: list) -> str:
+    """
+    Podmienia fragment formuly w komorce, probujac obu zapisow cudzyslowu.
+    Gdy zadnego wzorca nie ma, zostawia komorke bez zmian i zwraca xml —
+    poprawka ma byc idempotentna, zeby dalo sie ja puscic na pliku 5.18.
+    """
+    m = re.search(rf'(<c r="{adres}"[^>]*>)(.*?)(</c>)', xml, re.S)
+    if not m:
+        raise SystemExit(f"BLAD: nie znalazlem komorki {adres} — przerywam.")
+    srodek = m.group(2)
+    for szukane, zamiennik in pary:
+        if zamiennik in srodek:
+            return xml                      # juz poprawione
+        if szukane in srodek:
+            nowy = srodek.replace(szukane, zamiennik)
+            nowy = re.sub(r"<v>.*?</v>", "", nowy, flags=re.S)
+            zmiany.append((adres, f"…{szukane}", f"…{zamiennik}"))
+            return xml[:m.start()] + m.group(1) + nowy + m.group(3) + xml[m.end():]
+    raise SystemExit(
+        f"BLAD: w komorce {adres} nie ma wzorca, ktory mam poprawic — przerywam.\n"
+        f"  Szukalem:  {pary[0][0]}\n"
+        f"  Zastalem:  {srodek[:160]}\n"
+        "  Te poprawke mozna pominac: --bez-pustego-rpe")
+
+
+def wylacz_topset_bez_rpe(xml: str, zmiany: list) -> str:
+    """Puste RPE w wierszu TOP SET = pusty wiersz, a nie TOP SET na 0 kg."""
+    for r in WIERSZE_TOPSET:
+        # Nazwa cwiczenia. Reszta wiersza idzie za nia: ciezar (G) sprawdza
+        # $C{r}="", a podsumowanie dnia (D19) — $C$6<>"".
+        xml = _podmien_w_komorce(xml, f"C{r}", list(zip(
+            _warianty_cudzyslowu(f"IF($B{r}&lt;&gt;{{Q}}TOP SET{{Q}},{{Q}}{{Q}},"),
+            _warianty_cudzyslowu(
+                f"IF(OR($B{r}&lt;&gt;{{Q}}TOP SET{{Q}},$F{r}={{Q}}{{Q}}),{{Q}}{{Q}},"),
+        )), zmiany)
+
+        # Liczba serii i opis powtorzen — same w sobie nie patrza na C.
+        xml = _podmien_w_komorce(xml, f"D{r}", list(zip(
+            _warianty_cudzyslowu(f"IF($B{r}={{Q}}TOP SET{{Q}},1,{{Q}}{{Q}})"),
+            _warianty_cudzyslowu(
+                f"IF(AND($B{r}={{Q}}TOP SET{{Q}},$F{r}&lt;&gt;{{Q}}{{Q}}),1,{{Q}}{{Q}})"),
+        )), zmiany)
+
+        xml = _podmien_w_komorce(xml, f"E{r}", list(zip(
+            _warianty_cudzyslowu(
+                f"IF($B{r}={{Q}}TOP SET{{Q}},{{Q}}1 powtórzenie{{Q}},{{Q}}{{Q}})"),
+            _warianty_cudzyslowu(
+                f"IF(AND($B{r}={{Q}}TOP SET{{Q}},$F{r}&lt;&gt;{{Q}}{{Q}}),"
+                f"{{Q}}1 powtórzenie{{Q}},{{Q}}{{Q}})"),
+        )), zmiany)
+    return xml
+
+
 def formula_ciezaru_slotu(r: int, pierwszy: bool) -> str:
     """Wzorzec kolumny G dla zwyklego slotu — odtworzony z sasiednich wierszy."""
     bez = BEZ_CIEZARU.format(r=r)
@@ -288,19 +374,28 @@ def main() -> None:
         czesci = {n: z.read(n) for n in z.namelist()}
         kolejnosc = z.namelist()
 
+    # --tylko-puste-rpe: sama poprawka 4, do puszczenia na gotowym pliku 5.18.
+    # Poprawki 1-3 odmawiaja pracy na pliku juz poprawionym (i slusznie), wiec
+    # bez tej flagi nie dalo by sie dolozyc czwartej do arkusza, ktory juz chodzi.
+    tylko_rpe = "--tylko-puste-rpe" in sys.argv
+
     wszystkie: dict[str, list] = {}
     zmiany_ciezarow: list = []
+    zmiany_rpe: list = []
     for nazwa, sciezka in ARKUSZE.items():
         zmiany: list = []
         xml = czesci[sciezka].decode("utf-8")
-        xml = napraw_arkusz(xml, nazwa, zmiany)
-        if "--bez-ciezarow" not in sys.argv:
-            xml = napraw_brakujace_ciezary(xml, nazwa, zmiany_ciezarow)
+        if not tylko_rpe:
+            xml = napraw_arkusz(xml, nazwa, zmiany)
+            if "--bez-ciezarow" not in sys.argv:
+                xml = napraw_brakujace_ciezary(xml, nazwa, zmiany_ciezarow)
+        if "--bez-pustego-rpe" not in sys.argv:
+            xml = wylacz_topset_bez_rpe(xml, zmiany_rpe)
         czesci[sciezka] = xml.encode("utf-8")
         wszystkie[nazwa] = zmiany
 
     zmiany_startu: list = []
-    if "--bez-startu" not in sys.argv:
+    if not tylko_rpe and "--bez-startu" not in sys.argv:
         xml = czesci[ARKUSZ_START].decode("utf-8")
         czesci[ARKUSZ_START] = napraw_start(xml, zmiany_startu).encode("utf-8")
 
@@ -349,6 +444,22 @@ def main() -> None:
         print("  Aby ja pominac, uruchom skrypt z flaga --bez-ciezarow.")
     else:
         print("  brak brakow albo pominieta")
+
+    print()
+    print("=" * 70)
+    print("POPRAWKA 4 — pusty RPE = brak TOP SETU w tym tygodniu  (OSOBNA)")
+    print("=" * 70)
+    if zmiany_rpe:
+        print(f"Zmienionych komorek: {len(zmiany_rpe)} (C, D i E w wierszach TOP SET, T1-T6)\n")
+        for adres, stara, nowa in zmiany_rpe[:3]:
+            print(f"  {adres}")
+            print(f"    bylo: {stara[:150]}")
+            print(f"    jest: {nowa[:150]}\n")
+        print("  Bez tej poprawki wyczyszczony RPE daje TOP SET na 0 kg zamiast pustego")
+        print("  wiersza — a tak wlasnie wyglada tydzien pierwszy w szablonach trenera.")
+        print("  Aby ja pominac: --bez-pustego-rpe. Aby zrobic TYLKO ja: --tylko-puste-rpe.")
+    else:
+        print("  pominieta albo plik juz ja ma")
 
 
 if __name__ == "__main__":

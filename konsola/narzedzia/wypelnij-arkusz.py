@@ -104,12 +104,23 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
                 ws.cell(row=r, column=KOL_ONE_RM_RECZNY).value = pole["one_rm_reczny"]
             licznik["tygodnie"] += 1
 
-    # --- TOP SETY: przelacznik i RPE ustawia sie w T1, reszta lustrzy ---
+    # --- TOP SETY ---
+    #
+    # Przelacznik (kolumna B) jest jeden na caly cykl: stoi w T1, a pozostale
+    # tygodnie go lustrza. RPE ma za to kazdy tydzien wlasne i tam wlasnie
+    # siedzi rampa 6 -> 6,5 -> 7 -> 7,5 -> 8. Dotad wpisywalismy RPE tylko
+    # do T1 — czyli szesc tygodni dostawalo jedna liczbe, a rampa gubila sie
+    # w drodze z konsoli do pliku.
+    #
+    # Pusta wartosc CZYSCI komorke i to jest jej sens: po poprawce 4 arkusza
+    # pusty RPE znaczy „w tym tygodniu TOP SETU nie ma" — tak wyglada tydzien
+    # pierwszy. Bez tej poprawki wyczyszczony RPE dawalby TOP SET na 0 kg,
+    # wiec plik szablonu musi byc juz poprawiony.
     for top in dane["top_sety"]:
         r = wiersz_topsetu(top["dzien"])
         t1.cell(row=r, column=KOL_PRZEL).value = "TOP SET" if top["wlaczony"] else "—"
-        if top.get("rpe") is not None:
-            t1.cell(row=r, column=KOL_RPE).value = top["rpe"]
+        for skrot, rpe in (top.get("rpe_tygodni") or {}).items():
+            wb[skrot].cell(row=r, column=KOL_RPE).value = rpe
 
     # --- serie maksymalne klienta ---
     start = wb["START"]
