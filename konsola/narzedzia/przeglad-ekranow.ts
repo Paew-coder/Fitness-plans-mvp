@@ -98,7 +98,25 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     s.locator("#dni tr").filter({ has: s.locator("td.cwiczenie select") }).nth(n);
 
   // ── 1. dobór ćwiczenia ────────────────────────────────────────────
+  //
+  // Liczba wierszy PRZED zapisem, nie po nim. Wybranie ćwiczenia zmienia układ
+  // tabeli: wiersz przestaje być pusty i pod nim ma stanąć następny wolny.
+  // Dotąd działo się to dopiero po powrocie z serwera — 350 ms dławika plus
+  // droga w obie strony. Na laptopie tego nie widać, na iPadzie przez internet
+  // trener zdążył uznać, że nic się nie stało, i szukał wiersza przełączając
+  // tygodnie tam i z powrotem. Dlatego sprawdzamy to w okienku krótszym niż
+  // sam dławik: gdyby wiersz znów czekał na serwer, ta kontrola zapali się
+  // na czerwono.
+  const wierszeZDoborem = () =>
+    s.locator("#dni tr").filter({ has: s.locator("td.cwiczenie select") }).count();
+  const przedDoborem = await wierszeZDoborem();
+
   await wiersz(0).locator("td.cwiczenie select").selectOption({ label: "Barbell back squat" });
+  await s.waitForTimeout(120);
+  const zaraz = await wierszeZDoborem();
+  sprawdz("następny wiersz pojawia się od razu, bez czekania na zapis",
+    zaraz === przedDoborem + 1, `${przedDoborem} → ${zaraz} wierszy po 120 ms`);
+
   await zapisano();
   sprawdz("wybór ćwiczenia zapisuje się",
     (await zBazy()).zapisany.plan.sloty[0].cwiczenieId === "EX-0010");

@@ -1145,6 +1145,20 @@ function rysujSlot(slot, pusty) {
     slot.cwiczenieId = wybor.value || null;
     zapytajOPodmiane(slot, poprzednie);
     zapiszPozniej();
+    /*
+     * Przerysowanie od razu, nie po powrocie z serwera.
+     *
+     * Wybranie ćwiczenia zmienia układ tabeli: wiersz przestaje być pusty
+     * i dostaje pola parametrów, a pod nim ma się pojawić następny wolny.
+     * Dotąd działo się to dopiero po zapisie — 350 ms zwłoki plus droga do
+     * serwera i z powrotem. Na laptopie w tej samej sieci nie było tego widać;
+     * na iPadzie, przez internet, trener zdążył uznać, że nic się nie stało,
+     * i szukał wiersza przełączając tygodnie tam i z powrotem.
+     *
+     * Liczby (ciężar, stres) dojdą chwilę później, razem z odpowiedzią —
+     * ale wiersz, o który chodzi, jest natychmiast.
+     */
+    rysujDni();
   };
   komorkaCwiczenia.append(wybor);
   wiersz.append(komorkaCwiczenia);
