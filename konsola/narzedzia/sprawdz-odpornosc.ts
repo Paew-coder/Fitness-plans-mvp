@@ -83,6 +83,10 @@ function proby(token: string): Proba[] {
       ["tryb nieznany", '{"tryb": "cokolwiek", "zrodlo": 1}'],
       ["tydzień spoza zakresu", '{"tryb": "kopiuj", "zrodlo": 99}'],
       ["tydzień tekstem", '{"tryb": "kopiuj", "zrodlo": "trzy"}'],
+      // Bez wskazanego ćwiczenia kopiowanie objęłoby cały plan — sześć
+      // identycznych tygodni. Ma być odmowa, nie cichy zgodny zapis.
+      ["kopiowanie bez ćwiczenia", '{"tryb": "kopiuj", "zrodlo": 1}'],
+      ["ćwiczenie spoza planu", '{"tryb": "kopiuj", "zrodlo": 1, "positionId": "D9-S99"}'],
     ]),
     ...jsonowe(`/api/plany/${PLAN}/przenies`, [
       ["slot nieznany", '{"positionId": "D9-S99", "kierunek": "gora"}'],

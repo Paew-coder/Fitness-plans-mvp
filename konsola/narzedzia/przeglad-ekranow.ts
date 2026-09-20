@@ -398,6 +398,35 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const oddech = (await zBazy()).moduly.oddech.dawka;
   sprawdz("moduł oddechu liczy dawkę", oddech !== null, oddech?.poziom ?? "brak");
 
+  // ── 13b. kopiowanie parametrów jednego ćwiczenia ──────────────────
+  //
+  // Kopiowanie obejmowało kiedyś cały plan i robiło sześć identycznych
+  // tygodni — czyli kasowało progresję jednym kliknięciem. Teraz dotyczy
+  // wskazanego ćwiczenia; ta kontrola pilnuje obu stron naraz: że wskazane
+  // się zmieniło i że sąsiad został nietknięty.
+  await s.locator('#taby-tygodni button:has-text("T1")').first().click();
+  await s.waitForTimeout(400);
+  const przedKopia = await zBazy();
+  const sasiadPrzed = JSON.stringify(
+    przedKopia.zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.tygodnie);
+
+  await wiersz(0).hover();
+  await wiersz(0).locator("td.lp button", { hasText: "»" }).click();
+  await s.waitForTimeout(900);
+
+  const poKopii = await zBazy();
+  const boj = poKopii.zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S01");
+  const szkielet = (p: any) => JSON.stringify(
+    { serie: p?.serie, powtorzenia: p?.powtorzenia, rpe: p?.rpe });
+  const takiSamWeWszystkich = [2, 3, 4, 5, 6].every((t) =>
+    szkielet(boj.tygodnie[String(t)]) === szkielet(boj.tygodnie["1"]));
+  sprawdz("kopiowanie roznosi parametry wskazanego ćwiczenia",
+    takiSamWeWszystkich, `T1 ${szkielet(boj.tygodnie["1"])} · T6 ${szkielet(boj.tygodnie["6"])}`);
+
+  sprawdz("i nie dotyka pozostałych ćwiczeń",
+    JSON.stringify(poKopii.zapisany.plan.sloty
+      .find((x: any) => x.positionId === "D1-S02")?.tygodnie) === sasiadPrzed);
+
   // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
