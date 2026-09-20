@@ -398,6 +398,109 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("część planu zapisana", ustawienia.zapisany.plan.czescPlanu === "intensywność");
   sprawdz("data startu zapisana", ustawienia.zapisany.dataStartu === "2026-09-01");
 
+  // Z powrotem na domyślny tryb — i to też ma się zapisać. Dalsze kontrole
+  // sprawdzają przestawianie POJEDYNCZEGO ćwiczenia, więc plan musi stać
+  // na czymś innym, bo inaczej nie byłoby widać żadnej różnicy.
+  await s.selectOption("#tryb-akcesoriow", "trzymaj z bloku");
+  await zapisano();
+  sprawdz("i da się wrócić do trybu domyślnego",
+    (await zBazy()).zapisany.plan.trybAkcesoriow === "trzymaj z bloku");
+
+  // ── 11b. „licz z RPE" przy jednym ćwiczeniu ───────────────────────
+  //
+  // Zgłoszone z używania: „licz z RPE wydaje mi się że nie jest przydatny bo
+  // zmienia wszystkie akcesoria naraz — zróbmy tak żeby dało się poszczególne
+  // ćwiczenia przełączyć". Przełącznik przy planie zostaje jako wartość
+  // domyślna; decyduje wiersz.
+  const ciezaryTygodni = async (positionId: string) => {
+    const { wynik } = await zBazy();
+    return wynik.tygodnie.map((t: any) =>
+      t.sloty.find((x: any) => x.positionId === positionId)?.ciezar);
+  };
+  const przedPrzestawieniem = await ciezaryTygodni("D1-S02");
+  const sasiadPrzedTrybem = await ciezaryTygodni("D1-S01");
+
+  await wiersz(1).hover();
+  await wiersz(1).locator("td.lp button", { hasText: /^R$/ }).click();
+  await zapisano();
+
+  const zTrybem = await zBazy();
+  const slotZTrybem = zTrybem.zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
+  sprawdz("tryb ciężaru zapisuje się przy tym jednym ćwiczeniu",
+    slotZTrybem?.trybCiezaru === "licz z RPE", String(slotZTrybem?.trybCiezaru));
+
+  const poPrzestawieniu = await ciezaryTygodni("D1-S02");
+  sprawdz("i naprawdę zmienia ciężary tego ćwiczenia",
+    JSON.stringify(poPrzestawieniu) !== JSON.stringify(przedPrzestawieniem),
+    `${JSON.stringify(przedPrzestawieniem)} → ${JSON.stringify(poPrzestawieniu)}`);
+  sprawdz("a pozostałe ćwiczenia zostają nietknięte",
+    JSON.stringify(await ciezaryTygodni("D1-S01")) === JSON.stringify(sasiadPrzedTrybem));
+  sprawdz("przy Lp. widać znacznik RPE",
+    await wiersz(1).locator(".znacznik-tryb").isVisible().catch(() => false));
+
+  await wiersz(1).hover();
+  await wiersz(1).locator("td.lp button", { hasText: /^R$/ }).click();
+  await zapisano();
+  const poCofnieciu = await zBazy();
+  sprawdz("ponowne kliknięcie wraca do trybu z planu",
+    poCofnieciu.zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.trybCiezaru == null
+    && JSON.stringify(await ciezaryTygodni("D1-S02")) === JSON.stringify(przedPrzestawieniem));
+
+  // ── 11c. progresja boju w cz.1 i w cz.2 ───────────────────────────
+  //
+  // Odczytane z arkuszy trenera „Szablon 3 dni, 3 złożone cz.1 / cz.2",
+  // Day I. Do tej pory aplikacja znała tylko cz.1, więc drugi cykl klienta
+  // wychodził z liczbami pierwszego — te same 6×6 na RPE 6,5, mimo że klient
+  // ma za sobą sześć tygodni i wyższy 1RM.
+  //
+  // Na osobnym planie, żeby nie ruszać tego, na którym stoi reszta przeglądu.
+  await api("/api/plany", "POST", { klient: "Kontynuacja cyklu", wersja: 1 });
+  const PLAN_KONT = "kontynuacja-cyklu-1";
+  const wKont = await (await fetch(`${ADRES}/api/plany/${PLAN_KONT}`)).json();
+  wKont.zapisany.plan.sloty[0].cwiczenieId = "EX-0011";   // Barbell bench press
+  wKont.zapisany.plan.serieMaksymalne = [
+    { cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
+  ];
+  const zapiszKont = async (plan: any) => {
+    const teraz = await (await fetch(`${ADRES}/api/plany/${PLAN_KONT}`)).json();
+    await fetch(`${ADRES}/api/plany/${PLAN_KONT}`, {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        plan, dataStartu: null, status: "szkic", zmieniony: teraz.zapisany.zmieniony,
+      }),
+    });
+    return await (await fetch(`${ADRES}/api/plany/${PLAN_KONT}`)).json();
+  };
+  const schematBoju = (o: any) => o.wynik.tygodnie.map((t: any) => {
+    const b = t.sloty.find((x: any) => x.lp === "A1." && x.cwiczenie);
+    return `${b.serie}×${b.powtorzenia}@${b.rpe}`;
+  }).join(" ");
+
+  const naObjetosc = await zapiszKont(wKont.zapisany.plan);
+  sprawdz("cz.1: bój idzie od 6×6 do 6×3",
+    schematBoju(naObjetosc) === "6×6@6.5 5×6@7 5×5@7 4×5@7.5 5×4@7.5 6×3@7.5",
+    schematBoju(naObjetosc));
+
+  const naIntensywnosc = await zapiszKont(
+    { ...naObjetosc.zapisany.plan, czescPlanu: "intensywność" });
+  sprawdz("cz.2: bój idzie od 6×4 do 6×2",
+    schematBoju(naIntensywnosc) === "6×4@7 6×4@7 5×4@7.5 5×3@7.5 5×3@8 6×2@8",
+    schematBoju(naIntensywnosc));
+
+  const ciezarT6 = (o: any) => o.wynik.tygodnie[5].sloty
+    .find((x: any) => x.lp === "A1." && x.cwiczenie).ciezar;
+  sprawdz("i kontynuacja kończy się na cięższej sztandze",
+    ciezarT6(naIntensywnosc) > ciezarT6(naObjetosc),
+    `cz.1 ${ciezarT6(naObjetosc)} kg → cz.2 ${ciezarT6(naIntensywnosc)} kg`);
+
+  // Sprzątamy po sobie: dalsze sekcje liczą kartoteki na liście.
+  await fetch(`${ADRES}/api/plany/${PLAN_KONT}`, { method: "DELETE" });
+  const kontDoUsuniecia = (await (await fetch(`${ADRES}/api/klienci`)).json())
+    .find((k: any) => k.nazwa === "Kontynuacja cyklu");
+  if (kontDoUsuniecia) {
+    await fetch(`${ADRES}/api/klienci/${kontDoUsuniecia.id}`, { method: "DELETE" });
+  }
+
   // ── 12. TOP SET przy dowolnym ćwiczeniu ───────────────────────────
   //
   // Prośba wprost z używania: „możliwość kliknięcia obojętnie którego

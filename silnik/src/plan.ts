@@ -53,6 +53,14 @@ export type SlotPlanu = {
   cwiczenieId: string | null;
   kategoriaSzkieletu?: Kategoria | null;
   tygodnie?: Partial<Record<Tydzien, ParametryTygodnia>>;
+  /**
+   * Tryb liczenia ciężaru dla tego jednego ćwiczenia. Pusto = jak w planie.
+   *
+   * Przełącznik przy planie zmieniał wszystkie akcesoria naraz i przez to był
+   * bezużyteczny: trener chce, żeby jednemu ćwiczeniu ciężar schodził razem
+   * z rosnącymi powtórzeniami, a reszcie nie. Tu decyduje wiersz.
+   */
+  trybCiezaru?: TrybAkcesoriow;
 };
 
 export type TopSet = {
@@ -192,7 +200,9 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
        * gdy szablon mówi sześć. Na telefonie było to zwykłe polecenie do
        * wykonania i tak też zostało odczytane: „mam robić jedną serię".
        */
-      const szablon = progresjaSlotu(slot.lp, tydzien, cwiczenie.coeff);
+      // Część planu rozstrzyga nie tylko o powtórzeniach akcesoriów, ale też
+      // o progresji boju: „objętość" to cz.1 trenera, „intensywność" — cz.2.
+      const szablon = progresjaSlotu(slot.lp, tydzien, cwiczenie.coeff, plan.czescPlanu);
 
       const serie = p.serie ?? szablon.serie!;
       const efektywne = serieEfektywne(
@@ -220,7 +230,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       const policzony = obliczCiezar({
         tydzien,
         jestBojemGlownym: bojGlowny,
-        trybAkcesoriow: plan.trybAkcesoriow,
+        trybAkcesoriow: slot.trybCiezaru ?? plan.trybAkcesoriow,
         powtorzenia,
         rpe,
         skokKg: cwiczenie.skokKg,

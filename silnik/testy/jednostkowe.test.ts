@@ -501,6 +501,77 @@ describe("przeliczenie planu i walidacja", () => {
     assert.equal(zTopSetem.serie - bezTopSetu.serie, 1);
   });
 
+  /*
+   * Tryb liczenia ciężaru przy jednym ćwiczeniu.
+   *
+   * Przełącznik przy planie obejmował wszystkie akcesoria naraz i dlatego był
+   * bezużyteczny — trener: „licz z RPE wydaje mi się że nie jest przydatny bo
+   * zmienia wszystkie akcesoria naraz". Teraz decyduje wiersz, a plan daje
+   * tylko wartość domyślną.
+   */
+  function planZDwomaAkcesoriami(): Plan {
+    const plan = planTestowy();
+    plan.serieMaksymalne = [
+      ...plan.serieMaksymalne,
+      { cwiczenieId: "EX-0042", ciezar: 100, powtorzenia: 1 },   // Cable row, coeff 0,5
+      { cwiczenieId: "EX-0003", ciezar: 100, powtorzenia: 1 },   // Allah, coeff 0,5
+    ];
+    plan.sloty = [
+      plan.sloty[0]!,
+      { ...plan.sloty[1]!, cwiczenieId: "EX-0042" },
+      { positionId: "D1-S03", dzien: 1, lp: "B2.", cwiczenieId: "EX-0003" },
+    ];
+    return plan;
+  }
+
+  test("pojedyncze ćwiczenie da się przestawić na 'licz z RPE'", () => {
+    const plan = planZDwomaAkcesoriami();
+    plan.sloty = plan.sloty.map((s) =>
+      s.positionId === "D1-S02" ? { ...s, trybCiezaru: "licz z RPE" as const } : s);
+
+    const w = przeliczPlan(plan);
+    const ciezary = (positionId: string) => w.tygodnie.map((t) =>
+      t.sloty.find((s) => s.positionId === positionId)!.ciezar);
+
+    // Przestawione: powtórzeń przybywa przy tym samym RPE, więc ciężar schodzi.
+    assert.deepEqual(ciezary("D1-S02"), [67.5, 65, 62.5, 72.5, 67.5, 67.5]);
+    // Sąsiad w tym samym dniu zostaje przy trybie planu — sztanga stoi.
+    assert.deepEqual(ciezary("D1-S03"), [67.5, 67.5, 67.5, 72.5, 72.5, 72.5]);
+  });
+
+  test("bez pola ćwiczenie idzie trybem planu — w obie strony", () => {
+    const plan = planZDwomaAkcesoriami();
+    const wBloku = przeliczPlan(plan).tygodnie[1]!.sloty
+      .find((s) => s.positionId === "D1-S02")!.ciezar;
+    const zRPE = przeliczPlan({ ...plan, trybAkcesoriow: "licz z RPE" }).tygodnie[1]!.sloty
+      .find((s) => s.positionId === "D1-S02")!.ciezar;
+    assert.equal(wBloku, 67.5);
+    assert.equal(zRPE, 65);
+  });
+
+  test("ustawienie przy wierszu wygrywa z ustawieniem planu", () => {
+    const plan = planZDwomaAkcesoriami();
+    plan.trybAkcesoriow = "licz z RPE";
+    plan.sloty = plan.sloty.map((s) =>
+      s.positionId === "D1-S02" ? { ...s, trybCiezaru: "trzymaj z bloku" as const } : s);
+    const w = przeliczPlan(plan);
+    assert.equal(w.tygodnie[1]!.sloty.find((s) => s.positionId === "D1-S02")!.ciezar, 67.5,
+      "wiersz trzyma z bloku mimo planu na RPE");
+    assert.equal(w.tygodnie[1]!.sloty.find((s) => s.positionId === "D1-S03")!.ciezar, 65,
+      "sąsiad idzie za planem");
+  });
+
+  test("bój główny nie słucha tego przełącznika — zawsze liczy z RPE", () => {
+    const plan = planZDwomaAkcesoriami();
+    plan.sloty = plan.sloty.map((s) =>
+      s.positionId === "D1-S01" ? { ...s, trybCiezaru: "trzymaj z bloku" as const } : s);
+    const zPolem = przeliczPlan(plan).tygodnie.map((t) =>
+      t.sloty.find((s) => s.positionId === "D1-S01")!.ciezar);
+    const bezPola = przeliczPlan(planZDwomaAkcesoriami()).tygodnie.map((t) =>
+      t.sloty.find((s) => s.positionId === "D1-S01")!.ciezar);
+    assert.deepEqual(zPolem, bezPola);
+  });
+
   test("nadpisanie ciężaru jest jawne i cofalne", () => {
     const plan = planTestowy();
     plan.sloty[0]!.tygodnie![1]!.ciezarOverride = 999;

@@ -58,6 +58,10 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (slot.tygodnie != null && !jestObiektem(slot.tygodnie)) {
       return `${gdzie}: tygodnie muszą być obiektem`;
     }
+    // Tryb liczenia ciężaru dla tego jednego ćwiczenia; pusto = jak w planie.
+    if (slot.trybCiezaru != null && !TRYBY_AKCESORIOW.includes(slot.trybCiezaru as never)) {
+      return `${gdzie}: tryb ciężaru musi być jednym z: ${TRYBY_AKCESORIOW.join(", ")}`;
+    }
     for (const [tydzien, parametry] of Object.entries(slot.tygodnie ?? {})) {
       if (!jestObiektem(parametry)) {
         return `${gdzie}, tydzień ${tydzien}: parametry muszą być obiektem`;

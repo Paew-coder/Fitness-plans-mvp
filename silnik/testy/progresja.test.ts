@@ -45,7 +45,8 @@ const slot = (plan: Plan, positionId: string) => plan.sloty.find((s) => s.positi
 
 describe("progresja — liczby zgodne z szablonem 5.18", () => {
   test("bój główny idzie blokiem: objętość w dół, intensywność w górę", () => {
-    assert.deepEqual(PROGRESJA_BOJU, [
+    // Odczytane z „Szablon 3 dni, 3 złożone cz.1", Day I, sześć tygodni.
+    assert.deepEqual(PROGRESJA_BOJU["objętość"], [
       { serie: 6, powtorzenia: 6, rpe: 6.5 },
       { serie: 5, powtorzenia: 6, rpe: 7 },
       { serie: 5, powtorzenia: 5, rpe: 7 },
@@ -53,6 +54,37 @@ describe("progresja — liczby zgodne z szablonem 5.18", () => {
       { serie: 5, powtorzenia: 4, rpe: 7.5 },
       { serie: 6, powtorzenia: 3, rpe: 7.5 },
     ]);
+  });
+
+  test("drugi cykl ma własną progresję boju — to jest cz.2 z arkusza", () => {
+    /*
+     * Dotąd aplikacja znała tylko cz.1, więc kontynuacja wychodziła
+     * z liczbami pierwszego cyklu: te same 6×6 na RPE 6,5, mimo że klient
+     * ma już za sobą sześć tygodni i wyższy 1RM. W arkuszu cz.2 zaczyna
+     * od czwórek i kończy na dwójkach.
+     *
+     * Liczby z „Szablon - 3 dni, 3 złożone cz.2", Day I; ten sam bój stoi
+     * w „3 dni, 6 złożonych, 6 akcesoriów cz.2".
+     */
+    assert.deepEqual(PROGRESJA_BOJU["intensywność"], [
+      { serie: 6, powtorzenia: 4, rpe: 7 },
+      { serie: 6, powtorzenia: 4, rpe: 7 },
+      { serie: 5, powtorzenia: 4, rpe: 7.5 },
+      { serie: 5, powtorzenia: 3, rpe: 7.5 },
+      { serie: 5, powtorzenia: 3, rpe: 8 },
+      { serie: 6, powtorzenia: 2, rpe: 8 },
+    ]);
+  });
+
+  test("przełącznik części planu zmienia bój, nie tylko akcesoria", () => {
+    assert.deepEqual(progresjaSlotu("A1.", 1, 1), { serie: 6, powtorzenia: 6, rpe: 6.5 },
+      "bez podania części planu zostaje objętość — tak było do tej pory");
+    assert.deepEqual(progresjaSlotu("A1.", 1, 1, "objętość"), { serie: 6, powtorzenia: 6, rpe: 6.5 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, 1, "intensywność"), { serie: 6, powtorzenia: 4, rpe: 7 });
+    assert.deepEqual(progresjaSlotu("A1.", 6, 1, "intensywność"), { serie: 6, powtorzenia: 2, rpe: 8 });
+    // Akcesorium części planu w tym miejscu nie czyta — powtórzenia liczy
+    // automat, a on ma ją osobno.
+    assert.deepEqual(progresjaSlotu("B1.", 1, 0.5, "intensywność"), { serie: 3, rpe: 8 });
   });
 
   test("akcesorium: trzy serie, RPE 8 w pierwszym bloku i 9 w drugim", () => {
@@ -176,10 +208,25 @@ describe("plan, którego trener nie wypełnił", () => {
     const wynik = przeliczPlan(planTestowy());
     for (const t of wynik.tygodnie) {
       const boj = t.sloty.find((s) => s.lp === "A1." && s.cwiczenie)!;
-      assert.equal(boj.serie, PROGRESJA_BOJU[t.tydzien - 1]!.serie,
+      assert.equal(boj.serie, PROGRESJA_BOJU["objętość"][t.tydzien - 1]!.serie,
         `T${t.tydzien}: bój główny ma ${boj.serie} serii zamiast szablonowych`);
       assert.ok(boj.serie >= 4, `T${t.tydzien}: ${boj.serie} serii to nie jest plan`);
     }
+  });
+
+  test("cykl na intensywność liczy bój z drugiej kolumny szablonu", () => {
+    // Droga, którą trener idzie naprawdę: zakłada nowy cykl z poprzedniego,
+    // przestawia część planu i nic nie wpisuje. Bój ma wtedy wyjść z cz.2.
+    const plan = { ...planTestowy(), czescPlanu: "intensywność" as const };
+    const wynik = przeliczPlan(plan);
+    const boj = (t: number) => wynik.tygodnie[t - 1]!.sloty.find((x) => x.lp === "A1." && x.cwiczenie)!;
+    assert.equal(`${boj(1).serie}×${boj(1).powtorzenia}@${boj(1).rpe}`, "6×4@7");
+    assert.equal(`${boj(6).serie}×${boj(6).powtorzenia}@${boj(6).rpe}`, "6×2@8");
+    // Ciężar idzie za tym sam: mniej powtórzeń przy wyższym RPE to wyższy %1RM.
+    const naObjetosc = przeliczPlan(planTestowy());
+    assert.ok((boj(6).ciezar as number) > (naObjetosc.tygodnie[5]!.sloty
+      .find((x) => x.lp === "A1." && x.cwiczenie)!.ciezar as number),
+      "T6 na intensywność musi być cięższe niż T6 na objętość");
   });
 
   test("przycisk progresji niczego nie zmienia — tylko pokazuje", () => {
@@ -187,8 +234,16 @@ describe("plan, którego trener nie wypełnił", () => {
     // wpisana przyciskiem mają być tą samą liczbą. Gdy się rozjadą, trener
     // widzi w konsoli co innego niż klient na telefonie — a to jest dokładnie
     // ta pułapka, przez którą arkusz pokazywał kiedyś inne ciężary niż konsola.
-    const goly = przeliczPlan(planTestowy());
-    const wypelniony = przeliczPlan(zastosujProgresje(planTestowy()));
+    zgodneObiePlany(planTestowy());
+    // To samo dla kontynuacji — przycisk musi znać tę samą kolumnę szablonu,
+    // co automat. Gdyby znał tylko cz.1, kliknięcie zmieniłoby plan zamiast
+    // go pokazać, i to po cichu.
+    zgodneObiePlany({ ...planTestowy(), czescPlanu: "intensywność" });
+  });
+
+  function zgodneObiePlany(wejscie: Plan): void {
+    const goly = przeliczPlan(wejscie);
+    const wypelniony = przeliczPlan(zastosujProgresje(wejscie));
 
     for (const [i, t] of goly.tygodnie.entries()) {
       for (const s of t.sloty) {
@@ -200,7 +255,7 @@ describe("plan, którego trener nie wypełnił", () => {
           `T${t.tydzien} ${s.lp} ${s.cwiczenie.nazwa}`);
       }
     }
-  });
+  }
 
   test("wpisana liczba zawsze wygrywa z szablonem", () => {
     // Druga strona umowy: szablon jest podkładem, nie nadpisywaczem.

@@ -1100,6 +1100,16 @@ function rysujDni() {
   }
 }
 
+/**
+ * Bój główny: pozycja A i ćwiczenie złożone (coeff 1,0). Ta sama reguła,
+ * co w silniku — tylko po to, żeby nie pokazywać przycisków, które przy boju
+ * i tak nic nie robią.
+ */
+function bojGlowny(slot) {
+  const c = cwiczenia.find((x) => x.id === slot.cwiczenieId);
+  return (slot.lp || "").trim().toUpperCase().startsWith("A") && c?.coeff === 1;
+}
+
 /** TOP SET dnia, do którego należy ten slot — albo `undefined`. */
 function topSetDnia(dzien) {
   return (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
@@ -1197,13 +1207,43 @@ function rysujSlot(slot, pusty) {
           : "Dodaj TOP SET do tego ćwiczenia");
     dodajTop.onclick = () => przelaczTopSet(slot);
     strzalki.append(dodajTop);
+
+    /*
+     * Tryb liczenia ciężaru dla TEGO ćwiczenia.
+     *
+     * Przełącznik przy planie zmieniał wszystkie akcesoria naraz i przez to
+     * był bezużyteczny — trener powiedział wprost: „licz z RPE wydaje mi się
+     * że nie jest przydatny bo zmienia wszystkie akcesoria naraz". Przy
+     * wierszu ma sens: jednemu ćwiczeniu ciężar schodzi razem z rosnącymi
+     * powtórzeniami, reszta trzyma sztangę z bloku.
+     *
+     * Bój główny i tak zawsze liczy z RPE, więc przy nim tego nie pokazujemy.
+     */
+    if (!bojGlowny(slot)) {
+      const przelaczTryb = el("button", `mikro ${slot.trybCiezaru === "licz z RPE" ? "wlaczony" : ""}`, "R");
+      przelaczTryb.title = slot.trybCiezaru === "licz z RPE"
+        ? "Wróć do trybu z planu (ciężar trzymany z bloku)"
+        : "Licz ciężar z RPE co tydzień — sztanga schodzi, gdy przybywa powtórzeń";
+      przelaczTryb.onclick = () => {
+        if (slot.trybCiezaru === "licz z RPE") delete slot.trybCiezaru;
+        else slot.trybCiezaru = "licz z RPE";
+        zapiszPozniej();
+        rysujDni();
+      };
+      strzalki.append(przelaczTryb);
+    }
     komorkaLp.append(strzalki);
   }
   if (jestTopSetem(slot)) {
-    // Strzałki i „T" widać dopiero po najechaniu, więc sam przycisk nie mówi,
-    // że TOP SET tu stoi. Znacznik stoi przy Lp. na stałe.
+    // Strzałki, „T" i „R" widać dopiero po najechaniu, więc sam przycisk nie
+    // mówi, że TOP SET tu stoi. Znacznik stoi przy Lp. na stałe.
     const znacznik = el("span", "znacznik-topset", "TS");
     znacznik.title = "To ćwiczenie ma TOP SET";
+    komorkaLp.append(znacznik);
+  }
+  if (slot.trybCiezaru === "licz z RPE") {
+    const znacznik = el("span", "znacznik-tryb", "RPE");
+    znacznik.title = "Ciężar liczony z RPE co tydzień, nie trzymany z bloku";
     komorkaLp.append(znacznik);
   }
   wiersz.append(komorkaLp);
