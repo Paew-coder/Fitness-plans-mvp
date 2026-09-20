@@ -364,8 +364,13 @@ describe("normy skalowane liczbą dni (Analiza!K, L)", () => {
 });
 
 describe("katalog BAZY 5.17", () => {
-  test("zawiera 164 ćwiczenia", () => {
-    assert.equal(katalog.wszystkie.length, 164);
+  test("zawiera 164 ćwiczenia z arkusza i 1 dodane przez trenera", () => {
+    assert.equal(katalog.wszystkie.length, 165);
+    // Rozdzielone celowo: arkusz to arkusz, a to, co trener dołożył później,
+    // ma być widać. Inaczej za pół roku nikt nie odróżni jednego od drugiego.
+    const zArkusza = katalog.wszystkie.filter((c) => c.id !== "EX-0204");
+    assert.equal(zArkusza.length, 164);
+    assert.equal(katalog.poNazwie("sumo deadlift")?.coeff, 1);
   });
 
   test("wyszukiwanie po ID i po nazwie", () => {
@@ -375,7 +380,7 @@ describe("katalog BAZY 5.17", () => {
 
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(katalog.wKategorii("Tricep").length, 9);
-    assert.equal(katalog.wKategorii(null).length, 164);
+    assert.equal(katalog.wKategorii(null).length, 165);
   });
 
   test("oznaczenie ćwiczeń jednostronnych", () => {
@@ -400,7 +405,8 @@ describe("katalog BAZY 5.17", () => {
     assert.equal(katalog.doWeryfikacji().length, 14);
     // Pełna lista czekających na decyzję to 14 + 2 oznaczone "UZUPEŁNIĆ".
     assert.equal(katalog.wymagajaceDecyzji().length, 16);
-    assert.equal(katalog.bezFilmu().length, 26);
+    // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania.
+    assert.equal(katalog.bezFilmu().length, 27);
   });
 });
 
@@ -828,10 +834,11 @@ describe("ćwiczenia, przy których TOP SET jest zwyczajowy", () => {
     assert.equal(zwyczajowyTopSet(undefined), false);
   });
 
-  test("cztery z pięciu nazw istnieją w BAZIE; sumo czeka na dodanie", () => {
+  test("każda z pięciu nazw istnieje w katalogu", () => {
+    // Lista i katalog muszą mówić o tych samych ćwiczeniach. Literówka w nazwie
+    // nie zapala się nigdzie indziej — po prostu po cichu nic nie podpowiada.
     const brakujace = CWICZENIA_ZWYCZAJOWO_Z_TOP_SETEM
       .filter((n) => !katalog.poNazwie(n));
-    assert.deepEqual(brakujace, ["Sumo deadlift"],
-      "gdy sumo trafi do BAZY, ten test przypomni o zdjęciu przypisu");
+    assert.deepEqual(brakujace, []);
   });
 });

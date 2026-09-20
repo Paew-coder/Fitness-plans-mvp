@@ -97,7 +97,7 @@ Każdy zestaw zawiera jednocześnie **wejście** (co wpisał trener) i **wynik**
 | `powtorzenia.ts` | automat powtórzeń akcesoriów | kolumna `E` |
 | `ciezar.ts` | cztery reguły ciężaru, TOP SET | kolumna `G`, wiersze TOP SET |
 | `stres.ts` | trzy osie stresu, bilans wzorców, normy | `TABELE!B23:P61`, `T1!D87:I94` |
-| `katalog.ts` | 164 ćwiczenia, filtrowanie po kategorii, oznaczenie jednostronnych | `BAZA`, zastępuje `LISTY` |
+| `katalog.ts` | 165 ćwiczeń (164 z BAZY + 1 dodane przez trenera), filtrowanie po kategorii, oznaczenie jednostronnych | `BAZA`, zastępuje `LISTY` |
 | `plan.ts` | przeliczenie sześciu tygodni naraz | `T1`–`T6` |
 | `walidacja.ts` | 11 kontroli + powtórki z poprzedniego cyklu | `Analiza!A66:C76` |
 | `odczyt-1rm.ts` | 1RM czytane z serii roboczych | **poza arkuszem** |

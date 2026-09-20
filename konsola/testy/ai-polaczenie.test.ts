@@ -154,7 +154,7 @@ describe("asystent — pełna droga propozycji", () => {
     assert.ok(uzycie.koszt > 0);
 
     // Katalog leci jako drugi blok systemowy i jest oznaczony do cache —
-    // bez tego każde kolejne zapytanie płaciłoby za te same 164 pozycje.
+    // bez tego każde kolejne zapytanie płaciłoby za ten sam katalog ćwiczeń.
     const system = odebrane[0]!.cialo.system;
     assert.equal(system.length, 2);
     assert.deepEqual(system[1].cache_control, { type: "ephemeral" });
