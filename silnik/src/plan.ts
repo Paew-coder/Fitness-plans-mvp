@@ -176,7 +176,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         continue;
       }
 
-      const bojGlowny = jestBojemGlownym(slot.lp);
+      const bojGlowny = jestBojemGlownym(slot.lp, cwiczenie.coeff);
       const odczucia = Object.fromEntries(
         TYGODNIE.map((t) => [t, parametry(slot, t).feedback]),
       ) as Partial<Record<Tydzien, Feedback | undefined>>;
@@ -192,7 +192,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
        * gdy szablon mówi sześć. Na telefonie było to zwykłe polecenie do
        * wykonania i tak też zostało odczytane: „mam robić jedną serię".
        */
-      const szablon = progresjaSlotu(slot.lp, tydzien);
+      const szablon = progresjaSlotu(slot.lp, tydzien, cwiczenie.coeff);
 
       const serie = p.serie ?? szablon.serie!;
       const efektywne = serieEfektywne(
@@ -266,16 +266,24 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       .filter((t) => t.wlaczony)
       .map((t) => {
         const zrodlo = sloty.find((s) => s.positionId === t.slotPositionId);
+        /*
+         * TOP SET należy do boju głównego, czyli do ćwiczenia złożonego.
+         * Jedno powtórzenie na maksymalnym ciężarze ma sens w wyciskaniu
+         * i w przysiadzie; przy ćwiczeniu balansowym albo izolowanym jest
+         * poleceniem, którego nie da się wykonać sensownie. Gdy w pozycji A
+         * stoi coś innego, TOP SET po prostu się nie pojawia.
+         */
+        const naBoju = zrodlo?.cwiczenie?.coeff === 1;
         return {
           dzien: t.dzien,
-          cwiczenie: zrodlo?.cwiczenie ?? null,
+          cwiczenie: naBoju ? zrodlo!.cwiczenie : null,
           rpe: t.rpe,
-          ciezar: zrodlo?.cwiczenie
+          ciezar: naBoju
             ? obliczCiezarTopSetu({
-                oneRM: zrodlo.oneRM,
+                oneRM: zrodlo!.oneRM,
                 rpe: t.rpe,
-                skokKg: zrodlo.cwiczenie.skokKg,
-                progresja: zrodlo.cwiczenie.progresja,
+                skokKg: zrodlo!.cwiczenie!.skokKg,
+                progresja: zrodlo!.cwiczenie!.progresja,
               })
             : "",
         } as TopSetWyliczony;
