@@ -143,7 +143,7 @@ function powtorzeniaAkcesorium(
 
 `offsetTygodnia`: T1 = 0, T2 = 1, T3 = 2, T4 = 0, T5 = 1, T6 = 2.
 
-Dotyczy slotów **innych niż A1**. Bój główny (`lp` zaczyna się na `A`) ma serie/powtórzenia/RPE ustawiane wprost przez trenera.
+Dotyczy wszystkiego, co **nie jest bojem głównym**. Bojem głównym jest pozycja `A` **z ćwiczeniem złożonym** (coeff 1,0) — jej serie/powtórzenia/RPE ustawia trener wprost albo bierze z szablonu 5.18. Akcesorium postawione na pierwszym miejscu dnia idzie przez ten automat jak każde inne; kontrola planu mówi o tym wprost (`POZYCJA_A_BEZ_BOJU`).
 
 ---
 
@@ -152,7 +152,7 @@ Dotyczy slotów **innych niż A1**. Bój główny (`lp` zaczyna się na `A`) ma 
 ```ts
 type KontekstCiezaru = {
   tydzien: 1|2|3|4|5|6;
-  jestBojemGlownym: boolean;        // lp zaczyna się na 'A'
+  jestBojemGlownym: boolean;        // pozycja 'A' i coeff 1,0
   trybAkcesoriow: 'trzymaj z bloku' | 'licz z RPE';
   oneRM: number;                    // 0 = brak
   oneRMReczny?: number;             // gdy ćwiczenie podmienione w T4–T6

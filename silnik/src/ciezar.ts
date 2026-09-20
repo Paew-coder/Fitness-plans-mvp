@@ -8,7 +8,7 @@ export const SKOK_MINIMALNY = 0.5;
 
 export type KontekstCiezaru = {
   tydzien: Tydzien;
-  /** Bój główny — pozycja, której `lp` zaczyna się na "A". Zawsze liczy z RPE. */
+  /** Bój główny — pozycja A **i** ćwiczenie złożone (coeff 1,0). Zawsze liczy z RPE. */
   jestBojemGlownym: boolean;
   trybAkcesoriow: TrybAkcesoriow;
   powtorzenia: number;
@@ -80,8 +80,10 @@ export function obliczCiezar(k: KontekstCiezaru): WynikCiezaru {
 }
 
 /**
- * Ciężar TOP SETU — jedna seria na 1 powtórzenie przy własnym RPE,
- * liczona zawsze z 1RM boju głównego dnia. Odpowiednik wiersza TOP SET (G6/G22/…).
+ * Ciężar TOP SETU — jedna seria na 1 powtórzenie przy własnym RPE, liczona
+ * z 1RM tego ćwiczenia, przy którym trener postawił TOP SET. Odpowiednik
+ * wiersza TOP SET (G6/G22/…), z tą różnicą, że arkusz brał bój z pierwszego
+ * wiersza dnia, a tu wskazanie jest jawne.
  */
 export function obliczCiezarTopSetu(args: {
   oneRM: number;
