@@ -201,3 +201,47 @@ describe("plan, którego trener nie wypełnił", () => {
     assert.equal(boj.rpe, 9);
   });
 });
+
+describe("kopiowanie tygodnia na jedno ćwiczenie", () => {
+  /**
+   * Kopiowanie obejmowało kiedyś cały plan. Trener sprawdził, co to robi,
+   * i nazwał rzecz po imieniu: rozniesienie jednego tygodnia na pozostałe
+   * to sześć identycznych tygodni, czyli blok bez progresji. Dla jednego
+   * ćwiczenia bywa potrzebne; dla całego cyklu nie ma zastosowania.
+   */
+  test("rusza wskazane ćwiczenie i zostawia resztę", () => {
+    const plan = zastosujProgresje(planTestowy());
+    const wynik = skopiujTydzien(plan, 1, "D1-S01");
+
+    const boj = slot(wynik, "D1-S01");
+    for (const t of [2, 3, 4, 5, 6] as const) {
+      assert.deepEqual(boj.tygodnie![t], boj.tygodnie![1],
+        `T${t} boju głównego miał dostać parametry z T1`);
+    }
+
+    // Sąsiad z tego samego dnia ma zostać przy swojej progresji.
+    const sasiad = slot(wynik, "D1-S02");
+    assert.notDeepEqual(sasiad.tygodnie![4], sasiad.tygodnie![1],
+      "akcesorium nie miało być ruszone — drugi blok ma inne RPE");
+    assert.deepEqual(sasiad.tygodnie, slot(plan, "D1-S02").tygodnie);
+  });
+
+  test("bez wskazania rusza cały plan — i dlatego konsola tego nie robi", () => {
+    // Zachowanie zostaje w silniku, ale droga przez API wymaga wskazania
+    // ćwiczenia. Ten test pilnuje, żeby różnica między jednym a drugim
+    // była widoczna, a nie domyślna.
+    const plan = zastosujProgresje(planTestowy());
+    const wszystko = skopiujTydzien(plan, 1);
+    const sasiad = slot(wszystko, "D1-S02");
+    assert.deepEqual(sasiad.tygodnie![4], sasiad.tygodnie![1]);
+  });
+
+  test("oceny klienta przeżywają kopiowanie jednego ćwiczenia", () => {
+    const plan = zastosujProgresje(planTestowy());
+    slot(plan, "D1-S01").tygodnie![2] = {
+      ...slot(plan, "D1-S01").tygodnie![2], feedback: "za łatwe",
+    };
+    const wynik = skopiujTydzien(plan, 1, "D1-S01");
+    assert.equal(slot(wynik, "D1-S01").tygodnie![2]!.feedback, "za łatwe");
+  });
+});

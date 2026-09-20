@@ -657,7 +657,6 @@ function rysujPlan() {
   $("#czesc-planu").value = z.plan.czescPlanu;
   $("#data-startu").value = z.dataStartu ?? "";
 
-  $("#kopiuj-tydzien").textContent = `kopiuj T${tydzien}`;
 
   const taby = $("#taby-tygodni");
   taby.replaceChildren();
@@ -1112,6 +1111,18 @@ function rysujSlot(slot, pusty) {
       };
       strzalki.append(b);
     }
+    /*
+     * Rozniesienie parametrów TEGO ćwiczenia na pozostałe tygodnie.
+     *
+     * Wcześniej stał na to przycisk u góry ekranu, ale obejmował cały plan —
+     * czyli robił sześć identycznych tygodni i kasował progresję. Trener nazwał
+     * to wprost: „jedno ćwiczenie może i miałoby sens, ale na pewno nie cały
+     * plan". Kopiowanie zostało więc tam, gdzie ma sens, i nigdzie indziej.
+     */
+    const rozniesc = el("button", "mikro", "»");
+    rozniesc.title = `Skopiuj parametry tego ćwiczenia z T${tydzien} na pozostałe tygodnie`;
+    rozniesc.onclick = () => wypelnijTygodnie("kopiuj", slot.positionId);
+    strzalki.append(rozniesc);
     komorkaLp.append(strzalki);
   }
   wiersz.append(komorkaLp);
@@ -1797,16 +1808,16 @@ $("#ai-analiza").onclick = async () => {
  * Żadnej ukrytej domyślności: ta sama zasada, po której eksport wpisuje do
  * arkusza liczby policzone, a nie puste komórki.
  */
-async function wypelnijTygodnie(tryb) {
+async function wypelnijTygodnie(tryb, positionId) {
   const opis = tryb === "progresja"
     ? "Progresja z szablonu 5.18 nadpisze serie, powtórzenia i RPE we wszystkich sześciu tygodniach."
-    : `Parametry z tygodnia ${tydzien} nadpiszą pozostałe pięć tygodni.`;
+    : `Parametry tego ćwiczenia z tygodnia ${tydzien} nadpiszą pozostałe pięć tygodni.`;
   if (!confirm(`${opis}\n\nOceny klienta i ręcznie ustawione ciężary zostają. Na pewno?`)) return;
 
   try {
     obraz = await api(`/api/plany/${obraz.zapisany.id}/tygodnie`, {
       method: "POST",
-      body: { tryb, zrodlo: tydzien },
+      body: { tryb, zrodlo: tydzien, positionId },
     });
     rysujPlan();
   } catch (err) {
@@ -1815,7 +1826,6 @@ async function wypelnijTygodnie(tryb) {
 }
 
 $("#progresja-szablonu").onclick = () => wypelnijTygodnie("progresja");
-$("#kopiuj-tydzien").onclick = () => wypelnijTygodnie("kopiuj");
 
 /**
  * Status planu — jedyne miejsce, w którym się go zmienia.
