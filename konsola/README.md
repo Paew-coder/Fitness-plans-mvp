@@ -154,6 +154,20 @@ maksymalnych. Ćwiczenia można zostawić te same — wyższy 1RM sam podniesie
 ciężary — albo podmienić; kontrola planu i tak ostrzeże, co było w poprzednim
 cyklu.
 
+**TOP SET** dodajesz przyciskiem **`T`** przy dowolnym wierszu; w dniu jest jeden,
+więc kliknięcie w innym wierszu przenosi go. RPE rośnie samo przez cykl, tak jak
+w Twoich arkuszach:
+
+| Część planu | T1 | T2 | T3 | T4 | T5 | T6 |
+|---|---|---|---|---|---|---|
+| objętość (cz.1) | — | 6 | 6,5 | 7 | 7,5 | 8 |
+| intensywność (cz.2) | — | 7 | 7,5 | 8 | 8,5 | 9 |
+
+W T1 TOP SETU nie ma — tak jest w arkuszach. Pole RPE w pasku nad dniem dotyczy
+**tygodnia, który masz na ekranie**: puste pokazuje liczbę z szablonu jako
+podpowiedź, wpisana wygrywa (także w T1 — wtedy TOP SET tam będzie),
+wyczyszczenie wraca do szablonu.
+
 **Ciężar akcesorium: z bloku czy z RPE.** *Akcesoria domyślnie* nad planem
 ustawia to dla całego planu, ale pojedyncze ćwiczenie przestawia się
 przyciskiem **`R`** przy jego wierszu — wtedy przy Lp. stoi znacznik `RPE`.

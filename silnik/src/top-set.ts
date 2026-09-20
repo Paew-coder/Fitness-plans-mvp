@@ -1,3 +1,5 @@
+import type { CzescPlanu, Tydzien } from "./typy.ts";
+
 /**
  * TOP SET — jedno powtórzenie na ciężarze bliskim maksimum, przed właściwą
  * pracą dnia. W arkuszu stoi w osobnym wierszu nad tabelą.
@@ -51,4 +53,27 @@ const ZNORMALIZOWANE = new Set(
  */
 export function zwyczajowyTopSet(nazwa?: string | null): boolean {
   return ZNORMALIZOWANE.has((nazwa ?? "").trim().toLowerCase());
+}
+
+/**
+ * RPE TOP SETU tydzień po tygodniu — tak jak w arkuszach trenera.
+ *
+ * W cz.1 idzie 6 → 6,5 → 7 → 7,5 → 8, w cz.2 o stopień wyżej: 7 → 7,5 → 8 →
+ * 8,5 → 9. Skok jest ten sam, pół stopnia na tydzień; części różni punkt
+ * wyjścia. Odczytane z „Szablon 3 dni, 3 złożone cz.1 / cz.2", Day I.
+ *
+ * **W T1 TOP SETU nie ma i to nie jest przeoczenie** — w obu arkuszach
+ * pierwszy tydzień jest bez niego, TOP SET wchodzi dopiero w drugim. Dlatego
+ * stoi tu `null`, a nie liczba: „nie ma" to co innego niż „jest, na RPE 6".
+ * Trener może wpisać RPE także w T1 i wtedy TOP SET tam będzie — wpisana
+ * liczba zawsze wygrywa z szablonem.
+ */
+export const PROGRESJA_TOP_SETU: Record<CzescPlanu, readonly (number | null)[]> = {
+  "objętość":     [null, 6, 6.5, 7, 7.5, 8],
+  "intensywność": [null, 7, 7.5, 8, 8.5, 9],
+};
+
+/** RPE TOP SETU z szablonu na ten tydzień; `null` = w tym tygodniu go nie ma. */
+export function rpeTopSetu(czesc: CzescPlanu, tydzien: Tydzien): number | null {
+  return PROGRESJA_TOP_SETU[czesc][tydzien - 1] ?? null;
 }

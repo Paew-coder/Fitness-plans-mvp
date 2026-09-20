@@ -13,6 +13,7 @@ import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
 import { jestBojemGlownym, progresjaSlotu } from "./szablon-boju.ts";
+import { rpeTopSetu } from "./top-set.ts";
 import {
   bilansTygodnia,
   NORMY,
@@ -66,7 +67,16 @@ export type SlotPlanu = {
 export type TopSet = {
   dzien: number;
   wlaczony: boolean;
-  rpe: number;
+  /**
+   * RPE wpisane ręcznie, osobno na każdy tydzień. Puste = liczba z szablonu
+   * (`PROGRESJA_TOP_SETU`), która rośnie o pół stopnia na tydzień.
+   *
+   * Wcześniej stała tu jedna liczba na cały cykl i to było zbyt mało:
+   * w arkuszach trenera RPE TOP SETU idzie 6 → 6,5 → 7 → 7,5 → 8 (cz.1)
+   * albo 7 → 7,5 → 8 → 8,5 → 9 (cz.2), więc jedno RPE na sześć tygodni
+   * spłaszczało progresję, która była w planie od początku.
+   */
+  rpeTygodni?: Partial<Record<Tydzien, number>>;
   /** Slot, z którego TOP SET bierze ćwiczenie i 1RM. Jawnie — nie „wiersz poniżej". */
   slotPositionId: string;
 };
@@ -107,7 +117,8 @@ export type SlotWyliczony = {
 export type TopSetWyliczony = {
   dzien: number;
   cwiczenie: Cwiczenie | null;
-  rpe: number;
+  /** `null` = w tym tygodniu TOP SETU nie ma. W szablonie tak jest w T1. */
+  rpe: number | null;
   ciezar: WynikCiezaru;
 };
 
@@ -293,15 +304,21 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
          * Ciężar liczy `obliczCiezarTopSetu` i sam mówi „—" przy progresji
          * bez kilogramów oraz „— brak 1RM", gdy nie ma z czego liczyć.
          */
-        const cwiczenie = zrodlo?.cwiczenie ?? null;
+        /*
+         * RPE na ten tydzień: wpisane ręcznie albo z szablonu. `null` znaczy,
+         * że TOP SETU w tym tygodniu nie ma — tak szablon opisuje T1 i tak
+         * jest w obu arkuszach trenera.
+         */
+        const rpe = t.rpeTygodni?.[tydzien] ?? rpeTopSetu(plan.czescPlanu, tydzien);
+        const cwiczenie = rpe === null ? null : (zrodlo?.cwiczenie ?? null);
         return {
           dzien: t.dzien,
           cwiczenie,
-          rpe: t.rpe,
+          rpe,
           ciezar: cwiczenie
             ? obliczCiezarTopSetu({
                 oneRM: zrodlo!.oneRM,
-                rpe: t.rpe,
+                rpe: rpe!,
                 skokKg: cwiczenie.skokKg,
                 progresja: cwiczenie.progresja,
               })

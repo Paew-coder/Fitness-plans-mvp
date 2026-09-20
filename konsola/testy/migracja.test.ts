@@ -87,8 +87,10 @@ function zbudujStaraBaze(): void {
       { positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: null },
     ],
     topSety: [
+      // RPE 7 to liczba z szkieletu, nikt jej nie wybrał; 8,5 przy dniu II
+      // trener zmienił ręcznie i to ma przetrwać aktualizację.
       { dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S01" },
-      { dzien: 2, wlaczony: true, rpe: 7, slotPositionId: "D2-S01" },
+      { dzien: 2, wlaczony: true, rpe: 8.5, slotPositionId: "D2-S01" },
       { dzien: 3, wlaczony: true, rpe: 7, slotPositionId: "D3-S01" },
     ],
   });
@@ -138,7 +140,7 @@ describe("migracja v1 → v2", () => {
     assert.equal(w, polaczenie.WERSJA_SCHEMATU);
     // Liczba wpisana wprost, żeby podniesienie wersji było decyzją, a nie
     // skutkiem ubocznym — test ma wtedy zapytać, czy migracja rzeczywiście jest.
-    assert.equal(w, 4);
+    assert.equal(w, 5);
   });
 
   test("z nazw w planach powstali klienci", () => {
@@ -243,6 +245,39 @@ describe("migracja v3 → v4: TOP SET tam, gdzie był widoczny", () => {
     for (const id of ["zuzanna-c-3", "zuzanna-c-4", "maciek-tabakowski-1"]) {
       assert.deepEqual(topSetyPlanu(id).map((t) => t.wlaczony), [true, false, false], id);
     }
+  });
+});
+
+/**
+ * Migracja v4 → v5 na tych samych danych.
+ *
+ * RPE TOP SETU przestaje być jedną liczbą na cykl i zaczyna rosnąć tydzień
+ * po tygodniu, jak w arkuszach. Pytanie brzmi, co zrobić ze starą liczbą —
+ * i odpowiedź zależy od tego, czy była wyborem trenera, czy tylko tym, co
+ * wpisał szkielet nowego planu.
+ */
+describe("migracja v4 → v5: RPE TOP SETU per tydzień", () => {
+  function topSetyPlanu(id: string) {
+    const wiersz = polaczenie.baza()
+      .prepare("SELECT plan_json FROM plan WHERE trener_id = 1 AND id = ?")
+      .get(id) as { plan_json: string };
+    return JSON.parse(wiersz.plan_json).topSety as
+      { dzien: number; rpe?: number; rpeTygodni?: Record<string, number> }[];
+  }
+
+  test("pole rpe znika ze wszystkich wpisów", () => {
+    for (const top of topSetyPlanu("zuzanna-c-4")) {
+      assert.equal("rpe" in top, false, `dzień ${top.dzien} dalej ma stare pole`);
+    }
+  });
+
+  test("siódemka ze szkieletu nie blokuje szablonu", () => {
+    assert.equal(topSetyPlanu("zuzanna-c-4").find((t) => t.dzien === 1)!.rpeTygodni, undefined);
+  });
+
+  test("liczba zmieniona przez trenera zostaje — we wszystkich tygodniach", () => {
+    assert.deepEqual(topSetyPlanu("zuzanna-c-4").find((t) => t.dzien === 2)!.rpeTygodni,
+      { 1: 8.5, 2: 8.5, 3: 8.5, 4: 8.5, 5: 8.5, 6: 8.5 });
   });
 });
 

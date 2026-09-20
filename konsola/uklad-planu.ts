@@ -55,7 +55,6 @@ export function pustyPlan(klient: string): Plan {
     topSety: [1, 2, 3, 4, 5].map((dzien) => ({
       dzien,
       wlaczony: false,
-      rpe: 7,
       slotPositionId: `D${dzien}-S01`,
     })),
   };

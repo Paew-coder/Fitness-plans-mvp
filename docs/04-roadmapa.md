@@ -250,7 +250,20 @@ Przy okazji potwierdziło się, że **akcesoria już były zrobione dobrze**: cz
 
 Czego świadomie nie przenosimy: różnic między dniami. W arkuszach Day II i III mają o serię mniej i nierówne RPE (cz.2 Day II: 5×3 w T4, 4×2 w T5, znów 4×3 w T6). MasterTemplate spłaszczył to do Day I i tak zostaje.
 
-**Znaleziona luka, jeszcze nie zamknięta:** w arkuszach RPE TOP SETU rośnie z tygodnia na tydzień — cz.1: 6 → 6,5 → 7 → 7,5 → 8 (od T2, w T1 TOP SETU nie ma), cz.2: 7 → 7,5 → 8 → 8,5 → 9. W aplikacji TOP SET ma **jedno** RPE na cały cykl, bo `TopSet` trzyma jedną liczbę na dzień, nie sześć. Domknięcie wymaga decyzji trenera.
+**RPE TOP SETU rośnie przez cykl** — domknięte tego samego dnia, po decyzji trenera („zróbmy rosnące RPE tak samo jak było w cz.1 i cz.2, z takim samym skalowaniem"):
+
+| Część planu | T1 | T2 | T3 | T4 | T5 | T6 |
+|---|---|---|---|---|---|---|
+| objętość (cz.1) | — | 6 | 6,5 | 7 | 7,5 | 8 |
+| intensywność (cz.2) | — | 7 | 7,5 | 8 | 8,5 | 9 |
+
+Pół stopnia na tydzień, części różni punkt wyjścia. **W T1 TOP SETU nie ma** i to nie jest przeoczenie — tak jest w obu arkuszach; w szablonie stoi tam `null`, bo „nie ma" to co innego niż „jest, na RPE 6". Trener potwierdził też, że w cz.2 tydzień drugi celowo powtarza pierwszy i różni się wyłącznie tym, że dochodzi TOP SET.
+
+`TopSet.rpe` (jedna liczba na cykl) ustąpił miejsca `TopSet.rpeTygodni` — liczbom wpisanym ręcznie, osobno na każdy tydzień. Puste znaczy „z szablonu", wpisane wygrywa (także w T1, gdzie przywraca TOP SET), wyczyszczenie wraca do szablonu. Dokładnie jak pola serii i powtórzeń w tabeli niżej.
+
+Migracja bazy do wersji 5 rozstrzyga starą liczbę tak: **7 kasuje** (nikt jej nie wybrał, tyle wpisywał szkielet nowego planu — zostawienie zablokowałoby rampę po cichu w każdym istniejącym planie), **każdą inną przepisuje na wszystkie sześć tygodni** (tam trener liczbę zmienił, więc jest wyborem).
+
+Jedno miejsce, gdzie rampa się spłaszcza: **eksport do .xlsx**. Arkusz 5.18 ma na RPE TOP SETU jedną komórkę w T1, którą pozostałe tygodnie lustrzą, więc do pliku idzie RPE z pierwszego tygodnia, w którym TOP SET w ogóle jest. W aplikacji i na telefonie klienta rampa zostaje.
 
 **8. Tryb liczenia ciężaru przy pojedynczym ćwiczeniu.** *(20.09.2026)*
 

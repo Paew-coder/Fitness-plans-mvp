@@ -264,6 +264,10 @@ td.ciezar.reczny input.pole-ciezaru { border-color: var(--akcent); }
 .topset .etykieta { font-family: var(--mono); font-size: .68rem;
   text-transform: uppercase; letter-spacing: .08em; color: var(--akcent); font-weight: 600; }
 .topset .wynik { margin-left: auto; font-family: var(--mono); font-weight: 600; }
+/* Tydzień, w którym szablon TOP SETU nie przewiduje — pasek stoi, bo TOP SET
+   jest w cyklu, ale w tym tygodniu nic nie znaczy. */
+.topset.bez-top-setu { opacity: .55; }
+.topset.bez-top-setu .wynik { font-weight: 400; font-size: .78rem; }
 
 /* ── panel boczny ───────────────────────────────────────────────── */
 .bok { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1rem; }

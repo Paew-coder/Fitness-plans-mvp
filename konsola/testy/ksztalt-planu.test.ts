@@ -25,7 +25,7 @@ import { TRYBY_AKCESORIOW, CZESCI_PLANU } from "../../silnik/src/typy.ts";
 const planPoprawny = () => ({
   sloty: [{ positionId: "D1-S01", dzien: 1, cwiczenieId: "EX-0010", tygodnie: {} }],
   serieMaksymalne: [{ cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 }],
-  topSety: [{ dzien: 1, wlaczony: true, rpe: 8, slotPositionId: "D1-S01" }],
+  topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01" }],
   trybAkcesoriow: TRYBY_AKCESORIOW[0],
   czescPlanu: CZESCI_PLANU[0],
 });
@@ -61,14 +61,16 @@ describe("kształt planu", () => {
       topSety: [{ wlaczony: true, rpe: 8, slotPositionId: "D1-S01" }] })],
     ["włączony TOP SET bez wskazania ćwiczenia", () => ({ ...planPoprawny(),
       topSety: [{ dzien: 1, wlaczony: true, rpe: 8 }] })],
-    ["włączony TOP SET bez RPE", () => ({ ...planPoprawny(),
-      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01" }] })],
-    ["TOP SET z RPE jako tekstem", () => ({ ...planPoprawny(),
-      topSety: [{ dzien: 1, wlaczony: true, rpe: "ciężko", slotPositionId: "D1-S01" }] })],
+    ["TOP SET z RPE tygodni jako tekstem", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01",
+        rpeTygodni: "ciężko" }] })],
+    ["TOP SET z RPE jednego tygodnia jako tekstem", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01",
+        rpeTygodni: { 2: 7, 3: "mocno" } }] })],
     ["TOP SET włączony liczbą zamiast prawdą", () => ({ ...planPoprawny(),
-      topSety: [{ dzien: 1, wlaczony: 1, rpe: 8, slotPositionId: "D1-S01" }] })],
+      topSety: [{ dzien: 1, wlaczony: 1, slotPositionId: "D1-S01" }] })],
     ["TOP SET wskazujący slot liczbą", () => ({ ...planPoprawny(),
-      topSety: [{ dzien: 1, wlaczony: false, rpe: 8, slotPositionId: 1 }] })],
+      topSety: [{ dzien: 1, wlaczony: false, slotPositionId: 1 }] })],
   ];
 
   for (const [co, zrob] of zle) {
@@ -102,6 +104,17 @@ describe("TOP SET wyłączony wolno mieć pusty", () => {
   test("sam numer dnia wystarczy", () => {
     assert.equal(bladKsztaltuPlanu({ ...planPoprawny(),
       topSety: [{ dzien: 1, wlaczony: false }] }), null);
+  });
+
+  test("włączony TOP SET bez RPE też przechodzi — RPE ma z szablonu", () => {
+    assert.equal(bladKsztaltuPlanu({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01" }] }), null);
+  });
+
+  test("RPE wpisane tylko w części tygodni jest w porządku", () => {
+    assert.equal(bladKsztaltuPlanu({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01",
+        rpeTygodni: { 2: 6.5, 5: 8 } }] }), null);
   });
 
   test("plan zupełnie bez TOP SETÓW przechodzi", () => {

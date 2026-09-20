@@ -172,12 +172,22 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
       .filter((s) => s.id !== null)
       .map((s) => ({ cwiczenieId: s.id!, ciezar: s.ciezar, powtorzenia: s.powtorzenia })),
     sloty,
+    /*
+     * TOP SETY z arkusza. 5.18 trzyma RPE w jednej komórce na cały cykl, więc
+     * to, co stamtąd przychodzi, dotyczy wszystkich sześciu tygodni — i tak
+     * to zapisujemy, jako liczbę wpisaną ręcznie w każdym tygodniu. Szablonowa
+     * rampa (6 → 6,5 → 7 → 7,5 → 8) wchodzi dopiero wtedy, gdy trener te
+     * liczby wyczyści; arkusz mówi wprost co innego, a import ma go oddać
+     * takim, jaki jest, nie takim, jaki byłby ładniejszy.
+     */
     topSety: z.top_sety
       .filter((t) => t.wlaczony && t.slot_position_id)
       .map((t) => ({
         dzien: t.dzien,
         wlaczony: true,
-        rpe: t.rpe ?? 7,
+        ...(t.rpe != null
+          ? { rpeTygodni: Object.fromEntries(TYGODNIE_IMPORTU.map((w) => [w, t.rpe])) }
+          : {}),
         slotPositionId: t.slot_position_id!,
       })),
   };
