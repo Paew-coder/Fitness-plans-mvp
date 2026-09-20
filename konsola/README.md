@@ -133,12 +133,33 @@ przechodzi, jeśli cel jeszcze go nie ma) i *usuń*. Zmiana nazwy na nazwę
 istniejącego klienta jest odrzucana z podpowiedzią, żeby nie powstały dwie
 kartoteki o tej samej nazwie.
 
-**Wypełnianie sześciu tygodni.** Dwa przyciski w pasku nad planem.
-*Progresja 5.18* wpisuje do wszystkich tygodni blok z Twojego szablonu — bój
-główny 6×6 @6,5 → 5×6 @7 → 5×5 @7 → 4×5 @7,5 → 5×4 @7,5 → 6×3 @7,5, akcesoria
-trzy serie przy RPE 8 w pierwszym bloku i 9 w drugim. *Kopiuj T{n}* rozprowadza
-bieżący tydzień na pozostałe. Jedno i drugie zostawia oceny klienta i ręcznie
+**Wypełnianie sześciu tygodni.** *Progresja 5.18* wpisuje do wszystkich tygodni
+blok z Twojego szablonu, a **która** to progresja, zależy od przełącznika
+*Część planu*:
+
+| Część planu | Bój główny przez sześć tygodni |
+|---|---|
+| objętość (cz.1) | 6×6 @6,5 → 5×6 @7 → 5×5 @7 → 4×5 @7,5 → 5×4 @7,5 → 6×3 @7,5 |
+| intensywność (cz.2) | 6×4 @7 → 6×4 @7 → 5×4 @7,5 → 5×3 @7,5 → 5×3 @8 → 6×2 @8 |
+
+Akcesoria w obu przypadkach: trzy serie przy RPE 8 w pierwszym bloku i 9
+w drugim, a powtórzenia liczy automat z `coeff` — na objętość 8/10, na
+intensywność 6/8. Przycisk `»` przy wierszu rozprowadza bieżący tydzień tego
+jednego ćwiczenia na pozostałe. Jedno i drugie zostawia oceny klienta i ręcznie
 ustawione ciężary na miejscu.
+
+**Drugi cykl tego samego klienta** to więc: *nowy cykl* (kopiuje poprzedni),
+przestawienie *Części planu* na **intensywność** i wpisanie nowych serii
+maksymalnych. Ćwiczenia można zostawić te same — wyższy 1RM sam podniesie
+ciężary — albo podmienić; kontrola planu i tak ostrzeże, co było w poprzednim
+cyklu.
+
+**Ciężar akcesorium: z bloku czy z RPE.** *Akcesoria domyślnie* nad planem
+ustawia to dla całego planu, ale pojedyncze ćwiczenie przestawia się
+przyciskiem **`R`** przy jego wierszu — wtedy przy Lp. stoi znacznik `RPE`.
+Różnica dotyczy tygodni T2, T3, T5 i T6: *trzymaj z bloku* zostawia sztangę
+z pierwszego tygodnia bloku i pozwala rosnąć powtórzeniom, *licz z RPE* liczy
+ciężar od nowa co tydzień, więc przy rosnących powtórzeniach sztanga schodzi.
 
 Te liczby nie są niczyim pomysłem — zostały odczytane z
 `arkusz/MasterTemplate-5-18.xlsx`. Wcześniej konsola kazała wpisywać je od zera:

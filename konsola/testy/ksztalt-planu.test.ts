@@ -54,6 +54,8 @@ describe("kształt planu", () => {
         (_, i) => ({ positionId: `D1-S${i}`, dzien: 1 })) })],
     // TOP SET stawia się teraz kliknięciem przy dowolnym wierszu, więc jego
     // wskazanie przychodzi z przeglądarki przy każdym zapisie.
+    ["tryb ciężaru slotu spoza listy", () => ({ ...planPoprawny(),
+      sloty: [{ positionId: "D1-S01", dzien: 1, trybCiezaru: "licz z głowy" }] })],
     ["TOP SETY jako tekst", () => ({ ...planPoprawny(), topSety: "jeden" })],
     ["TOP SET bez dnia", () => ({ ...planPoprawny(),
       topSety: [{ wlaczony: true, rpe: 8, slotPositionId: "D1-S01" }] })],
@@ -78,6 +80,20 @@ describe("kształt planu", () => {
       assert.doesNotMatch(blad, /undefined|function|TypeError|\.ts:/, blad);
     });
   }
+});
+
+describe("tryb ciężaru przy pojedynczym ćwiczeniu", () => {
+  test("brak pola znaczy: jak w planie", () => {
+    assert.equal(bladKsztaltuPlanu({ ...planPoprawny(),
+      sloty: [{ positionId: "D1-S01", dzien: 1 }] }), null);
+  });
+
+  test("obie wartości z listy przechodzą", () => {
+    for (const tryb of TRYBY_AKCESORIOW) {
+      assert.equal(bladKsztaltuPlanu({ ...planPoprawny(),
+        sloty: [{ positionId: "D1-S01", dzien: 1, trybCiezaru: tryb }] }), null, tryb);
+    }
+  });
 });
 
 describe("TOP SET wyłączony wolno mieć pusty", () => {

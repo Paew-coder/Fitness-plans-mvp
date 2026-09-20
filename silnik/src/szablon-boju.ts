@@ -19,16 +19,49 @@
  * otwiera drugi blok.
  */
 import type { ParametryTygodnia } from "./plan.ts";
-import type { Coeff, Tydzien } from "./typy.ts";
+import type { Coeff, CzescPlanu, Tydzien } from "./typy.ts";
 
-export const PROGRESJA_BOJU: readonly { serie: number; powtorzenia: number; rpe: number }[] = [
-  { serie: 6, powtorzenia: 6, rpe: 6.5 },   // T1
-  { serie: 5, powtorzenia: 6, rpe: 7 },     // T2
-  { serie: 5, powtorzenia: 5, rpe: 7 },     // T3
-  { serie: 4, powtorzenia: 5, rpe: 7.5 },   // T4 — początek drugiego bloku
-  { serie: 5, powtorzenia: 4, rpe: 7.5 },   // T5
-  { serie: 6, powtorzenia: 3, rpe: 7.5 },   // T6
-];
+export type ParametryBoju = { serie: number; powtorzenia: number; rpe: number };
+
+/**
+ * Progresja boju głównego — dwie kolumny, bo takie są dwa szablony trenera.
+ *
+ * `objętość` to jego „cz.1", `intensywność` to „cz.2 kontynuacja". Obie
+ * odczytane z arkuszy „Szablon 3 dni, 3 złożone cz.1 / cz.2" (Day I,
+ * sześć tygodni) i sprawdzone na drugim komplecie — „3 dni, 6 złożonych,
+ * 6 akcesoriów cz.2" ma w boju dokładnie te same liczby.
+ *
+ * Kolumna `objętość` jest identyczna z tym, co niesie MasterTemplate 5.18:
+ * 5.18 wziął bój właśnie z Day I części pierwszej. Kolumna `intensywność`
+ * była dotąd tylko w arkuszach — aplikacja jej nie znała, więc drugi cykl
+ * wychodził z liczbami pierwszego.
+ *
+ * Czego tu świadomie NIE MA: różnic między dniami. W arkuszach Day II i III
+ * mają o serię mniej i nierówne RPE (np. cz.2 Day II: 5×3 w T4, potem 4×2
+ * w T5 i znów 4×3 w T6). MasterTemplate spłaszczył to do Day I i tak zostaje —
+ * inaczej silnik musiałby trzymać osiemnaście osobnych komórek zamiast sześciu,
+ * a liczby, które je różnią, wyglądają na pisane ręcznie, nie na regułę.
+ */
+export const PROGRESJA_BOJU: Record<CzescPlanu, readonly ParametryBoju[]> = {
+  "objętość": [
+    { serie: 6, powtorzenia: 6, rpe: 6.5 },   // T1
+    { serie: 5, powtorzenia: 6, rpe: 7 },     // T2
+    { serie: 5, powtorzenia: 5, rpe: 7 },     // T3
+    { serie: 4, powtorzenia: 5, rpe: 7.5 },   // T4 — początek drugiego bloku
+    { serie: 5, powtorzenia: 4, rpe: 7.5 },   // T5
+    { serie: 6, powtorzenia: 3, rpe: 7.5 },   // T6
+  ],
+  "intensywność": [
+    { serie: 6, powtorzenia: 4, rpe: 7 },     // T1
+    // T2 powtarza T1 — w obu arkuszach cz.2 tak samo. Tydzień wejścia
+    // w nowy zakres powtórzeń: zmienia się TOP SET, praca zostaje.
+    { serie: 6, powtorzenia: 4, rpe: 7 },     // T2
+    { serie: 5, powtorzenia: 4, rpe: 7.5 },   // T3
+    { serie: 5, powtorzenia: 3, rpe: 7.5 },   // T4 — początek drugiego bloku
+    { serie: 5, powtorzenia: 3, rpe: 8 },     // T5
+    { serie: 6, powtorzenia: 2, rpe: 8 },     // T6
+  ],
+};
 
 /** Akcesoria mają w szablonie zawsze trzy serie. */
 export const SERIE_AKCESORIUM = 3;
@@ -81,9 +114,14 @@ export function jestBojemGlownym(lp: string, coeff?: Coeff): boolean {
  * bo niczym innym nie są — to jedyne miejsce, w którym wychodzimy poza
  * dosłowną treść arkusza, i dlatego stoi to tu napisane.
  */
-export function progresjaSlotu(lp: string, tydzien: Tydzien, coeff?: Coeff): ParametryTygodnia {
+export function progresjaSlotu(
+  lp: string,
+  tydzien: Tydzien,
+  coeff?: Coeff,
+  czesc: CzescPlanu = "objętość",
+): ParametryTygodnia {
   if (jestBojemGlownym(lp, coeff)) {
-    const p = PROGRESJA_BOJU[tydzien - 1]!;
+    const p = PROGRESJA_BOJU[czesc][tydzien - 1]!;
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }
   const podstawowe = drugiBlok(tydzien) ? RPE_AKCESORIUM.blokII : RPE_AKCESORIUM.blokI;

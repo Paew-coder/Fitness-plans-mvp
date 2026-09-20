@@ -47,7 +47,7 @@ export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny
       for (const t of TYGODNIE) {
         const { feedback, ciezarOverride } = tygodnie[t] ?? {};
         tygodnie[t] = {
-          ...progresjaSlotu(slot.lp, t, coeff),
+          ...progresjaSlotu(slot.lp, t, coeff, plan.czescPlanu),
           ...(feedback !== undefined ? { feedback } : {}),
           ...(ciezarOverride !== undefined ? { ciezarOverride } : {}),
         };

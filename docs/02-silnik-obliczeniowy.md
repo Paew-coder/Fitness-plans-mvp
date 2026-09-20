@@ -143,6 +143,8 @@ function powtorzeniaAkcesorium(
 
 `offsetTygodnia`: T1 = 0, T2 = 1, T3 = 2, T4 = 0, T5 = 1, T6 = 2.
 
+Bój główny ma własną tabelę — `PROGRESJA_BOJU` w `szablon-boju.ts`, dwie kolumny wg tej samej `CzescPlanu`: `objętość` to cz.1 trenera (6×6 @6,5 → … → 6×3 @7,5), `intensywność` to cz.2 (6×4 @7 → … → 6×2 @8).
+
 Dotyczy wszystkiego, co **nie jest bojem głównym**. Bojem głównym jest pozycja `A` **z ćwiczeniem złożonym** (coeff 1,0) — jej serie/powtórzenia/RPE ustawia trener wprost albo bierze z szablonu 5.18. Akcesorium postawione na pierwszym miejscu dnia idzie przez ten automat jak każde inne; kontrola planu mówi o tym wprost (`POZYCJA_A_BEZ_BOJU`).
 
 ---
@@ -153,7 +155,7 @@ Dotyczy wszystkiego, co **nie jest bojem głównym**. Bojem głównym jest pozyc
 type KontekstCiezaru = {
   tydzien: 1|2|3|4|5|6;
   jestBojemGlownym: boolean;        // pozycja 'A' i coeff 1,0
-  trybAkcesoriow: 'trzymaj z bloku' | 'licz z RPE';
+  trybAkcesoriow: 'trzymaj z bloku' | 'licz z RPE';   // slot.trybCiezaru ?? plan.trybAkcesoriow
   oneRM: number;                    // 0 = brak
   oneRMReczny?: number;             // gdy ćwiczenie podmienione w T4–T6
   cwiczenieZmienioneWzgledemT1: boolean;
