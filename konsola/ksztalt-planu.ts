@@ -93,6 +93,31 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
   for (const [i, top] of ((plan.topSety as unknown[]) ?? []).entries()) {
     if (!jestObiektem(top)) return `TOP SET ${i + 1} nie jest obiektem`;
     if (!jestLiczba(top.dzien)) return `TOP SET ${i + 1} nie ma numeru dnia`;
+    if (top.wlaczony != null && typeof top.wlaczony !== "boolean") {
+      return `TOP SET ${i + 1}: włączony musi być prawdą albo fałszem`;
+    }
+    /*
+     * Włączony TOP SET musi wiedzieć, ile i przy czym.
+     *
+     * Odkąd TOP SET stawia się kliknięciem przy dowolnym ćwiczeniu, obie te
+     * rzeczy przychodzą z przeglądarki przy każdym zapisie — a niekompletny
+     * wpis nie wywraca niczego głośno, tylko po cichu daje klientowi wiersz
+     * „TOP SET — RPE undefined". Wyłączony wpis może być pusty: nic nie znaczy
+     * i nigdzie się nie pokazuje.
+     */
+    if (top.wlaczony === true) {
+      if (!jestLiczba(top.rpe)) return `TOP SET ${i + 1} nie ma RPE`;
+      if (typeof top.slotPositionId !== "string" || !top.slotPositionId) {
+        return `TOP SET ${i + 1} nie wskazuje ćwiczenia`;
+      }
+    } else {
+      if (top.rpe != null && !jestLiczba(top.rpe)) {
+        return `TOP SET ${i + 1}: RPE musi być liczbą`;
+      }
+      if (top.slotPositionId != null && typeof top.slotPositionId !== "string") {
+        return `TOP SET ${i + 1}: wskazanie ćwiczenia musi być identyfikatorem`;
+      }
+    }
   }
 
   // ── przełączniki ──────────────────────────────────────────────────

@@ -11,6 +11,7 @@
  */
 import type { DatabaseSync } from "node:sqlite";
 import { idKlienta } from "../nazwy.ts";
+import { katalog } from "../../silnik/src/katalog.ts";
 
 export type Migracja = {
   /** Wersja, do której ta migracja doprowadza. */
@@ -173,7 +174,57 @@ function doWersji3(d: DatabaseSync): void {
   d.exec("ALTER TABLE wykonanie ADD COLUMN cwiczenie_id TEXT");
 }
 
+/**
+ * Wersja 4 — TOP SET zapisany jest tam, gdzie był widoczny.
+ *
+ * Do tej pory TOP SET miał dwie warstwy: w planie stało „włączony" dla
+ * każdego dnia, a na ekranie pokazywał się dopiero wtedy, gdy w pierwszym
+ * wierszu stało ćwiczenie złożone (coeff 1,0). Ta druga warstwa właśnie
+ * znika — TOP SET dodaje trener, przy dowolnym ćwiczeniu, i pokazuje się
+ * dokładnie tam, gdzie go postawił.
+ *
+ * Gdyby stare plany zostały bez zmian, po aktualizacji TOP SET pojawiłby się
+ * nagle w każdym dniu, przy czymkolwiek stoi w pierwszym wierszu — także
+ * przy ćwiczeniu balansowym. Klient dostałby w telefonie polecenie „jedno
+ * powtórzenie na maksimum" w ćwiczeniu, w którym nie ma ono sensu.
+ *
+ * Migracja przepisuje więc do danych to, co było widać: zostaje włączone
+ * to, co pokazywało się przed aktualizacją, i nic ponadto. Niczego nie
+ * dodaje — plan po aktualizacji wygląda tak samo jak przed nią.
+ */
+function doWersji4(d: DatabaseSync): void {
+  const plany = d.prepare("SELECT trener_id, id, plan_json FROM plan").all() as
+    { trener_id: number; id: string; plan_json: string }[];
+  const zapisz = d.prepare("UPDATE plan SET plan_json = ? WHERE trener_id = ? AND id = ?");
+
+  for (const wiersz of plany) {
+    let plan: { topSety?: { wlaczony?: boolean; slotPositionId?: string }[];
+                sloty?: { positionId?: string; cwiczenieId?: string | null }[] };
+    try {
+      plan = JSON.parse(wiersz.plan_json);
+    } catch {
+      // Nieczytelny plan zostawiamy nietknięty. Migracja nie jest miejscem
+      // na naprawianie czegoś, czego nie umiemy przeczytać.
+      continue;
+    }
+    if (!Array.isArray(plan.topSety) || plan.topSety.length === 0) continue;
+
+    let zmiana = false;
+    for (const top of plan.topSety) {
+      if (!top?.wlaczony) continue;
+      const slot = (plan.sloty ?? []).find((s) => s.positionId === top.slotPositionId);
+      const cwiczenie = slot?.cwiczenieId ? katalog.poId(slot.cwiczenieId) : null;
+      if (cwiczenie?.coeff === 1) continue;   // tak samo było widać wcześniej
+      top.wlaczony = false;
+      zmiana = true;
+    }
+    if (!zmiana) continue;
+    zapisz.run(JSON.stringify(plan), wiersz.trener_id, wiersz.id);
+  }
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
+  { doWersji: 4, opis: "TOP SET zapisany tam, gdzie był widoczny", wykonaj: doWersji4 },
 ];

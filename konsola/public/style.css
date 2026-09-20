@@ -211,6 +211,16 @@ tr:hover .strzalki, .strzalki:focus-within { opacity: 1; pointer-events: auto; }
 button.mikro { padding: 0 .2rem; font-size: .55rem; line-height: 1.05;
                border-color: transparent; background: none; color: var(--tekst-blady); }
 button.mikro:hover { color: var(--akcent); border-color: var(--linia-mocna); }
+/* Przycisk „T" przy wierszu, który TOP SET już ma — żeby było widać, że
+   kolejne kliknięcie go zdejmie, a nie doda drugi. */
+button.mikro.wlaczony { color: var(--akcent); border-color: var(--akcent); font-weight: 700; }
+/* Znacznik przy Lp. Strzałki i „T" wychodzą dopiero po najechaniu, więc bez
+   tego nie byłoby po tabeli widać, przy którym ćwiczeniu stoi TOP SET. */
+.znacznik-topset {
+  margin-left: .3rem; padding: 0 .25rem; border-radius: 3px;
+  background: var(--akcent-tlo); color: var(--akcent);
+  font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .04em;
+}
 td.cwiczenie select { width: 100%; min-width: 12rem; }
 td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
 td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
