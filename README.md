@@ -23,7 +23,7 @@ Wyciągnięte z 5.17 i sprawdzone przeciwko komórkom arkusza:
 | Plik | Zawartość |
 |---|---|
 | [`dane/tabele-przeliczeniowe.json`](docs/dane/tabele-przeliczeniowe.json) | RPE → %1RM (powt. 1–15 × RPE 6–10) + 3 tabele stresu |
-| [`dane/baza-cwiczen.json`](docs/dane/baza-cwiczen.json) | 164 ćwiczenia: kategoria, part, coeff, skok kg, progresja, film, uwagi |
+| [`dane/baza-cwiczen.json`](docs/dane/baza-cwiczen.json) | 164 ćwiczenia z arkusza + dodane przez trenera: kategoria, part, coeff, skok kg, progresja, film, uwagi |
 | [`dane/oddech-progi.json`](docs/dane/oddech-progi.json) | 5 progów TWOT → dawka oddechowa |
 | [`dane/bieg-parametry.json`](docs/dane/bieg-parametry.json) | strefy tętna, tempa, wzory jednostek biegowych |
 | [`dane/jednostronne.json`](docs/dane/jednostronne.json) | 30 ćwiczeń jednostronnych |

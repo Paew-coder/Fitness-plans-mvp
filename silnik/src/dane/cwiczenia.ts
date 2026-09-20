@@ -4,7 +4,7 @@
 
 import type { Cwiczenie } from "../typy.ts";
 
-/** 164 cwiczen z BAZY 5.17. */
+/** 165 cwiczen z BAZY 5.17. */
 export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0001", nazwa: "Abduction machine", kategoria: "Lower pull", part: "d", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/H98IP8rARy4", scaloneId: "EX-0098" },
   { id: "EX-0002", nazwa: "Adduction machine", kategoria: "Lower push", part: "s", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/CjAVezAggkI", scaloneId: "EX-0099" },
@@ -48,6 +48,7 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0051", nazwa: "Dead stop barbell row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/zRu-zlvxgDA" },
   { id: "EX-0052", nazwa: "Deadbug OH", kategoria: "Core", part: "c", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/LomWOVw5QRA" },
   { id: "EX-0053", nazwa: "Deadlift", kategoria: "Lower pull", part: "d", coeff: 1.0, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/AweC3UaM14o" },
+  { id: "EX-0204", nazwa: "Sumo deadlift", kategoria: "Lower pull", part: "d", coeff: 1.0, skokKg: 2.5, progresja: "kg", uwagi: "DODANE PRZEZ TRENERA 20.09.2026 – nie ma tego w BAZIE 5.17. Parametry jak Deadlift. Brak nagrania." },
   { id: "EX-0054", nazwa: "Deficit push up", kategoria: "Upper push horizontal", part: "b", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/B68Foe2DkfI", uwagi: "DO WERYFIKACJI – konflikt category/part/coeff" },
   { id: "EX-0055", nazwa: "Deficit reverse lunge", kategoria: "Lower push", part: "s", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtube.com/shorts/mTOMsoRLXl0", jednostronne: true },
   { id: "EX-0056", nazwa: "Dips", kategoria: "Upper push horizontal", part: "b", coeff: 1.0, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/ebNGIOsFSe0", uwagi: "DO WERYFIKACJI – konflikt category/part/coeff" },

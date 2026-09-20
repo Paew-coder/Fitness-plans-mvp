@@ -21,11 +21,11 @@
  * squat, high bar squat, deadlift, sumo deadlift — w innych przypadkach się
  * nie zdarza **niezależnie od coeff**".
  *
- * Nazwy z BAZY 5.17, z dwoma przypisami:
- *   • „high bar squat" to w BAZIE `Barbell back squat` — przysiad ze sztangą
- *     wysoko, domyślny wariant bez dopisku;
- *   • `Sumo deadlift` w BAZIE 5.17 **jeszcze nie istnieje**. Zostaje na
- *     liście, żeby zadziałał sam w dniu, w którym trener go doda.
+ * Nazwy z katalogu, z dwoma przypisami:
+ *   • „high bar squat" to `Barbell back squat` — przysiad ze sztangą wysoko,
+ *     domyślny wariant bez dopisku;
+ *   • `Sumo deadlift` nie istnieje w BAZIE 5.17 — dodany osobno 20.09.2026
+ *     na prośbę trenera, z parametrami jak Deadlift (`EX-0204`).
  *
  * Lista nie ogranicza niczego, co trener robi ręcznie — służy rozpisywaniu
  * automatycznemu i podpowiedzi w konsoli.

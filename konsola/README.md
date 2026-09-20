@@ -306,7 +306,7 @@ Bez klucza konsola startuje normalnie i wszystko poza asystentem działa tak
 samo — dwa przyciski są po prostu nieaktywne, z wyjaśnieniem dlaczego.
 
 Każde zapytanie kosztuje ułamek dolara i konsola pokazuje ile, pod odpowiedzią.
-Katalog 164 ćwiczeń jest oznaczony do cache, więc drugie i kolejne zapytanie
+Katalog ćwiczeń (165 pozycji) jest oznaczony do cache, więc drugie i kolejne zapytanie
 w ciągu paru minut płaci za niego dziesiątą część ceny.
 
 **Model może przysłać byle co.** Odpowiedź przychodzi w narzuconym schemacie,

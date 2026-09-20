@@ -1,6 +1,6 @@
 {
- "opis": "BAZA z MasterTemplate 5.17, wiersze 3-202.",
- "liczba": 164,
+ "opis": "BAZA z MasterTemplate 5.17, wiersze 3-202 (164 pozycje) + cwiczenia dodane przez trenera poza arkuszem (wiersz_baza: null).",
+ "liczba": 165,
  "cwiczenia": [
   {
    "id": "EX-0001",
@@ -547,6 +547,19 @@
    "uwagi": null,
    "scalone_id": null,
    "wiersz_baza": 44
+  },
+  {
+   "id": "EX-0204",
+   "nazwa": "Sumo deadlift",
+   "kategoria": "Lower pull",
+   "part": "d",
+   "coeff": 1.0,
+   "skok_kg": 2.5,
+   "progresja": "kg",
+   "film": null,
+   "uwagi": "DODANE PRZEZ TRENERA 20.09.2026 – nie ma tego w BAZIE 5.17. Parametry jak Deadlift. Brak nagrania.",
+   "scalone_id": null,
+   "wiersz_baza": null
   },
   {
    "id": "EX-0054",
