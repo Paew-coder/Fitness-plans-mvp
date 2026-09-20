@@ -17,6 +17,7 @@ import { katalog } from "../src/katalog.ts";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../src/walidacja.ts";
 import { porownajCykle, podsumujPorownanie } from "../src/porownanie-cykli.ts";
+import { zwyczajowyTopSet, CWICZENIA_ZWYCZAJOWO_Z_TOP_SETEM } from "../src/top-set.ts";
 
 describe("tabela RPE (TABELE!B4:J18)", () => {
   test("wartości brzegowe", () => {
@@ -450,6 +451,50 @@ describe("przeliczenie planu i walidacja", () => {
     assert.equal(typeof top.ciezar, "number");
   });
 
+  /*
+   * TOP SET stoi tam, gdzie postawił go trener.
+   *
+   * Słowa, z których to wynika: „możliwość kliknięcia obojętnie którego
+   * ćwiczenia i dodania top setu". Wcześniej silnik pokazywał TOP SET
+   * wyłącznie przy ćwiczeniu z coeff 1,0 i milczał przy każdym innym —
+   * trener klikał, a na ekranie nie działo się nic.
+   */
+  test("TOP SET działa przy akcesorium, nie tylko przy boju głównym", () => {
+    const plan = planTestowy();
+    plan.serieMaksymalne = [
+      ...plan.serieMaksymalne,
+      { cwiczenieId: "EX-0003", ciezar: 40, powtorzenia: 5 },   // Allah, coeff 0,5
+    ];
+    plan.topSety = [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S02" }];
+    const top = przeliczPlan(plan).tygodnie[0]!.topSety[0]!;
+    assert.equal(top.cwiczenie?.id, "EX-0003");
+    assert.equal(typeof top.ciezar, "number", "akcesorium też ma policzony ciężar");
+  });
+
+  test("TOP SET bez 1RM mówi o tym wprost, zamiast znikać", () => {
+    const plan = planTestowy();
+    plan.topSety = [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S02" }];
+    const top = przeliczPlan(plan).tygodnie[0]!.topSety[0]!;
+    assert.equal(top.cwiczenie?.id, "EX-0003");
+    assert.equal(top.ciezar, "— brak 1RM");
+  });
+
+  test("TOP SET na pustym slocie nie pokazuje ćwiczenia", () => {
+    const plan = planTestowy();
+    plan.topSety = [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S09" }];
+    const top = przeliczPlan(plan).tygodnie[0]!.topSety[0]!;
+    assert.equal(top.cwiczenie, null);
+    assert.equal(top.ciezar, "");
+  });
+
+  test("TOP SET dokłada jedną serię do podsumowania dnia", () => {
+    const plan = planTestowy();
+    const zTopSetem = przeliczPlan(plan).tygodnie[0]!.dni.find((d) => d.dzien === 1)!;
+    plan.topSety = [{ dzien: 1, wlaczony: false, rpe: 7, slotPositionId: "D1-S01" }];
+    const bezTopSetu = przeliczPlan(plan).tygodnie[0]!.dni.find((d) => d.dzien === 1)!;
+    assert.equal(zTopSetem.serie - bezTopSetu.serie, 1);
+  });
+
   test("nadpisanie ciężaru jest jawne i cofalne", () => {
     const plan = planTestowy();
     plan.sloty[0]!.tygodnie![1]!.ciezarOverride = 999;
@@ -749,5 +794,44 @@ describe("porównanie cykli (poza arkuszem)", () => {
     assert.equal(p.serieRazem.procent, null);
     assert.equal(p.powtorzonych, 0);
     assert.equal(p.cwiczenia.every((c) => c.stan === "nowe"), true);
+  });
+});
+
+/*
+ * Wiedza trenera o TOP SECIE — nie reguła silnika.
+ *
+ * „Zazwyczaj top set będzie tylko do ćwiczeń barbell bench press, low bar
+ * squat, high bar squat, deadlift, sumo deadlift — w innych przypadkach się
+ * nie zdarza niezależnie od coeff". Lista niczego nie blokuje; ma być
+ * gotowa na moment, w którym plan rozpisze się sam.
+ */
+describe("ćwiczenia, przy których TOP SET jest zwyczajowy", () => {
+  test("pięć ćwiczeń z listy trenera", () => {
+    assert.equal(CWICZENIA_ZWYCZAJOWO_Z_TOP_SETEM.length, 5);
+    for (const nazwa of ["Barbell bench press", "Barbell low bar squat",
+      "Barbell back squat", "Deadlift", "Sumo deadlift"]) {
+      assert.equal(zwyczajowyTopSet(nazwa), true, nazwa);
+    }
+  });
+
+  test("coeff 1,0 to za mało — dipy i RDL na liście nie są", () => {
+    for (const nazwa of ["Dips", "RDL", "Front squat", "Walking lunges", "Clean"]) {
+      assert.equal(katalog.poNazwie(nazwa)?.coeff, 1, `${nazwa} ma coeff 1,0`);
+      assert.equal(zwyczajowyTopSet(nazwa), false, `${nazwa} nie jest zwyczajowe`);
+    }
+  });
+
+  test("nazwa porównywana bez względu na wielkość liter i spacje", () => {
+    assert.equal(zwyczajowyTopSet("  barbell BENCH press "), true);
+    assert.equal(zwyczajowyTopSet(""), false);
+    assert.equal(zwyczajowyTopSet(null), false);
+    assert.equal(zwyczajowyTopSet(undefined), false);
+  });
+
+  test("cztery z pięciu nazw istnieją w BAZIE; sumo czeka na dodanie", () => {
+    const brakujace = CWICZENIA_ZWYCZAJOWO_Z_TOP_SETEM
+      .filter((n) => !katalog.poNazwie(n));
+    assert.deepEqual(brakujace, ["Sumo deadlift"],
+      "gdy sumo trafi do BAZY, ten test przypomni o zdjęciu przypisu");
   });
 });

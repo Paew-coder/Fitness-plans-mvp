@@ -40,9 +40,21 @@ export function pustyPlan(klient: string): Plan {
     czescPlanu: "objętość",
     serieMaksymalne: [],
     sloty,
+    /*
+     * TOP SETY wyłączone i wskazujące pierwszy wiersz dnia.
+     *
+     * Wyłączone, bo TOP SET dodaje trener — kliknięciem „T" przy tym
+     * ćwiczeniu, przy którym go chce. Wcześniej wpisy były włączone
+     * z urzędu i TOP SET pojawiał się sam nad każdym dniem, przy czymkolwiek,
+     * co stało w pierwszym wierszu. W planach trenera z arkusza nie ma
+     * ani jednego wiersza TOP SET — więc „włączony" było złym domyślnym.
+     *
+     * Wpisy zostają, mimo że są puste: dzięki temu w planie zawsze jest co
+     * przełączyć, a numer dnia nie bierze się znikąd.
+     */
     topSety: [1, 2, 3, 4, 5].map((dzien) => ({
       dzien,
-      wlaczony: true,
+      wlaczony: false,
       rpe: 7,
       slotPositionId: `D${dzien}-S01`,
     })),

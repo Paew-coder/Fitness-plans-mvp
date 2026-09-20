@@ -1038,24 +1038,37 @@ function rysujDni() {
     }
     blok.append(naglowek);
 
-    // TOP SET
+    /*
+     * TOP SET — pasek nad tabelą, jak wiersz TOP SET w arkuszu.
+     *
+     * Pokazuje się tylko wtedy, gdy trener TOP SET faktycznie dodał. Dawniej
+     * wisiał w każdym dniu z wyłączoną kratką, a ćwiczenie brał na sztywno
+     * z pierwszego wiersza. Teraz ćwiczenie wskazuje trener przyciskiem „T"
+     * przy dowolnym wierszu, a tutaj zostaje to, czym pasek ma być: nazwa,
+     * RPE i ciężar.
+     */
     const top = (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
-    if (top && maCwiczenia) {
+    if (top?.wlaczony && maCwiczenia) {
       const wyliczony = wyliczonyTydzien.topSety.find((t) => t.dzien === dzien);
+      // Nazwa wprost z planu, nie z wyniku — po kliknięciu „T" ma być widać
+      // od razu, a wynik z serwera dojdzie chwilę później razem z ciężarem.
+      const zrodlo = slotPlanu(top.slotPositionId);
+      const nazwa = cwiczenia.find((c) => c.id === zrodlo?.cwiczenieId)?.nazwa
+        ?? wyliczony?.cwiczenie?.nazwa ?? "—";
       const pasek = el("div", "topset");
-      const przelacznik = el("input");
-      przelacznik.type = "checkbox";
-      przelacznik.checked = top.wlaczony;
-      przelacznik.onchange = () => { top.wlaczony = przelacznik.checked; zapiszPozniej(); };
       const rpe = el("input");
       rpe.type = "number"; rpe.step = "0.5"; rpe.min = "5"; rpe.max = "10";
       rpe.value = top.rpe; rpe.style.width = "4rem";
       rpe.onchange = () => { top.rpe = Number(rpe.value); zapiszPozniej(); };
-      pasek.append(przelacznik, el("span", "etykieta", "TOP SET"),
-        el("span", "", wyliczony?.cwiczenie?.nazwa ?? "—"),
+      const usun = el("button", "mikro", "✕");
+      usun.title = "Usuń TOP SET z tego dnia";
+      usun.onclick = () => { top.wlaczony = false; zapiszPozniej(); rysujDni(); };
+      pasek.append(el("span", "etykieta", "TOP SET"),
+        el("span", "", nazwa),
         el("span", "", "RPE"), rpe,
         el("span", "wynik", typeof wyliczony?.ciezar === "number"
-          ? `${liczba(wyliczony.ciezar)} kg` : (wyliczony?.ciezar || "—")));
+          ? `${liczba(wyliczony.ciezar)} kg` : (wyliczony?.ciezar || "—")),
+        usun);
       blok.append(pasek);
     }
 
@@ -1085,6 +1098,46 @@ function rysujDni() {
     blok.append(tabela);
     kontener.append(blok);
   }
+}
+
+/** TOP SET dnia, do którego należy ten slot — albo `undefined`. */
+function topSetDnia(dzien) {
+  return (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
+}
+
+/** Czy TOP SET stoi właśnie przy tym ćwiczeniu. */
+function jestTopSetem(slot) {
+  const top = topSetDnia(slot.dzien);
+  return !!top && top.wlaczony && top.slotPositionId === slot.positionId;
+}
+
+/**
+ * Czy przy tym ćwiczeniu TOP SET jest zwyczajowy — wiedza trenera z BAZY,
+ * przysłana razem z katalogiem. Służy podpowiedzi w dymku i niczemu więcej:
+ * dodać TOP SET można wszędzie.
+ */
+function zwyczajowyTopSet(slot) {
+  return !!cwiczenia.find((c) => c.id === slot.cwiczenieId)?.zwyczajowyTopSet;
+}
+
+/**
+ * Dodaje TOP SET przy tym ćwiczeniu, przenosi go tutaj albo usuwa —
+ * zależnie od tego, gdzie stoi teraz.
+ */
+function przelaczTopSet(slot) {
+  const plan = obraz.zapisany.plan;
+  if (!Array.isArray(plan.topSety)) plan.topSety = [];
+  let top = topSetDnia(slot.dzien);
+  if (!top) {
+    // Plan z importu arkusza nie musi mieć wpisu na ten dzień.
+    top = { dzien: slot.dzien, wlaczony: false, rpe: 7, slotPositionId: slot.positionId };
+    plan.topSety.push(top);
+  }
+  const juzTutaj = top.wlaczony && top.slotPositionId === slot.positionId;
+  top.wlaczony = !juzTutaj;
+  top.slotPositionId = slot.positionId;
+  zapiszPozniej();
+  rysujDni();
 }
 
 function rysujSlot(slot, pusty) {
@@ -1123,7 +1176,35 @@ function rysujSlot(slot, pusty) {
     rozniesc.title = `Skopiuj parametry tego ćwiczenia z T${tydzien} na pozostałe tygodnie`;
     rozniesc.onclick = () => wypelnijTygodnie("kopiuj", slot.positionId);
     strzalki.append(rozniesc);
+
+    /*
+     * TOP SET przy tym ćwiczeniu.
+     *
+     * Dotąd TOP SET siedział na sztywno przy pierwszym wierszu dnia i tylko
+     * tam. Trener powiedział wprost, czego potrzebuje: „możliwość kliknięcia
+     * obojętnie którego ćwiczenia i dodania top setu". Więc przycisk stoi
+     * w każdym wypełnionym wierszu i przełącza: nie ma → jest tutaj,
+     * jest tutaj → nie ma.
+     *
+     * W dniu jest jeden TOP SET, jak w arkuszu — kliknięcie w innym wierszu
+     * przenosi go, zamiast dokładać drugi.
+     */
+    const dodajTop = el("button", `mikro ${jestTopSetem(slot) ? "wlaczony" : ""}`, "T");
+    dodajTop.title = jestTopSetem(slot)
+      ? "Usuń TOP SET z tego ćwiczenia"
+      : (zwyczajowyTopSet(slot)
+          ? "Dodaj TOP SET — przy tym ćwiczeniu jest zwyczajowy"
+          : "Dodaj TOP SET do tego ćwiczenia");
+    dodajTop.onclick = () => przelaczTopSet(slot);
+    strzalki.append(dodajTop);
     komorkaLp.append(strzalki);
+  }
+  if (jestTopSetem(slot)) {
+    // Strzałki i „T" widać dopiero po najechaniu, więc sam przycisk nie mówi,
+    // że TOP SET tu stoi. Znacznik stoi przy Lp. na stałe.
+    const znacznik = el("span", "znacznik-topset", "TS");
+    znacznik.title = "To ćwiczenie ma TOP SET";
+    komorkaLp.append(znacznik);
   }
   wiersz.append(komorkaLp);
 

@@ -35,7 +35,7 @@ export function sprawdzPlan(
    * W pozycji A stoi coś, co nie jest bojem głównym.
    *
    * Aplikacja liczy to wtedy jak akcesorium — 3 serie, powtórzenia z coeff,
-   * RPE 8 — i nie daje TOP SETU. To jest właściwe zachowanie, ale byłoby
+   * RPE 8, zamiast progresji bloku. To jest właściwe zachowanie, ale byłoby
    * ciche: trener widzi ćwiczenie na pierwszym miejscu dnia i ma prawo
    * zakładać, że prowadzi blok. Mówimy więc wprost, że nie prowadzi.
    *
@@ -47,7 +47,7 @@ export function sprawdzPlan(
     .map((s) => `${s.positionId} ${s.cwiczenie!.nazwa}`);
   dodaj("POZYCJA_A_BEZ_BOJU", "ostrzezenie",
     "Na pierwszym miejscu dnia stoi ćwiczenie, które nie jest złożone — "
-    + "liczy się jak akcesorium i nie ma TOP SETU",
+    + "liczy się jak akcesorium, nie jak bój główny",
     pozycjaANieZlozona);
 
   // Ciężar wpisany ręcznie nie reaguje ani na 1RM, ani na oceny klienta.

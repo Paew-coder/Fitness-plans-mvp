@@ -223,6 +223,16 @@ Dziś nie ma takiej możliwości i to zostaje. Silnik jest na to gotowy: `dniTre
 **5. TOP SET w arkuszu naprawiony.**
 Zrobione: [`arkusz/`](../arkusz/README.md) produkuje 5.18. Przy okazji wyszły dwa nieznane wcześniej błędy — brakujące formuły `START!B7` i `T1!G8`, oba na slocie `D1-S02`. Naprawione jako osobne, możliwe do pominięcia poprawki.
 
+**6. TOP SET stawia trener — przy dowolnym ćwiczeniu.** *(20.09.2026)*
+
+Aplikacja nie rozstrzyga, gdzie TOP SET może być. W konsoli każdy wypełniony wiersz ma przycisk „T": kliknięcie stawia TOP SET przy tym ćwiczeniu, kolejne — zdejmuje. W dniu jest jeden, jak jeden wiersz TOP SET w arkuszu, więc kliknięcie gdzie indziej przenosi go, zamiast dokładać drugi. W nowym planie nie ma go wcale.
+
+Osobno od tego zapisana jest **wiedza trenera**, słowami z 20.09.2026: *„zazwyczaj top set będzie tylko do ćwiczeń barbell bench press, low bar squat, high bar squat, deadlift, sumo deadlift — w innych przypadkach się nie zdarza niezależnie od coeff"*. Lista siedzi w [`silnik/src/top-set.ts`](../silnik/src/top-set.ts) i **niczego nie blokuje** — służy podpowiedzi w konsoli i rozpisywaniu planów, gdy będzie automatyczne.
+
+Dwa przypisy do nazw: „high bar squat" to w BAZIE `Barbell back squat`, a `Sumo deadlift` w BAZIE 5.17 jeszcze nie istnieje — został na liście, żeby zadziałał sam w dniu, w którym trafi do bazy (test w `silnik/testy/jednostkowe.test.ts` o tym przypomni).
+
+Krótko przedtem TOP SET pojawiał się wyłącznie przy ćwiczeniu z `coeff` 1,0 i tylko w pierwszym wierszu dnia. To było za wąsko i za szeroko naraz: odbierało trenerowi wybór, a jednocześnie proponowało TOP SET przy dipach, wykrokach i cleanie, bo one też mają 1,0.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
