@@ -72,7 +72,26 @@ function zbudujStaraBaze(): void {
   d.exec(SCHEMAT_V1);
   d.prepare("INSERT INTO trener (id, email, nazwa, utworzony) VALUES (1, 'trener@localhost', 'Trener', '2026-01-01T00:00:00.000Z')").run();
 
-  const plan = JSON.stringify({ nazwa: "x", sloty: [], serieMaksymalne: [], topSety: [] });
+  /*
+   * Plan z TOP SETAMI włączonymi w każdym dniu — tak wyglądały wszystkie plany
+   * założone w konsoli, bo taki był domyślny kształt pustego planu. Widoczne
+   * były jednak tylko te, które stały przy ćwiczeniu złożonym; migracja v4 ma
+   * ten stan przepisać do danych. Dzień III sprawdza slot bez ćwiczenia.
+   */
+  const plan = JSON.stringify({
+    nazwa: "x",
+    serieMaksymalne: [],
+    sloty: [
+      { positionId: "D1-S01", dzien: 1, lp: "A1.", cwiczenieId: "EX-0011" },  // bench, coeff 1,0
+      { positionId: "D2-S01", dzien: 2, lp: "A1.", cwiczenieId: "EX-0003" },  // Allah, coeff 0,5
+      { positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: null },
+    ],
+    topSety: [
+      { dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S01" },
+      { dzien: 2, wlaczony: true, rpe: 7, slotPositionId: "D2-S01" },
+      { dzien: 3, wlaczony: true, rpe: 7, slotPositionId: "D3-S01" },
+    ],
+  });
   const wstaw = d.prepare(`
     INSERT INTO plan (trener_id, id, klient, wersja, status, data_startu, utworzony, zmieniony, poprzedni_id, token, plan_json)
     VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -119,7 +138,7 @@ describe("migracja v1 → v2", () => {
     assert.equal(w, polaczenie.WERSJA_SCHEMATU);
     // Liczba wpisana wprost, żeby podniesienie wersji było decyzją, a nie
     // skutkiem ubocznym — test ma wtedy zapytać, czy migracja rzeczywiście jest.
-    assert.equal(w, 3);
+    assert.equal(w, 4);
   });
 
   test("z nazw w planach powstali klienci", () => {
@@ -187,3 +206,43 @@ describe("migracja v1 → v2", () => {
     assert.equal(magazyn.listaKlientow(1).length, 2);
   });
 });
+
+/**
+ * Migracja v3 → v4 na tych samych danych.
+ *
+ * TOP SET przestaje być czymś, co silnik włącza sam przy ćwiczeniu złożonym,
+ * a staje się czymś, co trener stawia klikając. Stare plany mają włączone
+ * wszystko — więc bez migracji TOP SET pojawiłby się po aktualizacji nad
+ * każdym dniem, także tam, gdzie nikt go nie chciał i gdzie dotąd go nie było.
+ * Kontrola jest o to jedno: po migracji plan wygląda tak, jak wyglądał.
+ */
+describe("migracja v3 → v4: TOP SET tam, gdzie był widoczny", () => {
+  function topSetyPlanu(id: string) {
+    const wiersz = polaczenie.baza()
+      .prepare("SELECT plan_json FROM plan WHERE trener_id = 1 AND id = ?")
+      .get(id) as { plan_json: string };
+    return JSON.parse(wiersz.plan_json).topSety as
+      { dzien: number; wlaczony: boolean; slotPositionId: string }[];
+  }
+
+  test("TOP SET przy ćwiczeniu złożonym zostaje włączony", () => {
+    const top = topSetyPlanu("zuzanna-c-4").find((t) => t.dzien === 1)!;
+    assert.equal(top.wlaczony, true);
+    assert.equal(top.slotPositionId, "D1-S01", "wskazanie slotu zostaje nietknięte");
+  });
+
+  test("TOP SET przy akcesorium gaśnie — i tak nie było go widać", () => {
+    assert.equal(topSetyPlanu("zuzanna-c-4").find((t) => t.dzien === 2)!.wlaczony, false);
+  });
+
+  test("TOP SET na pustym slocie gaśnie", () => {
+    assert.equal(topSetyPlanu("zuzanna-c-4").find((t) => t.dzien === 3)!.wlaczony, false);
+  });
+
+  test("migracja objęła wszystkie plany, nie tylko najnowszy", () => {
+    for (const id of ["zuzanna-c-3", "zuzanna-c-4", "maciek-tabakowski-1"]) {
+      assert.deepEqual(topSetyPlanu(id).map((t) => t.wlaczony), [true, false, false], id);
+    }
+  });
+});
+

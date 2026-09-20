@@ -20,6 +20,7 @@ export * from "./historia-klienta.ts";
 export * from "./progresja.ts";
 export * from "./oddech.ts";
 export * from "./bieg.ts";
+export * from "./top-set.ts";
 export * from "./plan.ts";
 export * from "./walidacja.ts";
 export { TABELA_RPE, TABELA_STRES_CALKOWITY, TABELA_STRES_CENTRALNY, TABELA_STRES_OBWODOWY } from "./dane/tabele.ts";

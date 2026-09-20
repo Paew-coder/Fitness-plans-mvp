@@ -28,6 +28,7 @@ import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
 import { adresyLokalnejSieci } from "./adresy.ts";
 import { katalog } from "../silnik/src/katalog.ts";
+import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
@@ -982,7 +983,16 @@ const serwer = createServer(async (req, res) => {
 
     // ── katalog ćwiczeń ──────────────────────────────────────────────
     if (sciezka === "/api/cwiczenia") {
-      return json(res, katalog.wszystkie);
+      /*
+       * Do każdego ćwiczenia dokładamy jedną informację, której nie ma w BAZIE:
+       * czy TOP SET jest przy nim zwyczajowy. Reguła jest wiedzą trenera
+       * i siedzi w silniku (`top-set.ts`) — przeglądarka nie ma jej powtarzać
+       * u siebie, bo wtedy byłyby dwie listy i jedna z nich by się rozjechała.
+       */
+      return json(res, katalog.wszystkie.map((c) => ({
+        ...c,
+        zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
+      })));
     }
 
     if (sciezka === "/api/ja" && req.method === "GET") {

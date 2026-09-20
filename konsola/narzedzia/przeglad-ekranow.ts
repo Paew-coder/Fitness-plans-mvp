@@ -398,10 +398,70 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("część planu zapisana", ustawienia.zapisany.plan.czescPlanu === "intensywność");
   sprawdz("data startu zapisana", ustawienia.zapisany.dataStartu === "2026-09-01");
 
-  // ── 12. TOP SET ────────────────────────────────────────────────────
-  await s.locator(".topset input[type=checkbox]").first().uncheck();
+  // ── 12. TOP SET przy dowolnym ćwiczeniu ───────────────────────────
+  //
+  // Prośba wprost z używania: „możliwość kliknięcia obojętnie którego
+  // ćwiczenia i dodania top setu". Dotąd TOP SET siedział na sztywno przy
+  // pierwszym wierszu dnia i pokazywał się tylko wtedy, gdy stało tam
+  // ćwiczenie złożone — więc trener nie mógł ani go przesunąć, ani zdjąć
+  // stamtąd, gdzie go nie chciał.
+  //
+  // Układ tego planu jest do tego wymarzony: w pierwszym wierszu stoi
+  // akcesorium (Barbell row), a przysiad — w drugim. Czyli dokładnie ten
+  // przypadek, w którym dawniej TOP SET nie miał prawa się pojawić.
+  const topSetDnia1 = async () =>
+    (await zBazy()).zapisany.plan.topSety.filter((t: any) => t.dzien === 1);
+  const przyciskTopSetu = (n: number) =>
+    wiersz(n).locator("td.lp button", { hasText: /^T$/ });
+
+  sprawdz("nowy plan nie dodaje TOP SETU sam z siebie",
+    (await s.locator(".topset").count()) === 0 && !(await topSetDnia1())[0]?.wlaczony);
+
+  await wiersz(1).hover();
+  await przyciskTopSetu(1).click();
   await zapisano();
-  sprawdz("TOP SET da się wyłączyć", (await zBazy()).zapisany.plan.topSety[0].wlaczony === false);
+  const poDodaniu = await zBazy();
+  const top1 = poDodaniu.zapisany.plan.topSety.find((t: any) => t.dzien === 1);
+  sprawdz("TOP SET siada przy wskazanym ćwiczeniu, nie przy pierwszym wierszu",
+    top1?.wlaczony === true && top1?.slotPositionId === "D1-S02",
+    `${top1?.slotPositionId} · włączony: ${top1?.wlaczony}`);
+
+  const wyliczonyTop = poDodaniu.wynik.tygodnie[0].topSety.find((t: any) => t.dzien === 1);
+  sprawdz("i silnik liczy dla niego ciężar",
+    wyliczonyTop?.cwiczenie?.id === "EX-0010" && typeof wyliczonyTop?.ciezar === "number",
+    `${wyliczonyTop?.cwiczenie?.nazwa ?? "brak"} · ${wyliczonyTop?.ciezar}`);
+  sprawdz("pasek nad dniem pokazuje to ćwiczenie",
+    (await s.locator(".topset").first().innerText()).includes("Barbell back squat"),
+    (await s.locator(".topset").first().innerText()).replace(/\n/g, " "));
+
+  // Kliknięcie w innym wierszu ma TOP SET PRZENIEŚĆ — w dniu jest jeden,
+  // tak jak jeden wiersz TOP SET w arkuszu.
+  await wiersz(0).hover();
+  await przyciskTopSetu(0).click();
+  await zapisano();
+  const poPrzeniesieniu = await topSetDnia1();
+  sprawdz("kliknięcie w innym wierszu przenosi TOP SET, nie dokłada drugiego",
+    poPrzeniesieniu.length === 1 && poPrzeniesieniu[0].slotPositionId === "D1-S01",
+    poPrzeniesieniu.map((t: any) => t.slotPositionId).join(", "));
+
+  // Akcesorium też może mieć TOP SET — o tym decyduje trener, nie coeff.
+  const topAkcesorium = (await zBazy()).wynik.tygodnie[0].topSety
+    .find((t: any) => t.dzien === 1);
+  sprawdz("TOP SET działa też przy akcesorium",
+    topAkcesorium?.cwiczenie?.id === "EX-0016",
+    topAkcesorium?.cwiczenie?.nazwa ?? "brak");
+
+  const rpeTopSetu = s.locator(".topset input[type=number]").first();
+  await rpeTopSetu.fill("8.5");
+  await rpeTopSetu.blur();
+  await zapisano();
+  sprawdz("RPE TOP SETU zapisuje się", (await topSetDnia1())[0]?.rpe === 8.5,
+    String((await topSetDnia1())[0]?.rpe));
+
+  await s.locator(".topset button", { hasText: "✕" }).first().click();
+  await zapisano();
+  sprawdz("TOP SET da się zdjąć", (await topSetDnia1())[0]?.wlaczony === false);
+  sprawdz("i pasek znika z ekranu", (await s.locator(".topset").count()) === 0);
 
   // ── 13. moduł oddechu ─────────────────────────────────────────────
   await s.fill("#oddech-twot", "22");
@@ -465,8 +525,12 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     a1Akc?.serie === 3 && a1Akc?.rpe === 8,
     `${a1Akc?.serie} × ${a1Akc?.powtorzenia} @ RPE ${a1Akc?.rpe}`);
 
+  // TOP SET nie pojawia się tu sam — i o to chodzi. Dodać go wolno przy
+  // czymkolwiek (sekcja 12), ale to ma być decyzja trenera, a nie skutek
+  // wpisania ćwiczenia w pierwszy wiersz dnia.
   const topAkc = zAkcesorium.wynik.tygodnie[0].topSety.find((t: any) => t.dzien === 1);
-  sprawdz("i nie dostaje TOP SETU", !topAkc?.cwiczenie, topAkc?.cwiczenie?.nazwa ?? "brak");
+  sprawdz("i nie dostaje TOP SETU sam z siebie", !topAkc?.cwiczenie,
+    topAkc?.cwiczenie?.nazwa ?? "brak");
 
   sprawdz("a kontrola planu mówi o tym wprost",
     zAkcesorium.uwagi.some((u: any) => u.kod === "POZYCJA_A_BEZ_BOJU"

@@ -599,6 +599,17 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
     { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
   ];
+  /*
+   * TOP SET przy akcesorium w B1 — nie przy pierwszym wierszu dnia.
+   *
+   * Trener stawia TOP SET kliknięciem, przy tym ćwiczeniu, przy którym chce.
+   * Na telefonie ma się wtedy pojawić właśnie to ćwiczenie; wcześniej TOP SET
+   * brał ćwiczenie z pierwszego wiersza i tylko wtedy, gdy stało tam coś
+   * złożonego, więc takiego układu nie dało się nawet zapisać.
+   */
+  golyPlan.topSety = golyPlan.topSety.map((t: any) => t.dzien === 1
+    ? { ...t, wlaczony: true, rpe: 8, slotPositionId: golyPlan.sloty[1].positionId }
+    : t);
   // Żadnej progresji, żadnego wpisanego pola — dokładnie tak, jak wyszedł
   // plan Tomka.
   await api(`/api/plany/${idGolego}`, "PUT",
@@ -613,6 +624,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("niewypełniony plan nie każe robić jednej serii",
     schematy.length > 0 && schematy.every((t) => !/^\s*1\s*×/.test(t)),
     schematy.join(" | ") || "brak ćwiczeń");
+
+  const pasekTopSetu = await s.locator("#topset").innerText().catch(() => "");
+  sprawdz("TOP SET postawiony przy akcesorium dochodzi na telefon",
+    pasekTopSetu.includes("Barbell row") && /RPE\s*8/.test(pasekTopSetu),
+    pasekTopSetu.replace(/\n/g, " ") || "pusto");
 
   const golyWidok = await api(`/api/klient/${golySciezka.replace("/k/", "")}`);
   const golyBoj = golyWidok.tygodnie[0].dni[0].cwiczenia[0];

@@ -25,7 +25,7 @@ import { TRYBY_AKCESORIOW, CZESCI_PLANU } from "../../silnik/src/typy.ts";
 const planPoprawny = () => ({
   sloty: [{ positionId: "D1-S01", dzien: 1, cwiczenieId: "EX-0010", tygodnie: {} }],
   serieMaksymalne: [{ cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 }],
-  topSety: [{ dzien: 1, wlaczony: true, rpe: 8 }],
+  topSety: [{ dzien: 1, wlaczony: true, rpe: 8, slotPositionId: "D1-S01" }],
   trybAkcesoriow: TRYBY_AKCESORIOW[0],
   czescPlanu: CZESCI_PLANU[0],
 });
@@ -52,6 +52,21 @@ describe("kształt planu", () => {
     ["sto tysięcy slotów", () => ({ ...planPoprawny(),
       sloty: Array.from({ length: 100_000 },
         (_, i) => ({ positionId: `D1-S${i}`, dzien: 1 })) })],
+    // TOP SET stawia się teraz kliknięciem przy dowolnym wierszu, więc jego
+    // wskazanie przychodzi z przeglądarki przy każdym zapisie.
+    ["TOP SETY jako tekst", () => ({ ...planPoprawny(), topSety: "jeden" })],
+    ["TOP SET bez dnia", () => ({ ...planPoprawny(),
+      topSety: [{ wlaczony: true, rpe: 8, slotPositionId: "D1-S01" }] })],
+    ["włączony TOP SET bez wskazania ćwiczenia", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, rpe: 8 }] })],
+    ["włączony TOP SET bez RPE", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01" }] })],
+    ["TOP SET z RPE jako tekstem", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: true, rpe: "ciężko", slotPositionId: "D1-S01" }] })],
+    ["TOP SET włączony liczbą zamiast prawdą", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: 1, rpe: 8, slotPositionId: "D1-S01" }] })],
+    ["TOP SET wskazujący slot liczbą", () => ({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: false, rpe: 8, slotPositionId: 1 }] })],
   ];
 
   for (const [co, zrob] of zle) {
@@ -63,6 +78,19 @@ describe("kształt planu", () => {
       assert.doesNotMatch(blad, /undefined|function|TypeError|\.ts:/, blad);
     });
   }
+});
+
+describe("TOP SET wyłączony wolno mieć pusty", () => {
+  // Wpis wyłączony nic nie znaczy i nigdzie się nie pokazuje — taki powstaje
+  // w każdym nowym planie, po jednym na dzień, i nie ma czego wskazywać.
+  test("sam numer dnia wystarczy", () => {
+    assert.equal(bladKsztaltuPlanu({ ...planPoprawny(),
+      topSety: [{ dzien: 1, wlaczony: false }] }), null);
+  });
+
+  test("plan zupełnie bez TOP SETÓW przechodzi", () => {
+    assert.equal(bladKsztaltuPlanu({ ...planPoprawny(), topSety: undefined }), null);
+  });
 });
 
 describe("data startu", () => {
