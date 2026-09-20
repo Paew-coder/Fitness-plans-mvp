@@ -54,17 +54,24 @@ export function zastosujProgresje(plan: Plan): Plan {
 }
 
 /**
- * Kopiuje parametry jednego tygodnia do pozostałych.
+ * Kopiuje parametry jednego tygodnia do pozostałych — dla jednego ćwiczenia
+ * albo, gdy `positionId` pominięte, dla całego planu.
  *
- * Druga droga obok progresji: trener ustawia T1 po swojemu i rozprowadza to
- * na cykl. Odczucia i nadpisania ciężaru zostają na swoich miejscach —
+ * Druga droga obok progresji: trener ustawia ćwiczenie po swojemu i rozprowadza
+ * to na cykl. Odczucia i nadpisania ciężaru zostają na swoich miejscach —
  * kopiuje się szkielet, nie historia.
+ *
+ * Dlaczego domyślnie **nie** cały plan, choć tak to kiedyś działało: bo cały
+ * plan rozniesiony z jednego tygodnia to sześć identycznych tygodni, czyli
+ * blok bez progresji. Trener zobaczył to pierwszego dnia i nazwał wprost —
+ * kopiowanie ma sens dla jednego ćwiczenia, nie dla całego cyklu.
  */
-export function skopiujTydzien(plan: Plan, zrodlo: Tydzien): Plan {
+export function skopiujTydzien(plan: Plan, zrodlo: Tydzien, positionId?: string): Plan {
   return {
     ...plan,
     sloty: plan.sloty.map((slot): SlotPlanu => {
       if (!slot.cwiczenieId) return { ...slot };
+      if (positionId !== undefined && slot.positionId !== positionId) return { ...slot };
 
       const wzorzec = slot.tygodnie?.[zrodlo] ?? {};
       const { feedback: _f, ciezarOverride: _c, ...doSkopiowania } = wzorzec;

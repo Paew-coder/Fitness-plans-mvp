@@ -1317,7 +1317,7 @@ const serwer = createServer(async (req, res) => {
        * arkusza liczby policzone, a nie puste komórki.
        */
       if (akcja === "/tygodnie" && req.method === "POST") {
-        const { tryb, zrodlo } = await cialo(req);
+        const { tryb, zrodlo, positionId } = await cialo(req);
         if (tryb === "progresja") {
           return json(res, obrazPlanu(magazyn.zapisz({
             ...zapisany, plan: zastosujProgresje(zapisany.plan),
@@ -1326,8 +1326,16 @@ const serwer = createServer(async (req, res) => {
         if (tryb === "kopiuj") {
           const tydzien = Number(zrodlo);
           if (!(tydzien >= 1 && tydzien <= 6)) return blad(res, "Podaj tydzień od 1 do 6");
+          // Bez wskazanego ćwiczenia kopiowanie objęłoby cały plan — czyli
+          // zrobiłoby sześć identycznych tygodni. To nie jest coś, co komuś
+          // wychodzi przez przypadek, więc wymagamy wskazania wprost.
+          const slot = tekst(positionId);
+          if (!slot) return blad(res, "Podaj ćwiczenie do skopiowania (positionId).");
+          if (!zapisany.plan.sloty.some((s) => s.positionId === slot && s.cwiczenieId)) {
+            return blad(res, "Nie ma takiego ćwiczenia w planie.");
+          }
           return json(res, obrazPlanu(magazyn.zapisz({
-            ...zapisany, plan: skopiujTydzien(zapisany.plan, tydzien as 1),
+            ...zapisany, plan: skopiujTydzien(zapisany.plan, tydzien as 1, slot),
           })));
         }
         return blad(res, "Nieznany tryb — „progresja” albo „kopiuj”.");
