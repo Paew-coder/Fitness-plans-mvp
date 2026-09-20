@@ -223,8 +223,57 @@ function doWersji4(d: DatabaseSync): void {
   }
 }
 
+/**
+ * Wersja 5 — RPE TOP SETU osobno na każdy tydzień.
+ *
+ * Do tej pory TOP SET miał jedną liczbę na cały cykl. W arkuszach trenera
+ * RPE rośnie z tygodnia na tydzień — 6 → 6,5 → 7 → 7,5 → 8 w cz.1, o stopień
+ * wyżej w cz.2 — i to wraca do aplikacji jako szablon.
+ *
+ * Co robimy ze starą liczbą:
+ *
+ *   • **7 kasujemy.** Siedmiu nikt nie wybrał — tyle wpisywał nowy plan,
+ *     bo taki był zaszyty w szkielecie. Zostawienie jej jako „decyzji trenera"
+ *     zablokowałoby rampę w każdym istniejącym planie, i to po cichu.
+ *   • **każdą inną przepisujemy na wszystkie sześć tygodni.** Tam trener
+ *     liczbę zmienił, więc jest wyborem i zostaje dokładnie tam, gdzie była —
+ *     plan po aktualizacji liczy tyle samo, co przed nią.
+ *
+ * Trener wyczyści pole w konsoli, gdy zechce wrócić do szablonu.
+ */
+function doWersji5(d: DatabaseSync): void {
+  const plany = d.prepare("SELECT trener_id, id, plan_json FROM plan").all() as
+    { trener_id: number; id: string; plan_json: string }[];
+  const zapisz = d.prepare("UPDATE plan SET plan_json = ? WHERE trener_id = ? AND id = ?");
+
+  for (const wiersz of plany) {
+    let plan: { topSety?: { rpe?: unknown; rpeTygodni?: unknown }[] };
+    try {
+      plan = JSON.parse(wiersz.plan_json);
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(plan.topSety) || plan.topSety.length === 0) continue;
+
+    let zmiana = false;
+    for (const top of plan.topSety) {
+      if (!top || !("rpe" in top)) continue;
+      const stare = top.rpe;
+      delete top.rpe;
+      zmiana = true;
+      if (typeof stare !== "number" || !Number.isFinite(stare) || stare === 7) continue;
+      if (top.rpeTygodni == null) {
+        top.rpeTygodni = { 1: stare, 2: stare, 3: stare, 4: stare, 5: stare, 6: stare };
+      }
+    }
+    if (!zmiana) continue;
+    zapisz.run(JSON.stringify(plan), wiersz.trener_id, wiersz.id);
+  }
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
   { doWersji: 4, opis: "TOP SET zapisany tam, gdzie był widoczny", wykonaj: doWersji4 },
+  { doWersji: 5, opis: "RPE TOP SETU osobno na każdy tydzień", wykonaj: doWersji5 },
 ];

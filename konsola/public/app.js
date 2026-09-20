@@ -1056,10 +1056,31 @@ function rysujDni() {
       const nazwa = cwiczenia.find((c) => c.id === zrodlo?.cwiczenieId)?.nazwa
         ?? wyliczony?.cwiczenie?.nazwa ?? "—";
       const pasek = el("div", "topset");
+      /*
+       * RPE należy do TYGODNIA, nie do całego cyklu.
+       *
+       * W arkuszach trenera RPE TOP SETU rośnie o pół stopnia na tydzień —
+       * 6 → 6,5 → 7 → 7,5 → 8 w cz.1, o stopień wyżej w cz.2 — a w T1 TOP SETU
+       * nie ma wcale. Pole działa więc jak pozostałe pola planu: puste znaczy
+       * „liczba z szablonu" i pokazuje ją jako podpowiedź, wpisana wygrywa,
+       * wyczyszczenie wraca do szablonu. Dotyczy tygodnia, który stoi na
+       * ekranie — tak samo jak serie i powtórzenia niżej.
+       */
       const rpe = el("input");
       rpe.type = "number"; rpe.step = "0.5"; rpe.min = "5"; rpe.max = "10";
-      rpe.value = top.rpe; rpe.style.width = "4rem";
-      rpe.onchange = () => { top.rpe = Number(rpe.value); zapiszPozniej(); };
+      rpe.style.width = "4rem";
+      rpe.placeholder = wyliczony?.rpe != null ? String(wyliczony.rpe) : "—";
+      rpe.value = top.rpeTygodni?.[tydzien] ?? "";
+      rpe.title = wyliczony?.rpe == null
+        ? `W T${tydzien} szablon nie przewiduje TOP SETU. Wpisz RPE, jeśli mimo to ma tu być.`
+        : `RPE w T${tydzien}. Puste = z szablonu (${wyliczony.rpe}).`;
+      rpe.onchange = () => {
+        top.rpeTygodni = top.rpeTygodni ?? {};
+        if (rpe.value === "") delete top.rpeTygodni[tydzien];
+        else top.rpeTygodni[tydzien] = Number(rpe.value);
+        zapiszPozniej();
+        rysujDni();
+      };
       const usun = el("button", "mikro", "✕");
       usun.title = "Usuń TOP SET z tego dnia";
       usun.onclick = () => { top.wlaczony = false; zapiszPozniej(); rysujDni(); };
@@ -1067,8 +1088,10 @@ function rysujDni() {
         el("span", "", nazwa),
         el("span", "", "RPE"), rpe,
         el("span", "wynik", typeof wyliczony?.ciezar === "number"
-          ? `${liczba(wyliczony.ciezar)} kg` : (wyliczony?.ciezar || "—")),
+          ? `${liczba(wyliczony.ciezar)} kg`
+          : (wyliczony?.rpe == null ? `w T${tydzien} bez TOP SETU` : (wyliczony?.ciezar || "—"))),
         usun);
+      if (wyliczony?.rpe == null) pasek.classList.add("bez-top-setu");
       blok.append(pasek);
     }
 
