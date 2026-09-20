@@ -529,7 +529,28 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     top1?.wlaczony === true && top1?.slotPositionId === "D1-S02",
     `${top1?.slotPositionId} · włączony: ${top1?.wlaczony}`);
 
-  const wyliczonyTop = poDodaniu.wynik.tygodnie[0].topSety.find((t: any) => t.dzien === 1);
+  const topWTygodniu = (o: any, t: number) =>
+    o.wynik.tygodnie[t - 1].topSety.find((x: any) => x.dzien === 1);
+
+  /*
+   * RPE TOP SETU rośnie przez cykl, a w T1 TOP SETU nie ma — tak jest w obu
+   * arkuszach trenera. Plan stoi teraz na „intensywność", czyli cz.2:
+   * 7 → 7,5 → 8 → 8,5 → 9.
+   */
+  sprawdz("w T1 TOP SETU nie ma i konsola mówi o tym wprost",
+    topWTygodniu(poDodaniu, 1)?.rpe === null
+    && (await s.locator(".topset").first().innerText()).includes("bez TOP SETU"),
+    (await s.locator(".topset").first().innerText()).replace(/\n/g, " "));
+
+  const rampa = (o: any) => [1, 2, 3, 4, 5, 6]
+    .map((t) => topWTygodniu(o, t)?.rpe ?? "—").join(" ");
+  sprawdz("RPE TOP SETU rośnie tydzień po tygodniu",
+    rampa(poDodaniu) === "— 7 7.5 8 8.5 9", rampa(poDodaniu));
+
+  await s.locator("#taby-tygodni button", { hasText: /^T2$/ }).click();
+  await s.waitForTimeout(400);
+
+  const wyliczonyTop = topWTygodniu(poDodaniu, 2);
   sprawdz("i silnik liczy dla niego ciężar",
     wyliczonyTop?.cwiczenie?.id === "EX-0010" && typeof wyliczonyTop?.ciezar === "number",
     `${wyliczonyTop?.cwiczenie?.nazwa ?? "brak"} · ${wyliczonyTop?.ciezar}`);
@@ -548,23 +569,41 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     poPrzeniesieniu.map((t: any) => t.slotPositionId).join(", "));
 
   // Akcesorium też może mieć TOP SET — o tym decyduje trener, nie coeff.
-  const topAkcesorium = (await zBazy()).wynik.tygodnie[0].topSety
-    .find((t: any) => t.dzien === 1);
+  const topAkcesorium = topWTygodniu(await zBazy(), 2);
   sprawdz("TOP SET działa też przy akcesorium",
     topAkcesorium?.cwiczenie?.id === "EX-0016",
     topAkcesorium?.cwiczenie?.nazwa ?? "brak");
 
-  const rpeTopSetu = s.locator(".topset input[type=number]").first();
-  await rpeTopSetu.fill("8.5");
-  await rpeTopSetu.blur();
+  // Pole RPE dotyczy tygodnia, który stoi na ekranie — jak serie i powtórzenia
+  // niżej. Puste = liczba z szablonu, i tak ma zostać po wyczyszczeniu.
+  const rpeTopSetu = () => s.locator(".topset input[type=number]").first();
+  sprawdz("puste pole RPE podpowiada liczbę z szablonu",
+    await rpeTopSetu().getAttribute("placeholder") === "7",
+    String(await rpeTopSetu().getAttribute("placeholder")));
+
+  await rpeTopSetu().fill("9.5");
+  await rpeTopSetu().blur();
   await zapisano();
-  sprawdz("RPE TOP SETU zapisuje się", (await topSetDnia1())[0]?.rpe === 8.5,
-    String((await topSetDnia1())[0]?.rpe));
+  const zRecznym = await zBazy();
+  sprawdz("RPE TOP SETU zapisuje się przy tym jednym tygodniu",
+    zRecznym.zapisany.plan.topSety.find((t: any) => t.dzien === 1)?.rpeTygodni?.["2"] === 9.5,
+    JSON.stringify(zRecznym.zapisany.plan.topSety.find((t: any) => t.dzien === 1)?.rpeTygodni));
+  sprawdz("i nie rusza pozostałych tygodni",
+    rampa(zRecznym) === "— 9.5 7.5 8 8.5 9", rampa(zRecznym));
+
+  await rpeTopSetu().fill("");
+  await rpeTopSetu().blur();
+  await zapisano();
+  sprawdz("wyczyszczenie pola wraca do szablonu",
+    topWTygodniu(await zBazy(), 2)?.rpe === 7,
+    String(topWTygodniu(await zBazy(), 2)?.rpe));
 
   await s.locator(".topset button", { hasText: "✕" }).first().click();
   await zapisano();
   sprawdz("TOP SET da się zdjąć", (await topSetDnia1())[0]?.wlaczony === false);
   sprawdz("i pasek znika z ekranu", (await s.locator(".topset").count()) === 0);
+  await s.locator("#taby-tygodni button", { hasText: /^T1$/ }).click();
+  await s.waitForTimeout(400);
 
   // ── 13. moduł oddechu ─────────────────────────────────────────────
   await s.fill("#oddech-twot", "22");

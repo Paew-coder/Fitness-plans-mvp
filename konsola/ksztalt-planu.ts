@@ -109,17 +109,26 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
      * „TOP SET — RPE undefined". Wyłączony wpis może być pusty: nic nie znaczy
      * i nigdzie się nie pokazuje.
      */
-    if (top.wlaczony === true) {
-      if (!jestLiczba(top.rpe)) return `TOP SET ${i + 1} nie ma RPE`;
-      if (typeof top.slotPositionId !== "string" || !top.slotPositionId) {
-        return `TOP SET ${i + 1} nie wskazuje ćwiczenia`;
+    if (top.wlaczony === true
+        && (typeof top.slotPositionId !== "string" || !top.slotPositionId)) {
+      return `TOP SET ${i + 1} nie wskazuje ćwiczenia`;
+    }
+    if (top.slotPositionId != null && typeof top.slotPositionId !== "string") {
+      return `TOP SET ${i + 1}: wskazanie ćwiczenia musi być identyfikatorem`;
+    }
+    /*
+     * RPE per tydzień. Pusto znaczy „z szablonu" i tak jest normalnie —
+     * wpis pojawia się dopiero wtedy, gdy trener zmieni liczbę w konkretnym
+     * tygodniu. Sprawdzamy więc typy, nie obecność.
+     */
+    if (top.rpeTygodni != null) {
+      if (!jestObiektem(top.rpeTygodni)) {
+        return `TOP SET ${i + 1}: RPE tygodni musi być obiektem`;
       }
-    } else {
-      if (top.rpe != null && !jestLiczba(top.rpe)) {
-        return `TOP SET ${i + 1}: RPE musi być liczbą`;
-      }
-      if (top.slotPositionId != null && typeof top.slotPositionId !== "string") {
-        return `TOP SET ${i + 1}: wskazanie ćwiczenia musi być identyfikatorem`;
+      for (const [tydzien, rpe] of Object.entries(top.rpeTygodni)) {
+        if (!jestLiczba(rpe)) {
+          return `TOP SET ${i + 1}, tydzień ${tydzien}: RPE musi być liczbą`;
+        }
       }
     }
   }

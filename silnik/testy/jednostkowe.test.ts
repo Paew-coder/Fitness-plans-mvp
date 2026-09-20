@@ -432,7 +432,7 @@ describe("przeliczenie planu i walidacja", () => {
         },
         { positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId: "EX-0003", kategoriaSzkieletu: "Core" },
       ],
-      topSety: [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S01" }],
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01" }],
     };
   }
 
@@ -452,9 +452,58 @@ describe("przeliczenie planu i walidacja", () => {
 
   test("TOP SET bierze ćwiczenie ze wskazanego slotu, nie z wiersza poniżej", () => {
     const w = przeliczPlan(planTestowy());
-    const top = w.tygodnie[0]!.topSety[0]!;
+    const top = w.tygodnie[1]!.topSety[0]!;
     assert.equal(top.cwiczenie?.id, "EX-0011");
     assert.equal(typeof top.ciezar, "number");
+  });
+
+  /*
+   * RPE TOP SETU rośnie przez cykl, a w T1 TOP SETU nie ma.
+   *
+   * Tak jest w obu arkuszach trenera i tak było zanim powstała aplikacja:
+   * pierwszy tydzień idzie bez TOP SETU, a od drugiego RPE rośnie o pół
+   * stopnia na tydzień. Do tej pory aplikacja trzymała jedną liczbę na cały
+   * cykl, więc klient dostawał sześć razy to samo RPE.
+   */
+  test("TOP SETU nie ma w T1 — pierwszy tydzień idzie bez niego", () => {
+    const top = przeliczPlan(planTestowy()).tygodnie[0]!.topSety[0]!;
+    assert.equal(top.rpe, null);
+    assert.equal(top.cwiczenie, null);
+    assert.equal(top.ciezar, "");
+  });
+
+  test("RPE TOP SETU rośnie o pół stopnia na tydzień", () => {
+    const naObjetosc = przeliczPlan(planTestowy());
+    assert.deepEqual(naObjetosc.tygodnie.map((t) => t.topSety[0]!.rpe),
+      [null, 6, 6.5, 7, 7.5, 8]);
+
+    const naIntensywnosc = przeliczPlan({ ...planTestowy(), czescPlanu: "intensywność" });
+    assert.deepEqual(naIntensywnosc.tygodnie.map((t) => t.topSety[0]!.rpe),
+      [null, 7, 7.5, 8, 8.5, 9]);
+  });
+
+  test("ciężar TOP SETU idzie za RPE — nigdy w dół", () => {
+    const ciezary = przeliczPlan(planTestowy()).tygodnie
+      .map((t) => t.topSety[0]!.ciezar).slice(1) as number[];
+    // Nie „co tydzień więcej", tylko „nigdy mniej": przy skoku 2,5 kg dwa
+    // sąsiednie RPE potrafią wypaść na tej samej sztandze (T3 i T4 przy
+    // 1RM 90,4 kg to 76,4 i 78,2 kg — jedno i drugie zaokrągla się do 77,5).
+    // Wymaganie ścisłego wzrostu byłoby wymaganiem od zaokrąglenia rzeczy,
+    // której nie umie, i pękałoby przy co drugim 1RM.
+    for (const [i, kg] of ciezary.slice(1).entries()) {
+      assert.ok(kg >= ciezary[i]!, `T${i + 3}: ${kg} kg jest lżejsze niż ${ciezary[i]} kg`);
+    }
+    assert.ok(ciezary.at(-1)! > ciezary[0]!, "przez cykl TOP SET musi urosnąć");
+  });
+
+  test("RPE wpisane ręcznie wygrywa z szablonem — także w T1", () => {
+    const plan = planTestowy();
+    plan.topSety = [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01",
+      rpeTygodni: { 1: 6, 3: 9 } }];
+    const w = przeliczPlan(plan);
+    assert.deepEqual(w.tygodnie.map((t) => t.topSety[0]!.rpe), [6, 6, 9, 7, 7.5, 8]);
+    assert.equal(w.tygodnie[0]!.topSety[0]!.cwiczenie?.id, "EX-0011",
+      "wpisane RPE w T1 przywraca TOP SET");
   });
 
   /*
@@ -471,34 +520,42 @@ describe("przeliczenie planu i walidacja", () => {
       ...plan.serieMaksymalne,
       { cwiczenieId: "EX-0003", ciezar: 40, powtorzenia: 5 },   // Allah, coeff 0,5
     ];
-    plan.topSety = [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S02" }];
-    const top = przeliczPlan(plan).tygodnie[0]!.topSety[0]!;
+    plan.topSety = [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S02" }];
+    const top = przeliczPlan(plan).tygodnie[1]!.topSety[0]!;
     assert.equal(top.cwiczenie?.id, "EX-0003");
     assert.equal(typeof top.ciezar, "number", "akcesorium też ma policzony ciężar");
   });
 
   test("TOP SET bez 1RM mówi o tym wprost, zamiast znikać", () => {
     const plan = planTestowy();
-    plan.topSety = [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S02" }];
-    const top = przeliczPlan(plan).tygodnie[0]!.topSety[0]!;
+    plan.topSety = [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S02" }];
+    const top = przeliczPlan(plan).tygodnie[1]!.topSety[0]!;
     assert.equal(top.cwiczenie?.id, "EX-0003");
     assert.equal(top.ciezar, "— brak 1RM");
   });
 
   test("TOP SET na pustym slocie nie pokazuje ćwiczenia", () => {
     const plan = planTestowy();
-    plan.topSety = [{ dzien: 1, wlaczony: true, rpe: 7, slotPositionId: "D1-S09" }];
-    const top = przeliczPlan(plan).tygodnie[0]!.topSety[0]!;
+    plan.topSety = [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S09" }];
+    const top = przeliczPlan(plan).tygodnie[1]!.topSety[0]!;
     assert.equal(top.cwiczenie, null);
     assert.equal(top.ciezar, "");
   });
 
   test("TOP SET dokłada jedną serię do podsumowania dnia", () => {
     const plan = planTestowy();
-    const zTopSetem = przeliczPlan(plan).tygodnie[0]!.dni.find((d) => d.dzien === 1)!;
-    plan.topSety = [{ dzien: 1, wlaczony: false, rpe: 7, slotPositionId: "D1-S01" }];
-    const bezTopSetu = przeliczPlan(plan).tygodnie[0]!.dni.find((d) => d.dzien === 1)!;
+    const zTopSetem = przeliczPlan(plan).tygodnie[1]!.dni.find((d) => d.dzien === 1)!;
+    plan.topSety = [{ dzien: 1, wlaczony: false, slotPositionId: "D1-S01" }];
+    const bezTopSetu = przeliczPlan(plan).tygodnie[1]!.dni.find((d) => d.dzien === 1)!;
     assert.equal(zTopSetem.serie - bezTopSetu.serie, 1);
+  });
+
+  test("w T1 TOP SET nie dokłada serii, bo go nie ma", () => {
+    const plan = planTestowy();
+    const zWpisem = przeliczPlan(plan).tygodnie[0]!.dni.find((d) => d.dzien === 1)!;
+    plan.topSety = [];
+    const bezWpisu = przeliczPlan(plan).tygodnie[0]!.dni.find((d) => d.dzien === 1)!;
+    assert.equal(zWpisem.serie, bezWpisu.serie);
   });
 
   /*

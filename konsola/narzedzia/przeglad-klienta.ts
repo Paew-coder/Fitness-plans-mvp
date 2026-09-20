@@ -607,8 +607,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
    * brał ćwiczenie z pierwszego wiersza i tylko wtedy, gdy stało tam coś
    * złożonego, więc takiego układu nie dało się nawet zapisać.
    */
+  //
+  // RPE wpisane wprost w T1: szablon w pierwszym tygodniu TOP SETU nie
+  // przewiduje (tak jest w arkuszach), a wpisana liczba ma to przebijać.
+  // Klient otwiera właśnie T1, więc ta kontrola sprawdza obie rzeczy naraz.
   golyPlan.topSety = golyPlan.topSety.map((t: any) => t.dzien === 1
-    ? { ...t, wlaczony: true, rpe: 8, slotPositionId: golyPlan.sloty[1].positionId }
+    ? { ...t, wlaczony: true, rpeTygodni: { 1: 8 },
+        slotPositionId: golyPlan.sloty[1].positionId }
     : t);
   // Żadnej progresji, żadnego wpisanego pola — dokładnie tak, jak wyszedł
   // plan Tomka.

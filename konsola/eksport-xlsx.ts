@@ -142,11 +142,20 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     data_startu: zapisany.dataStartu,
     sloty,
     serie_maksymalne: serieMaksymalne,
-    top_sety: (plan.topSety ?? []).map((t) => ({
-      dzien: t.dzien,
-      wlaczony: t.wlaczony,
-      rpe: t.rpe,
-    })),
+    /*
+     * TOP SETY. Arkusz 5.18 ma na RPE **jedną** komórkę — ustawia się ją w T1,
+     * a pozostałe tygodnie ją lustrzą. Aplikacja ma od tej pory RPE osobno
+     * na każdy tydzień (6 → 6,5 → 7 → 7,5 → 8), więc czegoś tu ubędzie i lepiej
+     * powiedzieć wprost czego: do arkusza idzie RPE z **pierwszego tygodnia,
+     * w którym TOP SET w ogóle jest** — czyli zwykle z T2. Rampa w pliku .xlsx
+     * się spłaszcza; w aplikacji i na telefonie klienta zostaje.
+     */
+    top_sety: (plan.topSety ?? []).map((t) => {
+      const pierwszy = wynik.tygodnie
+        .map((w) => w.topSety.find((x) => x.dzien === t.dzien))
+        .find((x) => x?.rpe != null);
+      return { dzien: t.dzien, wlaczony: t.wlaczony, rpe: pierwszy?.rpe ?? null };
+    }),
   };
 }
 
