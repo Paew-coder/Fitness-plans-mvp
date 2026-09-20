@@ -90,6 +90,54 @@ describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
     assert.equal(pusty.nazwa, null);
   });
 
+  /*
+   * TOP SET: RPE osobno na każdy tydzień.
+   *
+   * Wcześniej do arkusza szła jedna liczba na cały cykl, bo tak pisał
+   * wypełniacz — a rampa 6 → 6,5 → 7 → 7,5 → 8 siedzi w arkuszu od zawsze,
+   * każdy tydzień ma własną komórkę. Plik pokazywał więc klientowi co innego
+   * niż konsola, i to dokładnie tam, gdzie TOP SET ma sens: w intensywności.
+   */
+  test("TOP SET jedzie z rampą RPE, tydzień po tygodniu", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.topSety = [
+      { dzien: 1, wlaczony: true, slotPositionId: "D1-S01" },
+    ];
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual(dane.top_sety[0]!.rpe_tygodni,
+      { T1: null, T2: 6, T3: 6.5, T4: 7, T5: 7.5, T6: 8 });
+  });
+
+  test("pusty tydzień jedzie jako pustka, nie jako liczba", () => {
+    // `null` czyści komórkę RPE, a w poprawionym arkuszu pusta komórka znaczy
+    // „w tym tygodniu TOP SETU nie ma". Gdyby szła tu liczba, plik pokazywałby
+    // klientowi TOP SET w T1, którego konsola nie pokazuje.
+    const zapisany = planDomyslny();
+    zapisany.plan.topSety = [
+      { dzien: 1, wlaczony: true, slotPositionId: "D1-S01" },
+    ];
+    assert.equal(daneDoArkusza(zapisany).top_sety[0]!.rpe_tygodni!.T1, null);
+  });
+
+  test("cykl na intensywność ma własną rampę", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.czescPlanu = "intensywność";
+    zapisany.plan.topSety = [
+      { dzien: 1, wlaczony: true, slotPositionId: "D1-S01" },
+    ];
+    assert.deepEqual(daneDoArkusza(zapisany).top_sety[0]!.rpe_tygodni,
+      { T1: null, T2: 7, T3: 7.5, T4: 8, T5: 8.5, T6: 9 });
+  });
+
+  test("RPE wpisane ręcznie wygrywa także w drodze do arkusza", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.topSety = [
+      { dzien: 1, wlaczony: true, slotPositionId: "D1-S01", rpeTygodni: { 1: 6, 4: 9 } },
+    ];
+    assert.deepEqual(daneDoArkusza(zapisany).top_sety[0]!.rpe_tygodni,
+      { T1: 6, T2: 6, T3: 6.5, T4: 9, T5: 7.5, T6: 8 });
+  });
+
   test("serie maksymalne trafiają do wiersza swojego ćwiczenia", () => {
     const dane = daneDoArkusza(planDomyslny());
     assert.deepEqual(dane.serie_maksymalne, [

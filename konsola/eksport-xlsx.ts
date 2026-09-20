@@ -71,7 +71,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
   const sloty = plan.sloty.map((slot) => {
     const { dzien, pozycja } = rozbijPositionId(slot.positionId);
     const cwiczenie = slot.cwiczenieId ? katalog.poId(slot.cwiczenieId) : null;
-    const bojGlowny = jestBojemGlownym(slot.lp);
+    // Z `coeff`, nie z samej pozycji. Bez niego `jestBojemGlownym` zwraca zawsze
+    // fałsz, więc bój główny wychodził do arkusza bez powtórzeń i arkusz liczył
+    // mu je automatem akcesorium — czyli inaczej, niż pokazuje konsola.
+    const bojGlowny = jestBojemGlownym(slot.lp, cwiczenie?.coeff);
 
     const tygodnie: Record<string, unknown> = {};
     for (const t of TYGODNIE) {
@@ -143,19 +146,25 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     sloty,
     serie_maksymalne: serieMaksymalne,
     /*
-     * TOP SETY. Arkusz 5.18 ma na RPE **jedną** komórkę — ustawia się ją w T1,
-     * a pozostałe tygodnie ją lustrzą. Aplikacja ma od tej pory RPE osobno
-     * na każdy tydzień (6 → 6,5 → 7 → 7,5 → 8), więc czegoś tu ubędzie i lepiej
-     * powiedzieć wprost czego: do arkusza idzie RPE z **pierwszego tygodnia,
-     * w którym TOP SET w ogóle jest** — czyli zwykle z T2. Rampa w pliku .xlsx
-     * się spłaszcza; w aplikacji i na telefonie klienta zostaje.
+     * TOP SETY — RPE osobno na każdy tydzień.
+     *
+     * Przełącznik jest w arkuszu jeden na cykl (stoi w T1, reszta go lustrzy),
+     * ale RPE ma każdy tydzień własne i to tam siedzi rampa 6 → 6,5 → 7 →
+     * 7,5 → 8. Wcześniej wypełniacz pisał RPE tylko do T1, więc sześć tygodni
+     * dostawało jedną liczbę — plik pokazywał klientowi co innego niż konsola.
+     *
+     * `null` **czyści** komórkę i to jest jego sens: pusty RPE znaczy
+     * w poprawionym arkuszu „w tym tygodniu TOP SETU nie ma", czyli dokładnie
+     * to, co silnik mówi o T1.
      */
-    top_sety: (plan.topSety ?? []).map((t) => {
-      const pierwszy = wynik.tygodnie
-        .map((w) => w.topSety.find((x) => x.dzien === t.dzien))
-        .find((x) => x?.rpe != null);
-      return { dzien: t.dzien, wlaczony: t.wlaczony, rpe: pierwszy?.rpe ?? null };
-    }),
+    top_sety: (plan.topSety ?? []).map((t) => ({
+      dzien: t.dzien,
+      wlaczony: t.wlaczony,
+      rpe_tygodni: Object.fromEntries(TYGODNIE.map((w) => [
+        `T${w}`,
+        wynik.tygodnie[w - 1]?.topSety.find((x) => x.dzien === t.dzien)?.rpe ?? null,
+      ])),
+    })),
   };
 }
 

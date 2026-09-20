@@ -158,10 +158,17 @@ def zrzut(sciezka_xlsx: str) -> dict:
         r = wiersz_topsetu(dzien)
         wlaczony = tekst(t1.cell(row=r, column=KOL["przelacznik"]).value) == "TOP SET"
         pierwszy = tekst(t1.cell(row=r + 1, column=KOL["position"]).value)
+        # RPE ma kazdy tydzien wlasne — tam siedzi rampa 6 -> 6,5 -> 7 -> 7,5 -> 8,
+        # a pusta komorka znaczy „w tym tygodniu TOP SETU nie ma". Pole `rpe`
+        # (samo T1) zostaje dla zgodnosci ze starszymi zrzutami.
         top_sety.append({
             "dzien": dzien,
             "wlaczony": wlaczony,
             "rpe": liczba(t1.cell(row=r, column=KOL["rpe"]).value),
+            "rpe_tygodni": {
+                skrot: liczba(wb[skrot].cell(row=r, column=KOL["rpe"]).value)
+                for skrot in TYGODNIE
+            },
             "slot_position_id": pierwszy,
         })
 

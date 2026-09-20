@@ -168,6 +168,10 @@ W T1 TOP SETU nie ma — tak jest w arkuszach. Pole RPE w pasku nad dniem dotycz
 podpowiedź, wpisana wygrywa (także w T1 — wtedy TOP SET tam będzie),
 wyczyszczenie wraca do szablonu.
 
+Wyeksportowany arkusz niesie tę samą rampę — RPE TOP SETU ma w nim każdy tydzień
+własne. Wymaga to szablonu z poprawką 4 ([`arkusz/`](../arkusz/README.md));
+plik w repozytorium już ją ma.
+
 **Ciężar akcesorium: z bloku czy z RPE.** *Akcesoria domyślnie* nad planem
 ustawia to dla całego planu, ale pojedyncze ćwiczenie przestawia się
 przyciskiem **`R`** przy jego wierszu — wtedy przy Lp. stoi znacznik `RPE`.

@@ -263,7 +263,9 @@ Pół stopnia na tydzień, części różni punkt wyjścia. **W T1 TOP SETU nie 
 
 Migracja bazy do wersji 5 rozstrzyga starą liczbę tak: **7 kasuje** (nikt jej nie wybrał, tyle wpisywał szkielet nowego planu — zostawienie zablokowałoby rampę po cichu w każdym istniejącym planie), **każdą inną przepisuje na wszystkie sześć tygodni** (tam trener liczbę zmienił, więc jest wyborem).
 
-Jedno miejsce, gdzie rampa się spłaszcza: **eksport do .xlsx**. Arkusz 5.18 ma na RPE TOP SETU jedną komórkę w T1, którą pozostałe tygodnie lustrzą, więc do pliku idzie RPE z pierwszego tygodnia, w którym TOP SET w ogóle jest. W aplikacji i na telefonie klienta rampa zostaje.
+**Eksport do .xlsx niesie rampę w całości** — po sprawdzeniu okazało się, że arkusz miał ją od zawsze. Jedna komórka na cykl to przełącznik TOP SETU (kolumna `B`, stoi w T1, reszta lustrzy); RPE (kolumna `F`) ma każdy tydzień własne, a stoją w nim dokładnie te liczby: 6 / 6,5 / 7 / 7,5 / 8. Spłaszczał to nasz wypełniacz, który pisał tylko do T1.
+
+Zostało dołożenie jednej rzeczy, której w arkuszu naprawdę nie było: **pusty RPE znaczy „w tym tygodniu TOP SETU nie ma"** (poprawka 4 w [`arkusz/`](../arkusz/README.md), 90 komórek). Bez niej wyczyszczona komórka dawała `MATCH` bez trafienia → `IFERROR` → 0 → `MROUND` z zera, czyli **TOP SET na 0 kg** zamiast pustego wiersza — a pusty pierwszy tydzień to w szablonach trenera reguła, nie wyjątek.
 
 **8. Tryb liczenia ciężaru przy pojedynczym ćwiczeniu.** *(20.09.2026)*
 

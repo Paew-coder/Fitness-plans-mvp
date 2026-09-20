@@ -1,6 +1,6 @@
 # Arkusz — poprawki do MasterTemplate
 
-Skrypt `napraw-topset.py` robi z **5.17** plik **5.18** z trzema poprawkami.
+Skrypt `napraw-topset.py` robi z **5.17** plik **5.18** z czterema poprawkami.
 Oryginał zostaje nietknięty.
 
 ```bash
@@ -30,15 +30,26 @@ przepuszczonym przez openpyxl: wcześniej odmawiał, teraz przechodzi i daje
 plik, którego zakładka T1 zgadza się ze wzorcem 5.18 co do każdej formuły
 (3071 komórek; dziesięć różnic to wpisana treść planu, nie układ).
 
-## Trzy poprawki, trzy niezależne decyzje
+## Cztery poprawki, cztery niezależne decyzje
 
-Poprawki 2 i 3 wyszły przy testowaniu poprawki 1. Każdą można pominąć osobno:
+Poprawki 2 i 3 wyszły przy testowaniu poprawki 1; poprawka 4 doszła później,
+gdy RPE TOP SETU zaczęło w aplikacji rosnąć z tygodnia na tydzień. Każdą można
+pominąć osobno:
 
 | | Co naprawia | Komórek | Jak pominąć |
 |---|---|---|---|
 | **1** | TOP SET czyta bój główny, nie pierwszy slot | 235 | — (to jest cel skryptu) |
 | **2** | Brakująca formuła `START!B7` | 1 | `--bez-startu` |
 | **3** | Brakująca formuła ciężaru `T1!G8` | 1 | `--bez-ciezarow` |
+| **4** | Pusty RPE = brak TOP SETU w tym tygodniu | 90 | `--bez-pustego-rpe` |
+
+Poprawkę 4 da się dołożyć do pliku, który już przeszedł przez poprawki 1–3:
+
+```bash
+python3 arkusz/napraw-topset.py 518.xlsx 518-nowy.xlsx --tylko-puste-rpe
+```
+
+Jest idempotentna — puszczona drugi raz nie zmienia już niczego.
 
 ### Poprawka 1 — TOP SET
 
@@ -65,6 +76,33 @@ na podstawie pierwszego slotu zamiast własnego ćwiczenia TOP SETU.
 
 Gdy w dniu nie ma żadnej pozycji `A`, `MATCH` nie trafia, `K` = 0 i TOP SET zostaje pusty.
 Dziś w takiej sytuacji pokazuje zawartość pierwszego slotu, czyli coś nieprawdziwego.
+
+### Poprawka 4 — pusty RPE znaczy „w tym tygodniu TOP SETU nie ma"
+
+**Skąd się wzięła.** Przełącznik TOP SETU (kolumna `B`) jest jeden na cały cykl:
+stoi w `T1`, a pozostałe tygodnie go lustrzą. RPE (kolumna `F`) ma za to każdy
+tydzień własne — i to tam od zawsze siedzi rampa **6 → 6,5 → 7 → 7,5 → 8**.
+
+Brakowało jednego: sposobu na powiedzenie „w **tym** tygodniu TOP SETU nie ma".
+A tak właśnie wyglądają oba szablony trenera — pierwszy tydzień idzie bez TOP
+SETU, wchodzi on dopiero w drugim.
+
+**Dlaczego samo wyczyszczenie komórki nie wystarczało.** `MATCH` po pustym RPE
+nie trafia, `IFERROR` zwraca 0, `MROUND` z zera daje **0 kg**. Zamiast pustego
+wiersza klient dostawał polecenie „podnieś 0 kg".
+
+**Co się zmienia.** Trzy komórki w każdym wierszu TOP SETU — nazwa, liczba serii
+i opis powtórzeń — sprawdzają teraz także, czy `F` nie jest puste:
+
+```
+C6  =IF(OR($B6<>"TOP SET",$F6=""),"", …)
+D6  =IF(AND($B6="TOP SET",$F6<>""),1,"")
+E6  =IF(AND($B6="TOP SET",$F6<>""),"1 powtórzenie","")
+```
+
+Reszta idzie za tym sama: ciężar (`G6`) już dziś sprawdza `$C6=""`, a podsumowanie
+dnia (`D19`) liczy TOP SET tylko przy niepustym `$C$6`. Razem 90 komórek —
+3 × 5 dni × 6 tygodni.
 
 ### Poprawka 2 — `START!B7`
 

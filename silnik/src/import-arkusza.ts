@@ -62,7 +62,10 @@ export type ZrzutArkusza = {
   top_sety: {
     dzien: number;
     wlaczony: boolean;
+    /** RPE z T1 — zostaje dla zrzutów sprzed rozdzielenia na tygodnie. */
     rpe: number | null;
+    /** RPE tydzień po tygodniu; `null` w tygodniu = TOP SETU tam nie ma. */
+    rpe_tygodni?: Record<string, number | null>;
     slot_position_id: string | null;
   }[];
   podsumowania: Record<string, {
@@ -173,23 +176,35 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
       .map((s) => ({ cwiczenieId: s.id!, ciezar: s.ciezar, powtorzenia: s.powtorzenia })),
     sloty,
     /*
-     * TOP SETY z arkusza. 5.18 trzyma RPE w jednej komórce na cały cykl, więc
-     * to, co stamtąd przychodzi, dotyczy wszystkich sześciu tygodni — i tak
-     * to zapisujemy, jako liczbę wpisaną ręcznie w każdym tygodniu. Szablonowa
-     * rampa (6 → 6,5 → 7 → 7,5 → 8) wchodzi dopiero wtedy, gdy trener te
-     * liczby wyczyści; arkusz mówi wprost co innego, a import ma go oddać
-     * takim, jaki jest, nie takim, jaki byłby ładniejszy.
+     * TOP SETY z arkusza.
+     *
+     * Liczby z pliku są tym, co trener widzi na ekranie, więc wchodzą jako
+     * wpisane ręcznie — nie jako „puste, czyli z szablonu". Gdyby wchodziły
+     * jako puste, import z arkusza, w którym RPE stoi inaczej niż w szablonie,
+     * po cichu podmieniałby te liczby na szablonowe.
+     *
+     * Tydzień z pustą komórką zostaje pusty: w poprawionym arkuszu znaczy to
+     * „w tym tygodniu TOP SETU nie ma", czyli to samo, co w silniku.
+     *
+     * Zrzuty sprzed rozdzielenia RPE na tygodnie mają samo `rpe` — jedną
+     * liczbę na cykl. Wtedy rozkładamy ją na wszystkie sześć tygodni, bo
+     * dokładnie tyle mówił tamten arkusz.
      */
     topSety: z.top_sety
       .filter((t) => t.wlaczony && t.slot_position_id)
-      .map((t) => ({
-        dzien: t.dzien,
-        wlaczony: true,
-        ...(t.rpe != null
-          ? { rpeTygodni: Object.fromEntries(TYGODNIE_IMPORTU.map((w) => [w, t.rpe])) }
-          : {}),
-        slotPositionId: t.slot_position_id!,
-      })),
+      .map((t) => {
+        const perTydzien = t.rpe_tygodni
+          ? TYGODNIE_IMPORTU.map((w) => [w, t.rpe_tygodni![`T${w}`] ?? null] as const)
+          : TYGODNIE_IMPORTU.map((w) => [w, t.rpe] as const);
+        const rpeTygodni = Object.fromEntries(
+          perTydzien.filter(([, rpe]) => rpe != null));
+        return {
+          dzien: t.dzien,
+          wlaczony: true,
+          ...(Object.keys(rpeTygodni).length > 0 ? { rpeTygodni } : {}),
+          slotPositionId: t.slot_position_id!,
+        };
+      }),
   };
 }
 
