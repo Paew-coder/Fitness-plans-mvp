@@ -388,6 +388,12 @@ Pakiet jest zminifikowany (bez komentarzy, nazwy zmienne pomieszane), ale **cał
 * ekran ćwiczenia z komunikatem o braku max setu czyta się wprost, razem z układem przycisków (`Zakończ serię`, `Historia / najlepsza seria`, `Szacowane 1RM`);
 * wzór liczący 1RM z serii roboczej to `ciężar / (%1RM / 100)` — **ten sam, co nasz `oneRMzSerii`**, z tą samą tabelą RPE.
 
+**I rzecz, która okazała się najcenniejsza: cała rozmowa trenera z AI Base44 jest do odczytania** — `GET /api/apps/{id}/chat/full-conversation`, bez żadnego planu. Między 600 a 1200 wiadomości od maja 2026. Są tam jego własne polecenia, czyli **zamiar**, którego zminifikowany kod nie niesie nigdy: co miało robić, dlaczego tak, co go w poprzedniej wersji uwierało. Do wiadomości doczepione są zrzuty ekranu (`file_urls`), też publiczne.
+
+Jedno ograniczenie tej drogi: argumenty wywołań narzędzi (a w nich treść plików) bywają **ucięte do 500 znaków**, chyba że wywołanie czekało na zgodę trenera. Czyli z rozmowy odtworzy się zamiar i nazwy plików, ale nie całe pliki.
+
+**Czego naprawdę nie da się dostać za darmo:** funkcji backendowych (`functions/*.js`, uruchamianych po stronie Base44). W pakiecie klienta ich nie ma — widać je wyłącznie we fragmentach z rozmowy. Dla ekranów, o które trenerowi chodzi (kalendarz, panele treningu, licznik przerwy), nie ma to znaczenia: to wszystko dzieje się w przeglądarce.
+
 Wniosek: do przestudiowania tamtej aplikacji **nie trzeba kupować planu**. Gdyby przy jakimś ekranie zabrakło szczegółu, w menu Base44 jest „This page's files" — trener otwiera konkretną stronę i wkleja jej kod, bez wykupywania całości.
 
 **Funkcja, o którą trener zapytał, jest w tamtej aplikacji zrobiona** — teksty z pakietu mówią to wprost: *„Brak wpisanego max setu — 1RM zostanie wyliczone po wpisaniu ciężaru podczas treningu"*, *„Ciężar możesz uzupełnić podczas pierwszego treningu"*, *„Max set zapisany — kolejne serie będą już z wyliczonym ciężarem"*. Czyli klient może pominąć serie maksymalne i skalibrować plan pierwszym treningiem.
