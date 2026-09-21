@@ -28,6 +28,8 @@ const el = (tag, klasa, tekst) => {
 const liczba = (n) => Number(n).toFixed(1).replace(".", ",").replace(",0", "");
 
 const TEKST_OFFLINE = "Offline — zapiszę, gdy wróci zasięg";
+/** Tabela RPE kończy się na piętnastu powtórzeniach — tyle samo, co POWT_MAX w silniku. */
+const MAKS_POWTORZEN = 15;
 
 // ── kolejka offline ────────────────────────────────────────────────
 const kolejka = {
@@ -49,6 +51,7 @@ const kolejka = {
   async wyslij() {
     let k = this.wczytaj();
     let odrzucone = 0;
+    let powodOdmowy = null;   // to, co serwer napisał przy pierwszej odmowie
     while (k.length > 0) {
       const zadanie = k[0];
       let odp;
@@ -59,7 +62,7 @@ const kolejka = {
           body: JSON.stringify(zadanie.dane),
         });
       } catch {
-        return { wyslane: false, odrzucone };   // brak sieci — próbujemy później
+        return { wyslane: false, odrzucone, powodOdmowy };   // brak sieci — próbujemy później
       }
       if (odp.ok) {
         const swiezy = await odp.json();
@@ -71,14 +74,20 @@ const kolejka = {
           zapiszWidokLokalnie();
         }
       } else if (odp.status >= 500) {
-        return { wyslane: false, odrzucone };   // serwer ma zły dzień, nie zadanie
+        return { wyslane: false, odrzucone, powodOdmowy };   // serwer ma zły dzień, nie zadanie
       } else {
-        odrzucone++;   // 4xx — tego zadania nie da się zapisać, wyrzucamy je
+        // 4xx — tego zadania nie da się zapisać, wyrzucamy je. Ale zabieramy
+        // ze sobą powód: serwer wie, dlaczego odmówił, i to jedyne miejsce,
+        // w którym da się to klientowi powiedzieć.
+        odrzucone++;
+        if (powodOdmowy === null) {
+          powodOdmowy = await odp.json().then((b) => b?.blad ?? null).catch(() => null);
+        }
       }
       k = this.wczytaj().slice(1);
       this.zapisz(k);
     }
-    return { wyslane: true, odrzucone };
+    return { wyslane: true, odrzucone, powodOdmowy };
   },
 };
 
@@ -91,27 +100,34 @@ function pokazStanPolaczenia(online) {
 }
 
 async function synchronizuj(odswiez = true) {
-  const { wyslane, odrzucone } = await kolejka.wyslij();
+  const { wyslane, odrzucone, powodOdmowy } = await kolejka.wyslij();
   pokazStanPolaczenia(wyslane);
-  if (odrzucone > 0) pokazOdrzucone(odrzucone);
+  if (odrzucone > 0) pokazOdrzucone(odrzucone, powodOdmowy);
   if (wyslane && odswiez) rysuj();
 }
 
 /**
- * Zadania, których serwer nie przyjmie nigdy — najczęściej dlatego, że trener
- * zdążył zmienić plan. Milczenie byłoby tu najgorsze: klient ma prawo wiedzieć,
- * że tych ocen u trenera nie ma.
+ * Zadania, których serwer nie przyjmie nigdy. Milczenie byłoby tu najgorsze:
+ * klient ma prawo wiedzieć, że tego u trenera nie ma.
+ *
+ * Powód mówi serwer, my go tylko przepisujemy. Wcześniej stało tu na sztywno
+ * „trener zmienił plan" — i przy serii maksymalnej na 16 powtórzeń było to
+ * po prostu nieprawdą. Klient dostawał wyjaśnienie, które nie miało nic
+ * wspólnego z tym, co zrobił, i nie miał jak się domyślić, że chodzi
+ * o liczbę powtórzeń.
  */
-function pokazOdrzucone(ile) {
+function pokazOdrzucone(ile, powod) {
   const pasek = $("#stan-polaczenia");
-  pasek.textContent = ile === 1
-    ? "Jedna ocena nie została zapisana — trener zmienił plan."
-    : `${ile} ocen nie zostało zapisanych — trener zmienił plan.`;
+  pasek.textContent = powod
+    ? powod
+    : (ile === 1
+      ? "Jeden wpis nie został zapisany — trener zmienił plan."
+      : `${ile} wpisów nie zostało zapisanych — trener zmienił plan.`);
   pasek.classList.remove("ukryty");
   setTimeout(() => {
     pasek.textContent = TEKST_OFFLINE;
     pokazStanPolaczenia(navigator.onLine);
-  }, 6000);
+  }, powod ? 9000 : 6000);
 }
 
 addEventListener("online", synchronizuj);
@@ -639,6 +655,12 @@ function rysujPomiary() {
   const naglowki = el("div", "etykiety");
   naglowki.append(el("span", "", "ciężar"), el("span", "", "powt."), el("span", "", "1RM"));
 
+  if (widok.doZmierzenia.some((p) => !p.bezSerii)) {
+    kontener.append(el("p", "wskazowka-pomiarow",
+      `Jedna seria do odmowy, przy dobrej technice. Najwyżej ${MAKS_POWTORZEN} `
+      + "powtórzeń — jeśli wychodzi więcej, dołóż kilogramów i spróbuj ponownie."));
+  }
+
   for (const p of widok.doZmierzenia) {
     const karta = el("div", "pomiar");
     const nazwa = el("div", "nazwa", p.nazwa);
@@ -647,7 +669,26 @@ function rysujPomiary() {
       a.href = p.film; a.target = "_blank"; a.rel = "noopener";
       nazwa.append(a);
     }
-    karta.append(nazwa, naglowki.cloneNode(true));
+    karta.append(nazwa);
+
+    /*
+     * Ćwiczenia, przy których nie ma czego mierzyć — masa ciała, czas,
+     * dystans, ciężar ustawiany wprost przez trenera.
+     *
+     * Zostają na liście, ale bez pól. Wcześniej pola były wszędzie: klient
+     * wpisywał „10 kg × 15" przy ćwiczeniu na masie ciała, a w planie widział
+     * „masa ciała" i miał prawo sądzić, że aplikacja zgubiła jego liczby.
+     * Jedno zdanie zamiast dwóch pól kosztuje mniej niż kwadrans zastanawiania
+     * się, co się zepsuło.
+     */
+    if (p.bezSerii) {
+      karta.classList.add("bez-serii");
+      karta.append(el("p", "powod", p.bezSerii));
+      kontener.append(karta);
+      continue;
+    }
+
+    karta.append(naglowki.cloneNode(true));
 
     const pola = el("div", "pola");
     const wCiezar = el("input");
@@ -661,6 +702,12 @@ function rysujPomiary() {
       input.placeholder = tytul;
       input.value = wartosc ?? "";
     }
+    // Tabela RPE kończy się na piętnastu powtórzeniach — powyżej nie ma
+    // z czego policzyć ciężaru. Lepiej powiedzieć to przy polu niż odmówić
+    // po wysłaniu.
+    wPowt.max = String(MAKS_POWTORZEN);
+    wPowt.title = `Najwyżej ${MAKS_POWTORZEN} powtórzeń — przy większej liczbie `
+      + "dołóż kilogramów.";
     const rm = el("span", "rm", p.oneRM ? `${liczba(p.oneRM)} kg` : "—");
 
     // Bez przerysowania — inaczej po wpisaniu ciężaru znika pole powtórzeń

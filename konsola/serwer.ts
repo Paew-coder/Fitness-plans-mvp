@@ -29,6 +29,7 @@ import { dniOd, dzisiaj } from "./czas.ts";
 import { adresyLokalnejSieci } from "./adresy.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
+import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
@@ -809,12 +810,23 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       })),
   }));
 
-  // Ćwiczenia bez 1RM — klient musi je zmierzyć, zanim ruszy plan.
+  /*
+   * Ćwiczenia do zmierzenia — klient podaje ciężar i powtórzenia, z nich
+   * wychodzi 1RM.
+   *
+   * Na liście zostają **wszystkie** ćwiczenia planu, także te, przy których
+   * seria maksymalna nic nie policzy (masa ciała, czas, dystans, ciężar
+   * ustawiany wprost). Wyrzucenie ich byłoby wygodniejsze w kodzie i gorsze
+   * na ekranie: klient widzi w planie ćwiczenie, nie widzi go na liście
+   * pomiarów i nie wie, czy o nim zapomniano. Zamiast pól dostaje jedno
+   * zdanie, dlaczego nie ma czego mierzyć.
+   */
   const doZmierzenia = [...new Set(zapisany.plan.sloty
     .filter((s) => s.cwiczenieId).map((s) => s.cwiczenieId!))]
     .map((id) => {
       const slot = wynik.tygodnie[0]!.sloty.find((s) => s.cwiczenie?.id === id);
       const seria = zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
+      const progresja = slot?.cwiczenie?.progresja ?? null;
       return {
         cwiczenieId: id,
         nazwa: slot?.cwiczenie?.nazwa ?? id,
@@ -822,6 +834,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
         ciezar: seria?.ciezar ?? null,
         powtorzenia: seria?.powtorzenia ?? null,
         oneRM: slot?.oneRM || null,
+        bezSerii: progresja ? dlaczegoBezSeriiMaksymalnej(progresja) : null,
       };
     });
 
@@ -1677,8 +1690,19 @@ const serwer = createServer(async (req, res) => {
         // tygodni. Powtórzeń liczy się do 15 — poza tabelą nie ma z czego.
         const ciezar = wZakresie(cialoZadania.ciezar, GRANICE.ciezar, false);
         const powtorzenia = wZakresie(cialoZadania.powtorzenia, [0, POWT_MAX]);
-        if (ciezar === null || powtorzenia === null) {
-          return blad(res, `Seria maksymalna: ciężar 0–1000 kg, powtórzenia 0–${POWT_MAX}`);
+        /*
+         * Komunikat mówi, CO zrobić, nie tylko czego nie wolno. Poprzedni
+         * („Seria maksymalna: ciężar 0–1000 kg, powtórzenia 0–15") wyglądał
+         * jak wypis z dokumentacji: klient czytał go w telefonie i nie wiedział,
+         * że wystarczy dołożyć kilogramów, żeby zmieścić się w piętnastu.
+         */
+        if (powtorzenia === null) {
+          return blad(res, `Serię maksymalną liczymy do ${POWT_MAX} powtórzeń — `
+            + "przy większej liczbie nie ma z czego wyliczyć ciężaru. "
+            + `Dołóż kilogramów tak, żeby zmieścić się w ${POWT_MAX}.`);
+        }
+        if (ciezar === null) {
+          return blad(res, "Ciężar serii maksymalnej musi być z zakresu 0–1000 kg.");
         }
         if (cwiczenieId && !katalog.poId(String(cwiczenieId))) {
           return blad(res, "Nie ma takiego ćwiczenia w bazie");
