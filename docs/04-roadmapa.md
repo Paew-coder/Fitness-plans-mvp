@@ -353,7 +353,11 @@ Wniosek dla silnika: **liczenie ze 100 % wpisanego 1RM jest w porządku** i nie 
 | aplikacja (rampa z arkusza) | 95 kg · RPE 6 | 97,5 · 6,5 | 100 · 7 | 102,5 · 7,5 |
 | periodyzacja | 100 kg | 102,5 | 105 | 107,5 |
 
-Równe **5 kg lżej w każdym tygodniu** — czyli cały punkt RPE. Do decyzji trenera: zostawić rampę z arkuszy (6 → 8) czy podnieść ją do periodyzacji (7 → 8,5).
+Równe **5 kg lżej w każdym tygodniu** — czyli cały punkt RPE.
+
+**Rozstrzygnięte 21.09.2026: zostaje niżej.** Trener wyjaśnił też, skąd wzięła się różnica w seriach roboczych — obniżał RPE u siebie świadomie, żeby przy liczeniu ze 100 % 1RM (tak liczy arkusz) wychodziły ciężary podobne do periodyzacji, która liczyła z mniejszego procentu. Najprostsze rozwiązanie po jego stronie i trafne. Przy TOP SECIE ta sama korekta poszła odruchowo, choć tam nie była potrzebna — kilogramy TOP SETU z periodyzacji to 87–93,5 % maksa, czyli dokładnie tabela przy 100 %.
+
+Mimo to liczby zostają, i to jest decyzja, nie przeoczenie: *„żeby wartości kilogramów nadawały się dla trenujących mniej zaawansowanych i były bezpieczniejsze, skoro z aplikacji ma korzystać szerokie grono odbiorców"*. Periodyzacja powstała dla jednej osoby pod okiem trenera; aplikacja rozpisuje pojedyncze na maksimum komuś, kogo nikt nie obserwuje. Zapisane w `silnik/src/top-set.ts` przy samej tabeli i przypięte testem, żeby podniesienie tych liczb wymagało decyzji.
 
 ## Co jest zrobione tym dokumentem
 

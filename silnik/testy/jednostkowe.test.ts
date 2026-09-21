@@ -472,6 +472,12 @@ describe("przeliczenie planu i walidacja", () => {
     assert.equal(top.ciezar, "");
   });
 
+  /*
+   * Liczby są o punkt niższe niż w periodyzacji źródłowej i tak ma zostać —
+   * decyzja trenera z 21.09.2026 o bezpieczniejszym pojedynczym dla osób
+   * mniej zaawansowanych. Uzasadnienie w `top-set.ts`. Ten test jest po to,
+   * żeby podniesienie ich było decyzją, a nie cichą „poprawką".
+   */
   test("RPE TOP SETU rośnie o pół stopnia na tydzień", () => {
     const naObjetosc = przeliczPlan(planTestowy());
     assert.deepEqual(naObjetosc.tygodnie.map((t) => t.topSety[0]!.rpe),

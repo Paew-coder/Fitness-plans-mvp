@@ -67,6 +67,23 @@ export function zwyczajowyTopSet(nazwa?: string | null): boolean {
  * stoi tu `null`, a nie liczba: „nie ma" to co innego niż „jest, na RPE 6".
  * Trener może wpisać RPE także w T1 i wtedy TOP SET tam będzie — wpisana
  * liczba zawsze wygrywa z szablonem.
+ *
+ * ── Dlaczego te liczby są NIŻSZE niż w periodyzacji źródłowej ─────────
+ *
+ * Kto porówna to z arkuszem periodyzacji (`docs/dane/periodyzacja-13-tygodni.json`),
+ * zobaczy, że TOP SET wychodzi tam o cały punkt RPE wyżej — przy wyciskaniu
+ * z maksem 115 kg równe 5 kg więcej w każdym tygodniu. **To jest świadoma
+ * decyzja trenera z 21.09.2026, nie rozjazd do naprawienia:**
+ *
+ *   „zostawmy tak jak jest, żeby wartości kilogramów nadawały się dla
+ *    trenujących mniej zaawansowanych i były bezpieczniejsze, skoro
+ *    z aplikacji ma korzystać szerokie grono odbiorców".
+ *
+ * Periodyzacja powstała dla jednej osoby pod sztangą, którą trener widział
+ * na oczy. Aplikacja rozpisuje pojedyncze na maksimum komuś, kogo nikt nie
+ * obserwuje — i tam pół kroku zapasu jest warte więcej niż zgodność
+ * z tabelą. Podniesienie tych liczb wymaga decyzji trenera, nie uznania,
+ * że ktoś się kiedyś pomylił.
  */
 export const PROGRESJA_TOP_SETU: Record<CzescPlanu, readonly (number | null)[]> = {
   "objętość":     [null, 6, 6.5, 7, 7.5, 8],
