@@ -271,6 +271,18 @@ Zostało dołożenie jednej rzeczy, której w arkuszu naprawdę nie było: **pus
 
 `SlotPlanu.trybCiezaru` nadpisuje `plan.trybAkcesoriow` dla jednego wiersza; pusto = jak w planie. Powód wprost od trenera: „licz z RPE wydaje mi się że nie jest przydatny bo zmienia wszystkie akcesoria naraz — zróbmy tak żeby dało się poszczególne ćwiczenia przełączyć". Przełącznik przy planie zostaje jako wartość domyślna dla nowych wierszy.
 
+**9. Szkielety z Base44 — wyciągnięte 21.09.2026.**
+
+Cztery szkielety FBW (1, 2, 3 i 4 dni) leżą w [`dane/szkielety-base44.json`](dane/szkielety-base44.json), z nazwami ćwiczeń **takimi, jakie są w Base44** — mapowanie na BAZĘ 5.17 jest osobną decyzją i część nazw odpowiednika nie ma.
+
+Gdzie były: aplikacja „Główna wersja 10.05.26r." (`69ff4766434f5b4424fe682a`), encja `SavedPlan` — pięć rekordów, z czego dwa identyczne. Nowsza aplikacja „CraftMyPlan" (`6a005660818ba6a6c28f8b7d`) ma dziś `SavedPlan` **pusty** i jedno ćwiczenie w katalogu, więc szkielety siedzą wyłącznie w tej starszej.
+
+Czego dalej nie da się przeczytać: **kodu aplikacji**. `template_id` (`fbw_3dni_6w`) wskazuje na szablon zdefiniowany w plikach, a dostęp do plików wymaga planu Builder — tak samo jak przy pierwszej analizie w fazie 0. Struktura dni i tak jest w rekordach, więc kod nie jest do tego potrzebny.
+
+Dwie rzeczy warte odnotowania przy przenoszeniu:
+* **To są szkielety FBW, nie układ 5.17.** Mają 7–8 pozycji w dniu (A1, B1/B2, C1/C2, D1/D2, E1/E2) i bój główny na A1 — więc wpasowują się w nasz szkielet 5 dni × 12 slotów bez naciągania.
+* **Katalogi się rozjechały.** Z jedenastu nazw cztery trafiają w BAZĘ dokładnie, cztery po poprawieniu zapisu (`High Bar Back Squat` → `Barbell back squat`, `Conventional Deadlift` → `Deadlift`, `Overhead Barbell Press` → `Barbell OHP`, `Pull-Up` → `Pull up`), a trzy nie mają w BAZIE odpowiednika w ogóle: `Close-Grip Bench Press`, `Machine Shoulder Press` i samo `Plank` (BAZA ma wyłącznie warianty: `Plank contralateral`, `Plank leg raises`, `Copenhagen plank`…).
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
