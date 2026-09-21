@@ -369,6 +369,29 @@ Cztery rzeczy z prawdziwego używania, wszystkie o tym samym: **aplikacja dział
 
 **Rozstrzygnięte przy okazji 21.09.2026:** pole ciężaru **nie** otwiera się przy ćwiczeniach na masie ciała. Padło pytanie, czy pozwolić wpisać tam stałe 2 kg (trener rozważał to przy „Dead bug izo + OH"); odpowiedź brzmi nie — „niech zostanie masa ciała tak jak jest". Pole ręcznego ciężaru ma wyłącznie progresja `ręczne ustawienie`, bo tylko ona mówi wprost, że ciężar ma się wziąć spoza 1RM.
 
+**13. Jak dużo da się przeczytać z Base44 bez planu Builder — 21.09.2026.**
+
+Trener zapytał, co zrobić, żeby dało się tamtą aplikację przestudiować dokładnie. Sprawdzone, co jest dostępne na jego obecnym planie:
+
+| Droga | Stan |
+|---|---|
+| Pliki źródłowe przez MCP (`grep`, `read_file`) | **nie** — wymaga planu Builder |
+| Synchronizacja z GitHubem | **nie** — `402: GitHub Integration is not available on your current plan` |
+| `GET /api/apps/{id}/coding/export-to-zip` | **tak** — zwraca prawdziwy zip, tylko binarnie, więc nie przechodzi przez `execute_api` |
+| Opublikowany pakiet JS | **tak, bez żadnego planu** — `https://craftmyplan.base44.app/assets/index-*.js` |
+| Source map do tego pakietu | nie — 404 |
+
+Pakiet jest zminifikowany (bez komentarzy, nazwy zmienne pomieszane), ale **cała logika i wszystkie teksty są w środku**. Stamtąd wzięły się szablony z punktu 10; teraz doszły teksty interfejsu — [`dane/teksty-base44.json`](dane/teksty-base44.json), 144 pozycje.
+
+Najkrótsza droga do pełnego źródła z komentarzami: trener pobiera zip eksportem z Base44 i wrzuca go do repozytorium na GitHubie, które da się dołączyć do sesji. Wtedy czyta się to jak każdy inny kod, bez kosztu kontekstu.
+
+**Funkcja, o którą trener zapytał, jest w tamtej aplikacji zrobiona** — teksty z pakietu mówią to wprost: *„Brak wpisanego max setu — 1RM zostanie wyliczone po wpisaniu ciężaru podczas treningu"*, *„Ciężar możesz uzupełnić podczas pierwszego treningu"*, *„Max set zapisany — kolejne serie będą już z wyliczonym ciężarem"*. Czyli klient może pominąć serie maksymalne i skalibrować plan pierwszym treningiem.
+
+W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej, z RPE poprawionym o ocenę). Brakuje trzech rzeczy po stronie ekranów:
+1. pole ciężaru w planie klienta zamiast liczby — dziś jest, ale zwinięte pod „zapisz, co poszło";
+2. sensownego stanu, gdy 1RM jeszcze nie ma — dziś klient widzi „— brak 1RM" zamiast zaproszenia do dobrania ciężaru;
+3. instrukcji: dwie drogi na start i czym jest RPE.
+
 **Cztery rzeczy do przypomnienia** (trener: „trzymaj te 4 rzeczy i przypomnisz później"):
 
 1. **Biblioteka szkieletów z Base44** — 14 szablonów czeka na decyzję w trzech nazwach bez odpowiednika w BAZIE: `Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`.
