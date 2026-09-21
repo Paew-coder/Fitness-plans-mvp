@@ -377,13 +377,18 @@ Trener zapytał, co zrobić, żeby dało się tamtą aplikację przestudiować d
 |---|---|
 | Pliki źródłowe przez MCP (`grep`, `read_file`) | **nie** — wymaga planu Builder |
 | Synchronizacja z GitHubem | **nie** — `402: GitHub Integration is not available on your current plan` |
-| `GET /api/apps/{id}/coding/export-to-zip` | **tak** — zwraca prawdziwy zip, tylko binarnie, więc nie przechodzi przez `execute_api` |
+| Eksport projektu do `.zip` | **nie** — „ZIP file export is only available on Builder, Pro, Elite and Enterprise plans". Wywołanie API wróciło z błędem „binary_response" po naszej stronie, więc przez chwilę wyglądało na dostępne; rozstrzygnął ekran w Base44 |
 | Opublikowany pakiet JS | **tak, bez żadnego planu** — `https://craftmyplan.base44.app/assets/index-*.js` |
 | Source map do tego pakietu | nie — 404 |
 
 Pakiet jest zminifikowany (bez komentarzy, nazwy zmienne pomieszane), ale **cała logika i wszystkie teksty są w środku**. Stamtąd wzięły się szablony z punktu 10; teraz doszły teksty interfejsu — [`dane/teksty-base44.json`](dane/teksty-base44.json), 144 pozycje.
 
-Najkrótsza droga do pełnego źródła z komentarzami: trener pobiera zip eksportem z Base44 i wrzuca go do repozytorium na GitHubie, które da się dołączyć do sesji. Wtedy czyta się to jak każdy inny kod, bez kosztu kontekstu.
+**Płatna jest więc każda droga do źródła z komentarzami.** Ale okazało się, że nie jest potrzebna: pakiet, choć zminifikowany, zachowuje **strukturę JSX, klasy CSS, nazwy pól danych i wszystkie teksty**. Mieszają się tylko nazwy zmiennych lokalnych. Sprawdzone na dwóch rzeczach naraz:
+
+* ekran ćwiczenia z komunikatem o braku max setu czyta się wprost, razem z układem przycisków (`Zakończ serię`, `Historia / najlepsza seria`, `Szacowane 1RM`);
+* wzór liczący 1RM z serii roboczej to `ciężar / (%1RM / 100)` — **ten sam, co nasz `oneRMzSerii`**, z tą samą tabelą RPE.
+
+Wniosek: do przestudiowania tamtej aplikacji **nie trzeba kupować planu**. Gdyby przy jakimś ekranie zabrakło szczegółu, w menu Base44 jest „This page's files" — trener otwiera konkretną stronę i wkleja jej kod, bez wykupywania całości.
 
 **Funkcja, o którą trener zapytał, jest w tamtej aplikacji zrobiona** — teksty z pakietu mówią to wprost: *„Brak wpisanego max setu — 1RM zostanie wyliczone po wpisaniu ciężaru podczas treningu"*, *„Ciężar możesz uzupełnić podczas pierwszego treningu"*, *„Max set zapisany — kolejne serie będą już z wyliczonym ciężarem"*. Czyli klient może pominąć serie maksymalne i skalibrować plan pierwszym treningiem.
 
