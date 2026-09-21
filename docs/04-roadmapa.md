@@ -359,6 +359,21 @@ Równe **5 kg lżej w każdym tygodniu** — czyli cały punkt RPE.
 
 Mimo to liczby zostają, i to jest decyzja, nie przeoczenie: *„żeby wartości kilogramów nadawały się dla trenujących mniej zaawansowanych i były bezpieczniejsze, skoro z aplikacji ma korzystać szerokie grono odbiorców"*. Periodyzacja powstała dla jednej osoby pod okiem trenera; aplikacja rozpisuje pojedyncze na maksimum komuś, kogo nikt nie obserwuje. Zapisane w `silnik/src/top-set.ts` przy samej tabeli i przypięte testem, żeby podniesienie tych liczb wymagało decyzji.
 
+**12. Pierwsze godziny z Markiem X — 21.09.2026.**
+
+Cztery rzeczy z prawdziwego używania, wszystkie o tym samym: **aplikacja działała zgodnie z BAZĄ i nigdzie tego nie mówiła.**
+
+* **„SLDL balance" — wpisana seria maksymalna, a w ciężarze napis „ręczne ustawienie".** To był jedyny prawdziwy błąd z tej czwórki: przy tej progresji komórka ciężaru pokazywała napis i **nie dawała pola**. Aplikacja pisała „ustaw ręcznie" i nie dawała gdzie. Silnik od początku honorował `ciezarOverride` także tam — brakowało wyłącznie pola w konsoli.
+* **„Dead bug izo + OH" — wpisany maks 10 kg × 15, a w planie „masa ciała".** Zachowanie poprawne, komunikat żaden. Teraz ćwiczenia bez serii maksymalnej (25 ze 165) zostają na liście pomiarów, ale zamiast pól mają jedno zdanie, dlaczego nie ma czego mierzyć. Zdania trzyma `silnik/src/seria-maksymalna.ts`; test pilnuje, żeby kopia w `public/app.js` brzmiała identycznie.
+* **Granica 15 powtórzeń nie była nigdzie napisana**, a odmowa serwera brzmiała „trener zmienił plan" — przy serii na 16 powtórzeń nieprawda, z której nic nie wynika. Granica stoi teraz przy polu (`max`), nad listą i w komunikacie, który mówi, **co zrobić**: dołóż kilogramów, żeby zmieścić się w piętnastu. Aplikacja klienta pokazuje odmowę słowami serwera, nie własnym domysłem.
+
+**Cztery rzeczy do przypomnienia** (trener: „trzymaj te 4 rzeczy i przypomnisz później"):
+
+1. **Biblioteka szkieletów z Base44** — 14 szablonów czeka na decyzję w trzech nazwach bez odpowiednika w BAZIE: `Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`.
+2. **Deload i tydzień max out** — dopiero po pierwszym pełnym cyklu z żywym klientem.
+3. **Progresja hipertroficzna 12/14** — zaplanowana, nie dodana (punkt 10).
+4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
