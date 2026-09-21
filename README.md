@@ -11,6 +11,7 @@ nie z pamięci) i **jak przenieść go do aplikacji** bez utraty ani jednej licz
 
 | | |
 |---|---|
+| [`05-base44-co-przeniesc.md`](docs/05-base44-co-przeniesc.md) | Analiza aplikacji z Base44: co tam jest, co warto przenieść i w jakiej kolejności |
 | [`01-analiza-zrodel.md`](docs/01-analiza-zrodel.md) | Co robi arkusz 5.17, rozbieżności instrukcja ↔ plik, gdzie jest Base44 |
 | [`02-silnik-obliczeniowy.md`](docs/02-silnik-obliczeniowy.md) | Jądro rozłożone na funkcje czyste — wzory, sygnatury, plan testów |
 | [`03-architektura.md`](docs/03-architektura.md) | Warstwy, schemat bazy, ekrany, rekomendacja stacku, miejsce dla AI |
