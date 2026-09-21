@@ -307,6 +307,31 @@ Skąd, skoro plików nie da się czytać: szablony siedzą w kodzie, ale kod jed
 
   **Rozstrzygnięte 21.09.2026:** trzecia kolumna — „hipertrofia", 12/14 — wchodzi, ale **nie teraz**. Trener: „możemy zrobić osobną progresję 12/14. Na razie zaplanujmy bez dodawania". Czyli jest to zaplanowane, nie zapomniane: zakres powtórzeń akcesoriów rozszerza się o trzecią wartość `CzescPlanu`, a bój główny w tej rodzinie nie ma TOP SETU w ogóle.
 
+**11. Periodyzacja, z której wzięło się wszystko — 21.09.2026.**
+
+Trener przysłał arkusz periodyzacji siłowej, na której opierał swoje plany (ciężary przykładowe). Przepisany do [`dane/periodyzacja-13-tygodni.json`](dane/periodyzacja-13-tygodni.json) — **ze zrzutu ekranu, więc liczby warto sprawdzić z oryginałem**, zanim ktoś na nich coś policzy.
+
+**Rozstrzygnięcie przy okazji:** „część 2" znaczy **kolejny sześciotygodniowy plan, w którym zmienia się też praca** — czyli wersja z arkusza, ta, która jest w kodzie. Wersja z Base44 (praca stoi, rośnie sam TOP SET) odpada.
+
+Periodyzacja potwierdza obie kolumny `PROGRESJA_BOJU` u źródła. Wyciskanie:
+
+| | T1 | T2 | T3 | T4 | T5 |
+|---|---|---|---|---|---|
+| Blok I | 6×6 | 5×6 | 5×5 | 4×5 | 5×4 |
+| Blok II | 6×4 | 5×4 | 5×3 | 5×3 | 6×2 |
+
+To jest dokładnie nasza `objętość` i `intensywność`, tylko rozłożone na pięć tygodni zamiast sześciu. TOP SET wchodzi od drugiego tygodnia — trzeci niezależny dowód na to samo.
+
+**Czego w aplikacji nie ma, a w periodyzacji jest:**
+
+* **Deload.** Po każdym bloku idzie tydzień lżejszy — mniej serii, niższe RPE (przysiad 97,5 kg 5×4 @7 po 102,5 kg 4×4 @9), bez TOP SETU. Nasz cykl ma sześć tygodni roboczych i nic takiego.
+* **Tydzień 13: max out.** Jedno powtórzenie na RPE 10 w trzech bojach — to jest naturalne wejście w kolejny cykl, bo daje nowy 1RM. Dziś trener wpisuje serię maksymalną ręcznie.
+* **Trzynaście tygodni jako całość** — dwa bloki po 5 + dwa deloady + max out. Aplikacja zna sześciotygodniowy cykl i nic ponad.
+
+**Obserwacja liczbowa, do rozstrzygnięcia z trenerem.** Ciężary robocze w periodyzacji są **lżejsze, niż wychodzi z tabeli RPE liczonej od podanego 1RM**: w bloku I o 4–9 punktów procentowych, w bloku II o 1,5–5. Rozrzut jest systematyczny, nie przypadkowy: praca bloku I wypada, jakby liczono ją z **~91–92 % podanego maksa**, a bloku II z **~95–96 %**. Wygląda to na klasyczny „training max", który rośnie między blokami — albo na to, że 130/115/175 to maksy docelowe na tydzień 13, a nie aktualne.
+
+Ma to znaczenie praktyczne: silnik liczy ciężar z **pełnego** 1RM, więc przy tym samym maksie zapisze cięższą pracę, niż trener rozpisywał ręcznie. Różnicę może zjeść to, że 1RM w aplikacji pochodzi z serii maksymalnej (wartość szacowana, zwykle niższa od prawdziwego maksa) — ale to trzeba sprawdzić na realnym kliencie, a nie założyć.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
