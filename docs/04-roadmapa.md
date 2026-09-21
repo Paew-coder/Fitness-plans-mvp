@@ -328,9 +328,32 @@ To jest dokładnie nasza `objętość` i `intensywność`, tylko rozłożone na 
 * **Tydzień 13: max out.** Jedno powtórzenie na RPE 10 w trzech bojach — to jest naturalne wejście w kolejny cykl, bo daje nowy 1RM. Dziś trener wpisuje serię maksymalną ręcznie.
 * **Trzynaście tygodni jako całość** — dwa bloki po 5 + dwa deloady + max out. Aplikacja zna sześciotygodniowy cykl i nic ponad.
 
-**Obserwacja liczbowa, do rozstrzygnięcia z trenerem.** Ciężary robocze w periodyzacji są **lżejsze, niż wychodzi z tabeli RPE liczonej od podanego 1RM**: w bloku I o 4–9 punktów procentowych, w bloku II o 1,5–5. Rozrzut jest systematyczny, nie przypadkowy: praca bloku I wypada, jakby liczono ją z **~91–92 % podanego maksa**, a bloku II z **~95–96 %**. Wygląda to na klasyczny „training max", który rośnie między blokami — albo na to, że 130/115/175 to maksy docelowe na tydzień 13, a nie aktualne.
+**RPE w periodyzacji a RPE w planach — rozstrzygnięte przez porównanie z kilogramami.**
 
-Ma to znaczenie praktyczne: silnik liczy ciężar z **pełnego** 1RM, więc przy tym samym maksie zapisze cięższą pracę, niż trener rozpisywał ręcznie. Różnicę może zjeść to, że 1RM w aplikacji pochodzi z serii maksymalnej (wartość szacowana, zwykle niższa od prawdziwego maksa) — ale to trzeba sprawdzić na realnym kliencie, a nie założyć.
+Najpierw wyglądało to na „training max": ciężary robocze w periodyzacji wypadały 4–9 punktów procentowych poniżej tego, co daje tabela RPE od podanego 1RM. Po zestawieniu trzech rzeczy naraz — kilogramów z periodyzacji, jej własnej kolumny RPE i RPE z arkuszy cz.1/cz.2 — wyjaśnienie okazało się prostsze i mocniej poparte. **Nie ma żadnego training maxa. Jest różnica w tym, co kto wpisał w kolumnę RPE.**
+
+Wyciskanie, 1RM 115 kg, blok I (serie robocze):
+
+| serie × powt. | kg | ile to naprawdę RPE wg tabeli | periodyzacja pisze | arkusz cz.1 pisze |
+|---|---|---|---|---|
+| 6×6 | 80 | 6,5 | 7,5 | **6,5** |
+| 5×6 | 82,5 | 7 | 8 | **7** |
+| 5×5 | 85 | 7 | 8,5 | **7** |
+| 4×5 | 87,5 | 7,5 | 8,5 | **7,5** |
+| 5×4 | 90 | 7 | 9 | 7,5 |
+
+I to samo w bloku II: arkusz trafia 5 razy na 5, periodyzacja jest wyżej o 0,5–1. **Kolumna RPE w arkuszach cz.1/cz.2 odtwarza kilogramy z periodyzacji prawie dokładnie; kolumna RPE w samej periodyzacji jest o 0,5–1,5 wyższa od tego, co te kilogramy znaczą w tabeli.** Czyta się to jak zamierzony wysiłek, nie jak odczyt z tabeli.
+
+Wniosek dla silnika: **liczenie ze 100 % wpisanego 1RM jest w porządku** i nie trzeba żadnego mnożnika — bo arkusze, z których wzięte są nasze liczby, już się z kilogramami zgadzają.
+
+**Ale przy TOP SECIE jest odwrotnie.** Tam kilogramy z periodyzacji zgadzają się z JEJ RPE (3 na 4 dokładnie), a rampa z arkusza jest niżej:
+
+| | T2 | T3 | T4 | T5 |
+|---|---|---|---|---|
+| aplikacja (rampa z arkusza) | 95 kg · RPE 6 | 97,5 · 6,5 | 100 · 7 | 102,5 · 7,5 |
+| periodyzacja | 100 kg | 102,5 | 105 | 107,5 |
+
+Równe **5 kg lżej w każdym tygodniu** — czyli cały punkt RPE. Do decyzji trenera: zostawić rampę z arkuszy (6 → 8) czy podnieść ją do periodyzacji (7 → 8,5).
 
 ## Co jest zrobione tym dokumentem
 
