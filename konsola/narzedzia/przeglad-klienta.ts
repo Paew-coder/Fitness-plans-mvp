@@ -41,6 +41,9 @@ async function zasiej({ api }: Srodowisko): Promise<string> {
   const plan = zapisany.plan;
   plan.sloty[0].cwiczenieId = "EX-0010";   // A1. bój główny
   plan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
+  // Ćwiczenie na masie ciała — nie ma przy nim czego mierzyć. W planie musi
+  // być, żeby ekran pomiarów miał co pokazać w sekcji 9b.
+  plan.sloty[2].cwiczenieId = "EX-0049";   // B2. Dead bug izo + OH
   plan.serieMaksymalne = [
     { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
     { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
@@ -89,7 +92,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const karty = s.locator("#cwiczenia .cwiczenie");
-  sprawdz("trening pokazuje ćwiczenia z planu", await karty.count() === 2,
+  sprawdz("trening pokazuje ćwiczenia z planu", await karty.count() === 3,
     `${await karty.count()} ćwiczenia`);
 
   // ── 3. ciężar na ekranie to ciężar policzony ──────────────────────
@@ -167,6 +170,50 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("seria maksymalna z telefonu daje nowe 1RM",
     zmierzone.ciezar === 125 && zmierzone.powtorzenia === 2 && zmierzone.oneRM > 127,
     `${zmierzone.ciezar}×${zmierzone.powtorzenia} → 1RM ${zmierzone.oneRM}`);
+
+  // ── 9b. ćwiczenia, przy których nie ma czego mierzyć ──────────────
+  //
+  // Zgłoszone z używania: trener wpisał przy „Dead bug izo + OH" maksa
+  // 10 kg × 15, a w planie zobaczył „masa ciała" i uznał, że aplikacja
+  // zgubiła jego liczby. Nic nie zgubiła — tylko nigdzie nie było napisane,
+  // że przy tym ćwiczeniu nie ma czego liczyć. Teraz jest, i to w miejscu,
+  // w którym człowiek chciałby te liczby wpisać.
+  const kartyPomiarow = s.locator("#pomiary .pomiar");
+  const bezSerii = kartyPomiarow.filter({ hasText: "Dead bug izo + OH" }).first();
+  sprawdz("ćwiczenie na masie ciała zostaje na liście pomiarów",
+    await bezSerii.isVisible());
+  sprawdz("ale zamiast pól ma napisane dlaczego",
+    (await bezSerii.locator("input").count()) === 0
+    && (await bezSerii.innerText()).includes("masie ciała"),
+    (await bezSerii.innerText()).replace(/\n/g, " "));
+  sprawdz("a nad listą stoi, skąd biorą się te piętnaście powtórzeń",
+    (await s.locator(".wskazowka-pomiarow").innerText()).includes("15"),
+    (await s.locator(".wskazowka-pomiarow").innerText()).slice(0, 80));
+
+  // Za dużo powtórzeń: serwer odmawia, a klient ma zobaczyć DLACZEGO.
+  // Wcześniej każda odmowa mówiła „trener zmienił plan" — przy serii na 16
+  // powtórzeń była to nieprawda, z której nie dało się niczego wywnioskować.
+  //
+  // Odmowa to tu wynik, nie usterka, więc 400 w konsoli przeglądarki jest
+  // oczekiwane i nie liczy się do błędów.
+  const bledyPrzedOdmowa = bledy.length;
+  const zMaksem = kartyPomiarow.filter({ hasText: "Barbell row" }).first().locator("input");
+  await zMaksem.nth(0).fill("40");
+  await zMaksem.nth(1).fill("16");
+  await zMaksem.nth(1).blur();
+  await s.waitForTimeout(900);
+  const pasek = await s.locator("#stan-polaczenia").innerText();
+  sprawdz("przy 16 powtórzeniach klient czyta, co zrobić",
+    pasek.includes("15") && /dołóż|Dołóż/.test(pasek), pasek);
+  bledy.splice(bledyPrzedOdmowa);
+
+  // Pole i tak nie powinno na to pozwolić — granica stoi przy nim, nie tylko
+  // na serwerze. To druga linia tej samej obrony, nie jej zamiennik.
+  sprawdz("pole powtórzeń samo pilnuje granicy",
+    await zMaksem.nth(1).getAttribute("max") === "15");
+  await zMaksem.nth(1).fill("5");
+  await zMaksem.nth(1).blur();
+  await s.waitForTimeout(700);
 
   // ── 10. ekran postępu ──────────────────────────────────────────────
   await s.click("#wroc-z-pomiarow");

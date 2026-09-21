@@ -13,6 +13,21 @@ const KATEGORIE = [
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let cwiczenia = [];
+
+/** Tabela RPE kończy się na piętnastu powtórzeniach — tyle, co POWT_MAX w silniku. */
+const MAKS_POWTORZEN_SERII = 15;
+
+/**
+ * Dlaczego przy tym ćwiczeniu nie ma serii maksymalnej. Te same zdania, co
+ * `dlaczegoBezSeriiMaksymalnej` w silniku — przeglądarka nie importuje modułów
+ * silnika, więc jedno powtórzenie jest tu ceną za brak zaplecza budującego.
+ */
+const POWODY_BEZ_SERII = {
+  "masa ciała": "Ćwiczenie na masie ciała — nie ma czego zmierzyć ani dołożyć.",
+  "czas": "Ćwiczenie na czas — liczy się utrzymanie pozycji, nie kilogramy.",
+  "dystans": "Ćwiczenie na dystans — liczy się odległość, nie kilogramy.",
+  "ręczne ustawienie": "Ciężar do tego ćwiczenia ustala się wprost, nie z 1RM.",
+};
 let obraz = null;      // { zapisany, klient, wynik, uwagi, gotowy, normy }
 let kartoteka = null;  // { klient, historia, plany, waga } — ekran klienta
 let tydzien = 1;
@@ -1483,11 +1498,26 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
  */
 function komorkaCiezaru(parametry, wyliczony) {
   const ciezar = wyliczony?.ciezar;
-  const bezCiezaru = typeof ciezar === "string" && !ciezar.startsWith("—");
+  const progresja = wyliczony?.cwiczenie?.progresja;
+  /*
+   * „Ręczne ustawienie" to jedyna progresja bez ciężaru, przy której ciężar
+   * jednak jest — tylko nie bierze się z 1RM, bo tak stoi w BAZIE.
+   *
+   * Dotąd wpadała do tego samego worka, co masa ciała i czas: komórka
+   * pokazywała napis i nie dawała pola. Czyli aplikacja pisała „ustaw
+   * ręcznie" i nie dawała gdzie. Zgłoszone z używania przy „SLDL balance":
+   * trener wpisał serię maksymalną, zobaczył napis zamiast kilogramów
+   * i nie miał jak tego poprawić.
+   */
+  const recznie = progresja === "ręczne ustawienie";
+  const bezCiezaru = typeof ciezar === "string" && !ciezar.startsWith("—") && !recznie;
   const komorka = el("td", typeof ciezar === "number" ? "ciezar" : "ciezar brak");
 
   if (bezCiezaru) {
-    komorka.append(el("span", "", String(ciezar)));
+    const napis = el("span", "", String(ciezar));
+    napis.title = "To ćwiczenie nie chodzi na kilogramy — seria maksymalna "
+      + "nic tu nie policzy.";
+    komorka.append(napis);
     return komorka;
   }
 
@@ -1495,10 +1525,15 @@ function komorkaCiezaru(parametry, wyliczony) {
   input.type = "number"; input.step = "0.5"; input.min = "0";
   input.className = "pole-ciezaru";
   input.value = parametry.ciezarOverride ?? "";
-  input.placeholder = typeof ciezar === "number" ? liczba(ciezar) : String(ciezar ?? "—");
+  input.placeholder = recznie
+    ? "ręcznie"
+    : (typeof ciezar === "number" ? liczba(ciezar) : String(ciezar ?? "—"));
   input.title = parametry.ciezarOverride !== undefined
     ? "Ciężar wpisany ręcznie. Wyczyść pole, żeby wrócić do liczonego."
-    : "Puste = liczony z 1RM, RPE i ocen klienta. Wpisz, żeby ustalić na sztywno.";
+    : (recznie
+      ? "To ćwiczenie nie liczy ciężaru z 1RM — wpisz kilogramy tutaj. "
+        + "Seria maksymalna nic przy nim nie zmieni."
+      : "Puste = liczony z 1RM, RPE i ocen klienta. Wpisz, żeby ustalić na sztywno.");
   input.onchange = () => {
     if (input.value === "") delete parametry.ciezarOverride;
     else parametry.ciezarOverride = Number(input.value);
@@ -1685,6 +1720,26 @@ function rysujSerieMax(pelne = false) {
     wiersz.dataset.cwiczenie = id;
     wiersz.append(el("div", "nazwa", c.nazwa));
 
+    /*
+     * Ćwiczenia, przy których seria maksymalna nic nie policzy.
+     *
+     * Zgłoszone z używania: wpisana seria przy „SLDL balance" i „Dead bug
+     * izo + OH" nie dawała ciężaru, a nigdzie nie było napisane dlaczego.
+     * Wygląda to jak awaria, a jest zgodne z BAZĄ — więc wiersz mówi to
+     * wprost i dopowiada, co zrobić zamiast.
+     */
+    const bezSerii = POWODY_BEZ_SERII[c.progresja];
+    if (bezSerii) {
+      const powod = el("div", "powod-bez-serii", bezSerii
+        + (c.progresja === "ręczne ustawienie"
+          ? " Wpisz kilogramy wprost w kolumnie Ciężar."
+          : ""));
+      wiersz.append(powod);
+      wiersz.classList.add("bez-serii");
+      kontener.append(wiersz);
+      continue;
+    }
+
     // Seria maksymalna ma sens tylko w komplecie: sam ciężar bez powtórzeń
     // niczego nie liczy. Dlatego stan czyta się z obu pól wiersza naraz —
     // gdyby każde pole zapisywało się osobno, pierwsze kasowałoby drugie.
@@ -1705,6 +1760,13 @@ function rysujSerieMax(pelne = false) {
       const input = el("input");
       input.type = "number"; input.min = "0"; input.placeholder = tytul;
       input.title = tytul;
+      // Tabela RPE kończy się na piętnastu powtórzeniach. Powyżej nie ma
+      // z czego policzyć 1RM, więc lepiej zatrzymać to przy polu.
+      if (tytul === "powt.") {
+        input.max = String(MAKS_POWTORZEN_SERII);
+        input.title = `Seria maksymalna do ${MAKS_POWTORZEN_SERII} powtórzeń — `
+          + "przy większej liczbie dołóż kilogramów.";
+      }
       input.value = wartosc || "";
       input.onchange = zmien;
       wiersz.append(input);

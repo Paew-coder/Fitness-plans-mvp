@@ -679,6 +679,60 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       && u.pozycje.some((x: string) => x.includes("SLDL balance"))),
     zAkcesorium.uwagi.find((u: any) => u.kod === "POZYCJA_A_BEZ_BOJU")?.pozycje.join(", ") ?? "brak uwagi");
 
+  /*
+   * „SLDL balance" ma w BAZIE progresję „ręczne ustawienie" — i to jest
+   * miejsce, w którym aplikacja najbardziej wyglądała na zepsutą.
+   *
+   * Zgłoszone z używania: trener wpisał serię maksymalną, w kolumnie ciężaru
+   * zobaczył napis „ręczne ustawienie" i nie miał ani pola, żeby ten ciężar
+   * ustawić, ani zdania, które by tłumaczyło dlaczego. Aplikacja pisała
+   * „ustaw ręcznie" i nie dawała gdzie.
+   */
+  // Wchodzimy tam drogą trenera: lista klientów → kartoteka → plan.
+  await s.goto(ADRES, { waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja")
+    .filter({ hasText: "Akcesorium w A1" }).getByRole("button", { name: "Otwórz" }).click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  await s.waitForTimeout(600);
+
+  const wierszAkc = s.locator("#dni tr").filter({ hasText: "SLDL balance" }).first();
+  const poleRecznegoCiezaru = wierszAkc.locator("td.ciezar input");
+  sprawdz("przy „ręcznym ustawieniu” jest gdzie ten ciężar wpisać",
+    (await poleRecznegoCiezaru.count()) === 1,
+    `pól ciężaru w wierszu: ${await poleRecznegoCiezaru.count()}`);
+  sprawdz("i pole mówi, że z 1RM nic tu nie wyjdzie",
+    ((await poleRecznegoCiezaru.getAttribute("title")) ?? "").includes("nie liczy ciężaru z 1RM"),
+    (await poleRecznegoCiezaru.getAttribute("title")) ?? "brak podpowiedzi");
+
+  await poleRecznegoCiezaru.fill("12.5");
+  await poleRecznegoCiezaru.blur();
+  await s.waitForTimeout(900);
+  const planPoRecznym = await (await fetch(`${ADRES}/api/plany/${PLAN_AKC}`)).json();
+  const slotPoRecznym = planPoRecznym.wynik.tygodnie[0].sloty
+    .find((x: any) => x.cwiczenie?.nazwa === "SLDL balance");
+  sprawdz("wpisany ciężar naprawdę wchodzi do planu",
+    slotPoRecznym?.ciezar === 12.5 && slotPoRecznym?.ciezarNadpisany === true,
+    `${slotPoRecznym?.ciezar} · nadpisany: ${slotPoRecznym?.ciezarNadpisany}`);
+
+  const wierszSerii = s.locator(".serie-max-wiersz").filter({ hasText: "SLDL balance" }).first();
+  sprawdz("panel serii maksymalnych nie prosi o liczby, których nie użyje",
+    (await wierszSerii.locator("input").count()) === 0
+    && (await wierszSerii.innerText()).includes("nie z 1RM"),
+    (await wierszSerii.innerText()).replace(/\n/g, " "));
+
+  // Wracamy na plan, na którym stoi reszta przeglądu — tą samą drogą, którą
+  // trener wraca naprawdę. Bez tego kolejne sekcje klikałyby po ekranie planu,
+  // który za chwilę kasujemy.
+  await s.goto(ADRES, { waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja")
+    .filter({ hasText: KLIENT }).getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  await s.waitForTimeout(600);
+
   // Sprzątamy po sobie: dalsze sekcje liczą kartoteki na liście.
   await fetch(`${ADRES}/api/plany/${PLAN_AKC}`, { method: "DELETE" });
   const doUsuniecia = (await (await fetch(`${ADRES}/api/klienci`)).json())

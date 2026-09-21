@@ -20,6 +20,7 @@ export * from "./historia-klienta.ts";
 export * from "./progresja.ts";
 export * from "./oddech.ts";
 export * from "./bieg.ts";
+export * from "./seria-maksymalna.ts";
 export * from "./top-set.ts";
 export * from "./plan.ts";
 export * from "./walidacja.ts";

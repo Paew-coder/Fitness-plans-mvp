@@ -352,6 +352,13 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .serie-max-wiersz .nazwa { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .serie-max-wiersz input { width: 100%; text-align: center; font-family: var(--mono); padding: .25rem; }
 .serie-max-wiersz .rm { font-family: var(--mono); text-align: right; color: var(--akcent); font-weight: 600; }
+/* Ćwiczenie, przy którym seria maksymalna nic nie policzy: zamiast dwóch pól
+   i kreski w kolumnie 1RM — jedno zdanie przez całą szerokość wiersza. */
+.serie-max-wiersz.bez-serii { grid-template-columns: 1fr; gap: .1rem; padding: .3rem 0 .45rem; }
+.serie-max-wiersz .powod-bez-serii {
+  font-size: .74rem; line-height: 1.35; color: var(--tekst-blady);
+  border-left: 2px solid var(--linia-mocna); padding-left: .5rem;
+}
 
 /* ── modal ──────────────────────────────────────────────────────── */
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45);

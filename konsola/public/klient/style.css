@@ -237,6 +237,14 @@ button { font: inherit; cursor: pointer; }
   font-family: var(--mono); font-weight: 700; color: var(--akcent);
   white-space: nowrap; font-size: .95rem;
 }
+/* Ćwiczenie bez serii maksymalnej — karta zostaje, pola znikają, powód
+   zostaje napisany. Klient widzi je w planie, więc musi je widzieć i tu. */
+.pomiar.bez-serii { opacity: .75; }
+.pomiar.bez-serii .nazwa { margin-bottom: .3rem; }
+.pomiar .powod { margin: 0; font-size: .85rem; line-height: 1.4; color: var(--tekst-blady); }
+.wskazowka-pomiarow {
+  margin: 0 0 .8rem; font-size: .85rem; line-height: 1.45; color: var(--tekst-blady);
+}
 .pomiar .etykiety {
   display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem;
   font-size: .7rem; color: var(--tekst-blady); font-family: var(--mono);
