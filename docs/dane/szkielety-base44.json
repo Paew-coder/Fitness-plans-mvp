@@ -1,0 +1,148 @@
+{
+  "opis": "Szkielety planow wyciagniete z Base44 (aplikacja 'Glowna wersja 10.05.26r.', id 69ff4766434f5b4424fe682a), encja SavedPlan, 21.09.2026. Nazwy cwiczen ZOSTAWIONE TAKIE, JAKIE SA W BASE44 — mapowanie na BAZE 5.17 jest osobna decyzja trenera.",
+  "zrodlo": {
+    "app_id": "69ff4766434f5b4424fe682a",
+    "encja": "SavedPlan",
+    "rekordow": 5,
+    "uwaga": "Dwa rekordy 'FBW 4 dni' sa identyczne (template_id fbw_4dni_6w) — ponizej raz."
+  },
+  "szkielety": [
+    {
+      "template_id": "fbw_1dzien_6cwiczen_6w",
+      "nazwa": "FBW Rozbudowany 1 dzień",
+      "dni": {
+        "day1": {
+          "A1": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "B1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "C1": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "C2": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Cable Row"},
+          "D1": {"kategoria": "Upper Pull Vertical", "cwiczenie": "Pull-Up"},
+          "D2": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "E1": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "E2": {"kategoria": "Upper Push Vertical", "cwiczenie": "Machine Shoulder Press"}
+        }
+      }
+    },
+    {
+      "template_id": "fbw_2dni_6cwiczen_6w",
+      "nazwa": "FBW 2 dni – 6 ćwiczeń złożonych",
+      "dni": {
+        "day1": {
+          "A1": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "B1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "C1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "C2": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "D1": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Barbell Row"},
+          "D2": {"kategoria": "Tricep", "cwiczenie": "Close-Grip Bench Press"},
+          "E1": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "E2": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"}
+        },
+        "day2": {
+          "A1": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "B1": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "C1": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"},
+          "C2": {"kategoria": "Upper Pull Vertical", "cwiczenie": "Pull-Up"},
+          "D1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "D2": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "E1": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "E2": {"kategoria": "Tricep", "cwiczenie": "Close-Grip Bench Press"}
+        }
+      }
+    },
+    {
+      "template_id": "fbw_3dni_6w",
+      "nazwa": "FBW 3 dni – 3 główne ćwiczenia",
+      "dni": {
+        "day1": {
+          "A1": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "B1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "B2": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "C1": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Barbell Row"},
+          "C2": {"kategoria": "Tricep", "cwiczenie": "Close-Grip Bench Press"},
+          "D1": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D2": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"}
+        },
+        "day2": {
+          "A1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "B1": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Barbell Row"},
+          "B2": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "C1": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "C2": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D1": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "D2": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"}
+        },
+        "day3": {
+          "A1": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "B1": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"},
+          "B2": {"kategoria": "Upper Pull Vertical", "cwiczenie": "Pull-Up"},
+          "C1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "C2": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D1": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "D2": {"kategoria": "Tricep", "cwiczenie": "Close-Grip Bench Press"}
+        }
+      }
+    },
+    {
+      "template_id": "fbw_4dni_6w",
+      "nazwa": "FBW 4 dni – 4 główne ćwiczenia",
+      "dni": {
+        "day1": {
+          "A1": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "B1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "B2": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "C1": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Barbell Row"},
+          "C2": {"kategoria": "Tricep", "cwiczenie": "Close-Grip Bench Press"},
+          "D1": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D2": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"}
+        },
+        "day2": {
+          "A1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "B1": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Barbell Row"},
+          "B2": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"},
+          "C1": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "C2": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D1": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "D2": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"}
+        },
+        "day3": {
+          "A1": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "B1": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"},
+          "B2": {"kategoria": "Upper Pull Vertical", "cwiczenie": "Pull-Up"},
+          "C1": {"kategoria": "Lower Push", "cwiczenie": "High Bar Back Squat"},
+          "C2": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D1": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "D2": {"kategoria": "Tricep", "cwiczenie": "Close-Grip Bench Press"}
+        },
+        "day4": {
+          "A1": {"kategoria": "Upper Pull Horizontal", "cwiczenie": "Barbell Row"},
+          "B1": {"kategoria": "Upper Push Vertical", "cwiczenie": "Overhead Barbell Press"},
+          "B2": {"kategoria": "Lower Pull", "cwiczenie": "Conventional Deadlift"},
+          "C1": {"kategoria": "Upper Pull Vertical", "cwiczenie": "Pull-Up"},
+          "C2": {"kategoria": "Bicep", "cwiczenie": "Barbell Curl"},
+          "D1": {"kategoria": "Core", "cwiczenie": "Plank"},
+          "D2": {"kategoria": "Upper Push Horizontal", "cwiczenie": "Barbell Bench Press"}
+        }
+      }
+    }
+  ],
+  "mapowanie_nazw": {
+    "opis": "Nazwy z Base44 vs BAZA 5.17. 'null' = brak odpowiednika, decyzja trenera.",
+    "zgodne": {
+      "Barbell Bench Press": "Barbell bench press",
+      "Barbell Row": "Barbell row",
+      "Barbell Curl": "Barbell curl",
+      "Cable Row": "Cable row"
+    },
+    "do_potwierdzenia": {
+      "High Bar Back Squat": "Barbell back squat",
+      "Conventional Deadlift": "Deadlift",
+      "Overhead Barbell Press": "Barbell OHP",
+      "Pull-Up": "Pull up"
+    },
+    "brak_odpowiednika": {
+      "Close-Grip Bench Press": null,
+      "Machine Shoulder Press": null,
+      "Plank": null
+    }
+  }
+}
