@@ -283,6 +283,28 @@ Dwie rzeczy warte odnotowania przy przenoszeniu:
 * **To są szkielety FBW, nie układ 5.17.** Mają 7–8 pozycji w dniu (A1, B1/B2, C1/C2, D1/D2, E1/E2) i bój główny na A1 — więc wpasowują się w nasz szkielet 5 dni × 12 slotów bez naciągania.
 * **Katalogi się rozjechały.** Z jedenastu nazw cztery trafiają w BAZĘ dokładnie, cztery po poprawieniu zapisu (`High Bar Back Squat` → `Barbell back squat`, `Conventional Deadlift` → `Deadlift`, `Overhead Barbell Press` → `Barbell OHP`, `Pull-Up` → `Pull up`), a trzy nie mają w BAZIE odpowiednika w ogóle: `Close-Grip Bench Press`, `Machine Shoulder Press` i samo `Plank` (BAZA ma wyłącznie warianty: `Plank contralateral`, `Plank leg raises`, `Copenhagen plank`…).
 
+**10. Szablony z ekranu „Wybierz szablon" — wyciągnięte 21.09.2026.**
+
+To jest to, o co trenerowi chodziło: **14 gotowych szkieletów** z aplikacji „CraftMyPlan", w [`dane/szablony-base44.json`](dane/szablony-base44.json). Każdy ma układ dni (kategoria na pozycji, z oznaczeniem boju głównego) **i pełną progresję: serie × powtórzenia × RPE dla każdej pozycji, tydzień po tygodniu, razem z TOP SETEM**.
+
+| Rodzina | Warianty | Bój główny |
+|---|---|---|
+| Klasyczny (`fbw_*dni_6w`) | 1, 2, 3, 4 dni | z TOP SETEM od T2 |
+| Rozbudowany (`fbw_*_6cwiczen_6w`) | 1, 2, 3, 4 dni | dwa boje na dzień |
+| Hipertroficzny (`hyper_*`) | 1, 2, 3, 4 dni | **bez TOP SETU**, 4×12–14 |
+| Kontynuacje bloków (`*_v2`) | 2 i 3 dni | TOP SET o stopień wyżej |
+
+Skąd, skoro plików nie da się czytać: szablony siedzą w kodzie, ale kod jedzie do przeglądarki. Publiczny pakiet `https://craftmyplan.base44.app/assets/index-*.js` zawiera je w całości; `GET /api/apps/{id}/coding/export-to-zip` w katalogu API też je odda, ale zwraca binarny zip, którego narzędzie nie przepuszcza.
+
+**Kategorie zgadzają się z naszymi co do jednej** — różni je wyłącznie wielkość liter (`Upper Push Horizontal` ↔ `Upper push horizontal`). Dziewięć, te same.
+
+**Co z tego wynika dla silnika — i gdzie jest sprzeczność:**
+
+* **„Klasyczny 2 dni" to dokładnie nasza kolumna `objętość`.** T1 6×6 @6,5, dalej 5×6 @7 → 5×5 @7 → 4×5 @7,5 → 5×4 @7,5 → 6×3 @7,5, a TOP SET wchodzi od T2 na RPE 6 i rośnie do 8. Niezależne potwierdzenie tego, co wczoraj weszło z arkuszy.
+* **Kontynuacja bloku w aplikacji znaczy co innego niż cz.2 w arkuszu.** W aplikacji `*_v2` zostawia pracę bez zmian i podnosi wyłącznie TOP SET (7 → 9). W arkuszu cz.2 zmienia samą pracę (6×4 → 6×2), a TOP SET podnosi przy okazji. **To są dwa różne pomysły na to samo słowo i trzeba wybrać jeden.**
+* **Klasyczny 3 i 4 dni ma jeszcze inną progresję boju** — 6×4 @7 → 5×4 @7 → 5×4 @7,5 → 4×3 @7,5 → 5×3 @8 → 6×2 @8. Podobna do naszej `intensywność`, ale nie ta sama (T2 i T4 się różnią).
+* **Hipertroficzny nie mieści się w dzisiejszym automacie powtórzeń.** Stoi na 4×12–14 przy RPE 8/9, a `powtorzeniaBazowe` zna dwie kolumny: 8/10 (objętość) i 6/8 (intensywność). Trzecia kolumna to osobna decyzja.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
