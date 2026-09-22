@@ -259,3 +259,98 @@ button { font: inherit; cursor: pointer; }
 }
 .komunikat-pelny h1 { font-size: 1.2rem; margin: 0; }
 .komunikat-pelny p { margin: 0; color: var(--tekst-slaby, #666); max-width: 22rem; }
+
+/* ── prowadzenie: seria po serii ────────────────────────────────── */
+/* Jeden panel naraz, wszystko duże. Klient patrzy na to z odległości
+   wyciągniętej ręki, w rękawiczkach albo z magnezją na palcach. */
+.prowadz { margin: 0 0 1rem; }
+
+.pasek { height: 4px; background: var(--linia); border-radius: 2px; overflow: hidden; }
+#pasek-wypelnienie {
+  height: 100%; width: 0; background: var(--akcent); border-radius: 2px;
+  transition: width .25s ease;
+}
+
+.panel-karta {
+  background: var(--karta); border: 1px solid var(--linia);
+  border-radius: 14px; padding: 1.1rem 1rem; margin-top: 1rem;
+}
+.panel-gora { display: flex; align-items: baseline; gap: .55rem; }
+.panel-gora .lp {
+  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); flex: none;
+}
+.panel-gora .nazwa { font-weight: 600; font-size: 1.15rem; flex: 1; line-height: 1.25; }
+.panel-gora .film {
+  color: var(--akcent); text-decoration: none; font-size: .82rem; flex: none;
+}
+.seria-numer {
+  font-family: var(--mono); font-size: .8rem; color: var(--tekst-blady);
+  margin-top: .35rem; letter-spacing: .02em;
+}
+.panel-zadanie {
+  display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
+  margin: .9rem 0 .2rem; font-family: var(--mono);
+}
+.panel-zadanie .duzy { font-size: 2.1rem; font-weight: 700; letter-spacing: -.03em; }
+.panel-zadanie .obok { color: var(--tekst-slaby); font-size: .95rem; }
+
+.serie-wpisane { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .6rem; }
+.serie-wpisane .chip {
+  font-family: var(--mono); font-size: .75rem; color: var(--tekst-slaby);
+  background: var(--karta-2); border: 1px solid var(--linia);
+  border-radius: 20px; padding: .18rem .55rem;
+}
+
+.panel-pola { display: flex; align-items: center; gap: .4rem; margin-top: .9rem; }
+.panel-pola input {
+  font: inherit; font-family: var(--mono); font-size: 1.2rem; text-align: center;
+  padding: .7rem .3rem; border-radius: 10px; width: 100%; min-width: 0;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.panel-pola .razy {
+  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); white-space: nowrap;
+}
+.pytanie { margin-top: 1rem; font-size: .88rem; color: var(--tekst-slaby); }
+
+.pod-panelem {
+  display: flex; justify-content: space-between; gap: .6rem; margin-top: .9rem;
+}
+.link {
+  background: none; border: none; padding: .3rem 0;
+  color: var(--tekst-blady); font-size: .8rem; text-decoration: underline;
+}
+
+.topset-panel { background: var(--akcent-tlo); border-color: var(--akcent); }
+.topset-panel .etykieta {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--akcent); font-weight: 700;
+  margin-bottom: .3rem;
+}
+
+/* Przerwa. Pierścień robi `conic-gradient` — obraca się bez obrazków,
+   bez SVG i bez jednej linii JavaScriptu poza ustawieniem procentu. */
+.przerwa { text-align: center; }
+.pierscien {
+  width: 11rem; height: 11rem; border-radius: 50%; margin: .5rem auto 1rem;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--akcent) var(--wypelnienie, 0%), var(--linia) 0);
+}
+.pierscien-srodek {
+  width: 9.4rem; height: 9.4rem; border-radius: 50%; background: var(--karta);
+  display: grid; place-items: center; align-content: center;
+}
+.pierscien .licznik {
+  font-family: var(--mono); font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em;
+}
+.pierscien .etykieta {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
+  color: var(--tekst-blady);
+}
+.przerwa .dalej { margin: 0 0 1rem; font-size: .92rem; color: var(--tekst-slaby); }
+.akcje-przerwy { display: flex; gap: .6rem; }
+.akcje-przerwy button { flex: 1; }
+
+.koniec-panel { text-align: center; }
+.koniec-panel .duzy-znak { font-size: 3rem; color: var(--ok); line-height: 1; }
+.koniec-panel h2 { font-size: 1.15rem; margin: .5rem 0 .2rem; }
+.koniec-panel .pod-panelem { justify-content: center; }

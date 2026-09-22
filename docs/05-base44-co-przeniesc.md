@@ -44,7 +44,7 @@ tamtych ekranów nie ma u nas odpowiednika i mieć nie powinna.
 
 ## Co warto przenieść — w kolejności od najbardziej opłacalnego
 
-### 1. Trening panel po panelu, z licznikiem przerwy
+### 1. Trening panel po panelu, z licznikiem przerwy — ✅ zrobione 22.09.2026
 
 **Tam:** ekran `/workout-execution`. Ćwiczenia idą po kolei w panelach; pierwszy
 panel to rozgrzewka (`🔥 Rozgrzewka`). W panelu: zdjęcie, rozpiska serii, pola
@@ -60,6 +60,27 @@ gdzie skończył.
 **Warto:** tak. To jest jedyna rzecz z tej listy, która zmienia **sposób używania**
 aplikacji na siłowni, a nie tylko jej wygląd. Licznik przerwy jest przy tym
 najtańszy z całej listy.
+
+**Zrobione — z trzema różnicami wobec tamtej wersji.** Przycisk
+`▶ Prowadź mnie seria po serii` stoi nad listą dnia; lista zostaje jako przegląd.
+Opis dla klienta: [`klient/README.md`](../klient/README.md#prowadzenie--seria-po-serii).
+
+1. **Superserie idą naprzemiennie i odpoczywają raz na rundę.** Tam przerwa
+   wchodziła po każdej serii, także między `B1` a `B2` — czyli superseria
+   przestawała nią być. U nas: `B1` s1 → `B2` s1 → przerwa.
+2. **Odliczanie liczy się ze znacznika końca, nie z odejmowania sekundy co
+   tyknięcie.** Tamten licznik (`setInterval` zmniejszający stan o 1) na
+   zablokowanym telefonie zwalniał razem z przeglądarką i po powrocie pokazywał
+   czas, który nie minął. To jest dokładnie ta klasa usterek, o których trener
+   uprzedził: *„niektóre rzeczy w aplikacji Base44 nie działały do końca
+   poprawnie"*.
+3. **Do trenera idzie najcięższa seria z ćwiczenia, nie ostatnia** — bo z tej
+   jednej pary liczy się propozycja nowego 1RM, a ostatnia seria jest zwykle
+   najsłabsza. Wszystkie wpisane serie zostają widoczne na panelu.
+
+Przerwy zostały wzięte z tamtej aplikacji bez zmian (180 / 120 / 90 / 60 s wg
+`coeff`) — to liczby trenera, nie nasze. Stoją w jednym miejscu:
+[`silnik/src/przerwa.ts`](../silnik/src/przerwa.ts).
 
 ### 2. Kalendarz z przesuwaniem treningów
 
@@ -153,8 +174,16 @@ i `accessory` (22). Czternaście oznaczonych jako główne:
 Dwie rzeczy z tego wynikają. Po pierwsze, **`Sumo Deadlift` był tam od początku** —
 a w BAZIE 5.17 go nie było i dopisaliśmy go dopiero 20.09. Po drugie, **`Barbell Row`
 i `Pendlay Row` są tam bojami głównymi**, choć mają coeff 0,75. To jest dokładnie
-to pytanie, które wisi u nas otwarte od 20.09: czy bojem głównym jest wyłącznie
+to pytanie, które wisiało u nas otwarte od 20.09: czy bojem głównym jest wyłącznie
 ćwiczenie z coeff 1,0. Tamta aplikacja mówi, że nie.
+
+> **Rozstrzygnięte 22.09.2026 — zostaje po naszemu.** Trener: *„wiosłowania nie
+> zaliczajmy do boju głównego tylko liczmy je jako akcesorium"*. Czyli bojem
+> głównym jest nadal wyłącznie ćwiczenie z coeff 1,0 w pozycji A, a wiosłowanie
+> — choćby stało w A1 — dostaje progresję akcesorium. Nic w kodzie nie wymagało
+> zmiany; pytanie było otwarte, nie usterka. Zapisane przy
+> [`jestBojemGlownym`](../silnik/src/szablon-boju.ts) i przypięte testem
+> „bojem głównym jest ćwiczenie złożone, nie samo miejsce w tabeli".
 
 **Trzy nazwy bez odpowiednika w BAZIE dostają kontekst.** `Close-Grip Bench Press`
 stoi w tamtym katalogu jako `Close-Grip Barbell Bench Press` z własną kategorią
