@@ -101,11 +101,29 @@
     </div>
   </header>
 
+  <button id="prowadz" class="glowny szeroki prowadz">▶ Prowadź mnie seria po serii</button>
+
   <div id="topset" class="topset ukryty"></div>
   <div id="cwiczenia"></div>
 
   <button id="zakoncz" class="glowny szeroki">Zakończ trening</button>
   <p class="drobne srodek">Ćwiczenia bez oceny zapiszą się jako „OK".</p>
+</div>
+
+<!-- ── prowadzenie: seria po serii ────────────────────────────────── -->
+<div id="ekran-seria" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-serii">←</button>
+    <div>
+      <h1 id="seria-tytul">—</h1>
+      <p id="seria-postep" class="drobne"></p>
+    </div>
+  </header>
+  <div class="pasek"><div id="pasek-wypelnienie"></div></div>
+  <!-- Jeden panel naraz. Całość rysuje `rysujPanel` w app.js — statyczny
+       szkielet byłby tu ściemą, bo panel serii, przerwa i koniec treningu
+       nie mają ze sobą wspólnego ani jednego pola. -->
+  <div id="panel"></div>
 </div>
 
 <!-- ── serie maksymalne ───────────────────────────────────────────── -->

@@ -167,6 +167,7 @@ const EKRAN_GLOWNY = "#ekran-tygodnie";
 /** Co trzeba przygotować przy wejściu — tak samo z dotknięcia, jak z historii. */
 const PRZYGOTUJ = {
   "#ekran-trening": () => rysujTrening(),
+  "#ekran-seria": () => rysujSerie(),
   "#ekran-postep": async () => { await wczytajHistorie(); rysujPostep(); },
 };
 
@@ -186,7 +187,7 @@ function pokazEkran(id) {
 function ustawEkran(id) {
   // Po powrocie z treningu nie ma już wybranego dnia, więc „w przód" pokazałoby
   // pusty ekran. Zamiast tego wracamy do listy.
-  const cel = id === "#ekran-trening" && !biezacy ? EKRAN_GLOWNY : id;
+  const cel = ["#ekran-trening", "#ekran-seria"].includes(id) && !biezacy ? EKRAN_GLOWNY : id;
   if (cel === EKRAN_GLOWNY) biezacy = null;
   pokazEkran(cel);
   PRZYGOTUJ[cel]?.();
@@ -247,6 +248,11 @@ function rysuj({ pomiary = true } = {}) {
   rysujTygodnie();
   rysujInstalacje();
   if (biezacy) rysujTrening();
+  // Panel prowadzenia przerysowujemy tylko wtedy, gdy klient w nim akurat nie
+  // pisze: podmiana pola pod palcem zamyka na telefonie klawiaturę w połowie
+  // wpisywanej liczby.
+  if (biezacy && !$("#ekran-seria").classList.contains("ukryty")
+    && !$("#ekran-seria").contains(document.activeElement)) rysujSerie();
   if (pomiary) rysujPomiary();
   rysujModuly();
   if (pomiary) rysujPostep();
@@ -573,6 +579,15 @@ function rysujTrening() {
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
+
+  // Wejście w prowadzenie. Po domkniętym treningu nie ma dokąd prowadzić,
+  // a w środku zaczętego przycisk musi mówić „wróć", nie „zacznij" — inaczej
+  // wygląda jak propozycja rozpoczęcia wszystkiego od nowa.
+  const wToku = (prowadzenieTegoDnia(d)?.krok ?? 0) > 0;
+  $("#prowadz").classList.toggle("ukryty", d.ukonczony);
+  $("#prowadz").textContent = wToku
+    ? "▶ Wróć do przerwanego treningu"
+    : "▶ Prowadź mnie seria po serii";
 }
 
 /**
@@ -646,6 +661,499 @@ function polaWykonania(c) {
   pola.append(wCiezar, el("span", "razy", "kg ×"), wPowt, el("span", "razy", "powt."));
   blok.append(przelacz, pola);
   return blok;
+}
+
+// ── prowadzenie: seria po serii ────────────────────────────────────
+//
+// Drugi sposób na ten sam trening. Lista dnia zostaje i zostać musi — jest
+// przeglądem: pokazuje wszystko naraz, pozwala wrócić do dowolnego ćwiczenia
+// i niczego nie narzuca. Ale na sali klient nie przegląda, tylko wykonuje:
+// seria, przerwa, następna. Ekran z dwunastoma ćwiczeniami wymaga wtedy od
+// niego pamiętania, przy którym z nich jest — i to jest cała różnica między
+// „mam plan w telefonie" a „telefon mnie prowadzi".
+//
+// Wybór należy do klienta: przycisk „Prowadź mnie" stoi nad listą, a wyjście
+// z prowadzenia wraca dokładnie tam. Wpisane serie widać w obu miejscach,
+// bo to te same dane.
+
+const KLUCZ_PROWADZENIA = `prowadzenie-${TOKEN}`;
+/** O ile jedno dotknięcie „+30 s" przedłuża przerwę. */
+const DOLOZ_SEKUND = 30;
+/**
+ * Przerwa dla widoku zapisanego lokalnie, zanim serwer zaczął ją podawać.
+ * Jedyne miejsce, w którym klient zna tę liczbę — regułę trzyma silnik
+ * (`przerwa.ts`), tu stoi wyłącznie ratunek na stary zapis w pamięci.
+ */
+const PRZERWA_GDY_BRAK = 90;
+/** Progresje, przy których kilogramów nie ma czego wpisywać. */
+const BEZ_POLA_CIEZARU = ["masa ciała", "czas", "dystans"];
+
+/** Stan jednego prowadzonego treningu. Naraz pamiętamy jeden — patrz `wczytajProwadzenie`. */
+let prowadzenie = null;
+/** Uchwyt odliczania. Jedyny w aplikacji — dlatego trzyma go zmienna, nie panel. */
+let tykanie = null;
+
+const czasTekst = (sek) => {
+  const s = Math.max(0, Math.round(sek));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
+
+/**
+ * Dzień rozłożony na kroki — po jednym na każdą serię.
+ *
+ * Superserie idą naprzemiennie: B1 seria 1, B2 seria 1, przerwa, B1 seria 2…
+ * Tak się je robi na sali i tak stoją w arkuszu — wspólna litera w `lp` to
+ * właśnie superseria. Odliczanie wchodzi dopiero po ostatnim ćwiczeniu rundy;
+ * między B1 a B2 przerwy nie ma, bo na tym polega superseria. Przerwa rundy
+ * trwa tyle, ile każe jej najcięższe ćwiczenie — liczona wg lżejszego
+ * odsyłałaby klienta do sztangi niedoodpoczętego przez cały plan.
+ */
+function krokiDnia(d) {
+  const kroki = [];
+  if (d.topSet?.cwiczenie) {
+    kroki.push({
+      typ: "topset",
+      rpe: d.topSet.rpe,
+      nazwa: d.topSet.cwiczenie.nazwa,
+      ciezar: d.topSet.ciezar,
+      przerwa: d.topSet.przerwaSekundy ?? PRZERWA_GDY_BRAK,
+      koniecRundy: true,
+    });
+  }
+
+  const grupy = [];
+  for (const c of d.cwiczenia) {
+    const ostatnia = grupy[grupy.length - 1];
+    if (ostatnia && c.grupa && ostatnia.litera === c.grupa) ostatnia.cwiczenia.push(c);
+    else grupy.push({ litera: c.grupa, cwiczenia: [c] });
+  }
+
+  for (const g of grupy) {
+    const rundy = Math.max(...g.cwiczenia.map((c) => c.serie || 1));
+    for (let r = 1; r <= rundy; r++) {
+      const wRundzie = g.cwiczenia.filter((c) => (c.serie || 1) >= r);
+      const przerwa = Math.max(...wRundzie.map((c) => c.przerwaSekundy ?? PRZERWA_GDY_BRAK));
+      wRundzie.forEach((c, i) => kroki.push({
+        typ: "seria",
+        positionId: c.positionId,
+        seria: r,
+        zSerii: c.serie || 1,
+        wGrupie: g.cwiczenia.length > 1,
+        litera: g.litera,
+        koniecRundy: i === wRundzie.length - 1,
+        ostatniaSeria: r === (c.serie || 1),
+        przerwa,
+      }));
+    }
+  }
+  return kroki;
+}
+
+/**
+ * Stan prowadzenia dla dnia, który klient właśnie otworzył.
+ *
+ * Pamiętamy **jeden** trening naraz. Klient robi jeden trening na raz i wraca
+ * do tego samego; osobny wpis na każdy dzień cyklu byłby zapasem na sytuację,
+ * która się nie zdarza, a kosztowałby pytanie „który z siedmiu zaczętych
+ * treningów masz na myśli".
+ *
+ * Wpis z innego cyklu odpada po `planId`: gdy trener wyśle nowy plan w środku
+ * tygodnia, numer kroku ze starego nie znaczy już nic.
+ */
+function prowadzenieTegoDnia(d) {
+  const pasuje = (p) => p && p.planId === widok.planId
+    && p.tydzien === biezacy.tydzien && p.dzien === d.dzien;
+  if (pasuje(prowadzenie)) return prowadzenie;
+  try {
+    const zapisane = JSON.parse(localStorage.getItem(KLUCZ_PROWADZENIA) || "null");
+    return pasuje(zapisane) ? zapisane : null;
+  } catch { return null; }   // uszkodzony zapis — zaczynamy od zera
+}
+
+function wczytajProwadzenie(d) {
+  prowadzenie = prowadzenieTegoDnia(d) ?? {
+    planId: widok.planId,
+    tydzien: biezacy.tydzien,
+    dzien: d.dzien,
+    krok: 0,
+    serie: {},        // positionId → [{ ciezar, powtorzenia }] po jednej na serię
+    doKiedy: null,    // znacznik czasu końca przerwy, nie liczba sekund — patrz odliczanie
+    przerwa: 0,
+  };
+}
+
+function zapiszProwadzenie() {
+  try { localStorage.setItem(KLUCZ_PROWADZENIA, JSON.stringify(prowadzenie)); }
+  catch { /* pełna pamięć — trening i tak się odbędzie */ }
+}
+
+/** Serie wpisane w tym treningu przy tym ćwiczeniu. */
+const serieCwiczenia = (positionId) => prowadzenie?.serie[positionId] ?? [];
+
+function rysujSerie() {
+  const d = dzienBiezacy();
+  if (!d) return;
+  wczytajProwadzenie(d);
+  rysujPanel();
+}
+
+function rysujPanel() {
+  const d = dzienBiezacy();
+  if (!d || !prowadzenie) return;
+  const kroki = krokiDnia(d);
+  const panel = $("#panel");
+  panel.replaceChildren();
+
+  $("#seria-tytul").textContent =
+    `Dzień ${RZYMSKIE[d.dzien - 1]} · tydzień ${prowadzenie.tydzien}`;
+  const zrobione = Math.min(prowadzenie.krok, kroki.length);
+  $("#seria-postep").textContent = zrobione >= kroki.length
+    ? "Wszystkie serie za Tobą"
+    : `Seria ${zrobione + 1} z ${kroki.length}`;
+  $("#pasek-wypelnienie").style.width =
+    `${Math.round((100 * zrobione) / Math.max(1, kroki.length))}%`;
+
+  if (prowadzenie.krok >= kroki.length) {
+    zatrzymajOdliczanie();
+    panel.append(panelKonca(d));
+    return;
+  }
+
+  // Przerwa, która skończyła się, zanim ktokolwiek patrzył. Klient zamyka
+  // aplikację w szatni i wraca do niej nazajutrz — bez tego wchodziłby na
+  // licznik z zerem i na wibrację za trening sprzed doby.
+  if (prowadzenie.doKiedy && zostaloSekund() <= 0) {
+    prowadzenie.doKiedy = null;
+    prowadzenie.przerwa = 0;
+    zapiszProwadzenie();
+  }
+
+  const k = kroki[prowadzenie.krok];
+  if (prowadzenie.doKiedy) {
+    panel.append(panelPrzerwy(k, d));
+    uruchomOdliczanie();
+    return;
+  }
+  zatrzymajOdliczanie();
+  panel.append(k.typ === "topset" ? panelTopSetu(k, kroki) : panelSerii(k, kroki, d));
+}
+
+/** Nagłówek panelu: numer w planie, nazwa, film. */
+function gloweczka(lp, nazwa, film) {
+  const gora = el("div", "panel-gora");
+  if (lp) gora.append(el("span", "lp", lp));
+  gora.append(el("span", "nazwa", nazwa));
+  if (film) {
+    const a = el("a", "film", "▶ film");
+    a.href = film;
+    a.target = "_blank";
+    a.rel = "noopener";
+    gora.append(a);
+  }
+  return gora;
+}
+
+function panelTopSetu(k, kroki) {
+  const karta = el("div", "panel-karta topset-panel");
+  karta.append(el("div", "etykieta", "TOP SET"));
+  karta.append(gloweczka("", k.nazwa, null));
+  const zadanie = el("div", "panel-zadanie");
+  zadanie.append(el("span", "duzy", typeof k.ciezar === "number"
+    ? `${liczba(k.ciezar)} kg` : String(k.ciezar || "—")));
+  zadanie.append(el("span", "obok", `1 powtórzenie · RPE ${liczba(k.rpe)}`));
+  karta.append(zadanie);
+  karta.append(el("p", "drobne",
+    "Jedno ciężkie powtórzenie przed pracą. Wyniku nie wpisujesz — "
+    + "to sprawdzian dnia, nie pomiar."));
+
+  const zrobione = el("button", "glowny szeroki", "Zrobione");
+  zrobione.onclick = () => dalej(k, kroki);
+  karta.append(zrobione);
+  karta.append(cofnij());
+  return karta;
+}
+
+function panelSerii(k, kroki, d) {
+  const c = d.cwiczenia.find((x) => x.positionId === k.positionId);
+  const karta = el("div", "panel-karta");
+  if (!c) {
+    // Trener podmienił ćwiczenie w trakcie treningu. Rzadkie, ale możliwe —
+    // i lepiej przeskoczyć krok niż pokazać pusty panel.
+    karta.append(el("p", "drobne", "Tego ćwiczenia nie ma już w planie."));
+    const pomin = el("button", "glowny szeroki", "Dalej");
+    pomin.onclick = () => dalej(k, kroki);
+    karta.append(pomin);
+    return karta;
+  }
+
+  karta.append(gloweczka(c.lp, c.nazwa, c.film));
+  karta.append(el("div", "seria-numer",
+    `Seria ${k.seria} z ${k.zSerii}${k.wGrupie ? ` · superseria ${k.litera}` : ""}`));
+
+  const zadanie = el("div", "panel-zadanie");
+  zadanie.append(el("span", "duzy", typeof c.ciezar === "number"
+    ? `${liczba(c.ciezar)} kg` : String(c.ciezar || "—")));
+  zadanie.append(el("span", "obok",
+    `${c.powtorzenia} powt. · RPE ${liczba(c.rpe)}${c.jednostronne ? " · na stronę" : ""}`));
+  karta.append(zadanie);
+
+  // Co już poszło w tym treningu przy tym ćwiczeniu.
+  const wpisane = serieCwiczenia(c.positionId).filter(Boolean);
+  if (wpisane.length > 0) {
+    const pasek = el("div", "serie-wpisane");
+    wpisane.forEach((s, i) => {
+      if (!s.ciezar && !s.powtorzenia) return;
+      pasek.append(el("span", "chip",
+        `${i + 1}: ${s.ciezar ? `${liczba(s.ciezar)}×` : ""}${s.powtorzenia ?? "—"}`));
+    });
+    if (pasek.childElementCount > 0) karta.append(pasek);
+  }
+
+  // Pola „co poszło". Puste pola są w porządku: klient dotyka „Zakończ serię"
+  // i idzie dalej. Zapisujemy wyłącznie to, co sam wpisał — liczby z planu
+  // wstawione tu z góry byłyby wymyślonym pomiarem.
+  const bezCiezaru = BEZ_POLA_CIEZARU.includes(c.ciezar);
+  const poprzednia = serieCwiczenia(c.positionId)[k.seria - 2];
+  const wlasna = serieCwiczenia(c.positionId)[k.seria - 1];
+
+  const pola = el("div", "panel-pola");
+  const wCiezar = el("input");
+  wCiezar.placeholder = typeof c.ciezar === "number" ? liczba(c.ciezar) : "kg";
+  wCiezar.value = wlasna?.ciezar ?? poprzednia?.ciezar ?? "";
+  const wPowt = el("input");
+  wPowt.placeholder = String(c.powtorzenia ?? "powt.");
+  wPowt.value = wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? "";
+  for (const i of [wCiezar, wPowt]) {
+    i.type = "number";
+    i.inputMode = "decimal";
+    i.min = "0";
+  }
+  if (!bezCiezaru) pola.append(wCiezar, el("span", "razy", "kg ×"));
+  pola.append(wPowt, el("span", "razy", "powt."));
+  karta.append(pola);
+
+  // Odczucie pytamy przy ostatniej serii — wcześniej klient nie wie jeszcze,
+  // jak było, a pytany przy każdej serii przestaje odpowiadać.
+  if (k.ostatniaSeria) {
+    karta.append(el("div", "pytanie", "Jak było to ćwiczenie?"));
+    const oceny = el("div", "oceny");
+    for (const [wartosc, etykieta, klasa] of [
+      ["za trudne", "Za trudne", "trudne"],
+      ["OK", "OK", "ok"],
+      ["za łatwe", "Za łatwe", "latwe"],
+    ]) {
+      const b = el("button",
+        `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`, etykieta);
+      b.onclick = () => {
+        const nowa = c.feedback === wartosc ? null : wartosc;
+        wyslij("/odczucie",
+          { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: nowa },
+          () => { c.feedback = nowa; }, { odswiez: false });
+        rysujPanel();
+      };
+      oceny.append(b);
+    }
+    karta.append(oceny);
+  }
+
+  const zakoncz = el("button", "glowny szeroki", "Zakończ serię");
+  zakoncz.onclick = () => {
+    zapiszSerie(k, c, bezCiezaru ? null : wCiezar.value, wPowt.value);
+    dalej(k, kroki);
+  };
+  karta.append(zakoncz);
+  karta.append(cofnij());
+  return karta;
+}
+
+/** „← poprzednia" — jedno błędne dotknięcie nie może kosztować treningu. */
+function cofnij() {
+  const blok = el("div", "pod-panelem");
+  if (prowadzenie.krok > 0) {
+    const b = el("button", "link", "← poprzednia seria");
+    b.onclick = () => {
+      prowadzenie.krok = Math.max(0, prowadzenie.krok - 1);
+      prowadzenie.doKiedy = null;
+      zapiszProwadzenie();
+      rysujPanel();
+    };
+    blok.append(b);
+  }
+  const lista = el("button", "link", "Cały dzień na liście");
+  lista.onclick = () => otworz("#ekran-trening");
+  blok.append(lista);
+  return blok;
+}
+
+/**
+ * Zapis jednej serii — lokalnie wszystkie, do trenera jedna.
+ *
+ * Nasza baza trzyma przy ćwiczeniu **jedną** parę „ciężar × powtórzenia"
+ * na tydzień i z niej wychodzi propozycja nowego 1RM. Wysyłanie kolejnych
+ * serii nadpisywałoby ją tak, że zostałaby ostatnia — czyli zwykle
+ * najsłabsza, bo zmęczona. Idzie więc najcięższa: to ona opisuje, co klient
+ * naprawdę udźwignął przy RPE z planu.
+ *
+ * Wszystkie serie zostają lokalnie i widać je na panelu. Gdyby kiedyś miały
+ * trafiać do trenera co do jednej, zmienia się baza, nie ten ekran.
+ */
+function zapiszSerie(k, c, ciezarTekst, powtTekst) {
+  const ciezar = Number(String(ciezarTekst ?? "").replace(",", ".")) || null;
+  const powtorzenia = Number(powtTekst) || null;
+
+  const lista = serieCwiczenia(c.positionId).slice();
+  lista[k.seria - 1] = { ciezar, powtorzenia };
+  prowadzenie.serie[c.positionId] = lista;
+  zapiszProwadzenie();
+
+  const waga = (s) => (s.ciezar ?? 0) * 1000 + (s.powtorzenia ?? 0);
+  const pelne = lista.filter((s) => s && (s.ciezar || s.powtorzenia));
+  if (pelne.length === 0) return;
+  const najlepsza = pelne.reduce((a, b) => (waga(b) > waga(a) ? b : a));
+  if (najlepsza.ciezar === c.ciezarWykonany
+    && najlepsza.powtorzenia === c.powtorzeniaWykonane) return;
+
+  wyslij("/odczucie", {
+    positionId: c.positionId,
+    tydzien: prowadzenie.tydzien,
+    ciezarWykonany: najlepsza.ciezar,
+    powtorzeniaWykonane: najlepsza.powtorzenia,
+  }, () => {
+    c.ciezarWykonany = najlepsza.ciezar;
+    c.powtorzeniaWykonane = najlepsza.powtorzenia;
+  }, { odswiez: false });
+}
+
+/** Krok do przodu. Przerwa wchodzi po rundzie — i nigdy po ostatniej serii dnia. */
+function dalej(k, kroki) {
+  prowadzenie.krok += 1;
+  const koniecTreningu = prowadzenie.krok >= kroki.length;
+  const zPrzerwa = !koniecTreningu && k.koniecRundy && k.przerwa > 0;
+  prowadzenie.doKiedy = zPrzerwa ? Date.now() + k.przerwa * 1000 : null;
+  prowadzenie.przerwa = zPrzerwa ? k.przerwa : 0;
+  zapiszProwadzenie();
+  rysujPanel();
+}
+
+function panelPrzerwy(nastepny, d) {
+  const karta = el("div", "panel-karta przerwa");
+
+  const pierscien = el("div", "pierscien");
+  pierscien.id = "pierscien";
+  const srodek = el("div", "pierscien-srodek");
+  const licznik = el("div", "licznik", czasTekst(zostaloSekund()));
+  licznik.id = "licznik";
+  srodek.append(licznik, el("div", "etykieta", "PRZERWA"));
+  pierscien.append(srodek);
+  karta.append(pierscien);
+
+  const opis = nastepny.typ === "topset"
+    ? `TOP SET · ${nastepny.nazwa}`
+    : (() => {
+      const c = d.cwiczenia.find((x) => x.positionId === nastepny.positionId);
+      return c ? `${c.lp} ${c.nazwa} · seria ${nastepny.seria} z ${nastepny.zSerii}` : "";
+    })();
+  karta.append(el("p", "dalej", `Dalej: ${opis}`));
+
+  const akcje = el("div", "akcje-przerwy");
+  const pomin = el("button", "glowny", "Pomiń przerwę");
+  pomin.onclick = () => zakonczPrzerwe(false);
+  const dodaj = el("button", "poboczny", `+${DOLOZ_SEKUND} s`);
+  dodaj.onclick = () => {
+    prowadzenie.doKiedy += DOLOZ_SEKUND * 1000;
+    prowadzenie.przerwa += DOLOZ_SEKUND;
+    zapiszProwadzenie();
+    odswiezOdliczanie();
+  };
+  akcje.append(pomin, dodaj);
+  karta.append(akcje);
+  return karta;
+}
+
+/**
+ * Odliczanie liczone ze **znacznika końca**, nie z odejmowania sekundy co tyknięcie.
+ *
+ * Telefon na siłowni leży zablokowany w kieszeni, a przeglądarka w tle zwalnia
+ * albo zatrzymuje `setInterval`. Licznik odejmujący po jednym pokazałby po
+ * powrocie czas, który nie minął — i odesłał klienta do sztangi za wcześnie
+ * albo kazał mu czekać w nieskończoność. Ze znacznika wychodzi zawsze prawda,
+ * choćby aplikacja nie tykała ani razu.
+ */
+const zostaloSekund = () =>
+  prowadzenie?.doKiedy ? (prowadzenie.doKiedy - Date.now()) / 1000 : 0;
+
+function uruchomOdliczanie() {
+  if (tykanie) return;
+  tykanie = setInterval(odswiezOdliczanie, 500);
+}
+
+function zatrzymajOdliczanie() {
+  if (tykanie) { clearInterval(tykanie); tykanie = null; }
+}
+
+function odswiezOdliczanie() {
+  if (!prowadzenie?.doKiedy) { zatrzymajOdliczanie(); return; }
+  const zostalo = zostaloSekund();
+  if (zostalo <= 0) { zakonczPrzerwe(true); return; }
+  const licznik = $("#licznik");
+  if (!licznik) { zatrzymajOdliczanie(); return; }   // panel zniknął spod licznika
+  licznik.textContent = czasTekst(zostalo);
+  const przeszlo = 100 * (1 - zostalo / Math.max(1, prowadzenie.przerwa));
+  $("#pierscien")?.style.setProperty("--wypelnienie", `${Math.min(100, przeszlo)}%`);
+}
+
+/** `samo` = przerwa doszła do zera. Wtedy telefon ma dać znać — leży w kieszeni. */
+function zakonczPrzerwe(samo) {
+  zatrzymajOdliczanie();
+  prowadzenie.doKiedy = null;
+  prowadzenie.przerwa = 0;
+  zapiszProwadzenie();
+  // Wibracja działa na Androidzie; iPhone ją ignoruje i nic się nie dzieje.
+  // Lepsze to niż nic — dźwięku nie odtworzymy, bo przeglądarka wymaga
+  // dotknięcia ekranu tuż przed, a klient trzyma wtedy sztangę.
+  if (samo) { try { navigator.vibrate?.([200, 100, 200]); } catch { /* brak wsparcia */ } }
+  rysujPanel();
+}
+
+function panelKonca(d) {
+  const karta = el("div", "panel-karta koniec-panel");
+  karta.append(el("div", "duzy-znak", "✓"));
+  karta.append(el("h2", "", "Wszystkie serie za Tobą"));
+
+  const wpisane = Object.values(prowadzenie.serie).flat()
+    .filter((s) => s && (s.ciezar || s.powtorzenia)).length;
+  const bezOceny = d.cwiczenia.filter((c) => !c.feedback).length;
+  karta.append(el("p", "drobne",
+    `Zapisanych serii: ${wpisane}.`
+    + (bezOceny > 0 ? ` Ćwiczenia bez oceny (${bezOceny}) zapiszą się jako „OK".` : "")));
+
+  const zakoncz = el("button", "glowny szeroki", d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening");
+  zakoncz.disabled = d.ukonczony;
+  zakoncz.onclick = () => zakonczTrening();
+  karta.append(zakoncz);
+
+  const cofnijSie = el("button", "link", "← wróć do ostatniej serii");
+  cofnijSie.onclick = () => {
+    prowadzenie.krok = Math.max(0, prowadzenie.krok - 1);
+    zapiszProwadzenie();
+    rysujPanel();
+  };
+  const pod = el("div", "pod-panelem");
+  pod.append(cofnijSie);
+  karta.append(pod);
+  return karta;
+}
+
+/** Domknięcie dnia — tak samo z listy, jak z prowadzenia. */
+function zakonczTrening() {
+  const d = dzienBiezacy();
+  if (!d || d.ukonczony) return;
+  wyslij("/dzien", { dzien: d.dzien, tydzien: biezacy.tydzien }, () => {
+    d.ukonczony = true;
+    for (const c of d.cwiczenia) c.feedback ??= "OK";
+  });
+  zatrzymajOdliczanie();
+  wroc();
 }
 
 function rysujPomiary() {
@@ -813,16 +1321,18 @@ $("#do-pomiarow").onclick = () => otworz("#ekran-pomiary");
 $("#pokaz-pomiary").onclick = () => otworz("#ekran-pomiary");
 $("#pokaz-moduly").onclick = () => otworz("#ekran-moduly");
 $("#pokaz-postep").onclick = () => otworz("#ekran-postep");
+$("#wroc-z-serii").onclick = () => otworz("#ekran-trening");
+$("#prowadz").onclick = () => otworz("#ekran-seria");
 
-$("#zakoncz").onclick = () => {
-  const d = dzienBiezacy();
-  if (!d || d.ukonczony) return;
-  wyslij("/dzien", { dzien: d.dzien, tydzien: biezacy.tydzien }, () => {
-    d.ukonczony = true;
-    for (const c of d.cwiczenia) c.feedback ??= "OK";
-  });
-  wroc();
-};
+// Powrót do aplikacji po zablokowanym ekranie. Bez tego licznik przerwy
+// dochodził do zera w tle, a klient po odblokowaniu telefonu widział przez
+// chwilę czas sprzed blokady — czyli dokładnie to, czemu znacznik końca
+// zamiast odejmowania miał zapobiec.
+addEventListener("visibilitychange", () => {
+  if (!document.hidden && prowadzenie?.doKiedy) odswiezOdliczanie();
+});
+
+$("#zakoncz").onclick = () => zakonczTrening();
 
 /** Cały ekran zastąpiony jednym komunikatem — bez planu nie ma czego rysować. */
 function komunikat(tytul, tresc) {

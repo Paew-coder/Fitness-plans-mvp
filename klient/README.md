@@ -77,6 +77,50 @@ waga, jeden wpis na dzień.
 Dawka oddechowa z testu TWOT i sześć tygodni jednostek biegowych: czas, tempo,
 tętno, szacowany dystans.
 
+## Prowadzenie — seria po serii
+
+Nad listą ćwiczeń stoi **`▶ Prowadź mnie seria po serii`**. To ten sam trening,
+pokazany inaczej: **jeden panel naraz** zamiast całego dnia.
+
+Panel mówi, co teraz: ćwiczenie, która to seria z ilu, ciężar dużą czcionką,
+powtórzenia i RPE. Pod spodem dwa pola — ile poszło naprawdę. Puste pola są
+w porządku; kto nie chce pisać, dotyka **`Zakończ serię`** i idzie dalej.
+
+Po serii wchodzi **przerwa z odliczaniem** — pierścień, czas w środku,
+`Pomiń przerwę` i `+30 s`. Gdy dojdzie do zera, telefon zawibruje (Android;
+iPhone tego nie robi) i sam pokaże następną serię.
+
+Ile trwa przerwa, **liczy silnik z `coeff`** — tej samej liczby, która w BAZIE
+mówi, jak ciężkie jest ćwiczenie:
+
+| ćwiczenie | przerwa |
+|---|---|
+| bój główny (coeff 1,0) | 3 min |
+| pomocnicze złożone (0,75) | 2 min |
+| semi-izolacja (0,5) | 1,5 min |
+| izolacja (0,25) | 1 min |
+
+Trzy rzeczy, które ten tryb robi inaczej, niż mogłoby się wydawać:
+
+**Superserie idą naprzemiennie.** `B1` seria 1 → `B2` seria 1 → przerwa →
+`B1` seria 2… Między `B1` a `B2` przerwy nie ma, bo na tym polega superseria.
+Przerwa rundy trwa tyle, ile każe jej najcięższe ćwiczenie.
+
+**Odliczanie przeżywa zablokowany telefon.** Liczy się ze znacznika końca,
+a nie z odejmowania sekundy co tyknięcie — przeglądarka w tle zwalnia albo
+zatrzymuje liczniki, więc odejmowanie pokazałoby po powrocie czas, który nie
+minął. Tak samo przeżywa zamknięcie aplikacji: miejsce w treningu i wpisane
+serie zostają w telefonie, a przycisk zmienia się na **`▶ Wróć do przerwanego
+treningu`**.
+
+**Do trenera idzie jedna seria z ćwiczenia — najcięższa.** Baza trzyma przy
+ćwiczeniu jedną parę „ciężar × powtórzenia" na tydzień i z niej wychodzi
+propozycja nowego 1RM. Gdyby szła ostatnia, byłaby to zwykle seria najsłabsza,
+bo zmęczona. Wszystkie wpisane serie zostają widoczne na panelu.
+
+Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej chwili
+i pokazuje to samo, tylko naraz.
+
 ## Pętla się domyka
 
 To jest sedno fazy 2. Ocena klienta wraca do silnika i zmienia ciężar
@@ -215,3 +259,7 @@ danych z `docs/03-architektura.md`.
 ## Czego jeszcze nie ma
 
 - Powiadomień o zaplanowanym treningu.
+- Dźwięku na koniec przerwy — tylko wibracja. Przeglądarka odtworzy dźwięk
+  wyłącznie tuż po dotknięciu ekranu, a klient trzyma wtedy sztangę.
+- Kalendarza z datami treningów i przesuwaniem ich na inny dzień
+  (punkt 2 z [`docs/05-base44-co-przeniesc.md`](../docs/05-base44-co-przeniesc.md)).

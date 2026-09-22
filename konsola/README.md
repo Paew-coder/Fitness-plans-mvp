@@ -765,14 +765,17 @@ który ładnie wygląda i nic nie zapisuje, wypada tu na czerwono.
 Drugi przegląd chodzi po aplikacji klienta — po telefonie:
 
 ```bash
-npm run przeglad-klienta      # wymaga Playwrighta z Chromium, trwa ~20 sekund
+npm run przeglad-klienta      # wymaga Playwrighta z Chromium, trwa ~35 sekund
 ```
 
 Otwiera link na ekranie 390×844 i przechodzi pętlę, dla której cała aplikacja
 powstała: klient dostaje policzony ciężar → ocenia serię → **ocena podnosi
 ciężar w kolejnym tygodniu** → zapisuje, ile faktycznie podniósł → domyka
 trening → wpisuje serię maksymalną i wagę → widzi swój postęp, a trener widzi
-realizację. Sprawdza przy tym, że liczba na telefonie to **dokładnie** ta,
+realizację. Ostatnia sekcja przechodzi cały trening **w trybie prowadzenia**:
+panel po panelu, z licznikiem przerwy, superserią naprzemienną i przeładowaniem
+strony w środku przerwy — żeby sprawdzić, że odliczanie przeżywa zablokowany
+telefon. Sprawdza przy tym, że liczba na telefonie to **dokładnie** ta,
 którą policzył silnik — rozjazd tutaj znaczy, że klient trenuje wg innych
 liczb niż trener.
 

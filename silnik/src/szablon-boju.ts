@@ -98,6 +98,15 @@ export function pozycjaBoju(lp: string): boolean {
  * Rozstrzyga `coeff` z BAZY, bo tam ta wiedza już jest: **1,0 mają dokładnie
  * te dziewiętnaście ćwiczeń złożonych** — przysiady, martwe ciągi, wyciskania
  * ze sztangą, podciąganie z obciążeniem, dipy, clean. Nic innego.
+ *
+ * **Wiosłowanie bojem głównym nie jest — rozstrzygnięte 22.09.2026.** Pytanie
+ * wisiało otwarte od 20.09, a analiza aplikacji trenera z Base44 przyniosła
+ * dowód w drugą stronę: tamtejsza klasyfikacja `diff_class` liczy `Barbell Row`
+ * i `Pendlay Row` do ćwiczeń głównych, choć mają coeff 0,75. Trener zdecydował
+ * inaczej: **wiosłowanie liczymy jako akcesorium**. Progi zostają tam, gdzie
+ * były — bojem głównym jest wyłącznie ćwiczenie z coeff 1,0 stojące w pozycji A.
+ * Wiosłowanie w pozycji A dostaje więc progresję akcesorium, czyli powtórzenia
+ * liczone z `coeff` i RPE z bloku, a nie dwukolumnowy szablon boju.
  */
 export function jestBojemGlownym(lp: string, coeff?: Coeff): boolean {
   return pozycjaBoju(lp) && coeff === 1;
