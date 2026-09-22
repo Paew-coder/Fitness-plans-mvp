@@ -642,6 +642,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const golyPlan = (await api(`/api/plany/${idGolego}`)).zapisany.plan;
   golyPlan.sloty[0].cwiczenieId = "EX-0010";   // A1. bój główny
   golyPlan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
+  // B2 — druga połowa superserii i ćwiczenie na masie ciała naraz. Obie te
+  // rzeczy sprawdza sekcja 22; tu wystarczy je postawić w planie.
+  golyPlan.sloty[2].cwiczenieId = "EX-0049";   // B2. Dead bug izo + OH
   golyPlan.serieMaksymalne = [
     { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
     { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
@@ -687,6 +690,180 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("bój główny dostaje liczby z szablonu 5.18",
     golyBoj.serie === 6 && golyBoj.powtorzenia === 6 && golyBoj.rpe === 6.5,
     `${golyBoj.serie} × ${golyBoj.powtorzenia} · RPE ${golyBoj.rpe}`);
+
+
+  /** Licznik pokazuje „2:30" — przeglądarka liczy w sekundach, my też. */
+  const sekundy = (t: string) => {
+    const [m, sek] = t.split(":").map(Number);
+    return (m ?? 0) * 60 + (sek ?? 0);
+  };
+  // Zakres, nie równość: między kliknięciem a odczytem licznik zdąży tyknąć.
+  const wZakresie = (t: string, od: number, doo: number) =>
+    sekundy(t) >= od && sekundy(t) <= doo;
+
+  // ── 22. prowadzenie seria po serii ────────────────────────────────
+  //
+  // Drugi tryb tego samego treningu: jeden panel naraz i licznik przerwy.
+  // Plan z sekcji 21 nadaje się do tego najlepiej — ma TOP SET, bój główny
+  // i superserię B1/B2, czyli wszystkie trzy rodzaje kroków.
+  await s.click("#prowadz");
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+
+  const panel = s.locator("#panel");
+  sprawdz("prowadzenie zaczyna od TOP SETU",
+    (await panel.innerText()).includes("TOP SET")
+    && (await panel.innerText()).includes("Barbell row"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
+
+  // TOP SET stoi przy akcesorium (coeff 0,75) — przerwa ma trwać 2 minuty,
+  // nie trzy. To jest ta liczba, którą silnik wylicza z `coeff`.
+  await panel.getByRole("button", { name: "Zrobione" }).click();
+  await s.waitForSelector("#licznik");
+  sprawdz("po serii wchodzi przerwa z odliczaniem",
+    wZakresie(await s.locator("#licznik").innerText(), 110, 120),
+    await s.locator("#licznik").innerText());
+
+  // „+30 s” ma przedłużać, a nie zaczynać od nowa.
+  const przedDolozeniem = await s.locator("#licznik").innerText();
+  await panel.getByRole("button", { name: "+30 s" }).click();
+  sprawdz("„+30 s” dokłada do trwającej przerwy",
+    sekundy(await s.locator("#licznik").innerText()) - sekundy(przedDolozeniem) >= 29,
+    `${przedDolozeniem} → ${await s.locator("#licznik").innerText()}`);
+
+  await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForSelector("#panel .panel-pola");
+  sprawdz("po przerwie wchodzi pierwsza seria boju głównego",
+    (await panel.innerText()).includes("Seria 1 z 6"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
+
+  // Seria wpisana na panelu ma trafić do trenera tą samą drogą, co z listy.
+  const polaPanelu = panel.locator(".panel-pola input");
+  await polaPanelu.nth(0).fill("100");
+  await polaPanelu.nth(1).fill("6");
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForTimeout(700);
+  const poPierwszej = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[0];
+  sprawdz("seria z panelu dochodzi do trenera",
+    poPierwszej.ciezarWykonany === 100 && poPierwszej.powtorzeniaWykonane === 6,
+    `${poPierwszej.ciezarWykonany} kg × ${poPierwszej.powtorzeniaWykonane}`);
+
+  // Bój główny (coeff 1,0) odpoczywa trzy minuty.
+  await s.waitForSelector("#licznik");
+  sprawdz("przerwa po boju głównym jest dłuższa niż po akcesorium",
+    wZakresie(await s.locator("#licznik").innerText(), 170, 180),
+    await s.locator("#licznik").innerText());
+  await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForSelector("#panel .panel-pola");
+
+  // Druga seria lżejsza od pierwszej. Do trenera ma iść najcięższa, bo to ona
+  // opisuje, co klient udźwignął — ostatnia jest zwykle najsłabsza.
+  await polaPanelu.nth(0).fill("90");
+  await polaPanelu.nth(1).fill("6");
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForTimeout(700);
+  const poDrugiej = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[0];
+  sprawdz("do trenera idzie najcięższa seria, nie ostatnia",
+    poDrugiej.ciezarWykonany === 100,
+    `${poDrugiej.ciezarWykonany} kg`);
+  await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForSelector("#panel .panel-pola");
+  sprawdz("wpisane serie widać na panelu",
+    (await panel.locator(".serie-wpisane .chip").allInnerTexts()).join(" ").includes("90"),
+    (await panel.locator(".serie-wpisane .chip").allInnerTexts()).join(" | "));
+
+  // Miejsce w treningu przeżywa zamknięcie aplikacji. Na siłowni telefon
+  // gaśnie, wypada z kieszeni i bywa zamykany — bez tego klient wracał na
+  // początek dnia i nie miał jak trafić tam, gdzie skończył.
+  await s.reload({ waitUntil: "networkidle" });
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  sprawdz("przerwany trening zaprasza z powrotem, a nie od nowa",
+    (await s.locator("#prowadz").innerText()).includes("Wróć"),
+    await s.locator("#prowadz").innerText());
+  await s.click("#prowadz");
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  sprawdz("prowadzenie wraca w to samo miejsce",
+    (await panel.innerText()).includes("Seria 3 z 6"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
+  sprawdz("wpisane wcześniej serie przeżyły zamknięcie aplikacji",
+    (await panel.locator(".serie-wpisane .chip").allInnerTexts()).length === 2,
+    (await panel.locator(".serie-wpisane .chip").allInnerTexts()).join(" | "));
+
+  // Reszta boju głównego — po niej wchodzi superseria B1/B2.
+  for (let i = 3; i <= 6; i++) {
+    await panel.getByRole("button", { name: "Zakończ serię" }).click();
+    await s.waitForTimeout(150);
+    if (await s.locator("#licznik").count() > 0) {
+      await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+    }
+    await s.waitForSelector("#panel .panel-pola");
+  }
+  sprawdz("po boju głównym wchodzi superseria",
+    (await panel.innerText()).includes("superseria B"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
+
+  // Superseria idzie naprzemiennie i **bez przerwy w środku rundy**: po B1
+  // od razu B2, dopiero potem odliczanie. Tak się je robi na sali.
+  const pierwszeWRundzie = await panel.locator(".panel-gora .nazwa").innerText();
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForTimeout(150);
+  sprawdz("między B1 a B2 nie ma przerwy",
+    await s.locator("#licznik").count() === 0,
+    await s.locator("#licznik").count() === 0 ? "brak licznika" : "licznik jest");
+  const drugieWRundzie = await panel.locator(".panel-gora .nazwa").innerText();
+  sprawdz("po B1 wchodzi B2, nie druga seria B1",
+    pierwszeWRundzie !== drugieWRundzie,
+    `${pierwszeWRundzie} → ${drugieWRundzie}`);
+
+  // B2 to ćwiczenie na masie ciała — pola na kilogramy nie ma czym wypełnić.
+  sprawdz("przy masie ciała nie ma pola na kilogramy",
+    await panel.locator(".panel-pola input").count() === 1,
+    `${await panel.locator(".panel-pola input").count()} pola`);
+
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForSelector("#licznik");
+  sprawdz("przerwa wchodzi dopiero po całej rundzie superserii",
+    wZakresie(await s.locator("#licznik").innerText(), 110, 120),
+    await s.locator("#licznik").innerText());
+
+  // Przerwa liczona ze znacznika końca, a nie z odejmowania sekundy co
+  // tyknięcie. Telefon na siłowni leży zablokowany, a przeglądarka w tle
+  // zwalnia licznik albo zatrzymuje go zupełnie — po powrocie ma być prawda.
+  await s.reload({ waitUntil: "networkidle" });
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.click("#prowadz");
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  sprawdz("przerwa liczy się dalej mimo zamknięcia aplikacji",
+    await s.locator("#licznik").count() === 1
+    && wZakresie(await s.locator("#licznik").innerText(), 100, 119),
+    await s.locator("#licznik").innerText().catch(() => "brak licznika"));
+
+  await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+
+  // Do końca dnia — ostatni panel domyka trening tak samo, jak przycisk
+  // na liście.
+  for (let i = 0; i < 20; i++) {
+    if (await panel.getByRole("button", { name: "Zakończ trening" }).count() > 0) break;
+    if (await s.locator("#licznik").count() > 0) {
+      await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+    } else {
+      await panel.getByRole("button", { name: "Zakończ serię" }).click();
+    }
+    await s.waitForTimeout(120);
+  }
+  sprawdz("ostatni panel domyka trening",
+    await panel.getByRole("button", { name: "Zakończ trening" }).count() === 1);
+  sprawdz("po ostatniej serii nie ma już przerwy",
+    await s.locator("#licznik").count() === 0);
+
+  await panel.getByRole("button", { name: "Zakończ trening" }).click();
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.waitForTimeout(500);
+  const poProwadzeniu = await api(`/api/klient/${golySciezka.replace("/k/", "")}`);
+  sprawdz("trening z prowadzenia jest zakończony",
+    poProwadzeniu.tygodnie[0].dni[0].ukonczony === true);
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

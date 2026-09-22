@@ -30,6 +30,7 @@ import { adresyLokalnejSieci } from "./adresy.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
+import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
@@ -776,7 +777,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       .map((dzien) => ({
         dzien,
         ukonczony: ukonczone.some((u) => u.dzien === dzien && u.tydzien === t.tydzien),
-        topSet: t.topSety.find((x) => x.dzien === dzien) ?? null,
+        topSet: (() => {
+          const ts = t.topSety.find((x) => x.dzien === dzien);
+          return ts ? { ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) } : null;
+        })(),
         cwiczenia: t.sloty
           .filter((s) => s.dzien === dzien && s.cwiczenie)
           .map((s) => ({
@@ -786,6 +790,9 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             nazwa: s.cwiczenie!.nazwa,
             film: s.cwiczenie!.film ?? null,
             jednostronne: s.cwiczenie!.jednostronne ?? false,
+            // Ile odpocząć po serii. Liczy silnik z `coeff`, bo to jedyne
+            // miejsce, w którym ta wiedza już jest — patrz `przerwa.ts`.
+            przerwaSekundy: przerwaSekund(s.cwiczenie!.coeff),
             serie: s.serie,
             powtorzenia: s.powtorzenia,
             rpe: s.rpe,

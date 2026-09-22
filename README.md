@@ -352,6 +352,11 @@ Pętla się domyka: ocena klienta zmienia ciężar w kolejnym tygodniu, bez
 odsyłania arkusza. Kto chce, dopisuje jeszcze, ile faktycznie podniósł — i z
 tego wychodzi nowe 1RM oraz jego własny ekran postępu.
 
+Kto woli być prowadzony, dotyka **`▶ Prowadź mnie seria po serii`**: jeden panel
+naraz, licznik przerwy liczony z `coeff` ćwiczenia, superserie naprzemiennie.
+Miejsce w treningu zostaje w telefonie, więc przerwany trening da się podjąć
+tam, gdzie się skończyło.
+
 Że ta pętla naprawdę się domyka, sprawdza `npm run przeglad-klienta`: otwiera
 link na ekranie telefonu i przechodzi ją całą — ocena „za łatwe” w pierwszym
 tygodniu podnosi ciężar w drugim z 90 na 95 kg. Szczegóły i uwagi
@@ -386,7 +391,7 @@ którego poprzednie nie umiały złapać.
 
 ```bash
 cd konsola
-npm test                    # 472 testy, bez żadnych narzędzi zewnętrznych
+npm test                    # 559 testów, bez żadnych narzędzi zewnętrznych
 npm run przeglad-ekranow    # klikanie po konsoli w prawdziwej przeglądarce
 npm run przeglad-klienta    # pętla klienta na telefonie, z trybem offline
 npm run sprawdz-kolko       # konsola → arkusz → konsola, wartość po wartości

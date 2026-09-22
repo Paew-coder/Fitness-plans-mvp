@@ -410,6 +410,24 @@ W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej,
 3. **Progresja hipertroficzna 12/14** — zaplanowana, nie dodana (punkt 10).
 4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera.
 
+**14. Wiosłowanie zostaje akcesorium, a trening dostaje prowadzenie — 22.09.2026.**
+
+Dwie decyzje po analizie aplikacji z Base44.
+
+**Wiosłowanie nie jest bojem głównym.** Pytanie wisiało otwarte od 20.09, a `diff_class` z tamtej aplikacji przyniosło dowód w drugą stronę: `Barbell Row` i `Pendlay Row` są tam liczone do ćwiczeń głównych mimo coeff 0,75. Trener rozstrzygnął odwrotnie — *„wiosłowania nie zaliczajmy do boju głównego tylko liczmy je jako akcesorium"*. Bojem głównym pozostaje wyłącznie ćwiczenie z coeff 1,0 w pozycji A; wiosłowanie w A1 dostaje progresję akcesorium. Kod nie wymagał zmiany — pytanie było otwarte, nie usterka. Zapisane przy `jestBojemGlownym` w [`silnik/src/szablon-boju.ts`](../silnik/src/szablon-boju.ts).
+
+**Punkt 1 z listy „co przenieść" jest zrobiony** — trening panel po panelu z licznikiem przerwy, [`docs/05-base44-co-przeniesc.md`](05-base44-co-przeniesc.md#1-trening-panel-po-panelu-z-licznikiem-przerwy--%E2%9C%85-zrobione-22092026). Nowe: `silnik/src/przerwa.ts` (przerwa liczona z `coeff`: 180 / 120 / 90 / 60 s — liczby wzięte wprost z aplikacji trenera), ekran `#ekran-seria` w aplikacji klienta, sekcja 22 w `npm run przeglad-klienta` i `konsola/testy/przerwa.test.ts`.
+
+Trzy rzeczy zrobione **inaczej niż w Base44**, bo trener uprzedził, że tamta aplikacja nie wszędzie działała poprawnie:
+
+| rzecz | tam | u nas |
+|---|---|---|
+| superseria | przerwa po każdej serii, także między `B1` a `B2` | `B1` s1 → `B2` s1 → przerwa; przerwa rundy wg najcięższego ćwiczenia |
+| licznik | `setInterval` odejmujący 1 — na zablokowanym telefonie zwalniał razem z przeglądarką | znacznik końca; po odblokowaniu telefonu czas jest prawdziwy |
+| zapis serii | każda seria nadpisywała poprzednią | do trenera idzie **najcięższa** (z niej liczy się 1RM), wszystkie widać na panelu |
+
+Do zrobienia zostaje reszta listy z punktu 05, po kolei: kalendarz z przesuwaniem treningów (2), kalibracja pierwszym treningiem (3), podgląd planu przy ustawianiu startu (4), historia ćwiczenia w panelu (5), rozgrzewka jako pozycja planu (6).
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
