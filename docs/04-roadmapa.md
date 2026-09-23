@@ -462,6 +462,13 @@ Pytanie trenera: czy w „co poszło" pokazywać wszystkie serie, skoro nie chce
 
 Moduł: `konsola/serie-wykonane.ts`. Testy: `serie-wykonane.test.ts`, pięć w `api-klienta.test.ts`, dwa w `migracja.test.ts`, kontrole w obu przeglądach, pięć nowych prób w `sprawdz-odpornosc`.
 
+**18. „Liczba, którą widać w polu, to liczba, która się zapisze" — 23.09.2026.** Z drugiej tury testów na planie Marka X:
+
+* W prowadzeniu pole ciężaru pokazywało szare „9" z planu; trener wpisał tylko powtórzenia (11 zamiast 10) i zapisało się **„11" bez ciężaru**. Teraz pola stoją od razu z prawdziwymi liczbami (poprzednia seria, przy pierwszej plan), a na liście puste pole z szarą podpowiedzią liczy się jak ta podpowiedź. Do pola pod palcem niczego nie wstawiamy — pierwsza wersja poprawki tak robiła i przegląd złapał, że „6" wstawione w chwili przejścia do pola sklejało się z wpisywanym „5" w „65".
+* Seria bez ciężaru pisze się „11 powt.", a nie gołe „11".
+* Lista po treningu pokazuje *Zrobione: …* i osobno **✎ edytuj** zamiast formularza na wierzchu. Pytanie trenera „po co tam edycja": do poprawienia literówki, która poszłaby prosto do 1RM, i dla klientów trenujących z listy, bez prowadzenia.
+* Drugi zrzut trenera („✎ zmień, co poszło" z jedną parą pól) pokazywał wersję sprzed punktu 17 — serwer albo telefon nie miały jeszcze aktualizacji.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.

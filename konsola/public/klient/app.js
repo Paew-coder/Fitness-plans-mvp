@@ -750,11 +750,36 @@ function opisSerii(serie) {
   if (powt && s.every((x) => x.ciezar && x.powtorzenia === powt)) {
     return `${s.map((x) => liczba(x.ciezar)).join(" · ")} kg × ${powt}`;
   }
-  return s.map((x) => `${x.ciezar ? liczba(x.ciezar) : "—"}×${x.powtorzenia ?? "—"}`).join(" · ");
+  return s.map(zapisSerii).join(" · ");
 }
 
 /** Serie ćwiczenia wpisane w tym treningu — ze wszystkich stron te same dane. */
 const serieWykonane = (c) => c.serieWykonane ?? [];
+
+/**
+ * Jedna seria słowami: „9×11", a bez ciężaru „11 powt.", bez powtórzeń „10 kg".
+ * Goła liczba („1: 11") nie mówiła, czy to kilogramy, czy powtórzenia.
+ */
+const zapisSerii = (x) => (x.ciezar && x.powtorzenia ? `${liczba(x.ciezar)}×${x.powtorzenia}`
+  : x.ciezar ? `${liczba(x.ciezar)} kg` : `${x.powtorzenia} powt.`);
+
+/**
+ * Liczby, które pokazujemy w polach serii `i`: to, co już wpisane, a gdy
+ * czegoś brak — poprzednia seria, a przy pierwszej plan.
+ *
+ * Zgłoszone z testów: pole ciężaru pokazywało szare „9" z planu, klient
+ * wpisał tylko powtórzenia i zapisało się „11" bez ciężaru — bo szara liczba
+ * była tylko podpowiedzią. Od tego czasu obowiązuje jedna zasada: **liczba,
+ * którą widać w polu, to liczba, która się zapisze.**
+ */
+function podpowiedzSerii(c, i, serie) {
+  const wlasna = serie[i];
+  const poprzednia = serie[i - 1];
+  return {
+    ciezar: wlasna?.ciezar ?? poprzednia?.ciezar ?? (typeof c.ciezar === "number" ? c.ciezar : null),
+    powtorzenia: wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
+  };
+}
 
 const pustaSeria = (s) => !s || (!s.ciezar && !s.powtorzenia);
 
@@ -819,10 +844,15 @@ function polaWykonania(c) {
   // wpisze serii: tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.
   const otwarte = otwarteWykonania.has(c.positionId) || (c.dobierzCiezar && !seriaWpisana(c));
 
+  // Po treningu: linijka, co poszło, i osobno „edytuj". Formularz na wierzchu
+  // wyglądał jak coś do wypełnienia, a to jest zapis — do poprawienia literówki
+  // albo do dopisania serii przez kogoś, kto trenuje z listy, nie z prowadzenia.
+  const opisEl = el("span", "wykonanie-opis");
   const przelacz = el("button", "wykonanie-przelacz");
   const podpisz = () => {
     const opis = opisSerii(serie);
-    przelacz.textContent = opis ? `✎ ${opis}` : "+ zapisz, co poszło";
+    opisEl.textContent = opis ? `Zrobione: ${opis}` : "";
+    przelacz.textContent = opis ? "✎ edytuj" : "+ zapisz, co poszło";
   };
   podpisz();
   const pola = el("div", `wykonanie-pola ${otwarte ? "" : "ukryty"}`);
@@ -857,11 +887,12 @@ function polaWykonania(c) {
   const wiersz = (i) => {
     const w = el("div", "wiersz-serii");
     w.append(el("span", "nr", `${i + 1}.`));
+    const podpowiedz = podpowiedzSerii(c, i, serie);
     const wCiezar = el("input");
-    wCiezar.placeholder = typeof c.ciezar === "number" ? liczba(c.ciezar) : "kg";
+    wCiezar.placeholder = podpowiedz.ciezar != null ? liczba(podpowiedz.ciezar) : "kg";
     wCiezar.value = serie[i]?.ciezar ?? "";
     const wPowt = el("input");
-    wPowt.placeholder = String(c.powtorzenia ?? "powt.");
+    wPowt.placeholder = podpowiedz.powtorzenia != null ? String(podpowiedz.powtorzenia) : "powt.";
     wPowt.value = serie[i]?.powtorzenia ?? "";
     for (const x of [wCiezar, wPowt]) {
       x.type = "number";
@@ -869,9 +900,21 @@ function polaWykonania(c) {
       x.min = "0";
     }
     const zmien = () => {
+      // Liczba, którą widać w polu, to liczba, która się zapisze: puste pole
+      // z szarą podpowiedzią liczy się jak ta podpowiedź. Do samego pola
+      // niczego nie wstawiamy — klient właśnie przechodzi do niego palcem,
+      // a wstawione „6" skleiłoby się z jego „5" w „65". Oba pola puste to
+      // świadome wyczyszczenie serii.
+      const cos = wCiezar.value !== "" || wPowt.value !== "";
+      const kg = wCiezar.value !== "" ? wCiezar.value
+        : cos && !bezCiezaru ? podpowiedz.ciezar : null;
+      const powt = wPowt.value !== "" ? wPowt.value : cos ? podpowiedz.powtorzenia : null;
+      // Kto pisze, ten chce dalej pisać — karta odświeżona po zapisie zostaje
+      // rozwinięta, zamiast chować wiersze spod palca.
+      otwarteWykonania.add(c.positionId);
       serie[i] = {
-        ciezar: bezCiezaru ? null : Number(String(wCiezar.value).replace(",", ".")) || null,
-        powtorzenia: Number(wPowt.value) || null,
+        ciezar: bezCiezaru ? null : Number(String(kg ?? "").replace(",", ".")) || null,
+        powtorzenia: Number(powt ?? "") || null,
       };
       zapisz();
     };
@@ -894,7 +937,9 @@ function polaWykonania(c) {
     }
   };
 
-  blok.append(przelacz, pola);
+  const naglowek = el("div", "wykonanie-naglowek");
+  naglowek.append(opisEl, przelacz);
+  blok.append(naglowek, pola);
   return blok;
 }
 
@@ -1147,26 +1192,30 @@ function panelSerii(k, kroki, d) {
     const pasek = el("div", "serie-wpisane");
     wpisane.forEach((s, i) => {
       if (!s.ciezar && !s.powtorzenia) return;
-      pasek.append(el("span", "chip",
-        `${i + 1}: ${s.ciezar ? `${liczba(s.ciezar)}×` : ""}${s.powtorzenia ?? "—"}`));
+      pasek.append(el("span", "chip", `${i + 1}: ${zapisSerii(s)}`));
     });
     if (pasek.childElementCount > 0) karta.append(pasek);
   }
 
-  // Pola „co poszło". Puste pola są w porządku: klient dotyka „Zakończ serię"
-  // i idzie dalej. Zapisujemy wyłącznie to, co sam wpisał — liczby z planu
-  // wstawione tu z góry byłyby wymyślonym pomiarem.
+  // Pola „co poszło" od razu z prawdziwymi liczbami: poprzednia seria, a przy
+  // pierwszej plan. Klient zmienia tylko to, co było inaczej, i dotyka
+  // „Zakończ serię" — zapisuje się dokładnie to, co widać w polach.
+  //
+  // Wcześniej stały tu szare podpowiedzi z planu, a zapisywało się tylko to,
+  // co klient wpisał sam. Zgłoszone z testów: przy „9 kg · 10 powt." wpisane
+  // samo „11" zapisało się jako 11 powtórzeń bez ciężaru, choć na ekranie
+  // stało 9. Pusty zostaje tylko ciężar, którego nie ma skąd wziąć — przy
+  // ćwiczeniu, w którym klient dopiero go dobiera.
   const bezCiezaru = BEZ_POLA_CIEZARU.includes(c.ciezar);
-  const poprzednia = serieCwiczenia(c.positionId)[k.seria - 2];
-  const wlasna = serieCwiczenia(c.positionId)[k.seria - 1];
+  const podpowiedz = podpowiedzSerii(c, k.seria - 1, serieCwiczenia(c.positionId));
 
   const pola = el("div", "panel-pola");
   const wCiezar = el("input");
-  wCiezar.placeholder = typeof c.ciezar === "number" ? liczba(c.ciezar) : "kg";
-  wCiezar.value = wlasna?.ciezar ?? poprzednia?.ciezar ?? "";
+  wCiezar.placeholder = "kg";
+  wCiezar.value = podpowiedz.ciezar ?? "";
   const wPowt = el("input");
-  wPowt.placeholder = String(c.powtorzenia ?? "powt.");
-  wPowt.value = wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? "";
+  wPowt.placeholder = "powt.";
+  wPowt.value = podpowiedz.powtorzenia ?? "";
   for (const i of [wCiezar, wPowt]) {
     i.type = "number";
     i.inputMode = "decimal";

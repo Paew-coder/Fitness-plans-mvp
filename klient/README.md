@@ -65,10 +65,19 @@ kolumna `H` z arkusza, tylko że kciukiem.
 faktyczny ciężar i powtórzenia **każdej serii**; kto nie chce, ocenia i idzie
 dalej. Nic nie jest obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
 
-Żeby nie zasypywać liczbami: zwinięte pokazuje wpisane serie **w jednej
-linijce** — `✎ 80 · 90 · 85 · 80 kg × 6`, a przy różnych powtórzeniach
-`80×6 · 90×6 · 85×5`. Rozwinięte daje wiersz na serię, ale odsłaniane po jednym:
-widać wpisane i jeden pusty na następną, nie formularz na wszystkie serie naraz.
+Żeby nie zasypywać liczbami: po treningu karta pokazuje wpisane serie **w jednej
+linijce** — *Zrobione: 80 · 90 · 85 · 80 kg × 6*, a przy różnych powtórzeniach
+*80×6 · 90×6 · 85×5* — i obok **✎ edytuj**. To zapis, nie formularz do
+wypełnienia; edycja służy do poprawienia literówki (100 zamiast 10 poszłoby
+prosto do propozycji 1RM) i do dopisania serii przez kogoś, kto trenuje z listy,
+a nie z prowadzenia. Rozwinięte daje wiersz na serię, odsłaniane po jednym.
+
+**Liczba, którą widać w polu, to liczba, która się zapisze.** W prowadzeniu pola
+stoją od razu z prawdziwymi liczbami — poprzednia seria, a przy pierwszej plan —
+i klient zmienia tylko to, co było inaczej. Na liście puste pole z szarą
+podpowiedzią liczy się jak ta podpowiedź. Zgłoszone z testów: przy „9 kg · 10
+powt." wpisane samo „11" zapisywało się jako 11 powtórzeń bez ciężaru, choć na
+ekranie stało 9.
 
 **Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
 i powtórzenia, 1RM liczy się od razu.
