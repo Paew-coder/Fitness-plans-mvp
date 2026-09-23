@@ -808,6 +808,56 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await panel.innerText()).includes("superseria B"),
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
 
+  // Gdzie jestem — mapa dnia nad panelem: A1 zrobione, B1 tu.
+  const kafel = (etykieta: string) =>
+    panel.locator(".kafel-mapy").filter({ hasText: new RegExp(`^(✓ )?${etykieta}$`) });
+  sprawdz("mapa dnia pokazuje, co zrobione i przy czym stoisz",
+    await kafel("A1").getAttribute("class").then((k) => k?.includes("zrobione"))
+    && await kafel("B1").getAttribute("class").then((k) => k?.includes("tu")),
+    (await panel.locator(".kafel-mapy").allInnerTexts()).join(" "));
+
+  // Wyjście na listę w środku treningu — ma być widać, gdzie się jest.
+  await panel.getByRole("button", { name: "Cały dzień na liście" }).click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const kartaA1 = s.locator('#cwiczenia [data-position="D1-S01"]');
+  const kartaB1 = s.locator('#cwiczenia [data-position="D1-S02"]');
+  sprawdz("na liście dnia widać, gdzie jesteś w treningu",
+    (await kartaB1.locator(".stan-prowadzenia").innerText()).includes("Tu jesteś · seria 1 z 3")
+    && await kartaB1.evaluate((e) => e.classList.contains("biezace"))
+    && (await kartaA1.locator(".stan-prowadzenia").innerText()).includes("zrobione"),
+    `A1: ${await kartaA1.locator(".stan-prowadzenia").innerText().catch(() => "—")} · `
+    + `B1: ${await kartaB1.locator(".stan-prowadzenia").innerText().catch(() => "—")}`);
+  sprawdz("przycisk prowadzenia mówi, dokąd wraca",
+    (await s.locator("#prowadz").innerText()).includes("B1."),
+    await s.locator("#prowadz").innerText());
+
+  await kartaB1.locator(".stan-prowadzenia").click();
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  sprawdz("„Tu jesteś” wraca do panelu w to samo miejsce",
+    (await panel.innerText()).includes("Seria 1 z 3 · superseria B"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
+
+  // Powrót do zrobionego ćwiczenia z mapy — do poprawki, bez przerwy,
+  // i jednym dotknięciem z powrotem tam, gdzie się skończyło.
+  await kafel("A1").click();
+  const przeglad = await panel.innerText();
+  sprawdz("mapa przenosi do zrobionego ćwiczenia i mówi, że jest zrobione",
+    przeglad.includes("Seria 1 z 6") && przeglad.includes("już zrobiona")
+    && przeglad.includes("Zapisz poprawkę"),
+    przeglad.replace(/\n/g, " ").slice(0, 110));
+  await polaPanelu.nth(0).fill("102.5");
+  await panel.getByRole("button", { name: "Zapisz poprawkę" }).click();
+  await s.waitForTimeout(600);
+  sprawdz("poprawka wraca tam, gdzie się skończyło — bez przerwy",
+    await s.locator("#licznik").count() === 0
+    && (await panel.innerText()).includes("Seria 1 z 3 · superseria B"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
+  const bojPoPoprawce = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[0].serieWykonane;
+  sprawdz("poprawka trafia do trenera",
+    bojPoPoprawce[0]?.ciezar === 102.5 && bojPoPoprawce.length === 6,
+    JSON.stringify(bojPoPoprawce.slice(0, 2)));
+
   // Superseria idzie naprzemiennie i **bez przerwy w środku rundy**: po B1
   // od razu B2, dopiero potem odliczanie. Tak się je robi na sali.
   const pierwszeWRundzie = await panel.locator(".panel-gora .nazwa").innerText();
@@ -892,7 +942,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const kartaBoju = s.locator('#cwiczenia [data-position="D1-S01"]');
   const linijkaBoju = await kartaBoju.locator(".wykonanie-opis").innerText();
   sprawdz("lista pokazuje wszystkie serie w jednej linijce",
-    linijkaBoju.includes("Zrobione: 100 · 90 · 90 · 90 · 90 · 90 kg × 6"), linijkaBoju);
+    linijkaBoju.includes("Zrobione: 102,5 · 90 · 90 · 90 · 90 · 90 kg × 6"), linijkaBoju);
   sprawdz("po treningu lista pokazuje zapis, a nie formularz na wierzchu",
     await kartaBoju.locator(".wykonanie-pola.ukryty").count() === 1
     && (await kartaBoju.locator(".wykonanie-przelacz").innerText()).includes("edytuj"),

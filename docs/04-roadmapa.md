@@ -474,6 +474,16 @@ Moduł: `konsola/serie-wykonane.ts`. Testy: `serie-wykonane.test.ts`, pięć w `
 * Pytanie trenera: „dlaczego przy B2 są zapisane 2 serie, skoro w ćwiczeniu są 3?". Zapisana była **jedna**, niepełna („18 kg" bez powtórzeń). Drugi wiersz był pustym wierszem na następną serię z szarymi podpowiedziami 18 × 8 — nie do odróżnienia od wpisanych. Podpowiedzi z listy zniknęły (zostały w prowadzeniu, gdzie zatwierdza się je przyciskiem), wierszy jest tyle, ile serii w planie, niepełna seria przy dobieraniu ciężaru mówi, czego brakuje, a dziura w środku pokazuje się jako „—" (także w konsoli).
 * **Kolejka przyjmowała widok z odpowiedzi na każdy zapis**, także gdy za nim czekały kolejne. Przy zasięgu gasnącym w połowie kolejki telefon zostawał z widokiem bez serii wpisanej przed chwilą — i następna seria tego ćwiczenia zapisywała się na starej liście, gubiąc poprzednią. Teraz widok z serwera przychodzi dopiero po opróżnieniu kolejki. Sekcja 24 przeglądu klienta odtwarza to zerwanym połączeniem; ze starą regułą kontrola czerwienieje.
 
+**20. Powrót do zrobionych ćwiczeń i „Tu jesteś" na liście — 23.09.2026.**
+
+Prośba trenera: w panelach ma być możliwość powrotu do ćwiczeń oznaczonych jako zrobione, a na liście dnia po wyjściu z paneli — widać, w którym momencie treningu się jest.
+
+* Prowadzenie pamięta teraz, **które serie są zrobione**, a nie tylko numer bieżącego kroku. Dotąd cofnięcie gubiło postęp: wszystko przed numerem kroku uchodziło za zrobione, wszystko po nim — za niezrobione.
+* **Mapa dnia** nad panelem — kafelek na ćwiczenie, stan zrobione / zaczęte / tu. Dotknięcie przenosi do pierwszej niezrobionej serii ćwiczenia, a przy zrobionym — do pierwszej, do poprawki. Działa też do przodu (zajęta maszyna); przeskoczone ćwiczenie wraca na końcu.
+* **Zrobiona seria otwarta ponownie** ma dopisek, przycisk *Zapisz poprawkę* i link *↩ Wróć do: …*. Po poprawce klient wraca do pierwszej niezrobionej serii, bez przerwy.
+* **Lista dnia**: *▶ Tu jesteś · seria X z Y* z ramką przy bieżącym ćwiczeniu, *✓ zrobione*, *◐ zrobione X z Y serii* — każdy napis wraca do panelu. Przycisk nad listą mówi, dokąd wraca.
+* Stary zapis prowadzenia (sam numer kroku) przelicza się przy wczytaniu na listę zrobionych serii — nikt nie traci zaczętego treningu przez aktualizację.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.

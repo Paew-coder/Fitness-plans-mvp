@@ -673,13 +673,21 @@ function rysujTrening() {
     top.append(wiersz);
     top.append(el("div", "drobne", `1 powtórzenie · RPE ${liczba(d.topSet.rpe)}`));
     if (d.topSet.ciezar === "— brak 1RM") top.append(el("div", "drobne", jakDobrac(1, d.topSet.rpe)));
+    const stanTop = stanProwadzenia(d);
+    const tuTop = stanTop?.tu?.typ === "topset";
+    top.classList.toggle("biezace", tuTop);
+    if (tuTop || stanTop?.zrobione.has("topset")) {
+      top.append(przyciskStanu(tuTop ? "▶ Tu jesteś" : "✓ zrobione", tuTop,
+        (k) => k.typ === "topset"));
+    }
   } else {
     top.classList.add("ukryty");
   }
 
   // ćwiczenia
+  const stan = stanProwadzenia(d);
   const kontener = $("#cwiczenia");
-  kontener.replaceChildren(...d.cwiczenia.map(kartaCwiczenia));
+  kontener.replaceChildren(...d.cwiczenia.map((c) => kartaCwiczenia(c, stan)));
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
@@ -687,16 +695,43 @@ function rysujTrening() {
   // Wejście w prowadzenie. Po domkniętym treningu nie ma dokąd prowadzić,
   // a w środku zaczętego przycisk musi mówić „wróć", nie „zacznij" — inaczej
   // wygląda jak propozycja rozpoczęcia wszystkiego od nowa.
-  const wToku = (prowadzenieTegoDnia(d)?.krok ?? 0) > 0;
+  // Przycisk mówi, dokąd wraca — lista pokazuje to samo przy ćwiczeniu.
   $("#prowadz").classList.toggle("ukryty", d.ukonczony);
-  $("#prowadz").textContent = wToku
-    ? "▶ Wróć do przerwanego treningu"
-    : "▶ Prowadź mnie seria po serii";
+  $("#prowadz").textContent = !stan
+    ? "▶ Prowadź mnie seria po serii"
+    : stan.tu
+      ? `▶ Wróć do treningu — ${opisKroku(stan.tu, d)}`
+      : "▶ Wszystkie serie zrobione — zakończ trening";
 }
 
-/** Jedna karta ćwiczenia na liście dnia. */
-function kartaCwiczenia(c) {
-  const karta = el("div", `cwiczenie ${"BCDE".includes(c.grupa) ? "grupa" : ""}`);
+/**
+ * „▶ Tu jesteś" albo „✓ zrobione" — dotknięcie wraca do panelu prowadzenia.
+ * Przy „tu jesteś" dokładnie tam, gdzie klient wyszedł (z trwającą przerwą),
+ * przy pozostałych — do tego ćwiczenia.
+ */
+function przyciskStanu(tekst, tuJestes, pasuje) {
+  const b = el("button", `stan-prowadzenia ${tuJestes ? "tu" : ""}`, tekst);
+  b.onclick = () => {
+    const d = dzienBiezacy();
+    if (!d) return;
+    wczytajProwadzenie(d);
+    if (!tuJestes) przejdzDoCwiczenia(krokiDnia(d), pasuje);
+    otworz("#ekran-seria");
+  };
+  return b;
+}
+
+/**
+ * Jedna karta ćwiczenia na liście dnia.
+ *
+ * `stan` to prowadzenie tego dnia (albo `null`). Klient wychodzi z panelu na
+ * listę w środku treningu i ma od razu widzieć, gdzie jest: które ćwiczenia
+ * ma za sobą, przy którym stoi i którą serię robi.
+ */
+function kartaCwiczenia(c, stan = null) {
+  const tuJestes = stan?.tu?.positionId === c.positionId;
+  const karta = el("div",
+    `cwiczenie ${"BCDE".includes(c.grupa) ? "grupa" : ""} ${tuJestes ? "biezace" : ""}`);
   karta.dataset.position = c.positionId;
 
   const gora = el("div", "cwiczenie-gora");
@@ -710,6 +745,20 @@ function kartaCwiczenia(c) {
     gora.append(a);
   }
   karta.append(gora);
+
+  if (stan) {
+    const pasuje = (k) => k.positionId === c.positionId;
+    const jego = stan.kroki.filter(pasuje);
+    const ile = jego.filter((k) => stan.zrobione.has(k.klucz)).length;
+    if (tuJestes) {
+      karta.append(przyciskStanu(`▶ Tu jesteś · seria ${stan.tu.seria} z ${stan.tu.zSerii}`,
+        true, pasuje));
+    } else if (jego.length > 0 && ile === jego.length) {
+      karta.append(przyciskStanu("✓ zrobione", false, pasuje));
+    } else if (ile > 0) {
+      karta.append(przyciskStanu(`◐ zrobione ${ile} z ${jego.length} serii`, false, pasuje));
+    }
+  }
 
   const zadanie = el("div", "zadanie");
   if (typeof c.ciezar === "number") {
@@ -757,7 +806,7 @@ function odswiezKarte(positionId) {
   const stara = $(`#cwiczenia [data-position="${positionId}"]`);
   const c = dzienBiezacy()?.cwiczenia.find((x) => x.positionId === positionId);
   if (!stara || !c || stara.contains(document.activeElement)) return;
-  stara.replaceWith(kartaCwiczenia(c));
+  stara.replaceWith(kartaCwiczenia(c, stanProwadzenia(dzienBiezacy())));
 }
 
 /**
@@ -1016,6 +1065,7 @@ function krokiDnia(d) {
   if (d.topSet?.cwiczenie) {
     kroki.push({
       typ: "topset",
+      klucz: "topset",
       rpe: d.topSet.rpe,
       nazwa: d.topSet.cwiczenie.nazwa,
       ciezar: d.topSet.ciezar,
@@ -1038,6 +1088,7 @@ function krokiDnia(d) {
       const przerwa = Math.max(...wRundzie.map((c) => c.przerwaSekundy ?? PRZERWA_GDY_BRAK));
       wRundzie.forEach((c, i) => kroki.push({
         typ: "seria",
+        klucz: `${c.positionId}#${r}`,
         positionId: c.positionId,
         seria: r,
         zSerii: c.serie || 1,
@@ -1078,10 +1129,58 @@ function wczytajProwadzenie(d) {
     planId: widok.planId,
     tydzien: biezacy.tydzien,
     dzien: d.dzien,
-    krok: 0,
+    krok: 0,          // seria na ekranie — nie postęp; postęp to `zrobione`
+    zrobione: [],     // klucze serii zatwierdzonych przyciskiem
     doKiedy: null,    // znacznik czasu końca przerwy, nie liczba sekund — patrz odliczanie
     przerwa: 0,
   };
+  // Zapis sprzed 23.09 znał tylko numer kroku: wszystko przed nim było zrobione.
+  if (!Array.isArray(prowadzenie.zrobione)) {
+    prowadzenie.zrobione = krokiDnia(d).slice(0, prowadzenie.krok).map((k) => k.klucz);
+  }
+}
+
+/**
+ * Pierwsza niezrobiona seria po `od`, a gdy za nią nic nie zostało — pierwsza
+ * niezrobiona od początku dnia. Klient, który przeskoczył ćwiczenie, bo
+ * maszyna była zajęta, wraca do niego na końcu, zamiast je zgubić.
+ * `kroki.length`, gdy zrobione jest wszystko.
+ */
+function nastepnaNiezrobiona(kroki, zrobione, od) {
+  const po = kroki.findIndex((k, i) => i > od && !zrobione.has(k.klucz));
+  if (po >= 0) return po;
+  const odPoczatku = kroki.findIndex((k) => !zrobione.has(k.klucz));
+  return odPoczatku >= 0 ? odPoczatku : kroki.length;
+}
+
+/**
+ * Przejście do ćwiczenia: do pierwszej jego niezrobionej serii, a gdy
+ * wszystkie są zrobione — do pierwszej, żeby dało się ją obejrzeć i poprawić.
+ * Trwająca przerwa przepada: klient sam zdecydował, że idzie gdzie indziej.
+ */
+function przejdzDoCwiczenia(kroki, pasuje) {
+  const zrobione = new Set(prowadzenie.zrobione);
+  const niezrobiona = kroki.findIndex((k) => pasuje(k) && !zrobione.has(k.klucz));
+  const pierwsza = kroki.findIndex(pasuje);
+  if (pierwsza < 0) return;
+  prowadzenie.krok = niezrobiona >= 0 ? niezrobiona : pierwsza;
+  prowadzenie.doKiedy = null;
+  prowadzenie.przerwa = 0;
+  zapiszProwadzenie();
+}
+
+/**
+ * Gdzie klient jest w prowadzonym treningu tego dnia — dla listy dnia.
+ * `null`, gdy prowadzenia w tym dniu jeszcze nie było.
+ */
+function stanProwadzenia(d) {
+  const p = prowadzenieTegoDnia(d);
+  if (!p) return null;
+  const kroki = krokiDnia(d);
+  const zrobione = new Set(Array.isArray(p.zrobione)
+    ? p.zrobione : kroki.slice(0, p.krok).map((k) => k.klucz));
+  if (zrobione.size === 0) return null;
+  return { kroki, zrobione, tu: p.krok < kroki.length ? kroki[p.krok] : null };
 }
 
 function zapiszProwadzenie() {
@@ -1113,12 +1212,15 @@ function rysujPanel() {
 
   $("#seria-tytul").textContent =
     `Dzień ${RZYMSKIE[d.dzien - 1]} · tydzień ${prowadzenie.tydzien}`;
-  const zrobione = Math.min(prowadzenie.krok, kroki.length);
-  $("#seria-postep").textContent = zrobione >= kroki.length
+  const zrobione = new Set(prowadzenie.zrobione);
+  const ileZrobionych = kroki.filter((k) => zrobione.has(k.klucz)).length;
+  $("#seria-postep").textContent = prowadzenie.krok >= kroki.length
     ? "Wszystkie serie za Tobą"
-    : `Seria ${zrobione + 1} z ${kroki.length}`;
+    : `Seria ${prowadzenie.krok + 1} z ${kroki.length} · zrobione ${ileZrobionych}`;
   $("#pasek-wypelnienie").style.width =
-    `${Math.round((100 * zrobione) / Math.max(1, kroki.length))}%`;
+    `${Math.round((100 * ileZrobionych) / Math.max(1, kroki.length))}%`;
+
+  panel.append(mapaDnia(d, kroki, zrobione));
 
   if (prowadzenie.krok >= kroki.length) {
     zatrzymajOdliczanie();
@@ -1142,7 +1244,72 @@ function rysujPanel() {
     return;
   }
   zatrzymajOdliczanie();
+  if (zrobione.has(k.klucz)) panel.append(przegladZrobionej(k, kroki, zrobione, d));
   panel.append(k.typ === "topset" ? panelTopSetu(k, kroki) : panelSerii(k, kroki, d));
+}
+
+/**
+ * Mapa dnia: ćwiczenia jako kafelki nad panelem — zrobione, zaczęte i to,
+ * przy którym klient stoi. Dotknięcie przenosi do ćwiczenia.
+ *
+ * Dotąd dało się tylko cofać seria po serii, a przy superseriach „wstecz"
+ * skakało naprzemiennie między dwoma ćwiczeniami — powrót do A1 z połowy
+ * treningu wymagał kilkunastu dotknięć. Mapa działa też do przodu: maszyna
+ * zajęta, więc klient robi najpierw co innego, a przeskoczone ćwiczenie
+ * czeka na niego na końcu.
+ */
+function mapaDnia(d, kroki, zrobione) {
+  const mapa = el("div", "mapa-dnia");
+  const tu = kroki[prowadzenie.krok];
+  const pozycje = [
+    ...(kroki.some((k) => k.typ === "topset")
+      ? [{ etykieta: "TOP", nazwa: "TOP SET", pasuje: (k) => k.typ === "topset" }] : []),
+    ...d.cwiczenia.map((c) => ({
+      etykieta: (c.lp || "").replace(/\.$/, "") || "•",
+      nazwa: c.nazwa,
+      pasuje: (k) => k.positionId === c.positionId,
+    })),
+  ];
+  for (const poz of pozycje) {
+    const jego = kroki.filter(poz.pasuje);
+    if (jego.length === 0) continue;
+    const ile = jego.filter((k) => zrobione.has(k.klucz)).length;
+    const stan = ile === jego.length ? "zrobione" : ile > 0 ? "zaczete" : "";
+    const b = el("button", `kafel-mapy ${stan} ${tu && poz.pasuje(tu) ? "tu" : ""}`,
+      `${ile === jego.length ? "✓ " : ""}${poz.etykieta}`);
+    b.title = `${poz.nazwa} — zrobione ${ile} z ${jego.length}`;
+    b.onclick = () => { przejdzDoCwiczenia(kroki, poz.pasuje); rysujPanel(); };
+    mapa.append(b);
+  }
+  return mapa;
+}
+
+/**
+ * Seria już zrobiona, otwarta jeszcze raz — z mapy albo strzałką wstecz.
+ * Klient może ją poprawić, a jedno dotknięcie wraca tam, gdzie skończył.
+ * Przerwy przy poprawce nie ma: to nie jest kolejna seria, tylko zapis.
+ */
+function przegladZrobionej(k, kroki, zrobione, d) {
+  const blok = el("div", "przeglad-zrobionej");
+  blok.append(el("span", "", "✓ Ta seria jest już zrobiona — możesz ją poprawić."));
+  const cel = nastepnaNiezrobiona(kroki, zrobione, prowadzenie.krok);
+  const wroc = el("button", "link", cel >= kroki.length
+    ? "↩ Wróć do końca treningu"
+    : `↩ Wróć do: ${opisKroku(kroki[cel], d)}`);
+  wroc.onclick = () => {
+    prowadzenie.krok = cel;
+    zapiszProwadzenie();
+    rysujPanel();
+  };
+  blok.append(wroc);
+  return blok;
+}
+
+/** „C1. Incline dumbbell curl · seria 3 z 3" albo „TOP SET". */
+function opisKroku(k, d) {
+  if (k.typ === "topset") return `TOP SET · ${k.nazwa}`;
+  const c = d.cwiczenia.find((x) => x.positionId === k.positionId);
+  return `${c?.lp ?? ""} ${c?.nazwa ?? ""} · seria ${k.seria} z ${k.zSerii}`.trim();
 }
 
 /** Nagłówek panelu: numer w planie, nazwa, film. */
@@ -1175,7 +1342,8 @@ function panelTopSetu(k, kroki) {
     "Jedno ciężkie powtórzenie przed pracą. Wyniku nie wpisujesz — "
     + "to sprawdzian dnia, nie pomiar."));
 
-  const zrobione = el("button", "glowny szeroki", "Zrobione");
+  const zrobione = el("button", "glowny szeroki",
+    prowadzenie.zrobione.includes(k.klucz) ? "Dalej" : "Zrobione");
   zrobione.onclick = () => dalej(k, kroki);
   karta.append(zrobione);
   karta.append(cofnij());
@@ -1272,7 +1440,8 @@ function panelSerii(k, kroki, d) {
     karta.append(oceny);
   }
 
-  const zakoncz = el("button", "glowny szeroki", "Zakończ serię");
+  const poprawka = prowadzenie.zrobione.includes(k.klucz);
+  const zakoncz = el("button", "glowny szeroki", poprawka ? "Zapisz poprawkę" : "Zakończ serię");
   zakoncz.onclick = () => {
     zapiszSerie(k, c, bezCiezaru ? null : wCiezar.value, wPowt.value);
     dalej(k, kroki);
@@ -1318,9 +1487,14 @@ function zapiszSerie(k, c, ciezarTekst, powtTekst) {
 
 /** Krok do przodu. Przerwa wchodzi po rundzie — i nigdy po ostatniej serii dnia. */
 function dalej(k, kroki) {
-  prowadzenie.krok += 1;
+  const zrobione = new Set(prowadzenie.zrobione);
+  const poprawka = zrobione.has(k.klucz);
+  zrobione.add(k.klucz);
+  prowadzenie.zrobione = [...zrobione];
+  const teraz = kroki.findIndex((x) => x.klucz === k.klucz);
+  prowadzenie.krok = nastepnaNiezrobiona(kroki, zrobione, teraz);
   const koniecTreningu = prowadzenie.krok >= kroki.length;
-  const zPrzerwa = !koniecTreningu && k.koniecRundy && k.przerwa > 0;
+  const zPrzerwa = !poprawka && !koniecTreningu && k.koniecRundy && k.przerwa > 0;
   prowadzenie.doKiedy = zPrzerwa ? Date.now() + k.przerwa * 1000 : null;
   prowadzenie.przerwa = zPrzerwa ? k.przerwa : 0;
   zapiszProwadzenie();
