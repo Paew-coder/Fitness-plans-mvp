@@ -93,8 +93,12 @@ CREATE TABLE IF NOT EXISTS wykonanie (
   -- kilogramy szły do propozycji 1RM dla ćwiczenia, którego klient nie robił.
   -- `NULL` w starych wierszach znaczy „to, co stoi w slocie" — tak jak dotąd.
   cwiczenie_id         TEXT,
+  -- Najcięższa seria — z niej liczy się 1RM. Wylicza ją serwer z `serie_json`.
   ciezar_wykonany      REAL,
   powtorzenia_wykonane INTEGER,
+  -- Wszystkie serie z tego treningu, po kolei: [{"ciezar":90,"powtorzenia":6}, …].
+  -- `NULL` w wierszach sprzed wersji 6: znana jest tylko najcięższa para.
+  serie_json           TEXT,
   feedback             TEXT CHECK (feedback IN ('OK', 'za łatwe', 'za trudne')),
   PRIMARY KEY (trener_id, plan_id, position_id, tydzien),
   FOREIGN KEY (trener_id, plan_id) REFERENCES plan(trener_id, id) ON DELETE CASCADE

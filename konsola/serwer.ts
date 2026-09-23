@@ -32,6 +32,7 @@ import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { skalibruj } from "./kalibracja.ts";
+import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
@@ -821,6 +822,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             ciezarWykonany: wykonanieTegoCwiczenia(s, t.tydzien)?.ciezarWykonany ?? null,
             powtorzeniaWykonane:
               wykonanieTegoCwiczenia(s, t.tydzien)?.powtorzeniaWykonane ?? null,
+            serieWykonane: serieWpisu(wykonanieTegoCwiczenia(s, t.tydzien)),
             wczesniej: wczesniejWTymMiejscu(s, t.tydzien),
             // Ciężaru nie ma, bo nie ma 1RM — klient dobiera go sam według
             // RPE, a pierwsza wpisana seria policzy resztę. Flaga zamiast
@@ -1643,17 +1645,36 @@ const serwer = createServer(async (req, res) => {
           slot.tygodnie[tydzien as 1] ??= {};
           slot.tygodnie[tydzien as 1]!.feedback = f || undefined;
         }
-        // Ciężar i powtórzenia idą do propozycji nowego 1RM, czyli wprost do
-        // ciężarów kolejnego cyklu. Wartość spoza świata psuje je po cichu.
-        if ("ciezarWykonany" in cialoZadania && cialoZadania.ciezarWykonany != null) {
-          const kg = wZakresie(cialoZadania.ciezarWykonany, GRANICE.ciezar, false);
-          if (kg === null) return blad(res, "Ciężar musi być z zakresu 0–1000 kg");
-          wpis.ciezarWykonany = kg || undefined;
-        }
-        if ("powtorzeniaWykonane" in cialoZadania && cialoZadania.powtorzeniaWykonane != null) {
-          const powt = wZakresie(cialoZadania.powtorzeniaWykonane, GRANICE.powtorzenia);
-          if (powt === null) return blad(res, "Powtórzenia muszą być z zakresu 0–200");
-          wpis.powtorzeniaWykonane = powt || undefined;
+        // Wszystkie serie z treningu. Najcięższą — tę, która idzie do 1RM —
+        // wylicza serwer, a nie telefon: jedna reguła w jednym miejscu.
+        if ("serie" in cialoZadania) {
+          const sprawdzone = sprawdzSerie(cialoZadania.serie, GRANICE);
+          if ("blad" in sprawdzone) return blad(res, sprawdzone.blad);
+          const top = najciezsza(sprawdzone.serie);
+          wpis.serie = sprawdzone.serie.length > 0 ? sprawdzone.serie : undefined;
+          wpis.ciezarWykonany = top?.ciezar ?? undefined;
+          wpis.powtorzeniaWykonane = top?.powtorzenia ?? undefined;
+        } else if ("ciezarWykonany" in cialoZadania || "powtorzeniaWykonane" in cialoZadania) {
+          // Sama para — tak pisały wersje aplikacji sprzed 23.09, a telefon
+          // z aplikacją w pamięci podręcznej może jeszcze taką wysłać. Para
+          // to jedna seria i tak ją zapisujemy, żeby lista serii nie rozeszła
+          // się z tym, z czego liczy się 1RM.
+          //
+          // Ciężar i powtórzenia idą do propozycji nowego 1RM, czyli wprost do
+          // ciężarów kolejnego cyklu. Wartość spoza świata psuje je po cichu.
+          if (cialoZadania.ciezarWykonany != null) {
+            const kg = wZakresie(cialoZadania.ciezarWykonany, GRANICE.ciezar, false);
+            if (kg === null) return blad(res, "Ciężar musi być z zakresu 0–1000 kg");
+            wpis.ciezarWykonany = kg || undefined;
+          }
+          if (cialoZadania.powtorzeniaWykonane != null) {
+            const powt = wZakresie(cialoZadania.powtorzeniaWykonane, GRANICE.powtorzenia);
+            if (powt === null) return blad(res, "Powtórzenia muszą być z zakresu 0–200");
+            wpis.powtorzeniaWykonane = powt || undefined;
+          }
+          wpis.serie = wpis.ciezarWykonany || wpis.powtorzeniaWykonane
+            ? [{ ciezar: wpis.ciezarWykonany ?? null, powtorzenia: wpis.powtorzeniaWykonane ?? null }]
+            : undefined;
         }
 
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);

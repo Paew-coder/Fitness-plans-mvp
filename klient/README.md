@@ -62,8 +62,13 @@ to superseria, jak w arkuszu. Przy ćwiczeniu jednostronnym widnieje **na stron�
 kolumna `H` z arkusza, tylko że kciukiem.
 
 **Co poszło** — pod oceną jest zwinięte `+ zapisz, co poszło`. Kto chce, wpisuje
-faktyczny ciężar i powtórzenia; kto nie chce, ocenia i idzie dalej. Nic nie jest
-obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
+faktyczny ciężar i powtórzenia **każdej serii**; kto nie chce, ocenia i idzie
+dalej. Nic nie jest obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
+
+Żeby nie zasypywać liczbami: zwinięte pokazuje wpisane serie **w jednej
+linijce** — `✎ 80 · 90 · 85 · 80 kg × 6`, a przy różnych powtórzeniach
+`80×6 · 90×6 · 85×5`. Rozwinięte daje wiersz na serię, ale odsłaniane po jednym:
+widać wpisane i jeden pusty na następną, nie formularz na wszystkie serie naraz.
 
 **Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
 i powtórzenia, 1RM liczy się od razu.
@@ -148,14 +153,16 @@ Przerwa rundy trwa tyle, ile każe jej najcięższe ćwiczenie.
 **Odliczanie przeżywa zablokowany telefon.** Liczy się ze znacznika końca,
 a nie z odejmowania sekundy co tyknięcie — przeglądarka w tle zwalnia albo
 zatrzymuje liczniki, więc odejmowanie pokazałoby po powrocie czas, który nie
-minął. Tak samo przeżywa zamknięcie aplikacji: miejsce w treningu i wpisane
-serie zostają w telefonie, a przycisk zmienia się na **`▶ Wróć do przerwanego
+minął. Tak samo przeżywa zamknięcie aplikacji: miejsce w treningu zostaje
+w telefonie, wpisane serie — na serwerze, a przycisk zmienia się na **`▶ Wróć do przerwanego
 treningu`**.
 
-**Do trenera idzie jedna seria z ćwiczenia — najcięższa.** Baza trzyma przy
-ćwiczeniu jedną parę „ciężar × powtórzenia" na tydzień i z niej wychodzi
-propozycja nowego 1RM. Gdyby szła ostatnia, byłaby to zwykle seria najsłabsza,
-bo zmęczona. Wszystkie wpisane serie zostają widoczne na panelu.
+**Do trenera idą wszystkie serie, do 1RM — najcięższa.** Trener widzi w konsoli
+całą listę pod ciężarem z planu, bo „90 · 85 · 80" mówi co innego niż samo „90":
+przy planie na 80 kg klient przestrzelił i opadł z sił. Propozycja nowego 1RM
+dalej liczy się z najcięższej serii — ostatnia byłaby zwykle najsłabsza, bo
+zmęczona. Najcięższą wybiera serwer, nie telefon. Serie wpisane w prowadzeniu
+widać też na liście dnia i odwrotnie — to te same dane.
 
 Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej chwili
 i pokazuje to samo, tylko naraz.

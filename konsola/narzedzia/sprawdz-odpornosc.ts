@@ -160,6 +160,12 @@ function proby(token: string): Proba[] {
       ["ciężar ujemny", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"ciezarWykonany":-100}'],
       ["ciężar 1e400", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"ciezarWykonany":1e400}'],
       ["powtórzenia 100000", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"powtorzeniaWykonane":100000}'],
+      // Wszystkie serie ćwiczenia (od 23.09) — ta sama czujność co przy parze.
+      ["serie tekstem", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"serie":"80x6, 90x6"}'],
+      ["seria 1e400 kg", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"serie":[{"ciezar":1e400,"powtorzenia":6}]}'],
+      ["seria ujemnych powtórzeń", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"serie":[{"ciezar":80,"powtorzenia":-6}]}'],
+      ["seria liczbą zamiast pary", "/odczucie", '{"positionId":"D1-S01","tydzien":1,"serie":[80]}'],
+      ["sto serii", "/odczucie", `{"positionId":"D1-S01","tydzien":1,"serie":[${Array(100).fill('{"ciezar":80,"powtorzenia":6}').join(",")}]}`],
       ["waga ujemna", "/waga", '{"kg":-80}'],
       ["waga bilion kg", "/waga", '{"kg":1e12}'],
       ["dzień spoza planu", "/dzien", '{"dzien":99,"tydzien":1}'],

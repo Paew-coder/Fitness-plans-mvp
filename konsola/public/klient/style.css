@@ -196,8 +196,12 @@ button { font: inherit; cursor: pointer; }
   background: none; border: none; padding: .2rem 0;
   color: var(--tekst-blady); font-size: .78rem; font-family: var(--mono);
 }
-.wykonanie-pola {
-  display: flex; align-items: center; gap: .4rem; margin-top: .45rem;
+/* Wiersz na serię, jeden pod drugim. */
+.wykonanie-pola { display: grid; gap: .35rem; margin-top: .45rem; }
+.wiersz-serii { display: flex; align-items: center; gap: .4rem; }
+.wiersz-serii .nr {
+  font-family: var(--mono); font-size: .75rem; color: var(--tekst-blady);
+  width: 1.3rem; flex: none;
 }
 .wykonanie-pola input {
   font: inherit; font-family: var(--mono); text-align: center;

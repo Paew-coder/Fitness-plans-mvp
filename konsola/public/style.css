@@ -604,3 +604,8 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
   grid-column: 1 / -1; font-size: .72rem; line-height: 1.35; color: var(--tekst-blady);
   border-left: 2px solid var(--uwaga); padding-left: .5rem; margin-top: .1rem;
 }
+/* Co klient zrobił w tym tygodniu — pod ciężarem z planu, drobno. */
+td.ciezar .zrobione {
+  font-family: var(--mono); font-size: .68rem; line-height: 1.3;
+  color: var(--tekst-slaby); margin-top: .15rem; white-space: normal;
+}
