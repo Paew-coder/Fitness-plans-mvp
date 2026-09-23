@@ -99,8 +99,24 @@ function pokazStanPolaczenia(online) {
   $("#stan-polaczenia").classList.toggle("ukryty", online);
 }
 
+/**
+ * Trwające opróżnianie kolejki. Naraz może trwać tylko jedno.
+ *
+ * Bez tego dwa szybkie zapisy — ciężar, a zaraz po nim powtórzenia —
+ * opróżniały kolejkę równolegle: te same zadania szły dwa razy, a odpowiedź
+ * na starsze przychodziła czasem później i nadpisywała świeższy widok.
+ * Na ekranie wyglądało to tak, jakby wpis nie zadziałał: seria, która przed
+ * chwilą ustaliła ciężar, wracała do „dobierz ciężar", bo karta rysowała się
+ * z odpowiedzi sprzed kalibracji. Łańcuch zamiast równoległości: każde
+ * opróżnianie czeka na poprzednie, więc ostatnia odpowiedź jest zawsze
+ * odpowiedzią na ostatni zapis.
+ */
+let oproznianie = Promise.resolve();
+
 async function synchronizuj(odswiez = true) {
-  const { wyslane, odrzucone, powodOdmowy } = await kolejka.wyslij();
+  const teraz = oproznianie.then(() => kolejka.wyslij());
+  oproznianie = teraz.catch(() => {});
+  const { wyslane, odrzucone, powodOdmowy } = await teraz;
   pokazStanPolaczenia(wyslane);
   if (odrzucone > 0) pokazOdrzucone(odrzucone, powodOdmowy);
   if (wyslane && odswiez) rysuj();
@@ -548,6 +564,21 @@ function wskazowkaDoboru(c) {
   return blok;
 }
 
+/** Czy przy ćwiczeniu jest już pełna seria — ta, z której policzymy ciężar. */
+const seriaWpisana = (c) => c.ciezarWykonany > 0 && c.powtorzeniaWykonane > 0;
+
+/**
+ * Instrukcja doboru ciężaru — tylko do chwili, w której klient wpisze serię.
+ *
+ * Zgłoszone z testów na żywym planie: po wpisaniu serii instrukcja wisiała
+ * dalej i wyglądało to tak, jakby wpis nie zadziałał. Po wpisie zostaje jedno
+ * zdanie. Zwykle widać je ułamek sekundy, zanim wróci policzony ciężar —
+ * na dłużej zostaje tylko bez zasięgu, kiedy seria czeka w kolejce.
+ */
+const doborCiezaru = (c) => (seriaWpisana(c)
+  ? el("p", "dobor dobor-zapisane", "✓ Seria zapisana — z niej policzę Twój ciężar.")
+  : wskazowkaDoboru(c));
+
 /** Skąd się wziął ciężar — w tym treningu, w którym go policzyliśmy. */
 const notkaKalibracji = (k) => el("p", "kalibracja",
   `✓ Policzone z Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia} `
@@ -621,58 +652,7 @@ function rysujTrening() {
 
   // ćwiczenia
   const kontener = $("#cwiczenia");
-  kontener.replaceChildren();
-  for (const c of d.cwiczenia) {
-    const karta = el("div", `cwiczenie ${"BCDE".includes(c.grupa) ? "grupa" : ""}`);
-
-    const gora = el("div", "cwiczenie-gora");
-    gora.append(el("span", "lp", c.lp || ""));
-    gora.append(el("span", "nazwa", c.nazwa));
-    if (c.film) {
-      const a = el("a", "film", "▶ film");
-      a.href = c.film;
-      a.target = "_blank";
-      a.rel = "noopener";
-      gora.append(a);
-    }
-    karta.append(gora);
-
-    const zadanie = el("div", "zadanie");
-    if (typeof c.ciezar === "number") {
-      zadanie.append(el("span", "ciezar", `${liczba(c.ciezar)} kg`));
-    } else if (c.dobierzCiezar) {
-      // Zamiast „— brak 1RM", które brzmiało jak awaria: zaproszenie do
-      // dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
-      zadanie.append(el("span", "dobierz", "dobierz ciężar"));
-    } else {
-      zadanie.append(el("span", "brak", String(c.ciezar || "—")));
-    }
-    zadanie.append(el("span", "schemat", `${c.serie} × ${c.powtorzenia} · RPE ${liczba(c.rpe)}`));
-    if (c.jednostronne) zadanie.append(el("span", "na-strone", "na stronę"));
-    karta.append(zadanie);
-    if (c.dobierzCiezar) karta.append(wskazowkaDoboru(c));
-    if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
-
-    const oceny = el("div", "oceny");
-    for (const [wartosc, etykieta, klasa] of [
-      ["za trudne", "Za trudne", "trudne"],
-      ["OK", "OK", "ok"],
-      ["za łatwe", "Za łatwe", "latwe"],
-    ]) {
-      const b = el("button",
-        `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`, etykieta);
-      b.onclick = () => {
-        const nowa = c.feedback === wartosc ? null : wartosc;
-        wyslij("/odczucie",
-          { positionId: c.positionId, tydzien: biezacy.tydzien, feedback: nowa },
-          () => { c.feedback = nowa; });
-      };
-      oceny.append(b);
-    }
-    karta.append(oceny);
-    karta.append(polaWykonania(c));
-    kontener.append(karta);
-  }
+  kontener.replaceChildren(...d.cwiczenia.map(kartaCwiczenia));
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
@@ -685,6 +665,72 @@ function rysujTrening() {
   $("#prowadz").textContent = wToku
     ? "▶ Wróć do przerwanego treningu"
     : "▶ Prowadź mnie seria po serii";
+}
+
+/** Jedna karta ćwiczenia na liście dnia. */
+function kartaCwiczenia(c) {
+  const karta = el("div", `cwiczenie ${"BCDE".includes(c.grupa) ? "grupa" : ""}`);
+  karta.dataset.position = c.positionId;
+
+  const gora = el("div", "cwiczenie-gora");
+  gora.append(el("span", "lp", c.lp || ""));
+  gora.append(el("span", "nazwa", c.nazwa));
+  if (c.film) {
+    const a = el("a", "film", "▶ film");
+    a.href = c.film;
+    a.target = "_blank";
+    a.rel = "noopener";
+    gora.append(a);
+  }
+  karta.append(gora);
+
+  const zadanie = el("div", "zadanie");
+  if (typeof c.ciezar === "number") {
+    zadanie.append(el("span", "ciezar", `${liczba(c.ciezar)} kg`));
+  } else if (c.dobierzCiezar) {
+    // Zamiast „— brak 1RM", które brzmiało jak awaria: zaproszenie do
+    // dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
+    zadanie.append(el("span", "dobierz", "dobierz ciężar"));
+  } else {
+    zadanie.append(el("span", "brak", String(c.ciezar || "—")));
+  }
+  zadanie.append(el("span", "schemat", `${c.serie} × ${c.powtorzenia} · RPE ${liczba(c.rpe)}`));
+  if (c.jednostronne) zadanie.append(el("span", "na-strone", "na stronę"));
+  karta.append(zadanie);
+  if (c.dobierzCiezar) karta.append(doborCiezaru(c));
+  if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
+
+  const oceny = el("div", "oceny");
+  for (const [wartosc, etykieta, klasa] of [
+    ["za trudne", "Za trudne", "trudne"],
+    ["OK", "OK", "ok"],
+    ["za łatwe", "Za łatwe", "latwe"],
+  ]) {
+    const b = el("button",
+      `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`, etykieta);
+    b.onclick = () => {
+      const nowa = c.feedback === wartosc ? null : wartosc;
+      wyslij("/odczucie",
+        { positionId: c.positionId, tydzien: biezacy.tydzien, feedback: nowa },
+        () => { c.feedback = nowa; });
+    };
+    oceny.append(b);
+  }
+  karta.append(oceny);
+  karta.append(polaWykonania(c));
+  return karta;
+}
+
+/**
+ * Jedna karta od nowa, z tego, co właśnie wróciło z serwera — reszta listy
+ * zostaje nietknięta. Pomijamy, gdy klient pisze w tej karcie: podmiana pola
+ * pod palcem zamyka na telefonie klawiaturę w połowie liczby.
+ */
+function odswiezKarte(positionId) {
+  const stara = $(`#cwiczenia [data-position="${positionId}"]`);
+  const c = dzienBiezacy()?.cwiczenia.find((x) => x.positionId === positionId);
+  if (!stara || !c || stara.contains(document.activeElement)) return;
+  stara.replaceWith(kartaCwiczenia(c));
 }
 
 /**
@@ -744,15 +790,24 @@ function polaWykonania(c) {
     i.min = "0";
   }
 
-  const zapisz = () => {
+  const zapisz = async () => {
     const ciezarWykonany = Number(wCiezar.value) || null;
     const powtorzeniaWykonane = Number(wPowt.value) || null;
     if (ciezarWykonany === c.ciezarWykonany && powtorzeniaWykonane === c.powtorzeniaWykonane) return;
-    wyslij("/odczucie",
+    const wysylka = wyslij("/odczucie",
       { positionId: c.positionId, tydzien: biezacy.tydzien, ciezarWykonany, powtorzeniaWykonane },
       () => { c.ciezarWykonany = ciezarWykonany; c.powtorzeniaWykonane = powtorzeniaWykonane; },
       { odswiez: false });
     przelacz.textContent = "✎ zmień, co poszło";
+
+    // Ćwiczenie bez ciężaru: ta seria właśnie go ustala. Instrukcja znika od
+    // razu — bez przerysowania, bo klient może jeszcze stać w polu obok —
+    // a gdy serwer odda policzony ciężar, karta rysuje się od nowa.
+    if (c.dobierzCiezar && seriaWpisana(c)) {
+      blok.closest(".cwiczenie")?.querySelector(".dobor")?.replaceWith(doborCiezaru(c));
+      await wysylka;
+      odswiezKarte(c.positionId);
+    }
   };
   wCiezar.onchange = zapisz;
   wPowt.onchange = zapisz;
@@ -998,7 +1053,7 @@ function panelSerii(k, kroki, d) {
   zadanie.append(el("span", "obok",
     `${c.powtorzenia} powt. · RPE ${liczba(c.rpe)}${c.jednostronne ? " · na stronę" : ""}`));
   karta.append(zadanie);
-  if (c.dobierzCiezar) karta.append(wskazowkaDoboru(c));
+  if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
   // Co już poszło w tym treningu przy tym ćwiczeniu.

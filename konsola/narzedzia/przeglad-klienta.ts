@@ -880,6 +880,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const planBezMaksow = (await api(`/api/plany/${idBezMaksow}`)).zapisany.plan;
   planBezMaksow.sloty[0].cwiczenieId = "EX-0016";   // A1. Barbell row — bez 1RM
   planBezMaksow.sloty[1].cwiczenieId = "EX-0049";   // B1. Dead bug — masa ciała
+  planBezMaksow.sloty[2].cwiczenieId = "EX-0010";   // B2. Barbell back squat — bez 1RM
   await api(`/api/plany/${idBezMaksow}`, "PUT",
     { plan: planBezMaksow, dataStartu: null, status: "wysłany" });
   const sciezkaBezMaksow = (await api(`/api/plany/${idBezMaksow}/link`, "POST")).sciezka;
@@ -899,7 +900,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Ćwiczenie na masie ciała nie liczy się do brakujących. Liczone razem
   // z nimi nie schodziły nigdy do zera i baner wisiał przez cały cykl.
   sprawdz("ćwiczenie na masie ciała nie liczy się do brakujących ciężarów",
-    baner.includes("W jednym ćwiczeniu"),
+    baner.includes("W 2 ćwiczeniach"),
     (await s.locator("#pomiary-tresc").innerText()).slice(0, 60));
 
   await s.locator("#rpe-baner summary").click();
@@ -943,8 +944,35 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("i mówi, skąd go wzięła",
     drugaSeria.includes("Policzone z Twojej serii"),
     await panel.locator(".kalibracja").innerText().catch(() => "brak notki"));
+  sprawdz("instrukcja doboru znika, gdy ciężar już jest",
+    !drugaSeria.includes("Weź taki ciężar"),
+    drugaSeria.includes("Weź taki ciężar") ? "instrukcja dalej wisi" : "czysto");
 
+  // To samo z listy dnia — tak to wyszło na żywym planie: seria wpisana
+  // w „co poszło", a instrukcja doboru i napis „dobierz ciężar" wiszą dalej,
+  // bo zapis z listy celowo nie przerysowuje ekranu.
   await s.click("#wroc-z-serii");
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const kartaPrzysiadu = () => s.locator('#cwiczenia [data-position="D1-S03"]');
+  sprawdz("na liście ćwiczenie bez ciężaru ma instrukcję i pola na wierzchu",
+    (await kartaPrzysiadu().innerText()).includes("Weź taki ciężar")
+    && await kartaPrzysiadu().locator(".wykonanie-pola:not(.ukryty) input").count() === 2,
+    (await kartaPrzysiadu().innerText()).replace(/\n/g, " ").slice(0, 80));
+  const przysiad = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia
+    .find((c: any) => c.positionId === "D1-S03");
+  const polaPrzysiadu = kartaPrzysiadu().locator(".wykonanie-pola input");
+  await polaPrzysiadu.nth(0).fill("80");
+  await polaPrzysiadu.nth(1).fill(String(przysiad.powtorzenia));
+  await polaPrzysiadu.nth(1).blur();
+  await s.waitForTimeout(800);
+  const poWpisie = await kartaPrzysiadu().innerText();
+  sprawdz("po wpisaniu serii na liście instrukcja znika bez wychodzenia z ekranu",
+    !poWpisie.includes("Weź taki ciężar") && !poWpisie.includes("dobierz ciężar"),
+    poWpisie.replace(/\n/g, " ").slice(0, 90));
+  sprawdz("a w jej miejscu jest policzony ciężar",
+    poWpisie.includes("80 kg") && poWpisie.includes("Policzone z Twojej serii"),
+    poWpisie.replace(/\n/g, " ").slice(0, 90));
+
   await s.click("#wroc-z-treningu");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
   sprawdz("po kalibracji baner o brakujących ciężarach znika",
