@@ -153,20 +153,25 @@
     <div class="pole">
       <span class="etykieta-pola">Wypełnij tygodnie</span>
       <span class="taby">
-        <button type="button" id="progresja-szablonu" title="Wpisze do wszystkich sześciu tygodni progresję z szablonu 5.18">progresja 5.18</button>
+        <button type="button" id="progresja-szablonu">progresja 5.18</button>
       </span>
+      <!-- Objaśnienia pod polami, nie w dymkach: na iPadzie dymków nie ma,
+           a trener pracuje na zmianę na laptopie i na iPadzie. -->
+      <small class="podpowiedz-pola">wpisuje progresję z szablonu do wszystkich 6 tygodni</small>
     </div>
-    <label title="Domyślnie dla wszystkich akcesoriów. Pojedyncze ćwiczenie przestawia się przyciskiem „R” przy jego wierszu.">Akcesoria domyślnie
+    <label>Akcesoria domyślnie
       <select id="tryb-akcesoriow">
         <option value="trzymaj z bloku">trzymaj z bloku</option>
         <option value="licz z RPE">licz z RPE</option>
       </select>
+      <small class="podpowiedz-pola">dla wszystkich akcesoriów; pojedyncze przestawia „R” przy ćwiczeniu</small>
     </label>
-    <label title="objętość = cz.1, intensywność = cz.2 (kontynuacja). Zmienia zakres powtórzeń akcesoriów i progresję boju głównego.">Część planu
+    <label>Część planu
       <select id="czesc-planu">
         <option value="objętość">objętość (cz.1)</option>
         <option value="intensywność">intensywność (cz.2)</option>
       </select>
+      <small class="podpowiedz-pola">zmienia powtórzenia akcesoriów i progresję boju głównego</small>
     </label>
     <label>Start
       <input type="date" id="data-startu">

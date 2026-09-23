@@ -44,6 +44,14 @@ const KLIENT_DO_USUNIECIA = "Do usuniecia";
 
 /** iPhone 13 — ten sam ekran, na którym oglądamy aplikację klienta. */
 const TELEFON = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+/**
+ * iPad — szerokość laptopa, sterowanie palcem. Trener pracuje na zmianę na
+ * laptopie i na iPadzie, a konsolę sprawdzaliśmy tylko na laptopie i na
+ * telefonie: rozmiary pod palec włączały się poniżej 760 px, więc iPad
+ * dostawał wersję dla myszy z przyciskami 14×11 px i objaśnieniami w dymkach.
+ */
+const IPAD_PION = { viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true };
+const IPAD_POZIOM = { viewport: { width: 1180, height: 820 }, isMobile: true, hasTouch: true };
 
 /**
  * Najmniejszy bok celu, poniżej którego trafianie palcem przestaje być
@@ -1046,7 +1054,22 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.status === "wysłany",
     (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.status);
 
-  // ── 20. konsola z telefonu ────────────────────────────────────────
+  // ── 19b. laptop wygląda tak samo jak iPad ─────────────────────────
+  //
+  // Przyciski przy ćwiczeniu pokazywały się na laptopie dopiero po najechaniu,
+  // a na iPadzie były zawsze — to samo miejsce na dwóch urządzeniach wyglądało
+  // inaczej. Myszka odsunięta od tabeli: przyciski mają być i tak widoczne.
+  await s.mouse.move(5, 5);
+  const kryciePrzyciskow = await s.evaluate(() => {
+    const e = document.querySelector("table.sloty .strzalki");
+    return e ? Number(getComputedStyle(e).opacity) : null;
+  });
+  sprawdz("na laptopie przyciski przy ćwiczeniu widać bez najeżdżania",
+    kryciePrzyciskow === 1, `opacity ${kryciePrzyciskow}`);
+  sprawdz("na laptopie legenda znaków w tabeli jest widoczna",
+    (await s.locator("#dni .legenda").innerText().catch(() => "")).includes("TOP SET"));
+
+  // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon
   // od kilku rund, ale **nikt jej dotąd na telefonie nie oglądał** — a trener
@@ -1057,7 +1080,11 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   // najechania nie ma, więc były niewidoczne **zawsze** — a `opacity: 0`
   // nie odbiera kliknięć, więc w każdym wierszu siedziały dwa niewidzialne
   // przyciski 14×11 px, gotowe przestawić plan przy nietrafionym dotknięciu.
-  await sekcjaTelefonowa(przegladarka, ADRES, PLAN, KLIENT_PO_ZMIANIE);
+  for (const [gdzie, urzadzenie] of [
+    ["na telefonie", TELEFON], ["na iPadzie w pionie", IPAD_PION], ["na iPadzie w poziomie", IPAD_POZIOM],
+  ] as const) {
+    await sekcjaDotykowa(przegladarka, ADRES, PLAN, KLIENT_PO_ZMIANIE, gdzie, urzadzenie);
+  }
 
   console.log(bledyPrzegladarki.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledyPrzegladarki.slice(0, 3))}`
@@ -1066,10 +1093,11 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
 }
 
 
-async function sekcjaTelefonowa(
+async function sekcjaDotykowa(
   przegladarka: any, adres: string, plan: string, klient: string,
+  gdzie: string, urzadzenie: object,
 ): Promise<void> {
-  const kontekst = await przegladarka.newContext(TELEFON);
+  const kontekst = await przegladarka.newContext(urzadzenie);
   const s = await kontekst.newPage();
   const bledy = pilnujBledow(s);
   try {
@@ -1080,9 +1108,19 @@ async function sekcjaTelefonowa(
     await s.locator("#lista-klientow .pozycja", { hasText: klient })
       .getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+    // „2+1/12" miało objaśnienie tylko w dymku po najechaniu myszą.
+    const sygnaly = await s.locator("#lista-cykli .sygnal").allInnerTexts();
+    sprawdz(`${gdzie} aktywność klienta jest opisana słowami`,
+      sygnaly.some((t) => /treningi: \d+ z \d+/.test(t))
+      && sygnaly.every((t) => !/\d\+\d|\d\/\d/.test(t)),
+      sygnaly.join(" | ") || "bez sygnałów");
     await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
     await s.waitForTimeout(600);
+
+    sprawdz(`${gdzie} legenda znaków w tabeli jest widoczna`,
+      (await s.locator("#dni .legenda").innerText().catch(() => "")).includes("TOP SET"),
+      "legenda");
 
     // Nic nie może wystawać poza ekran. Sprawdzamy elementy, a nie szerokość
     // strony: `overflow-x: hidden` na `body` obcina to, co wystaje, więc sama
@@ -1094,11 +1132,11 @@ async function sekcjaTelefonowa(
       })
       .map((e) => `${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]}`)
       .slice(0, 4));
-    sprawdz("na telefonie nic nie wystaje poza ekran", wystajace.length === 0,
+    sprawdz(`${gdzie} nic nie wystaje poza ekran`, wystajace.length === 0,
       wystajace.join(", ") || "czysto");
 
     // Ta jedna liczba jest powodem, dla którego trener otwiera plan z ręki.
-    sprawdz("kolumna z ciężarem jest widoczna",
+    sprawdz(`${gdzie} kolumna z ciężarem jest widoczna`,
       await s.locator("table.sloty td.ciezar").first().isVisible());
 
     const strzalki = await s.evaluate(() => {
@@ -1107,7 +1145,7 @@ async function sekcjaTelefonowa(
       const st = getComputedStyle(e);
       return { krycie: Number(st.opacity), klikalne: st.pointerEvents !== "none" };
     });
-    sprawdz("strzałki przestawiania są na telefonie widoczne",
+    sprawdz(`${gdzie} strzałki przestawiania są widoczne`,
       strzalki !== null && strzalki.krycie > 0.9,
       strzalki ? `opacity ${strzalki.krycie}` : "nie ma ich wcale");
 
@@ -1136,7 +1174,7 @@ async function sekcjaTelefonowa(
         })
         .map((e) => `${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]}`);
     });
-    sprawdz("nie ma przycisków niewidocznych, a klikalnych", ukrytaKlikalna.length === 0,
+    sprawdz(`${gdzie} nie ma przycisków niewidocznych, a klikalnych`, ukrytaKlikalna.length === 0,
       ukrytaKlikalna.join(", ") || "czysto");
 
     const male = await s.evaluate((prog: number) =>
@@ -1153,7 +1191,7 @@ async function sekcjaTelefonowa(
         .slice(0, 5), MINIMALNY_CEL);
     // Zalecane 44 px to rozmiar, którego ciasna tabela planu nie udźwignie —
     // trzymamy próg, poniżej którego celowanie przestaje być celowaniem.
-    sprawdz(`żaden cel nie jest mniejszy niż ${MINIMALNY_CEL} px`, male.length === 0,
+    sprawdz(`${gdzie} żaden cel nie jest mniejszy niż ${MINIMALNY_CEL} px`, male.length === 0,
       male.join(", ") || "czysto");
 
     // Strzałka ma nie tylko wyglądać na klikalną, ale działać — i to z palca.
@@ -1168,6 +1206,10 @@ async function sekcjaTelefonowa(
       const b = document.querySelectorAll("table.sloty tr")[1]
         ?.querySelectorAll("button.mikro")[1];
       if (!b) return null;
+      // Tabela stoi pod ustawieniami i legendą, czyli poniżej pierwszego
+      // ekranu — człowiek najpierw przewija. Bez tego `elementFromPoint`
+      // pytał o punkt poza ekranem i dostawał pustkę.
+      b.scrollIntoView({ block: "center" });
       const r = b.getBoundingClientRect();
       const x = r.left + r.width / 2;
       const y = r.top + r.height / 2;
@@ -1177,7 +1219,7 @@ async function sekcjaTelefonowa(
       }
       return { x, y, krycie, trafia: document.elementFromPoint(x, y) === b };
     });
-    sprawdz("w strzałkę da się trafić palcem, widząc ją",
+    sprawdz(`${gdzie} w strzałkę da się trafić palcem, widząc ją`,
       cel !== null && cel.trafia && cel.krycie > 0.9,
       cel ? `krycie ${cel.krycie}, pod palcem ${cel.trafia ? "strzałka" : "co innego"}`
         : "nie ma strzałek");
@@ -1186,12 +1228,12 @@ async function sekcjaTelefonowa(
     if (cel) await s.touchscreen.tap(cel.x, cel.y);
     await s.waitForTimeout(900);
     const po = await s.locator("table.sloty td.cwiczenie select").first().inputValue();
-    sprawdz("dotknięcie strzałki przestawia ćwiczenie", przed !== po,
+    sprawdz(`${gdzie} dotknięcie strzałki przestawia ćwiczenie`, przed !== po,
       `${przed || "—"} → ${po || "—"}`);
   } finally {
     console.log(bledy.length
-      ? `  błędy na telefonie: ${JSON.stringify(bledy.slice(0, 2))}`
-      : "  błędów na telefonie: brak");
+      ? `  błędy ${gdzie}: ${JSON.stringify(bledy.slice(0, 2))}`
+      : `  błędów ${gdzie}: brak`);
     doliczBledy(bledy.length);
     await kontekst.close();
   }
