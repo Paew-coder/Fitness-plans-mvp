@@ -100,10 +100,19 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // silnik. Rozjazd tutaj znaczy, że ktoś trenuje wg innych liczb niż trener.
   // Aplikacja pisze liczby po polsku, z przecinkiem — porównujemy wartości,
   // nie zapis.
-  const naEkranie = await karty.first().locator(".zadanie .ciezar").innerText();
+  const naEkranie = await karty.first().locator(".kolumna-ciezar .wartosc").innerText();
   sprawdz("ciężar na telefonie zgadza się z policzonym",
     Number(naEkranie.replace(",", ".").replace(/[^\d.]/g, "")) === cwiczenie(przedStart, 1).ciezar,
     `${naEkranie} ↔ ${cwiczenie(przedStart, 1).ciezar} kg`);
+
+  // Powtórzenia tą samą wielkością co ciężar — zgłoszone z testów: duży
+  // ciężar obok drobnych powtórzeń czytał się jak ciężar z dopiskiem.
+  const rozmiar = async (klasa: string) => await karty.first()
+    .locator(`${klasa} .wartosc`).evaluate((e) => getComputedStyle(e).fontSize);
+  sprawdz("powtórzenia i serie są tak samo czytelne jak ciężar",
+    await rozmiar(".kolumna-ciezar") === await rozmiar(".kolumna-powt")
+    && await rozmiar(".kolumna-ciezar") === await rozmiar(".kolumna-serie"),
+    `ciężar ${await rozmiar(".kolumna-ciezar")} · powt. ${await rozmiar(".kolumna-powt")}`);
 
   // ── 4. ocena serii ────────────────────────────────────────────────
   await karty.first().getByRole("button", { name: "Za łatwe" }).click();
@@ -674,11 +683,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.goto(`${adres}${golySciezka}`, { waitUntil: "networkidle" });
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
-  const schematy = await s.locator("#cwiczenia .schemat").allInnerTexts();
+  const schematy = await s.locator("#cwiczenia .kolumna-serie .wartosc").allInnerTexts();
 
   sprawdz("niewypełniony plan nie każe robić jednej serii",
-    schematy.length > 0 && schematy.every((t) => !/^\s*1\s*×/.test(t)),
-    schematy.join(" | ") || "brak ćwiczeń");
+    schematy.length > 0 && schematy.every((t) => t.trim() !== "1"),
+    `serie: ${schematy.join(" | ") || "brak ćwiczeń"}`);
 
   const pasekTopSetu = await s.locator("#topset").innerText().catch(() => "");
   sprawdz("TOP SET postawiony przy akcesorium dochodzi na telefon",
@@ -1034,7 +1043,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     panelDoboru.includes("Barbell row") && panelDoboru.includes("Seria 1 z 3"),
     panelDoboru.replace(/\n/g, " ").slice(0, 60));
   sprawdz("zamiast „— brak 1RM” jest zaproszenie do dobrania ciężaru",
-    panelDoboru.includes("Dobierz ciężar") && /mieć jeszcze [\d–]+ w zapasie/.test(panelDoboru)
+    /dobierz/i.test(panelDoboru) && /mieć jeszcze [\d–]+ w zapasie/.test(panelDoboru)
     && !panelDoboru.includes("brak 1RM"),
     panelDoboru.replace(/\n/g, " ").slice(0, 120));
 
@@ -1106,7 +1115,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForTimeout(800);
   const poWpisie = await kartaPrzysiadu().innerText();
   sprawdz("po wpisaniu serii na liście instrukcja znika bez wychodzenia z ekranu",
-    !poWpisie.includes("Weź taki ciężar") && !poWpisie.includes("dobierz ciężar"),
+    !poWpisie.includes("Weź taki ciężar") && !/dobierz/i.test(poWpisie),
     poWpisie.replace(/\n/g, " ").slice(0, 90));
   sprawdz("a w jej miejscu jest policzony ciężar",
     poWpisie.includes("80 kg") && poWpisie.includes("Policzone z Twojej serii"),
