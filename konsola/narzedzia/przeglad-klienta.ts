@@ -865,6 +865,101 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("trening z prowadzenia jest zakończony",
     poProwadzeniu.tygodnie[0].dni[0].ukonczony === true);
 
+
+  // ── 23. start bez serii maksymalnych ──────────────────────────────
+  //
+  // Druga droga na start cyklu: klient nie robi serii do odmowy, tylko od
+  // razu trenuje i dobiera ciężar według RPE. Pierwsza wpisana seria ma się
+  // zamienić w 1RM, a z niego w ciężary na cały plan.
+  //
+  // Wiosłowanie celowo w A1: trener rozstrzygnął 22.09, że bojem głównym nie
+  // jest, więc ma tu dostać progresję akcesorium, nie szablon boju.
+  const BEZ_MAKSOW = "bez-maksow";
+  await api("/api/plany", "POST", { klient: BEZ_MAKSOW, wersja: 1 });
+  const idBezMaksow = (await api("/api/plany")).find((p: any) => p.klient === BEZ_MAKSOW).id;
+  const planBezMaksow = (await api(`/api/plany/${idBezMaksow}`)).zapisany.plan;
+  planBezMaksow.sloty[0].cwiczenieId = "EX-0016";   // A1. Barbell row — bez 1RM
+  planBezMaksow.sloty[1].cwiczenieId = "EX-0049";   // B1. Dead bug — masa ciała
+  await api(`/api/plany/${idBezMaksow}`, "PUT",
+    { plan: planBezMaksow, dataStartu: null, status: "wysłany" });
+  const sciezkaBezMaksow = (await api(`/api/plany/${idBezMaksow}/link`, "POST")).sciezka;
+  const widokBezMaksow = async () =>
+    await api(`/api/klient/${sciezkaBezMaksow.replace("/k/", "")}`);
+
+  const wioslowanie = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia[0];
+  sprawdz("wiosłowanie w A1 dostaje progresję akcesorium, nie boju",
+    wioslowanie.serie === 3,
+    `${wioslowanie.serie} × ${wioslowanie.powtorzenia} · RPE ${wioslowanie.rpe}`);
+
+  await s.goto(`${adres}${sciezkaBezMaksow}`, { waitUntil: "networkidle" });
+  const baner = await s.locator("#pomiary-baner:not(.ukryty)").innerText().catch(() => "");
+  sprawdz("bez 1RM klient dostaje dwie drogi na start",
+    baner.includes("Zacznij trening od razu") && baner.includes("Najpierw serie maksymalne"),
+    baner.replace(/\s+/g, " ").slice(0, 80));
+  // Ćwiczenie na masie ciała nie liczy się do brakujących. Liczone razem
+  // z nimi nie schodziły nigdy do zera i baner wisiał przez cały cykl.
+  sprawdz("ćwiczenie na masie ciała nie liczy się do brakujących ciężarów",
+    baner.includes("W jednym ćwiczeniu"),
+    (await s.locator("#pomiary-tresc").innerText()).slice(0, 60));
+
+  await s.locator("#rpe-baner summary").click();
+  sprawdz("objaśnienie RPE rozwija się przy banerze",
+    (await s.locator("#rpe-baner details").innerText()).includes("RPE 8")
+    && (await s.locator("#rpe-baner details").innerText()).includes("2 w zapasie"));
+
+  await s.click("#od-razu");
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  const panelDoboru = await panel.innerText();
+  sprawdz("„zacznij od razu” prowadzi prosto do pierwszej serii",
+    panelDoboru.includes("Barbell row") && panelDoboru.includes("Seria 1 z 3"),
+    panelDoboru.replace(/\n/g, " ").slice(0, 60));
+  sprawdz("zamiast „— brak 1RM” jest zaproszenie do dobrania ciężaru",
+    panelDoboru.includes("Dobierz ciężar") && /mieć jeszcze [\d–]+ w zapasie/.test(panelDoboru)
+    && !panelDoboru.includes("brak 1RM"),
+    panelDoboru.replace(/\n/g, " ").slice(0, 120));
+
+  await polaPanelu.nth(0).fill("60");
+  await polaPanelu.nth(1).fill(String(wioslowanie.powtorzenia));
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForTimeout(700);
+
+  const poKalibracji = (await api(`/api/plany/${idBezMaksow}`));
+  const wpisKalibracji = poKalibracji.zapisany.plan.serieMaksymalne
+    .find((x: any) => x.cwiczenieId === "EX-0016");
+  sprawdz("pierwsza seria ustala 1RM, z opisem skąd",
+    wpisKalibracji?.kalibracja?.ciezar === 60,
+    JSON.stringify(wpisKalibracji ?? null).slice(0, 90));
+  const ciezaryCyklu = poKalibracji.wynik.tygodnie.map((t: any) => t.sloty[0].ciezar);
+  sprawdz("z jednej serii liczy się cały cykl",
+    ciezaryCyklu.every((c: unknown) => typeof c === "number"),
+    ciezaryCyklu.join(" · "));
+
+  await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForSelector("#panel .panel-pola");
+  const drugaSeria = await panel.innerText();
+  sprawdz("druga seria ma już ciężar — ten, który klient podniósł",
+    drugaSeria.includes("60 kg") && drugaSeria.includes("Seria 2 z 3"),
+    drugaSeria.replace(/\n/g, " ").slice(0, 70));
+  sprawdz("i mówi, skąd go wzięła",
+    drugaSeria.includes("Policzone z Twojej serii"),
+    await panel.locator(".kalibracja").innerText().catch(() => "brak notki"));
+
+  await s.click("#wroc-z-serii");
+  await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  sprawdz("po kalibracji baner o brakujących ciężarach znika",
+    await s.locator("#pomiary-baner.ukryty").count() === 1);
+
+  await s.click("#pokaz-pomiary");
+  await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
+  const pomiarWioslowania = await s.locator("#pomiary .pomiar").first().innerText();
+  sprawdz("na ekranie serii maksymalnych widać, skąd jest 1RM",
+    pomiarWioslowania.includes("Policzone z Twojej serii na treningu"),
+    pomiarWioslowania.replace(/\n/g, " ").slice(0, 90));
+  sprawdz("a pola nie udają serii, której nie było",
+    await s.locator("#pomiary .pomiar").first().locator("input").first().inputValue() === "",
+    await s.locator("#pomiary .pomiar").first().locator("input").first().inputValue());
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

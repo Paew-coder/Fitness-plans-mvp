@@ -188,15 +188,59 @@ describe("nowy cykl zaczyna od tego, co klient faktycznie podnosił", () => {
   test("wykonania z bieżącego cyklu biją te sprzed sześciu tygodni", async () => {
     // To samo ćwiczenie, ale podniesione już w nowym cyklu — świeższa liczba
     // ma wygrać, i to bez podpisu o poprzednim cyklu.
+    //
+    // Bój główny, bo ma już 1RM (przyjęte dwa testy wyżej). Przy ćwiczeniu
+    // bez 1RM seria nie idzie do propozycji, tylko od razu je ustala — to
+    // sprawdza test niżej.
     await api(`/api/klient/${token}/odczucie`, "POST", {
-      positionId: "D1-S02", tydzien: 1,
+      positionId: "D1-S01", tydzien: 1,
       ciezarWykonany: 95, powtorzeniaWykonane: 5, feedback: "OK",
     });
     const { dane } = await api(`/api/plany/${planCyklu2}`);
-    const propozycja = dane.propozycje1RM.find((p: any) => p.cwiczenieId === "EX-0016");
+    const propozycja = dane.propozycje1RM.find((p: any) => p.cwiczenieId === "EX-0010");
     assert.ok(propozycja, "brak propozycji z bieżącego cyklu");
     assert.equal(propozycja.zPoprzedniegoCyklu, undefined,
       "propozycja z tego cyklu nie może być podpisana poprzednim");
+  });
+
+  /**
+   * Kalibracja pierwszym treningiem. Ćwiczenie bez 1RM nie czeka na trenera:
+   * pierwsza wpisana seria staje się jego 1RM, a z niego liczy się cały cykl.
+   * Inaczej klient, który wybrał start bez serii maksymalnych, przerobiłby
+   * cały pierwszy tydzień bez jednej policzonej liczby.
+   */
+  test("przy ćwiczeniu bez 1RM seria robocza od razu je ustala", async () => {
+    const przed = await api(`/api/plany/${planCyklu2}`);
+    assert.equal(przed.dane.wynik.tygodnie[0].sloty[1].ciezar, "— brak 1RM",
+      "punkt wyjścia: akcesorium nowego cyklu bez 1RM");
+
+    await api(`/api/klient/${token}/odczucie`, "POST", {
+      positionId: "D1-S02", tydzien: 1, ciezarWykonany: 60, powtorzeniaWykonane: 8,
+    });
+
+    const { dane } = await api(`/api/plany/${planCyklu2}`);
+    const wpis = dane.zapisany.plan.serieMaksymalne.find((s: any) => s.cwiczenieId === "EX-0016");
+    assert.ok(wpis?.kalibracja, "1RM miało przyjść z serii, z opisem, skąd");
+    assert.equal(dane.wynik.tygodnie[0].sloty[1].ciezar, 60,
+      "plan ma zacząć dokładnie od ciężaru, który klient podniósł");
+    assert.equal(dane.propozycje1RM.some((p: any) => p.cwiczenieId === "EX-0016"), false,
+      "ustalone 1RM nie wraca do trenera jako propozycja tego samego");
+
+    const telefon = await api(`/api/klient/${token}`);
+    const cw = telefon.dane.tygodnie[0].dni[0].cwiczenia[1];
+    assert.deepEqual(cw.kalibracja, { ciezar: 60, powtorzenia: 8, rpe: cw.rpe },
+      "klient widzi przy ćwiczeniu, z której serii policzono jego ciężar");
+    assert.equal(cw.dobierzCiezar, false);
+  });
+
+  test("seria maksymalna zastępuje wyliczenie z serii roboczej", async () => {
+    await api(`/api/klient/${token}/serie`, "POST",
+      { cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 4 });
+    const { dane } = await api(`/api/plany/${planCyklu2}`);
+    const wpisy = dane.zapisany.plan.serieMaksymalne.filter((s: any) => s.cwiczenieId === "EX-0016");
+    assert.equal(wpisy.length, 1, "jeden wpis na ćwiczenie");
+    assert.equal(wpisy[0].kalibracja, undefined, "po serii maksymalnej opis kalibracji znika");
+    assert.equal(wpisy[0].ciezar, 80);
   });
 });
 

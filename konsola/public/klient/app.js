@@ -166,6 +166,12 @@ const EKRAN_GLOWNY = "#ekran-tygodnie";
 
 /** Co trzeba przygotować przy wejściu — tak samo z dotknięcia, jak z historii. */
 const PRZYGOTUJ = {
+  // Lista i serie maksymalne rysują się od nowa przy każdym wejściu. Zapisy
+  // z treningu idą bez przerysowania (klient pisze), a jeden z nich potrafi
+  // zmienić to, co widać gdzie indziej: seria przy ćwiczeniu bez 1RM ustala
+  // je i baner „brakuje ciężarów" ma zniknąć, zanim klient na niego spojrzy.
+  [EKRAN_GLOWNY]: () => rysuj({ pomiary: false }),
+  "#ekran-pomiary": () => rysujPomiary(),
   "#ekran-trening": () => rysujTrening(),
   "#ekran-seria": () => rysujSerie(),
   "#ekran-postep": async () => { await wczytajHistorie(); rysujPostep(); },
@@ -223,8 +229,16 @@ function rysuj({ pomiary = true } = {}) {
   if (!widok) return;
   $("#tytul").textContent = `${widok.klient} ${widok.wersja}.0`;
 
-  const brakuje = widok.doZmierzenia.filter((p) => !p.oneRM);
+  // Bez ćwiczeń, przy których nie ma czego mierzyć (masa ciała, czas…).
+  // Liczone razem z nimi nie schodziły nigdy do zera — i baner o brakujących
+  // ciężarach wisiał przez cały cykl w każdym planie z choćby jednym plankiem.
+  const brakuje = widok.doZmierzenia.filter((p) => !p.oneRM && !p.bezSerii);
   $("#pomiary-baner").classList.toggle("ukryty", brakuje.length === 0);
+  $("#pomiary-tresc").textContent = brakuje.length === 1
+    ? "W jednym ćwiczeniu nie znam jeszcze Twojego ciężaru. Wybierz, jak go ustalić."
+    : `W ${brakuje.length} ćwiczeniach nie znam jeszcze Twoich ciężarów. `
+      + "Wybierz, jak je ustalić.";
+  if (!$("#rpe-baner").firstChild) $("#rpe-baner").append(objasnienieRPE());
   const zrobione = widok.tygodnie.flatMap((t) => t.dni).filter((d) => d.ukonczony).length;
   const wszystkie = widok.tygodnie.flatMap((t) => t.dni).length;
   $("#podtytul").textContent = `${zrobione} z ${wszystkie} treningów za Tobą`;
@@ -473,6 +487,81 @@ function rysujModuly() {
   }
 }
 
+// ── dobieranie ciężaru według RPE ──────────────────────────────────
+//
+// Druga droga na start cyklu: bez serii maksymalnych. Klient bierze się od
+// razu za trening, dobiera ciężar tak, żeby zgadzał się z RPE z planu, i wpisuje
+// serię — serwer liczy z niej 1RM, a z niego resztę planu (`kalibracja.ts`).
+//
+// Cała ta droga stoi na jednym warunku: klient musi wiedzieć, co znaczy
+// „RPE 8". Stąd objaśnienie przy każdym miejscu, w którym ma dobrać ciężar —
+// zwinięte, bo po pierwszym treningu nikt go już nie potrzebuje.
+
+/**
+ * Ile powtórzeń w zapasie przy danym RPE: 8 → „2", 7,5 → „2–3".
+ * To definicja skali, nie reguła planu — dlatego może stać w telefonie.
+ */
+const wZapasie = (rpe) => {
+  const z = 10 - rpe;
+  return Number.isInteger(z) ? String(z) : `${Math.floor(z)}–${Math.ceil(z)}`;
+};
+
+/** Jedno zdanie: jaki ciężar wziąć, żeby zgadzał się z planem. */
+function jakDobrac(powtorzenia, rpe) {
+  if (rpe >= 10) return `Weź taki ciężar, żeby ${powtorzenia}. powtórzenie było ostatnim, `
+    + "jakie zrobisz czysto.";
+  return `Weź taki ciężar, żeby po ${powtorzenia}. powtórzeniu mieć jeszcze `
+    + `${wZapasie(rpe)} w zapasie.`;
+}
+
+/** „Co to jest RPE?" — zwinięte objaśnienie skali. */
+function objasnienieRPE() {
+  const d = el("details", "rpe");
+  d.append(el("summary", "", "Co to jest RPE?"));
+  d.append(el("p", "", "RPE mówi, jak ciężka ma być seria. Najprościej liczyć, "
+    + "ile powtórzeń zostaje Ci w zapasie — ile jeszcze zrobiłbyś czysto, "
+    + "gdybyś nie przerwał."));
+  const tabela = el("div", "rpe-tabela");
+  for (const [rpe, opis] of [
+    ["10", "nic w zapasie — więcej się nie da"],
+    ["9", "1 w zapasie"],
+    ["8", "2 w zapasie"],
+    ["7", "3 w zapasie"],
+    ["6", "4 i więcej"],
+  ]) {
+    tabela.append(el("span", "rpe-liczba", `RPE ${rpe}`), el("span", "", opis));
+  }
+  d.append(tabela);
+  d.append(el("p", "", "Połówki leżą pomiędzy: RPE 7,5 to 2–3 w zapasie."));
+  d.append(el("p", "", "Przykład: „8 powt. · RPE 8” — ciężar, przy którym po ósmym "
+    + "powtórzeniu czujesz, że dwa kolejne jeszcze byś zrobił. Wyszło za lekko? "
+    + "Dołóż w następnej serii i wpisz ją — policzę od nowa."));
+  return d;
+}
+
+/** Dla ćwiczenia bez ciężaru: jak go dobrać i co się stanie z wpisaną serią. */
+function wskazowkaDoboru(c) {
+  const blok = el("div", "dobor");
+  blok.append(el("p", "", `${jakDobrac(c.powtorzenia, c.rpe)} `
+    + "Wpisz, co podniosłeś — z tej serii policzę Twoje ciężary na cały plan."));
+  blok.append(objasnienieRPE());
+  return blok;
+}
+
+/** Skąd się wziął ciężar — w tym treningu, w którym go policzyliśmy. */
+const notkaKalibracji = (k) => el("p", "kalibracja",
+  `✓ Policzone z Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia} `
+  + `przy RPE ${liczba(k.rpe)}`);
+
+/** Pierwszy trening, którego klient jeszcze nie zrobił — tam prowadzi „zacznij od razu". */
+function pierwszyNiezrobiony() {
+  for (const t of widok.tygodnie) {
+    const d = t.dni.find((x) => !x.ukonczony);
+    if (d) return { tydzien: t.tydzien, dzien: d.dzien };
+  }
+  return null;
+}
+
 function rysujTygodnie() {
   const kontener = $("#tygodnie");
   kontener.replaceChildren();
@@ -521,9 +610,11 @@ function rysujTrening() {
     const wiersz = el("div", "wiersz");
     wiersz.append(el("span", "", d.topSet.cwiczenie.nazwa));
     wiersz.append(el("span", "ciezar", typeof d.topSet.ciezar === "number"
-      ? `${liczba(d.topSet.ciezar)} kg` : String(d.topSet.ciezar || "—")));
+      ? `${liczba(d.topSet.ciezar)} kg`
+      : d.topSet.ciezar === "— brak 1RM" ? "dobierz" : String(d.topSet.ciezar || "—")));
     top.append(wiersz);
     top.append(el("div", "drobne", `1 powtórzenie · RPE ${liczba(d.topSet.rpe)}`));
+    if (d.topSet.ciezar === "— brak 1RM") top.append(el("div", "drobne", jakDobrac(1, d.topSet.rpe)));
   } else {
     top.classList.add("ukryty");
   }
@@ -549,12 +640,18 @@ function rysujTrening() {
     const zadanie = el("div", "zadanie");
     if (typeof c.ciezar === "number") {
       zadanie.append(el("span", "ciezar", `${liczba(c.ciezar)} kg`));
+    } else if (c.dobierzCiezar) {
+      // Zamiast „— brak 1RM", które brzmiało jak awaria: zaproszenie do
+      // dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
+      zadanie.append(el("span", "dobierz", "dobierz ciężar"));
     } else {
       zadanie.append(el("span", "brak", String(c.ciezar || "—")));
     }
     zadanie.append(el("span", "schemat", `${c.serie} × ${c.powtorzenia} · RPE ${liczba(c.rpe)}`));
     if (c.jednostronne) zadanie.append(el("span", "na-strone", "na stronę"));
     karta.append(zadanie);
+    if (c.dobierzCiezar) karta.append(wskazowkaDoboru(c));
+    if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
     const oceny = el("div", "oceny");
     for (const [wartosc, etykieta, klasa] of [
@@ -621,7 +718,9 @@ function polaWykonania(c) {
   }
 
   const maDane = c.ciezarWykonany != null || c.powtorzeniaWykonane != null;
-  const otwarte = maDane || otwarteWykonania.has(c.positionId);
+  // Przy ćwiczeniu bez ciężaru pola są od razu na wierzchu: tu wpisana seria
+  // nie jest dodatkiem, tylko jedynym źródłem ciężarów na cały plan.
+  const otwarte = maDane || otwarteWykonania.has(c.positionId) || c.dobierzCiezar;
 
   const przelacz = el("button", "wykonanie-przelacz",
     maDane ? "✎ zmień, co poszło" : "+ zapisz, co poszło");
@@ -858,10 +957,12 @@ function panelTopSetu(k, kroki) {
   karta.append(el("div", "etykieta", "TOP SET"));
   karta.append(gloweczka("", k.nazwa, null));
   const zadanie = el("div", "panel-zadanie");
-  zadanie.append(el("span", "duzy", typeof k.ciezar === "number"
-    ? `${liczba(k.ciezar)} kg` : String(k.ciezar || "—")));
+  const bezCiezaru = k.ciezar === "— brak 1RM";
+  zadanie.append(el("span", `duzy ${bezCiezaru ? "dobierz" : ""}`, typeof k.ciezar === "number"
+    ? `${liczba(k.ciezar)} kg` : bezCiezaru ? "Dobierz ciężar" : String(k.ciezar || "—")));
   zadanie.append(el("span", "obok", `1 powtórzenie · RPE ${liczba(k.rpe)}`));
   karta.append(zadanie);
+  if (bezCiezaru) karta.append(el("p", "dobor", jakDobrac(1, k.rpe)));
   karta.append(el("p", "drobne",
     "Jedno ciężkie powtórzenie przed pracą. Wyniku nie wpisujesz — "
     + "to sprawdzian dnia, nie pomiar."));
@@ -891,11 +992,14 @@ function panelSerii(k, kroki, d) {
     `Seria ${k.seria} z ${k.zSerii}${k.wGrupie ? ` · superseria ${k.litera}` : ""}`));
 
   const zadanie = el("div", "panel-zadanie");
-  zadanie.append(el("span", "duzy", typeof c.ciezar === "number"
-    ? `${liczba(c.ciezar)} kg` : String(c.ciezar || "—")));
+  zadanie.append(el("span", `duzy ${c.dobierzCiezar ? "dobierz" : ""}`,
+    typeof c.ciezar === "number" ? `${liczba(c.ciezar)} kg`
+      : c.dobierzCiezar ? "Dobierz ciężar" : String(c.ciezar || "—")));
   zadanie.append(el("span", "obok",
     `${c.powtorzenia} powt. · RPE ${liczba(c.rpe)}${c.jednostronne ? " · na stronę" : ""}`));
   karta.append(zadanie);
+  if (c.dobierzCiezar) karta.append(wskazowkaDoboru(c));
+  if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
   // Co już poszło w tym treningu przy tym ćwiczeniu.
   const wpisane = serieCwiczenia(c.positionId).filter(Boolean);
@@ -1196,6 +1300,15 @@ function rysujPomiary() {
       continue;
     }
 
+    // 1RM policzone z serii roboczej. Pola zostają puste — wpisana tu seria
+    // maksymalna zastąpi to wyliczenie, i klient ma to wiedzieć, zanim wpisze.
+    if (p.kalibracja) {
+      karta.append(el("p", "powod",
+        `Policzone z Twojej serii na treningu: ${liczba(p.kalibracja.ciezar)} kg × `
+        + `${p.kalibracja.powtorzenia} przy RPE ${liczba(p.kalibracja.rpe)}. `
+        + "Seria maksymalna wpisana niżej zastąpi to wyliczenie."));
+    }
+
     karta.append(naglowki.cloneNode(true));
 
     const pola = el("div", "pola");
@@ -1224,6 +1337,11 @@ function rysujPomiary() {
       const ciezar = Number(wCiezar.value) || 0;
       const powtorzenia = Number(wPowt.value) || 0;
       if (ciezar === (p.ciezar ?? 0) && powtorzenia === (p.powtorzenia ?? 0)) return;
+      // Seria liczy się tylko w komplecie. Połowa pary kasowała na serwerze
+      // poprzedni wpis, zanim klient zdążył dopisać drugie pole — a przy
+      // ćwiczeniu policzonym z serii roboczej znaczyło to utratę 1RM
+      // i ciężarów w całym planie. Oba pola puste to świadome wyczyszczenie.
+      if ((ciezar > 0) !== (powtorzenia > 0)) return;
       await wyslij("/serie", { cwiczenieId: p.cwiczenieId, ciezar, powtorzenia }, () => {
         p.ciezar = ciezar || null;
         p.powtorzenia = powtorzenia || null;
@@ -1318,6 +1436,14 @@ $("#wroc-z-pomiarow").onclick = wroc;
 $("#wroc-z-modulow").onclick = wroc;
 $("#wroc-z-postepu").onclick = wroc;
 $("#do-pomiarow").onclick = () => otworz("#ekran-pomiary");
+// Prosto w prowadzenie — tam każda seria ma własny panel z objaśnieniem, jak
+// dobrać ciężar, a tego właśnie potrzebuje ktoś, kto zaczyna bez 1RM.
+$("#od-razu").onclick = () => {
+  const cel = pierwszyNiezrobiony();
+  if (!cel) return;
+  biezacy = cel;
+  otworz("#ekran-seria");
+};
 $("#pokaz-pomiary").onclick = () => otworz("#ekran-pomiary");
 $("#pokaz-moduly").onclick = () => otworz("#ekran-moduly");
 $("#pokaz-postep").onclick = () => otworz("#ekran-postep");

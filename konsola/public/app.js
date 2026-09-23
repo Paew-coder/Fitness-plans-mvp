@@ -1773,6 +1773,21 @@ function rysujSerieMax(pelne = false) {
     }
 
     wiersz.append(el("div", "rm", tekst1RM(id)));
+
+    /*
+     * 1RM, którego nikt nie zmierzył serią do odmowy: klient zaczął cykl od
+     * razu i dobrał ciężar według RPE, a z pierwszej serii policzył się plan.
+     * W polach stoi „1RM × 1" — prawda dla silnika i dla arkusza, ale bez tego
+     * zdania wyglądałoby jak seria, której nie było. Nadpisanie pól zamienia
+     * wpis w zwykłą serię maksymalną i zdanie znika.
+     */
+    const k = istniejaca?.kalibracja;
+    if (k) {
+      const bezZera = (n) => liczba(n).replace(",0", "");
+      wiersz.append(el("div", "kalibracja-zrodlo",
+        `z serii roboczej klienta: ${bezZera(k.ciezar)} kg × ${k.powtorzenia} `
+        + `przy RPE ${bezZera(k.rpe)} · T${k.tydzien}, dzień ${RZYMSKIE[k.dzien - 1] ?? k.dzien}`));
+    }
     kontener.append(wiersz);
   }
 }

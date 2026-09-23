@@ -82,7 +82,7 @@ Przerwy zostały wzięte z tamtej aplikacji bez zmian (180 / 120 / 90 / 60 s wg
 `coeff`) — to liczby trenera, nie nasze. Stoją w jednym miejscu:
 [`silnik/src/przerwa.ts`](../silnik/src/przerwa.ts).
 
-### 2. Kalendarz z przesuwaniem treningów
+### 2. Kalendarz z przesuwaniem treningów — ⏸ odłożony 23.09.2026
 
 **Tam:** sekcja „Kalendarz treningów" na `/dashboard`, trzy współpracujące części:
 * **siatka tygodni** — każdy dzień w jednym z trzech stanów: `Trening`,
@@ -118,6 +118,35 @@ i instrukcji: dwie drogi na start plus wyjaśnienie, czym jest RPE.
 
 **Warto:** tak — i to jest najtańsza rzecz z pierwszej trójki, bo matematyka stoi
 gotowa.
+
+**Zrobione 23.09.2026 — z jedną zasadniczą różnicą.** W Base44 pierwsza seria
+ćwiczenia bez max setu była **serią do upadku**: pole podpisane *„Powtórzenia (do
+upadku)"*, podpowiedź *„8–15"*, a 1RM liczone przy RPE 10 (`Ps(ciężar, powt., 10)`
+w pakiecie). Czyli seria maksymalna, tylko przeniesiona do treningu.
+
+U nas klient **robi zwykłą serię roboczą**: dobiera ciężar tak, żeby zgadzał się
+z RPE z planu (przy „8 powt. · RPE 8" — dwa powtórzenia w zapasie), a 1RM liczy się
+z tego RPE. Tak trener opisał to 22.09 i tak jest bezpieczniej: nikt nie idzie do
+upadku na pierwszym treningu, a seria od razu jest treningiem, nie pomiarem.
+
+Co jeszcze inaczej niż tam:
+
+* **Plan zaczyna się tam, gdzie klient.** Z podniesionych 60 kg wychodzi 1RM, z którego
+  silnik w tym samym tygodniu liczy znowu 60 kg — sprawdzone testem dla boju
+  i dla akcesorium. Aplikacja nie poprawia klienta w chwili, w której dopiero się
+  dowiedziała, ile on podnosi.
+* **Ocena nie wchodzi do kalibracji.** „Za łatwe" działa już przez mnożnik adaptacji
+  (podnosi ciężar w kolejnym tygodniu); policzone drugi raz w 1RM dałoby skok,
+  którego nikt nie zaplanował.
+* **Kolejna seria z tego samego treningu poprawia kalibrację** — pierwsza bywa na
+  próbę. Z innego tygodnia już nie: tam serie idą do propozycji dla trenera.
+* **Trener widzi, skąd jest 1RM**: pod wierszem serii maksymalnych stoi *„z serii
+  roboczej klienta: 60 kg × 8 przy RPE 8 · T1, dzień I"*. Prawdziwa seria maksymalna
+  zastępuje wyliczenie w całości.
+
+Szczegóły: [`konsola/kalibracja.ts`](../konsola/kalibracja.ts) (kiedy kalibrować),
+`oneRMzKalibracji` w [`silnik/src/odczyt-1rm.ts`](../silnik/src/odczyt-1rm.ts)
+(z czego liczyć), opis dla klienta w [`klient/README.md`](../klient/README.md#dwie-drogi-na-start).
 
 ### 4. Podgląd planu przy ustawianiu startu
 

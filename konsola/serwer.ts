@@ -31,6 +31,7 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
+import { skalibruj } from "./kalibracja.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
@@ -770,6 +771,14 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     };
   };
 
+  const kalibracjaW = (cwiczenieId: string, positionId: string, tydzien: number) => {
+    const k = zapisany.plan.serieMaksymalne
+      .find((x) => x.cwiczenieId === cwiczenieId)?.kalibracja;
+    return k && k.positionId === positionId && k.tydzien === tydzien
+      ? { ciezar: k.ciezar, powtorzenia: k.powtorzenia, rpe: k.rpe }
+      : null;
+  };
+
   const tygodnie = wynik.tygodnie.map((t) => ({
     tydzien: t.tydzien,
     dni: [...new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien))]
@@ -813,6 +822,14 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             powtorzeniaWykonane:
               wykonanieTegoCwiczenia(s, t.tydzien)?.powtorzeniaWykonane ?? null,
             wczesniej: wczesniejWTymMiejscu(s, t.tydzien),
+            // Ciężaru nie ma, bo nie ma 1RM — klient dobiera go sam według
+            // RPE, a pierwsza wpisana seria policzy resztę. Flaga zamiast
+            // porównywania napisu w telefonie: komunikat silnika może się
+            // kiedyś zmienić, a znaczenie zostaje.
+            dobierzCiezar: s.ciezar === "— brak 1RM",
+            // Seria, z której policzono 1RM — tylko w tym treningu, w którym
+            // to się stało. Klient widzi wtedy, skąd wziął się jego ciężar.
+            kalibracja: kalibracjaW(s.cwiczenie!.id, s.positionId, t.tydzien),
           })),
       })),
   }));
@@ -838,8 +855,15 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
         cwiczenieId: id,
         nazwa: slot?.cwiczenie?.nazwa ?? id,
         film: slot?.cwiczenie?.film ?? null,
-        ciezar: seria?.ciezar ?? null,
-        powtorzenia: seria?.powtorzenia ?? null,
+        // Wpis z kalibracji to `1RM × 1` — prawda dla silnika, ale w polach
+        // serii maksymalnej wyglądałby jak seria, której klient nie zrobił.
+        // Pola zostają puste, a skąd jest 1RM, mówi `kalibracja`.
+        ciezar: seria?.kalibracja ? null : seria?.ciezar ?? null,
+        powtorzenia: seria?.kalibracja ? null : seria?.powtorzenia ?? null,
+        kalibracja: seria?.kalibracja
+          ? { ciezar: seria.kalibracja.ciezar, powtorzenia: seria.kalibracja.powtorzenia,
+              rpe: seria.kalibracja.rpe }
+          : null,
         oneRM: slot?.oneRM || null,
         bezSerii: progresja ? dlaczegoBezSeriiMaksymalnej(progresja) : null,
       };
@@ -1633,6 +1657,12 @@ const serwer = createServer(async (req, res) => {
         }
 
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);
+
+        // Kalibracja pierwszym treningiem: seria przy ćwiczeniu bez 1RM staje
+        // się jego 1RM, a z niego liczy się cały cykl — patrz `kalibracja.ts`.
+        const skalibrowane = skalibruj(cel.plan, wpis, wpis.data);
+        if (skalibrowane) cel.plan.serieMaksymalne = skalibrowane;
+
         return json(res, naEkran(magazyn.zapisz({ ...cel, wykonania })));
       }
 

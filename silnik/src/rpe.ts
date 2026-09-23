@@ -30,6 +30,32 @@ export type SeriaMaksymalna = {
   cwiczenieId: string;
   ciezar: number;
   powtorzenia: number;
+  /**
+   * Obecne, gdy wpis nie jest serią maksymalną, tylko 1RM policzonym z serii
+   * roboczej — patrz `KalibracjaSerii`.
+   */
+  kalibracja?: KalibracjaSerii;
+};
+
+/**
+ * Seria robocza, z której wyszło 1RM, gdy klient zaczął cykl bez serii
+ * maksymalnej i dobrał ciężar sam, według RPE z planu.
+ *
+ * **Silnik tego nie czyta.** Liczy z `ciezar × powtorzenia` wpisu tak samo
+ * jak zawsze — kalibracja zapisuje się tam jako `1RM × 1`, tą samą drogą,
+ * którą trener przyjmuje propozycję 1RM. Ten opis jest dla ludzi: trener
+ * musi widzieć, że to nie była seria do odmowy, i z czego się wzięło.
+ */
+export type KalibracjaSerii = {
+  ciezar: number;
+  powtorzenia: number;
+  /** RPE z planu — przy nim klient dobierał ciężar. */
+  rpe: number;
+  tydzien: number;
+  dzien: number;
+  positionId: string;
+  /** ISO — kiedy klient wpisał tę serię. */
+  data: string;
 };
 
 /**

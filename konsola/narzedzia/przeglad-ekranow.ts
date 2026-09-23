@@ -722,6 +722,39 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     && (await wierszSerii.innerText()).includes("nie z 1RM"),
     (await wierszSerii.innerText()).replace(/\n/g, " "));
 
+  // ── 13d. 1RM policzone z serii roboczej klienta ───────────────────
+  //
+  // Klient zaczął cykl bez serii maksymalnych i dobrał ciężar według RPE;
+  // pierwsza seria ustaliła 1RM. W polach konsoli stoi wtedy „1RM × 1" —
+  // prawda dla silnika i arkusza, ale bez podpisu wyglądałaby jak seria do
+  // odmowy, której nie było. Trener ma widzieć, skąd się wzięła ta liczba.
+  const doKalibracji = await (await fetch(`${ADRES}/api/plany/${PLAN_AKC}`)).json();
+  doKalibracji.zapisany.plan.sloty[1].cwiczenieId = "EX-0016";   // B1. Barbell row, bez 1RM
+  await fetch(`${ADRES}/api/plany/${PLAN_AKC}`, {
+    method: "PUT", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      plan: doKalibracji.zapisany.plan, dataStartu: null, status: "wysłany",
+      zmieniony: doKalibracji.zapisany.zmieniony,
+    }),
+  });
+  const { token: tokenAkc } = await api(`/api/plany/${PLAN_AKC}/link`, "POST");
+  await api(`/api/klient/${tokenAkc}/odczucie`, "POST",
+    { positionId: "D1-S02", tydzien: 1, ciezarWykonany: 60, powtorzeniaWykonane: 8 });
+
+  await s.goto(ADRES, { waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja")
+    .filter({ hasText: "Akcesorium w A1" }).getByRole("button", { name: "Otwórz" }).click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  await s.waitForTimeout(600);
+  const wierszKalibracji = s.locator(".serie-max-wiersz").filter({ hasText: "Barbell row" }).first();
+  const podpisKalibracji = await wierszKalibracji.locator(".kalibracja-zrodlo").innerText()
+    .catch(() => "brak podpisu");
+  sprawdz("trener widzi, że 1RM przyszło z serii roboczej klienta",
+    podpisKalibracji.includes("z serii roboczej klienta") && podpisKalibracji.includes("60 kg × 8"),
+    podpisKalibracji);
+
   // Wracamy na plan, na którym stoi reszta przeglądu — tą samą drogą, którą
   // trener wraca naprawdę. Bez tego kolejne sekcje klikałyby po ekranie planu,
   // który za chwilę kasujemy.

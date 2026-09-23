@@ -85,6 +85,15 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (!jestLiczba(seria.ciezar) || !jestLiczba(seria.powtorzenia)) {
       return `${gdzie}: ciężar i powtórzenia muszą być liczbami`;
     }
+    // Opis kalibracji silnik pomija, ale czytają go oba ekrany. Tekst zamiast
+    // liczby przeszedłby tu bez słowa i wysypał dopiero konsolę u trenera.
+    if (seria.kalibracja != null) {
+      const k = seria.kalibracja;
+      if (!jestObiektem(k) || !jestLiczba(k.ciezar) || !jestLiczba(k.powtorzenia)
+        || !jestLiczba(k.rpe) || !jestLiczba(k.tydzien)) {
+        return `${gdzie}: opis serii, z której policzono 1RM, jest uszkodzony`;
+      }
+    }
   }
 
   // ── TOP SETY ──────────────────────────────────────────────────────

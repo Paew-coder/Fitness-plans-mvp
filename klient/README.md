@@ -65,8 +65,8 @@ kolumna `H` z arkusza, tylko że kciukiem.
 faktyczny ciężar i powtórzenia; kto nie chce, ocenia i idzie dalej. Nic nie jest
 obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
 
-**Serie maksymalne** — na start cyklu. Wpisuje ciężar i powtórzenia, 1RM liczy
-się od razu.
+**Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
+i powtórzenia, 1RM liczy się od razu.
 
 **Twój postęp** — osobny ekran: frekwencja tydzień po tygodniu, waga i to,
 jak rosną ciężary w każdym ćwiczeniu (razem z szacowanym 1RM). Wszystko liczy
@@ -76,6 +76,40 @@ waga, jeden wpis na dzień.
 **Oddech i bieg** — osobny ekran, gdy trener wypełni te moduły w konsoli.
 Dawka oddechowa z testu TWOT i sześć tygodni jednostek biegowych: czas, tempo,
 tętno, szacowany dystans.
+
+## Dwie drogi na start
+
+Gdy w planie są ćwiczenia bez 1RM, nad listą tygodni stoi baner **Skąd wziąć
+ciężary** z dwoma przyciskami:
+
+* **Zacznij trening od razu** — klient dobiera ciężar sam, według RPE z planu.
+  Przy „8 powt. · RPE 8" bierze taki, żeby po ósmym powtórzeniu mieć jeszcze dwa
+  w zapasie. Pierwsza wpisana seria zamienia się w 1RM, a z niego liczy się cały
+  cykl. Przycisk prowadzi prosto w [prowadzenie](#prowadzenie--seria-po-serii),
+  na pierwszy niezrobiony trening.
+* **Najpierw serie maksymalne** — jak dotąd: jedna seria do odmowy na ćwiczenie.
+
+Tam, gdzie ciężaru jeszcze nie ma, zamiast „— brak 1RM" klient widzi **dobierz
+ciężar** i jedno zdanie, jak to zrobić. Pola na wpisanie serii są od razu na
+wierzchu — bo tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.
+Przy każdym takim miejscu jest zwinięte **Co to jest RPE?**: skala w pięciu
+wierszach (RPE 10 — nic w zapasie … RPE 6 — cztery i więcej) i jeden przykład.
+
+Po pierwszej serii następna ma już ciężar — **ten, który klient podniósł**
+(po zaokrągleniu do skoku), z dopiskiem *„✓ Policzone z Twojej serii: 60 kg × 8
+przy RPE 8"*. Pierwsza seria wyszła za lekko? Kolejna z tego samego treningu
+poprawia wyliczenie.
+
+Zasady, które za tym stoją:
+
+* **Kalibruje wyłącznie ćwiczenie bez 1RM.** Gdy 1RM już jest, wpisane serie idą
+  do trenera jako propozycja — zmiana istniejącego 1RM to jego decyzja.
+* **Seria maksymalna wygrywa zawsze.** Wpisana później zastępuje wyliczenie.
+* **Ocena „za łatwe / za trudne" nie wchodzi do wyliczenia** — działa już przez
+  mnożnik i podnosi albo obniża ciężar w kolejnym tygodniu. Policzona dwa razy
+  dałaby skok, którego nikt nie zaplanował.
+* **Trener widzi, skąd jest 1RM.** W konsoli pod wierszem serii maksymalnych:
+  *„z serii roboczej klienta: 60 kg × 8 przy RPE 8 · T1, dzień I"*.
 
 ## Prowadzenie — seria po serii
 
