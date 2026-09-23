@@ -398,3 +398,9 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .wykonanie-naglowek { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
 .wykonanie-opis { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); }
 .wykonanie-opis:empty { display: none; }
+/* Seria bez pary — czego brakuje, żeby policzyć ciężar. */
+.dobor-brakuje { margin: 0 0 .35rem; font-size: .85rem; font-weight: 600; color: var(--latwe); }
+/* „kg" i „powt." w pustym polu — wyraźnie blade, żeby nie udawały liczby. */
+.wykonanie-pola input::placeholder, .panel-pola input::placeholder {
+  color: var(--tekst-blady); opacity: .6;
+}
