@@ -598,3 +598,9 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
   .akcje-modala { flex-wrap: wrap; }
   .akcje-modala button { flex: 1 1 auto; }
 }
+/* Skąd 1RM, gdy nie z serii maksymalnej — przez całą szerokość wiersza,
+   pod polami, tym samym szarym, co powód braku serii. */
+.serie-max-wiersz .kalibracja-zrodlo {
+  grid-column: 1 / -1; font-size: .72rem; line-height: 1.35; color: var(--tekst-blady);
+  border-left: 2px solid var(--uwaga); padding-left: .5rem; margin-top: .1rem;
+}

@@ -357,6 +357,11 @@ naraz, licznik przerwy liczony z `coeff` ćwiczenia, superserie naprzemiennie.
 Miejsce w treningu zostaje w telefonie, więc przerwany trening da się podjąć
 tam, gdzie się skończyło.
 
+Serie maksymalne nie są obowiązkowe. Klient może **zacząć trening od razu**
+i dobrać ciężar według RPE z planu — pierwsza wpisana seria zamienia się w 1RM,
+a z niego liczy się cały cykl. W konsoli widzisz przy takim 1RM, z której serii
+przyszło.
+
 Że ta pętla naprawdę się domyka, sprawdza `npm run przeglad-klienta`: otwiera
 link na ekranie telefonu i przechodzi ją całą — ocena „za łatwe” w pierwszym
 tygodniu podnosi ciężar w drugim z 90 na 95 kg. Szczegóły i uwagi
@@ -391,7 +396,7 @@ którego poprzednie nie umiały złapać.
 
 ```bash
 cd konsola
-npm test                    # 559 testów, bez żadnych narzędzi zewnętrznych
+npm test                    # 572 testy, bez żadnych narzędzi zewnętrznych
 npm run przeglad-ekranow    # klikanie po konsoli w prawdziwej przeglądarce
 npm run przeglad-klienta    # pętla klienta na telefonie, z trybem offline
 npm run sprawdz-kolko       # konsola → arkusz → konsola, wartość po wartości
