@@ -408,7 +408,9 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 /* ── gdzie jestem w treningu ────────────────────────────────────── */
 /* Mapa dnia nad panelem: kafelek na ćwiczenie. Zrobione — zielone z ptaszkiem,
    zaczęte — z zieloną krawędzią, to, przy którym klient stoi — w akcencie. */
-.mapa-dnia { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .8rem; }
+.mapa-dnia { display: flex; flex-wrap: wrap; gap: .45rem .9rem; margin-top: .8rem; }
+/* Jedna litera = jedna superseria: kafelki ciasno obok siebie. */
+.grupa-mapy { display: flex; gap: .25rem; }
 .kafel-mapy {
   font-family: var(--mono); font-size: .78rem; font-weight: 600;
   padding: .35rem .6rem; border-radius: 8px; min-width: 2.6rem;
