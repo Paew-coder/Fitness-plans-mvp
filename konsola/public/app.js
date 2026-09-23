@@ -273,10 +273,14 @@ function sygnalAktywnosci(r) {
   const opis = dni === 0 ? "dziś" : dni === 1 ? "wczoraj" : `${dni} dni temu`;
   const klasa = dni <= 3 ? "aktywny" : dni <= 10 ? "zwolnil" : "stanal";
   const znak = { aktywny: "●", zwolnil: "●", stanal: "▲" }[klasa];
-  const licznik = r.rozpoczetych
-    ? `${r.ukonczonych}+${r.rozpoczetych}/${r.zaplanowanych}`
-    : `${r.ukonczonych}/${r.zaplanowanych}`;
-  const s = el("span", `sygnal ${klasa}`, `${znak} ${licznik} · ${opis}`);
+  // Słowami, nie „2+1/12": objaśnienie tego zapisu stało tylko w dymku po
+  // najechaniu myszą, a na iPadzie dymków nie ma.
+  const zaczete = r.rozpoczetych
+    ? ` + ${r.rozpoczetych} ${odmiana(r.rozpoczetych, ["zaczęty", "zaczęte", "zaczętych"])}`
+    : "";
+  const rada = klasa === "stanal" ? " — zapytaj, co się dzieje" : "";
+  const s = el("span", `sygnal ${klasa}`,
+    `${znak} treningi: ${r.ukonczonych} z ${r.zaplanowanych}${zaczete} · ${opis}${rada}`);
   s.title = klasa === "stanal"
     ? "Ponad 10 dni bez treningu — warto zapytać, co się dzieje"
     : r.rozpoczetych
@@ -320,6 +324,11 @@ function rysujCykle(plany) {
     lista.append(el("p", "wskazowka", "Ten klient nie ma jeszcze żadnego cyklu."));
     return;
   }
+
+  // Co robią przyciski przy cyklu — dotąd tylko w dymku „Nowej wersji".
+  lista.append(el("p", "wskazowka",
+    "„Otwórz” — edycja tego cyklu. „Nowa wersja” — kolejny cykl z tym samym "
+    + "doborem ćwiczeń, połączony z tym."));
 
   // Najnowszy na górze — tam trener pracuje.
   for (const p of [...plany].reverse()) {
@@ -996,11 +1005,20 @@ function rysujRealizacje() {
     }
     wiersz.append(kropki);
     const podpis = t.rozpoczetych
-      ? `${t.ukonczonych}+${t.rozpoczetych}/${t.zDnia}`
-      : `${t.ukonczonych}/${t.zDnia}`;
+      ? `${t.ukonczonych} z ${t.zDnia} + ${t.rozpoczetych} ${odmiana(t.rozpoczetych, ["zaczęty", "zaczęte", "zaczętych"])}`
+      : `${t.ukonczonych} z ${t.zDnia}`;
     wiersz.append(el("span", "wartosc", podpis));
     kontener.append(wiersz);
   }
+
+  // Legenda kropek — dotąd w dymku każdej z nich, czyli na iPadzie nigdzie.
+  const legenda = el("p", "wskazowka legenda-kropek");
+  legenda.append(
+    el("span", "kropka zrobiona", "●"), document.createTextNode(" domknięty  "),
+    el("span", "kropka zaczeta", "●"), document.createTextNode(" zaczęty, bez „Zakończ trening”  "),
+    el("span", "kropka", "●"), document.createTextNode(" jeszcze nie"),
+  );
+  kontener.append(legenda);
 
   if (r.rozpoczetych) {
     kontener.append(el("p", "wskazowka",
@@ -1034,9 +1052,51 @@ function slotWyliczony(positionId) {
   return obraz.wynik.tygodnie[tydzien - 1].sloty.find((s) => s.positionId === positionId);
 }
 
+/**
+ * Legenda znaków w tabeli planu — widoczna, a nie w dymkach.
+ *
+ * Znaczenie przycisków » T R i znaczników TS, RPE, ●, ↔, +5% stało dotąd
+ * wyłącznie w dymkach po najechaniu myszą. Na iPadzie najechania nie ma, więc
+ * nie było go wcale — a trener pracuje na zmianę na laptopie i na iPadzie
+ * i na obu ma czytać ten sam plan tak samo. Zwinięcie legendy zostaje
+ * zapamiętane: kto ją zna, nie musi jej oglądać przy każdym planie.
+ */
+const KLUCZ_LEGENDY = "legenda-planu-zwinieta";
+function legendaPlanu() {
+  const d = el("details", "legenda");
+  let zwinieta = false;
+  try { zwinieta = localStorage.getItem(KLUCZ_LEGENDY) === "1"; } catch { /* bez pamięci */ }
+  d.open = !zwinieta;
+  d.append(el("summary", "", "Legenda znaków w tabeli"));
+  const lista = el("div", "legenda-lista");
+  for (const [znak, opis] of [
+    ["▲ ▼", "przenieś ćwiczenie"],
+    ["»", "skopiuj parametry tego tygodnia na pozostałe"],
+    ["T", "dodaj lub zdejmij TOP SET"],
+    ["R", "licz ciężar akcesorium z RPE"],
+    ["TS", "przy numerze: ćwiczenie ma TOP SET"],
+    ["RPE", "przy numerze: ciężar liczony z RPE"],
+    ["●", "ciężar wpisany na sztywno — wyczyść pole, żeby wrócić do liczonego"],
+    ["↔", "ciężar na stronę"],
+    ["+5%", "korekta z ocen klienta"],
+  ]) {
+    const poz = el("span", "legenda-pozycja");
+    poz.append(el("b", "", znak), document.createTextNode(` ${opis}`));
+    lista.append(poz);
+  }
+  d.append(lista);
+  d.append(el("p", "legenda-dopisek",
+    "Puste pole ciężaru liczy się samo — z 1RM, RPE i ocen klienta."));
+  d.ontoggle = () => {
+    try { localStorage.setItem(KLUCZ_LEGENDY, d.open ? "0" : "1"); } catch { /* bez pamięci */ }
+  };
+  return d;
+}
+
 function rysujDni() {
   const kontener = $("#dni");
   kontener.replaceChildren();
+  kontener.append(legendaPlanu());
   const wyliczonyTydzien = obraz.wynik.tygodnie[tydzien - 1];
 
   for (let dzien = 1; dzien <= 5; dzien++) {
@@ -1273,8 +1333,8 @@ function rysujSlot(slot, pusty) {
     komorkaLp.append(strzalki);
   }
   if (jestTopSetem(slot)) {
-    // Strzałki, „T" i „R" widać dopiero po najechaniu, więc sam przycisk nie
-    // mówi, że TOP SET tu stoi. Znacznik stoi przy Lp. na stałe.
+    // Sam przycisk „T" nie mówi, że TOP SET tu stoi — dopiero ramka po
+    // włączeniu, i to drobna. Znacznik przy Lp. mówi to wprost.
     const znacznik = el("span", "znacznik-topset", "TS");
     znacznik.title = "To ćwiczenie ma TOP SET";
     komorkaLp.append(znacznik);
@@ -1576,9 +1636,12 @@ function komorkaCiezaru(parametry, wyliczony) {
   input.type = "number"; input.step = "0.5"; input.min = "0";
   input.className = "pole-ciezaru";
   input.value = parametry.ciezarOverride ?? "";
+  // Komunikat („— brak 1RM") stał jako podpowiedź w polu na trzy cyfry
+  // i ucinał się do „— bra". Teraz stoi pod polem, w całości.
+  const komunikat = typeof ciezar === "string" && ciezar.startsWith("—") ? ciezar.slice(2) : null;
   input.placeholder = recznie
     ? "ręcznie"
-    : (typeof ciezar === "number" ? liczba(ciezar) : String(ciezar ?? "—"));
+    : (typeof ciezar === "number" ? liczba(ciezar) : komunikat ? "kg" : String(ciezar ?? "—"));
   input.title = parametry.ciezarOverride !== undefined
     ? "Ciężar wpisany ręcznie. Wyczyść pole, żeby wrócić do liczonego."
     : (recznie
@@ -1591,6 +1654,9 @@ function komorkaCiezaru(parametry, wyliczony) {
     zapiszPozniej();
   };
   komorka.append(input);
+  if (komunikat && parametry.ciezarOverride === undefined) {
+    komorka.append(el("div", "komunikat-ciezaru", komunikat));
+  }
 
   if (parametry.ciezarOverride !== undefined) {
     komorka.classList.add("reczny");

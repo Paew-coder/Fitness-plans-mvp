@@ -436,6 +436,40 @@ to, po co się tam zagląda: ćwiczenie, serie, powtórzenia i **ciężar**.
 Zakładki tygodni i pola paska ustawień mają na telefonie wysokość pod palec,
 a nie pod kursor.
 
+## Laptop i iPad — to samo, tak samo
+
+Trener pracuje na zmianę na laptopie i na iPadzie, więc konsola ma na obu
+**wyglądać i działać tak samo**. Do 23.09.2026 tak nie było:
+
+* rozmiary pod palec włączały się tylko poniżej 760 px, czyli na telefonie —
+  iPad (szerokość laptopa) dostawał przyciski przy ćwiczeniu **14×11 px**;
+* znaczenie przycisków `» T R`, znaczników `TS RPE ● ↔ +5%`, licznika
+  „2+1/12" i obu przełączników w pasku ustawień stało **wyłącznie w dymkach**
+  po najechaniu myszą — na iPadzie nie było go wcale;
+* przyciski przy ćwiczeniu na laptopie pokazywały się dopiero po najechaniu,
+  a na iPadzie stały zawsze — to samo miejsce wyglądało inaczej.
+
+Teraz:
+
+* **pod palec na każdym ekranie dotykowym** — o tym decyduje sposób
+  sterowania (`pointer: coarse`), a nie szerokość ekranu;
+* **legenda znaków nad tabelą planu** (zwijana, zapamiętuje stan),
+  objaśnienia pod przełącznikami, legenda kropek w *Realizacji*, a zamiast
+  „2+1/12" — *„● treningi: 2 z 12 + 1 zaczęty · dziś"*;
+* **przyciski przy ćwiczeniu widać zawsze**, na obu urządzeniach, w tym samym
+  układzie dwa na trzy;
+* podświetlenie po najechaniu tylko przy myszce — iPad nie zostawia już
+  przycisku „wciśniętego" po dotknięciu;
+* komunikat „brak 1RM" stoi pod polem ciężaru w całości, zamiast ucinać się
+  w polu do „— bra";
+* panel boczny schodzi pod plan poniżej 1300 px, więc iPad w poziomie mieści
+  całą tabelę; w pionie (jak na telefonie) ustępują kolumny szkielet i stres.
+
+`npm run przeglad-ekranow` przechodzi konsolę na laptopie, na telefonie
+i na iPadzie w pionie i w poziomie — z tymi samymi kontrolami: nic nie wystaje
+poza ekran, żaden cel nie jest mniejszy niż 24 px, w przycisk da się trafić
+palcem, legenda i opis aktywności są widoczne.
+
 ## Odporność serwera
 
 Konsola obsługuje jednego trenera, ale jego klienci wchodzą z zewnątrz — więc

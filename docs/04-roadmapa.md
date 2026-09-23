@@ -484,6 +484,10 @@ Prośba trenera: w panelach ma być możliwość powrotu do ćwiczeń oznaczonyc
 * **Lista dnia**: *▶ Tu jesteś · seria X z Y* z ramką przy bieżącym ćwiczeniu, *✓ zrobione*, *◐ zrobione X z Y serii* — każdy napis wraca do panelu. Przycisk nad listą mówi, dokąd wraca.
 * Stary zapis prowadzenia (sam numer kroku) przelicza się przy wczytaniu na listę zrobionych serii — nikt nie traci zaczętego treningu przez aktualizację.
 
+**21. Konsola tak samo na laptopie i na iPadzie — 23.09.2026.**
+
+Trener pracuje na zmianę na laptopie i na iPadzie. Przegląd konsoli sprawdzał tylko laptop i telefon, więc iPad dostawał wersję dla myszy: przyciski przy ćwiczeniu 14×11 px (rozmiary pod palec włączały się poniżej 760 px) i objaśnienia wyłącznie w dymkach po najechaniu. Teraz rozmiary pod palec zależą od sposobu sterowania (`pointer: coarse`), objaśnienia są widocznym tekstem na obu urządzeniach (legenda nad tabelą, podpowiedzi pod przełącznikami, „treningi: 2 z 12 + 1 zaczęty" zamiast „2+1/12"), a przyciski przy ćwiczeniu widać zawsze i wszędzie w tym samym układzie. Przegląd konsoli dostał dwa nowe ekrany: iPad w pionie i w poziomie. Szczegóły: [`konsola/README.md`](../konsola/README.md#laptop-i-ipad--to-samo-tak-samo).
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
