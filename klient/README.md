@@ -181,9 +181,11 @@ Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej ch
 i pokazuje to samo, tylko naraz.
 
 **Gdzie jestem i jak wrócić.** Nad panelem stoi mapa dnia — kafelek na każde
-ćwiczenie (`TOP  ✓ A1  B1  B2  C1 …`): zrobione na zielono z ptaszkiem, zaczęte
-z zieloną krawędzią, to, przy którym klient stoi — w ramce. Dotknięcie kafelka
-przenosi do ćwiczenia:
+ćwiczenie (`TOP   ✓ A1   B1 B2   C1 C2 …`): zrobione na zielono z ptaszkiem,
+zaczęte z zieloną krawędzią, to, przy którym klient stoi — w ramce. Kafelki
+jednej litery stoją ciasno obok siebie, a między literami jest odstęp — superseria
+widać od razu jako parę, i na wąskim ekranie nie rozdziela się jej na dwie linie.
+Dotknięcie kafelka przenosi do ćwiczenia:
 
 * **do zrobionego** — seria otwiera się z dopiskiem *„Ta seria jest już zrobiona
   — możesz ją poprawić"*, przycisk mówi **Zapisz poprawkę**, a po zapisie klient

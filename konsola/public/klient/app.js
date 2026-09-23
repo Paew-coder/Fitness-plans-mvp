@@ -1263,14 +1263,26 @@ function mapaDnia(d, kroki, zrobione) {
   const tu = kroki[prowadzenie.krok];
   const pozycje = [
     ...(kroki.some((k) => k.typ === "topset")
-      ? [{ etykieta: "TOP", nazwa: "TOP SET", pasuje: (k) => k.typ === "topset" }] : []),
+      ? [{ etykieta: "TOP", nazwa: "TOP SET", grupa: "TOP", pasuje: (k) => k.typ === "topset" }]
+      : []),
     ...d.cwiczenia.map((c) => ({
       etykieta: (c.lp || "").replace(/\.$/, "") || "•",
       nazwa: c.nazwa,
+      // Ćwiczenie bez numeru nie należy do żadnej superserii — stoi osobno.
+      grupa: c.grupa || `bez-${c.positionId}`,
       pasuje: (k) => k.positionId === c.positionId,
     })),
   ];
+  // Kafelki jednej litery stoją ciasno obok siebie, między literami jest
+  // odstęp — B1 B2 to jedna superseria i ma to być widać na pierwszy rzut oka.
+  let grupa = null;
+  let biezacaGrupa = null;
   for (const poz of pozycje) {
+    if (poz.grupa !== biezacaGrupa) {
+      grupa = el("div", "grupa-mapy");
+      mapa.append(grupa);
+      biezacaGrupa = poz.grupa;
+    }
     const jego = kroki.filter(poz.pasuje);
     if (jego.length === 0) continue;
     const ile = jego.filter((k) => zrobione.has(k.klucz)).length;
@@ -1279,8 +1291,10 @@ function mapaDnia(d, kroki, zrobione) {
       `${ile === jego.length ? "✓ " : ""}${poz.etykieta}`);
     b.title = `${poz.nazwa} — zrobione ${ile} z ${jego.length}`;
     b.onclick = () => { przejdzDoCwiczenia(kroki, poz.pasuje); rysujPanel(); };
-    mapa.append(b);
+    grupa.append(b);
   }
+  // Grupa, w której żadne ćwiczenie nie miało kroków, nie zostawia dziury.
+  for (const g of mapa.querySelectorAll(".grupa-mapy:empty")) g.remove();
   return mapa;
 }
 
