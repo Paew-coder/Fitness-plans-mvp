@@ -354,3 +354,38 @@ button { font: inherit; cursor: pointer; }
 .koniec-panel .duzy-znak { font-size: 3rem; color: var(--ok); line-height: 1; }
 .koniec-panel h2 { font-size: 1.15rem; margin: .5rem 0 .2rem; }
 .koniec-panel .pod-panelem { justify-content: center; }
+
+/* ── dobieranie ciężaru według RPE ──────────────────────────────── */
+/* Dwie drogi na start — każda jako przycisk z tytułem i jednym zdaniem,
+   żeby wybór nie wymagał czytania czegokolwiek poza samymi przyciskami. */
+.drogi { display: grid; gap: .55rem; }
+.droga { display: block; text-align: left; width: 100%; padding: .8rem 1rem; }
+.droga-tytul { display: block; font-weight: 600; }
+.droga-opis {
+  display: block; font-size: .8rem; font-weight: 400; line-height: 1.35;
+  margin-top: .2rem; opacity: .85;
+}
+
+.zadanie .dobierz,
+.panel-zadanie .duzy.dobierz { color: var(--latwe); }
+.zadanie .dobierz { font-size: 1.1rem; font-weight: 700; }
+.panel-zadanie .duzy.dobierz { font-size: 1.5rem; }
+
+.dobor { margin-top: .45rem; }
+.dobor p, p.dobor { margin: 0; font-size: .85rem; line-height: 1.4; color: var(--tekst-slaby); }
+
+.kalibracja { margin: .45rem 0 0; font-size: .82rem; color: var(--ok); }
+
+details.rpe { margin-top: .6rem; font-size: .85rem; }
+details.rpe summary {
+  cursor: pointer; color: var(--akcent); font-weight: 600; list-style: none;
+}
+details.rpe summary::-webkit-details-marker { display: none; }
+details.rpe summary::before { content: "▸ "; }
+details.rpe[open] summary::before { content: "▾ "; }
+details.rpe p { margin: .5rem 0 0; line-height: 1.45; color: var(--tekst-slaby); }
+.rpe-tabela {
+  display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem;
+  margin-top: .5rem; color: var(--tekst-slaby);
+}
+.rpe-liczba { font-family: var(--mono); font-weight: 700; color: var(--tekst); }

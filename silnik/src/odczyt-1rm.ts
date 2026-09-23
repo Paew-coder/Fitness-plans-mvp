@@ -149,3 +149,29 @@ export function ocenPropozycje(p: Propozycja1RM): OcenaPropozycji {
   }
   return { zaufanie: "wysokie" };
 }
+
+/**
+ * 1RM z pierwszej serii roboczej — kiedy serii maksymalnej nie było.
+ *
+ * Druga droga na start cyklu. Klient nie robi serii do odmowy; bierze się od
+ * razu za trening i sam dobiera ciężar tak, żeby zgadzał się z planem — przy
+ * „8 powt. · RPE 8" taki, który po ósmym powtórzeniu zostawia dwa w zapasie.
+ * Z tej jednej serii wychodzi 1RM, a z niego ciężary na cały cykl.
+ *
+ * **Odczucie tu nie wchodzi — celowo.** `oneRMzSerii` przesuwa RPE o ocenę,
+ * bo służy propozycji na kolejny cykl, gdzie mnożnik adaptacji startuje od
+ * zera. W bieżącym cyklu ocena działa już przez mnożnik: „za łatwe" w T1
+ * podnosi ciężar w T2. Gdyby podniosła też 1RM, ta sama ocena liczyłaby się
+ * podwójnie i klient dostałby w T2 skok, którego nikt nie zaplanował.
+ *
+ * Bez odczucia wychodzi rzecz, której łatwo sprawdzić: ciężar, który silnik
+ * policzy z tego 1RM w tygodniu kalibracji, to ciężar, który klient podniósł
+ * (po zaokrągleniu do skoku) — plan zaczyna się dokładnie tam, gdzie klient.
+ *
+ * `null`, gdy tabela nie ma takiej pary (powtórzenia poza 1–15, RPE poza 6–10).
+ */
+export function oneRMzKalibracji(
+  ciezar: number, powtorzenia: number, rpePlanowane: number,
+): number | null {
+  return oneRMzSerii({ ciezar, powtorzenia, rpePlanowane, feedback: null })?.oneRM ?? null;
+}

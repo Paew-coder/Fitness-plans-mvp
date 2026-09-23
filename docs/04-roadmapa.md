@@ -428,6 +428,24 @@ Trzy rzeczy zrobione **inaczej niż w Base44**, bo trener uprzedził, że tamta 
 
 Do zrobienia zostaje reszta listy z punktu 05, po kolei: kalendarz z przesuwaniem treningów (2), kalibracja pierwszym treningiem (3), podgląd planu przy ustawianiu startu (4), historia ćwiczenia w panelu (5), rozgrzewka jako pozycja planu (6).
 
+**15. Kalendarz odłożony, kalibracja pierwszym treningiem zrobiona — 23.09.2026.**
+
+**Kalendarz (punkt 2 z listy 05) — odłożony decyzją trenera:** *„pomińmy narazie kalendarz. Wrócimy do tego pomysłu jak przyjdzie na to czas"*. Powody: w Base44 kalendarz nadrabiał brak trenera, a u nas pytanie „czy klient nadąża" ma już odpowiedź w panelu „wymaga uwagi" (`stanął`, `nie zaczął`); plan siłowy jest sekwencją, nie terminarzem, więc daty przy treningach produkują „Pominięty" tam, gdzie nie ma błędu; to najdroższa pozycja listy — jedyna, która rusza model danych. Wrócić do niego, gdy żywy klient się pogubi albo trener zacznie prowadzić kilkunastu naraz — i wtedy razem z przypomnieniami, bo kalendarz bez nich to połowa funkcji.
+
+**Kalibracja pierwszym treningiem (punkt 3) — zrobiona.** Klient bez serii maksymalnych może zacząć od razu: dobiera ciężar według RPE z planu, a pierwsza wpisana seria staje się 1RM ćwiczenia i z niego liczy się cały cykl. Opis dla klienta: [`klient/README.md`](../klient/README.md#dwie-drogi-na-start); różnica wobec Base44 (tam pierwsza seria szła do upadku, u nas jest zwykłą serią roboczą na RPE z planu): [`05-base44-co-przeniesc.md`](05-base44-co-przeniesc.md).
+
+Trzy braki wymienione w punkcie 13 są zamknięte: pola na ciężar są od razu na wierzchu, gdy ciężaru nie ma; zamiast `— brak 1RM` stoi „dobierz ciężar" z jednym zdaniem jak; dwie drogi na start i objaśnienie RPE są w banerze i przy każdym ćwiczeniu do dobrania.
+
+Nowe: `konsola/kalibracja.ts`, `oneRMzKalibracji` w `silnik/src/odczyt-1rm.ts`, opcjonalne pole `kalibracja` przy wpisie serii maksymalnej (silnik go nie czyta — wpis ma postać `1RM × 1`, tę samą co przyjęta propozycja, więc arkusz i eksport działają bez zmian). Testy: `konsola/testy/kalibracja.test.ts`, trzy w `api-klienta.test.ts`, sekcja 23 w `przeglad-klienta`, sekcja 13d w `przeglad-ekranow`.
+
+Przy okazji trzy błędy, każdy złapany przejściem w przeglądarce:
+
+* **Baner „brakuje ciężarów" nie znikał nigdy w planie z ćwiczeniem na masie ciała.** Liczył je do brakujących, a one 1RM nie dostaną z definicji. Wprowadzone 21.09, kiedy takie ćwiczenia zostały na liście pomiarów.
+* **Lista tygodni i ekran serii maksymalnych nie odświeżały się po powrocie z treningu.** Zapis z treningu idzie bez przerysowania (klient pisze), więc baner wisiał, choć 1RM już był. Dotyczyło też zapisu z listy.
+* **Wpisanie samego ciężaru serii maksymalnej, bez powtórzeń, kasowało na serwerze poprzedni wpis** — zanim klient dopisał drugie pole. Przy kalibracji znaczyłoby to utratę 1RM i ciężarów w całym planie. Teraz seria idzie do serwera tylko w komplecie.
+
+Następne z listy 05: podgląd planu przy ustawianiu startu (4), historia ćwiczenia w panelu (5), rozgrzewka jako pozycja planu (6).
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
