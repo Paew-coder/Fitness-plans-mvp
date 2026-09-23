@@ -70,14 +70,18 @@ linijce** — *Zrobione: 80 · 90 · 85 · 80 kg × 6*, a przy różnych powtór
 *80×6 · 90×6 · 85×5* — i obok **✎ edytuj**. To zapis, nie formularz do
 wypełnienia; edycja służy do poprawienia literówki (100 zamiast 10 poszłoby
 prosto do propozycji 1RM) i do dopisania serii przez kogoś, kto trenuje z listy,
-a nie z prowadzenia. Rozwinięte daje wiersz na serię, odsłaniane po jednym.
+a nie z prowadzenia. Rozwinięte daje wiersz na każdą serię z planu — przy trzech
+seriach trzy wiersze.
 
 **Liczba, którą widać w polu, to liczba, która się zapisze.** W prowadzeniu pola
 stoją od razu z prawdziwymi liczbami — poprzednia seria, a przy pierwszej plan —
-i klient zmienia tylko to, co było inaczej. Na liście puste pole z szarą
-podpowiedzią liczy się jak ta podpowiedź. Zgłoszone z testów: przy „9 kg · 10
-powt." wpisane samo „11" zapisywało się jako 11 powtórzeń bez ciężaru, choć na
-ekranie stało 9.
+i klient zmienia tylko to, co było inaczej, a zatwierdza przyciskiem. Na liście
+nie ma żadnych szarych liczb: puste pole jest puste („kg", „powt."). Zgłoszone
+z testów: podpowiedzi nie dało się odróżnić od wpisanych liczb — jedna niepełna
+seria („18 kg" bez powtórzeń) i pusty wiersz z podpowiedziami 18 × 8 wyglądały
+jak dwie zapisane serie. Niepełna seria przy ćwiczeniu, w którym klient dobiera
+ciężar, dostaje zdanie, czego brakuje („Dopisz powtórzenia — bez nich nie
+policzę ciężaru"). Niewpisana seria w środku pokazuje się jako „—".
 
 **Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
 i powtórzenia, 1RM liczy się od razu.
@@ -225,6 +229,13 @@ zdążył się pobrać.
 > Sprawdzone po naprawie: pierwsze wejście z zasięgiem, potem tryb samolotowy —
 > aplikacja otwiera się, pokazuje plan i historię przez cykle.
 
+
+**Słaby zasięg nie gubi serii.** Zapisy idą po kolei, a widok z serwera telefon
+przyjmuje dopiero wtedy, gdy kolejka jest pusta. Wcześniej przyjmował odpowiedź
+na każdy zapis — a ta niesie stan sprzed zapisów czekających za nim. Gdy zasięg
+gasł w połowie kolejki, telefon zostawał z widokiem bez serii wpisanej przed
+chwilą, a kolejna seria tego ćwiczenia zapisywała się na starej liście
+i poprzednia przepadała.
 ## Postęp przez wszystkie cykle — sprawdzony na dwóch
 
 Blok „Przez wszystkie cykle" pojawia się dopiero od drugiego cyklu, więc

@@ -469,6 +469,11 @@ Moduł: `konsola/serie-wykonane.ts`. Testy: `serie-wykonane.test.ts`, pięć w `
 * Lista po treningu pokazuje *Zrobione: …* i osobno **✎ edytuj** zamiast formularza na wierzchu. Pytanie trenera „po co tam edycja": do poprawienia literówki, która poszłaby prosto do 1RM, i dla klientów trenujących z listy, bez prowadzenia.
 * Drugi zrzut trenera („✎ zmień, co poszło" z jedną parą pól) pokazywał wersję sprzed punktu 17 — serwer albo telefon nie miały jeszcze aktualizacji.
 
+**19. Na liście żadnych szarych liczb; słaby zasięg nie gubi serii — 23.09.2026.**
+
+* Pytanie trenera: „dlaczego przy B2 są zapisane 2 serie, skoro w ćwiczeniu są 3?". Zapisana była **jedna**, niepełna („18 kg" bez powtórzeń). Drugi wiersz był pustym wierszem na następną serię z szarymi podpowiedziami 18 × 8 — nie do odróżnienia od wpisanych. Podpowiedzi z listy zniknęły (zostały w prowadzeniu, gdzie zatwierdza się je przyciskiem), wierszy jest tyle, ile serii w planie, niepełna seria przy dobieraniu ciężaru mówi, czego brakuje, a dziura w środku pokazuje się jako „—" (także w konsoli).
+* **Kolejka przyjmowała widok z odpowiedzi na każdy zapis**, także gdy za nim czekały kolejne. Przy zasięgu gasnącym w połowie kolejki telefon zostawał z widokiem bez serii wpisanej przed chwilą — i następna seria tego ćwiczenia zapisywała się na starej liście, gubiąc poprzednią. Teraz widok z serwera przychodzi dopiero po opróżnieniu kolejki. Sekcja 24 przeglądu klienta odtwarza to zerwanym połączeniem; ze starą regułą kontrola czerwienieje.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.

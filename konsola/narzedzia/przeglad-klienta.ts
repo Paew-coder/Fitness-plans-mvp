@@ -1010,28 +1010,35 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const kartaPrzysiadu = () => s.locator('#cwiczenia [data-position="D1-S03"]');
   sprawdz("na liście ćwiczenie bez ciężaru ma instrukcję i pola na wierzchu",
     (await kartaPrzysiadu().innerText()).includes("Weź taki ciężar")
-    && await kartaPrzysiadu().locator(".wykonanie-pola:not(.ukryty) input").count() === 2,
+    && await kartaPrzysiadu().locator(".wykonanie-pola:not(.ukryty) input").count() > 0,
     (await kartaPrzysiadu().innerText()).replace(/\n/g, " ").slice(0, 80));
   const przysiad = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia
     .find((c: any) => c.positionId === "D1-S03");
-  sprawdz("bez wpisów jeden wiersz, a nie formularz na wszystkie serie",
-    await kartaPrzysiadu().locator(".wiersz-serii").count() === 1,
+  // Wiersz na każdą serię z planu i żadnych szarych liczb w polach. Zgłoszone
+  // z testów: niepełna seria i pusty wiersz z podpowiedziami wyglądały jak dwie
+  // zapisane serie przy trzech w planie.
+  sprawdz("wierszy tyle, ile serii w planie",
+    await kartaPrzysiadu().locator(".wiersz-serii").count() === przysiad.serie,
     `${await kartaPrzysiadu().locator(".wiersz-serii").count()} wierszy przy ${przysiad.serie} seriach`);
-  // Sam ciężar — powtórzenia zostają w szarej podpowiedzi. Liczba, którą
-  // widać w polu, to liczba, która się zapisze.
+  const podpowiedzi = await kartaPrzysiadu().locator(".wiersz-serii input")
+    .evaluateAll((pola) => pola.map((p) => (p as HTMLInputElement).placeholder));
+  sprawdz("puste pole nie udaje liczby",
+    podpowiedzi.every((p) => !/\d/.test(p)), podpowiedzi.join(" "));
+
+  // Sam ciężar, bez powtórzeń — tak, jak wyszło na planie Marka X przy B2.
+  // Seria ma być widać jako niepełną i ma być powiedziane, czego brakuje.
   const polaPrzysiadu = kartaPrzysiadu().locator(".wykonanie-pola input");
   await polaPrzysiadu.nth(0).fill("80");
   await polaPrzysiadu.nth(0).blur();
+  await s.waitForTimeout(700);
+  const polowka = await kartaPrzysiadu().innerText();
+  sprawdz("seria bez powtórzeń jest widać jako niepełna",
+    polowka.includes("Zrobione: 80 kg") && polowka.includes("Dopisz powtórzenia"),
+    polowka.replace(/\n/g, " ").slice(0, 120));
+
+  await polaPrzysiadu.nth(1).fill(String(przysiad.powtorzenia));
+  await polaPrzysiadu.nth(1).blur();
   await s.waitForTimeout(800);
-  const przysiadPoWpisie = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia
-    .find((c: any) => c.positionId === "D1-S03");
-  sprawdz("wpisany sam ciężar bierze powtórzenia, które widać w polu",
-    JSON.stringify(przysiadPoWpisie.serieWykonane)
-      === JSON.stringify([{ ciezar: 80, powtorzenia: przysiad.powtorzenia }]),
-    JSON.stringify(przysiadPoWpisie.serieWykonane));
-  sprawdz("po wpisaniu serii odsłania się wiersz na następną",
-    await kartaPrzysiadu().locator(".wiersz-serii").count() === 2,
-    `${await kartaPrzysiadu().locator(".wiersz-serii").count()} wierszy`);
   const poWpisie = await kartaPrzysiadu().innerText();
   sprawdz("po wpisaniu serii na liście instrukcja znika bez wychodzenia z ekranu",
     !poWpisie.includes("Weź taki ciężar") && !poWpisie.includes("dobierz ciężar"),
@@ -1054,6 +1061,73 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("a pola nie udają serii, której nie było",
     await s.locator("#pomiary .pomiar").first().locator("input").first().inputValue() === "",
     await s.locator("#pomiary .pomiar").first().locator("input").first().inputValue());
+
+
+  // ── 24. słaby zasięg nie gubi serii ───────────────────────────────
+  //
+  // Kolejka wysyła zapisy po kolei. Odpowiedź na pierwszy niesie stan sprzed
+  // drugiego — a była przyjmowana jako cały widok, także wtedy, gdy drugi
+  // jeszcze czekał. Gdy drugi nie przeszedł (zasięg zgasł), telefon zostawał
+  // z widokiem bez serii, którą klient właśnie wpisał, a kolejna seria tego
+  // ćwiczenia zapisywała się na tej nieaktualnej liście — i poprzednia
+  // przepadała. Na sali ze słabym zasięgiem: zwykła sytuacja.
+  await s.click("#wroc-z-pomiarow");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+
+  // Zerwane połączenie jest tu celowe — przeglądarka zgłasza je jako błąd
+  // ładowania, a to nie jest awaria aplikacji. Tak samo jak w sekcji 12.
+  const bledyPrzedZasiegiem = bledy.length;
+  let zapisowOdczucia = 0;
+  await s.route("**/odczucie", async (trasa) => {
+    zapisowOdczucia += 1;
+    if (zapisowOdczucia === 1) {                 // pierwszy przechodzi, ale powoli
+      await new Promise((r) => setTimeout(r, 900));
+      return trasa.continue();
+    }
+    return trasa.abort();                        // drugi — zasięg zgasł
+  });
+
+  const kartaWiosla = s.locator('#cwiczenia [data-position="D1-S01"]');
+  const kartaPrzysiaduB2 = s.locator('#cwiczenia [data-position="D1-S03"]');
+  const rozwin = async (karta: typeof kartaWiosla) => {
+    if (await karta.locator(".wykonanie-pola.ukryty").count() > 0) {
+      await karta.locator(".wykonanie-przelacz").click();
+    }
+  };
+  await rozwin(kartaWiosla);
+  const wiosloDruga = kartaWiosla.locator(".wiersz-serii").nth(1).locator("input");
+  await wiosloDruga.nth(0).fill("62.5");
+  await wiosloDruga.nth(1).fill("8");
+  await wiosloDruga.nth(1).blur();
+  await rozwin(kartaPrzysiaduB2);
+  const przysiadDruga = kartaPrzysiaduB2.locator(".wiersz-serii").nth(1).locator("input");
+  await przysiadDruga.nth(0).fill("85");
+  await przysiadDruga.nth(1).fill("6");
+  await przysiadDruga.nth(1).blur();
+  await s.waitForTimeout(1800);
+
+  // Ekran od nowa — z tego, co telefon ma w pamięci.
+  await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const przysiadWPamieci = await kartaPrzysiaduB2.locator(".wykonanie-opis").innerText();
+  sprawdz("seria wpisana bez zasięgu zostaje w telefonie",
+    przysiadWPamieci.includes("85"), przysiadWPamieci);
+
+  await s.unroute("**/odczucie");
+  bledy.splice(bledyPrzedZasiegiem);
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(800);
+  const poZasiegu = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia;
+  const wiosloPoZasiegu = poZasiegu.find((c: any) => c.positionId === "D1-S01").serieWykonane;
+  const przysiadPoZasiegu = poZasiegu.find((c: any) => c.positionId === "D1-S03").serieWykonane;
+  sprawdz("po powrocie zasięgu obie serie są u trenera",
+    wiosloPoZasiegu.length === 2 && wiosloPoZasiegu[1].ciezar === 62.5
+    && przysiadPoZasiegu.length === 2 && przysiadPoZasiegu[1].ciezar === 85,
+    `wiosło ${JSON.stringify(wiosloPoZasiegu)} · przysiad ${JSON.stringify(przysiadPoZasiegu)}`);
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

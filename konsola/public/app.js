@@ -1505,7 +1505,15 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
  */
 function opisSerii(serie) {
   const kg = (n) => liczba(n).replace(",0", "");
-  const s = (serie ?? []).filter((x) => x && (x.ciezar || x.powtorzenia));
+  const pusta = (x) => !x || (!x.ciezar && !x.powtorzenia);
+  const wszystkie = [...(serie ?? [])];
+  while (wszystkie.length > 0 && pusta(wszystkie.at(-1))) wszystkie.pop();
+  const jedna = (x) => (x.ciezar && x.powtorzenia ? `${kg(x.ciezar)}×${x.powtorzenia}`
+    : x.ciezar ? `${kg(x.ciezar)} kg` : `${x.powtorzenia} powt.`);
+  // Dziura w środku zostaje jako „—": „— · 10×10" to niewpisana pierwsza
+  // seria, a nie trening z jedną serią.
+  if (wszystkie.some(pusta)) return wszystkie.map((x) => (pusta(x) ? "—" : jedna(x))).join(" · ");
+  const s = wszystkie;
   if (s.length === 0) return "";
   if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} powt.`;
   const powt = s[0].powtorzenia;
