@@ -755,6 +755,30 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     podpisKalibracji.includes("z serii roboczej klienta") && podpisKalibracji.includes("60 kg × 8"),
     podpisKalibracji);
 
+  // Wszystkie serie klienta pod ciężarem z planu. Do 23.09 trener nie widział
+  // w tabeli, co klient podniósł, a baza trzymała tylko najcięższą serię.
+  // Przykład trenera: plan na 80 kg, klient zrobił 90, potem 85 — samo „90"
+  // mówi co innego niż „90 · 85".
+  await api(`/api/klient/${tokenAkc}/odczucie`, "POST", {
+    positionId: "D1-S02", tydzien: 1,
+    serie: [{ ciezar: 60, powtorzenia: 8 }, { ciezar: 65, powtorzenia: 8 },
+      { ciezar: 62.5, powtorzenia: 7 }],
+  });
+  await s.goto(ADRES, { waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja")
+    .filter({ hasText: "Akcesorium w A1" }).getByRole("button", { name: "Otwórz" }).click();
+  await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+  await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+  await s.waitForTimeout(600);
+  // Po wybranym ćwiczeniu, nie po tekście: każdy wiersz ma listę rozwijaną
+  // ze wszystkimi nazwami z BAZY, więc „wiersz z Barbell row" pasuje do każdego.
+  const zrobione = await s.locator("#dni tr")
+    .filter({ has: s.locator('select option[value="EX-0016"]:checked') }).first()
+    .locator(".zrobione").innerText().catch(() => "brak linijki");
+  sprawdz("trener widzi w tabeli wszystkie serie klienta, nie tylko najcięższą",
+    zrobione.includes("60×8 · 65×8 · 62,5×7"), zrobione);
+
   // Wracamy na plan, na którym stoi reszta przeglądu — tą samą drogą, którą
   // trener wraca naprawdę. Bez tego kolejne sekcje klikałyby po ekranie planu,
   // który za chwilę kasujemy.

@@ -244,6 +244,59 @@ describe("nowy cykl zaczyna od tego, co klient faktycznie podnosił", () => {
   });
 });
 
+describe("wszystkie serie ćwiczenia, nie tylko najcięższa", () => {
+  /**
+   * Przykład trenera z 23.09: plan na 80 kg, klient zrobił 80, 90, 85, 80.
+   * Do bazy trafiało samo „90×6". Teraz trafia wszystko, a najcięższą — tę,
+   * która idzie do 1RM — wylicza serwer.
+   */
+  const serie = [
+    { ciezar: 80, powtorzenia: 6 }, { ciezar: 90, powtorzenia: 6 },
+    { ciezar: 85, powtorzenia: 6 }, { ciezar: 80, powtorzenia: 6 },
+  ];
+  const wpis = async (tydzien: number) => (await api(`/api/plany/${planCyklu2}`)).dane
+    .zapisany.wykonania.find((w: any) => w.positionId === "D1-S01" && w.tydzien === tydzien);
+
+  test("serwer zapisuje wszystkie serie i sam wybiera najcięższą", async () => {
+    const { kod } = await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 2, serie });
+    assert.equal(kod, 200);
+    const w = await wpis(2);
+    assert.deepEqual(w.serie, serie);
+    assert.equal(w.ciezarWykonany, 90, "do 1RM idzie najcięższa");
+    assert.equal(w.powtorzeniaWykonane, 6);
+  });
+
+  test("telefon dostaje je z powrotem przy ćwiczeniu", async () => {
+    const { dane } = await api(`/api/klient/${token}`);
+    assert.deepEqual(dane.tygodnie[1].dni[0].cwiczenia[0].serieWykonane, serie);
+  });
+
+  test("sama ocena nie kasuje wpisanych serii", async () => {
+    await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 2, feedback: "za trudne" });
+    assert.deepEqual((await wpis(2)).serie, serie);
+  });
+
+  test("sama para — z aplikacji sprzed zmiany — zapisuje się jako jedna seria", async () => {
+    await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 3, ciezarWykonany: 92.5, powtorzeniaWykonane: 5 });
+    const w = await wpis(3);
+    assert.deepEqual(w.serie, [{ ciezar: 92.5, powtorzenia: 5 }]);
+    assert.equal(w.ciezarWykonany, 92.5);
+  });
+
+  test("zła lista dostaje odmowę, a nie błąd serwera", async () => {
+    // 400, nie 500: kolejka w telefonie czyta 500 jako „spróbuj później"
+    // i takie zadanie wracałoby w nieskończoność.
+    const { kod, dane } = await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 2, serie: [{ ciezar: 5000, powtorzenia: 6 }] });
+    assert.equal(kod, 400);
+    assert.match(dane.blad, /Seria 1/);
+    assert.deepEqual((await wpis(2)).serie, serie, "odrzucona lista nie może nic zmienić");
+  });
+});
+
 describe("wartości spoza świata", () => {
   /**
    * Klient nie jest przeciwnikiem, ale jest **bez nadzoru**: zamiast 100 kg

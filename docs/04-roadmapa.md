@@ -451,7 +451,16 @@ Następne z listy 05: podgląd planu przy ustawianiu startu (4), historia ćwicz
 * **Instrukcja doboru ciężaru wisiała po wpisaniu serii.** Zapis z listy dnia celowo nie przerysowuje ekranu (żeby nie zamknąć klawiatury w połowie liczby), więc karta zostawała w stanie sprzed wpisu. Teraz instrukcja znika w chwili wpisania pełnej serii, a karta rysuje się od nowa, gdy wróci policzony ciężar. W prowadzeniu ta sama zasada.
 * **Równoległe opróżnianie kolejki offline** — błąd starszy niż kalibracja. Dwa szybkie zapisy (ciężar, a zaraz powtórzenia) wysyłały kolejkę dwa razy naraz; odpowiedź na starszy zapis potrafiła przyjść później i nadpisać świeższy widok. Kontrola z przeglądu klienta łapała to co drugi przebieg. Teraz opróżnianie idzie łańcuchem — po poprawce sześć przebiegów z rzędu bez błędu.
 
-**Otwarte pytanie od trenera:** czy w „co poszło" pokazywać wszystkie serie, a nie tylko najcięższą. Dziś wszystkie serie żyją wyłącznie w telefonie i tylko dla jednego treningu naraz; do bazy idzie jedna para na ćwiczenie i tydzień. Pokazanie wszystkich wymaga zapisywania ich na serwerze (migracja bazy) — rekomendacja w rozmowie z 23.09.
+**17. Wszystkie serie ćwiczenia, nie tylko najcięższa — 23.09.2026.**
+
+Pytanie trenera: czy w „co poszło" pokazywać wszystkie serie, skoro nie chce zasypywać klienta liczbami. Rozstrzygnięcie: **wszystkie, ale w jednej linijce** (`80 · 90 · 85 · 80 kg × 6`). Do tej pory serie żyły wyłącznie w telefonie i tylko dla jednego treningu naraz, a do bazy szła jedna para — najcięższa. Trener widział „90×6" i zakładał 4 × 6 na 90, a klient przy planie na 80 kg zrobił 90, 85, 80: przestrzelił i opadł z sił.
+
+* **Baza, wersja 6:** kolumna `serie_json` przy wykonaniu. Stare wpisy zostają z `NULL` i pokazują się jako jedna seria — rozpisanie ich na wszystkie serie z planu byłoby wymyślaniem liczb.
+* **Serwer** przyjmuje listę serii (`serie`) i sam wylicza z niej najcięższą, która dalej karmi 1RM: propozycje, kalibrację, postęp. Sama para (z aplikacji sprzed zmiany, jeszcze w pamięci telefonu) zapisuje się jako jedna seria.
+* **Telefon:** zwinięte „co poszło" to jedna linijka; rozwinięte — wiersz na serię, odsłaniane po jednym. Prowadzenie zapisuje każdą serię na serwer, więc lista dnia i prowadzenie pokazują to samo, a serie przeżywają zmianę telefonu.
+* **Konsola:** pod ciężarem w tabeli tygodnia linijka *„zrobione: …"* — do tej pory trener nie widział w tabeli, co klient podniósł, wcale.
+
+Moduł: `konsola/serie-wykonane.ts`. Testy: `serie-wykonane.test.ts`, pięć w `api-klienta.test.ts`, dwa w `migracja.test.ts`, kontrole w obu przeglądach, pięć nowych prób w `sprawdz-odpornosc`.
 
 ## Co jest zrobione tym dokumentem
 

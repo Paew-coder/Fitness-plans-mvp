@@ -1395,7 +1395,10 @@ function rysujSlot(slot, pusty) {
   komorkaRpe.classList.add("rpe");
   wiersz.append(komorkaRpe);
 
-  wiersz.append(komorkaCiezaru(parametry, wyliczony));
+  const komorkaC = komorkaCiezaru(parametry, wyliczony);
+  const zrobione = zrobioneWTygodniu(slot);
+  if (zrobione) komorkaC.append(zrobione);
+  wiersz.append(komorkaC);
 
   const s = wyliczony?.stres;
   wiersz.append(el("td", "stres", s
@@ -1496,6 +1499,45 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
  * Przy ćwiczeniach bez ciężaru (masa ciała, czas, dystans) zostaje sam napis:
  * kilogramy nie mają się tam do czego odnieść.
  */
+/**
+ * Serie w jednej linijce: „80 · 90 · 85 · 80 kg × 6", a przy różnych
+ * powtórzeniach „80×6 · 90×6 · 85×5". Ten sam zapis co w telefonie klienta.
+ */
+function opisSerii(serie) {
+  const kg = (n) => liczba(n).replace(",0", "");
+  const s = (serie ?? []).filter((x) => x && (x.ciezar || x.powtorzenia));
+  if (s.length === 0) return "";
+  if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} powt.`;
+  const powt = s[0].powtorzenia;
+  if (powt && s.every((x) => x.ciezar && x.powtorzenia === powt)) {
+    return `${s.map((x) => kg(x.ciezar)).join(" · ")} kg × ${powt}`;
+  }
+  return s.map((x) => `${x.ciezar ? kg(x.ciezar) : "—"}×${x.powtorzenia ?? "—"}`).join(" · ");
+}
+
+/**
+ * Co klient zrobił przy tym ćwiczeniu w oglądanym tygodniu — wszystkie serie,
+ * pod ciężarem z planu.
+ *
+ * Do 23.09 trener nie widział tego w tabeli wcale, a baza trzymała tylko
+ * najcięższą serię. Przy planie na 80 kg „90 · 85 · 80" mówi coś innego niż
+ * samo „90": klient przestrzelił i opadł z sił. Wpisy sprzed tej zmiany znają
+ * tylko najcięższą parę i tak się pokazują — jako jedna seria.
+ */
+function zrobioneWTygodniu(slot) {
+  const w = (obraz.zapisany.wykonania ?? []).find((x) => x.positionId === slot.positionId
+    && x.tydzien === tydzien && (!x.cwiczenieId || x.cwiczenieId === slot.cwiczenieId));
+  if (!w) return null;
+  const serie = w.serie ?? (w.ciezarWykonany || w.powtorzeniaWykonane
+    ? [{ ciezar: w.ciezarWykonany ?? null, powtorzenia: w.powtorzeniaWykonane ?? null }]
+    : []);
+  const opis = opisSerii(serie);
+  if (!opis) return null;
+  const e = el("div", "zrobione", `zrobione: ${opis}`);
+  e.title = "Serie wpisane przez klienta w tym tygodniu. Do propozycji 1RM idzie najcięższa.";
+  return e;
+}
+
 function komorkaCiezaru(parametry, wyliczony) {
   const ciezar = wyliczony?.ciezar;
   const progresja = wyliczony?.cwiczenie?.progresja;
