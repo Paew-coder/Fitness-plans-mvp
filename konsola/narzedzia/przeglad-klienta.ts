@@ -809,8 +809,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
 
   // Gdzie jestem — mapa dnia nad panelem: A1 zrobione, B1 tu.
-  const kafel = (etykieta: string) =>
-    panel.locator(".kafel-mapy").filter({ hasText: new RegExp(`^(✓ )?${etykieta}$`) });
+  const kafel = (etykieta: string) => panel.locator(`.kafel-mapy[data-lp="${etykieta}"]`);
   sprawdz("mapa dnia pokazuje, co zrobione i przy czym stoisz",
     await kafel("A1").getAttribute("class").then((k) => k?.includes("zrobione"))
     && await kafel("B1").getAttribute("class").then((k) => k?.includes("tu")),
@@ -818,8 +817,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   // Kafelki jednej superserii razem, między literami odstęp: TOP | A1 | B1 B2.
   const grupyMapy = await panel.locator(".grupa-mapy").evaluateAll((grupy) =>
-    grupy.map((g) => [...g.querySelectorAll(".kafel-mapy")]
-      .map((k) => (k.textContent ?? "").replace("✓ ", "")).join(" ")));
+    grupy.map((g) => [...g.querySelectorAll<HTMLElement>(".kafel-mapy")]
+      .map((k) => k.dataset.lp).join(" ")));
   sprawdz("mapa grupuje kafelki po literze superserii",
     JSON.stringify(grupyMapy) === JSON.stringify(["TOP", "A1", "B1 B2"]),
     grupyMapy.join(" | "));
@@ -885,6 +884,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("po B1 wchodzi B2, nie druga seria B1",
     pierwszeWRundzie !== drugieWRundzie,
     `${pierwszeWRundzie} → ${drugieWRundzie}`);
+
+  // Zaczęte ćwiczenie nie może wyglądać jak skończone: licznik zamiast zieleni.
+  const ramka = async (etykieta: string) =>
+    await kafel(etykieta).evaluate((e) => getComputedStyle(e).borderColor);
+  sprawdz("zaczęte ćwiczenie ma licznik i nie jest zielone jak zrobione",
+    (await kafel("B1").innerText()).includes("1/3")
+    && await ramka("B1") !== await ramka("A1"),
+    `B1: „${await kafel("B1").innerText()}" ${await ramka("B1")} · A1: ${await ramka("A1")}`);
 
   // B2 to ćwiczenie na masie ciała — pola na kilogramy nie ma czym wypełnić.
   await s.waitForTimeout(500);

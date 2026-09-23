@@ -756,7 +756,10 @@ function kartaCwiczenia(c, stan = null) {
     } else if (jego.length > 0 && ile === jego.length) {
       karta.append(przyciskStanu("✓ zrobione", false, pasuje));
     } else if (ile > 0) {
-      karta.append(przyciskStanu(`◐ zrobione ${ile} z ${jego.length} serii`, false, pasuje));
+      // Nie „zrobione" i nie na zielono — to słowo i ten kolor znaczą tu koniec.
+      const b = przyciskStanu(`◐ zaczęte · ${ile} z ${jego.length} serii`, false, pasuje);
+      b.classList.add("zaczete");
+      karta.append(b);
     }
   }
 
@@ -1289,6 +1292,10 @@ function mapaDnia(d, kroki, zrobione) {
     const stan = ile === jego.length ? "zrobione" : ile > 0 ? "zaczete" : "";
     const b = el("button", `kafel-mapy ${stan} ${tu && poz.pasuje(tu) ? "tu" : ""}`,
       `${ile === jego.length ? "✓ " : ""}${poz.etykieta}`);
+    b.dataset.lp = poz.etykieta;
+    // Zaczęte — licznik zamiast koloru. Zielona ramka przy „2 z 3" wyglądała
+    // na pierwszy rzut oka jak ćwiczenie skończone (zgłoszone z testów).
+    if (stan === "zaczete") b.append(el("span", "licznik-mapy", ` ${ile}/${jego.length}`));
     b.title = `${poz.nazwa} — zrobione ${ile} z ${jego.length}`;
     b.onclick = () => { przejdzDoCwiczenia(kroki, poz.pasuje); rysujPanel(); };
     grupa.append(b);
