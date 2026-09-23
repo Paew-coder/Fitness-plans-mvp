@@ -180,6 +180,25 @@ widać też na liście dnia i odwrotnie — to te same dane.
 Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej chwili
 i pokazuje to samo, tylko naraz.
 
+**Gdzie jestem i jak wrócić.** Nad panelem stoi mapa dnia — kafelek na każde
+ćwiczenie (`TOP  ✓ A1  B1  B2  C1 …`): zrobione na zielono z ptaszkiem, zaczęte
+z zieloną krawędzią, to, przy którym klient stoi — w ramce. Dotknięcie kafelka
+przenosi do ćwiczenia:
+
+* **do zrobionego** — seria otwiera się z dopiskiem *„Ta seria jest już zrobiona
+  — możesz ją poprawić"*, przycisk mówi **Zapisz poprawkę**, a po zapisie klient
+  wraca tam, gdzie skończył. Bez przerwy: poprawka to zapis, nie kolejna seria.
+  Obok jest *„↩ Wróć do: C1 Incline dumbbell curl · seria 3 z 3"*, gdy nic nie
+  trzeba poprawiać;
+* **do przodu** — maszyna zajęta, więc klient robi najpierw co innego.
+  Przeskoczone ćwiczenie czeka i wraca na końcu, zamiast przepaść.
+
+Na **liście dnia** bieżące ćwiczenie ma ramkę i napis **▶ Tu jesteś · seria 2 z 3**,
+skończone — **✓ zrobione**, zaczęte — *◐ zrobione 1 z 3 serii*. Każdy z tych
+napisów wraca do panelu: „Tu jesteś" dokładnie tam, gdzie klient wyszedł (także
+w trwającą przerwę), pozostałe — do tego ćwiczenia. Przycisk nad listą mówi,
+dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
+
 ## Pętla się domyka
 
 To jest sedno fazy 2. Ocena klienta wraca do silnika i zmienia ciężar
