@@ -705,6 +705,35 @@ function rysujTrening() {
 }
 
 /**
+ * Zadanie serii jako równe kolumny: podpis nad liczbą — CIĘŻAR · POWT. · RPE.
+ *
+ * Wcześniej ciężar stał dużą czcionką, a powtórzenia, serie i RPE drobnym
+ * szarym drukiem obok, i czytały się jak dopisek. Zgłoszone z testów: taki
+ * zapis jest mało czytelny — a na sali powtórzenia są tak samo ważne jak
+ * kilogramy. Ciężar zostaje pierwszy, bo to on idzie na sztangę.
+ */
+function kolumnyZadania({ ciezar, dobierz, serie, powtorzenia, rpe, jednostronne }) {
+  const siatka = el("div", "zadanie-kolumny");
+  const kolumna = (klasa, podpis, wartosc, jednostka, dopisek) => {
+    const k = el("div", `kolumna ${klasa}`);
+    k.append(el("span", "podpis", podpis));
+    const w = el("span", "wartosc", wartosc);
+    if (jednostka) w.append(el("small", "", ` ${jednostka}`));
+    k.append(w);
+    if (dopisek) k.append(el("span", "dopisek", dopisek));
+    siatka.append(k);
+  };
+  if (typeof ciezar === "number") kolumna("kolumna-ciezar", "Ciężar", liczba(ciezar), "kg");
+  else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", "Ciężar", "dobierz");
+  else kolumna("kolumna-ciezar slowo", "Ciężar", String(ciezar || "—"));
+  if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
+  kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
+    null, jednostronne ? "na stronę" : null);
+  kolumna("kolumna-rpe", "RPE", liczba(rpe));
+  return siatka;
+}
+
+/**
  * „▶ Tu jesteś" albo „✓ zrobione" — dotknięcie wraca do panelu prowadzenia.
  * Przy „tu jesteś" dokładnie tam, gdzie klient wyszedł (z trwającą przerwą),
  * przy pozostałych — do tego ćwiczenia.
@@ -763,19 +792,12 @@ function kartaCwiczenia(c, stan = null) {
     }
   }
 
-  const zadanie = el("div", "zadanie");
-  if (typeof c.ciezar === "number") {
-    zadanie.append(el("span", "ciezar", `${liczba(c.ciezar)} kg`));
-  } else if (c.dobierzCiezar) {
-    // Zamiast „— brak 1RM", które brzmiało jak awaria: zaproszenie do
-    // dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
-    zadanie.append(el("span", "dobierz", "dobierz ciężar"));
-  } else {
-    zadanie.append(el("span", "brak", String(c.ciezar || "—")));
-  }
-  zadanie.append(el("span", "schemat", `${c.serie} × ${c.powtorzenia} · RPE ${liczba(c.rpe)}`));
-  if (c.jednostronne) zadanie.append(el("span", "na-strone", "na stronę"));
-  karta.append(zadanie);
+  // Bez 1RM zamiast „— brak 1RM", które brzmiało jak awaria, stoi zaproszenie
+  // do dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
+  karta.append(kolumnyZadania({
+    ciezar: c.ciezar, dobierz: c.dobierzCiezar, serie: c.serie,
+    powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+  }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
@@ -1352,12 +1374,10 @@ function panelTopSetu(k, kroki) {
   const karta = el("div", "panel-karta topset-panel");
   karta.append(el("div", "etykieta", "TOP SET"));
   karta.append(gloweczka("", k.nazwa, null));
-  const zadanie = el("div", "panel-zadanie");
   const bezCiezaru = k.ciezar === "— brak 1RM";
-  zadanie.append(el("span", `duzy ${bezCiezaru ? "dobierz" : ""}`, typeof k.ciezar === "number"
-    ? `${liczba(k.ciezar)} kg` : bezCiezaru ? "Dobierz ciężar" : String(k.ciezar || "—")));
-  zadanie.append(el("span", "obok", `1 powtórzenie · RPE ${liczba(k.rpe)}`));
-  karta.append(zadanie);
+  karta.append(kolumnyZadania({
+    ciezar: k.ciezar, dobierz: bezCiezaru, powtorzenia: 1, rpe: k.rpe,
+  }));
   if (bezCiezaru) karta.append(el("p", "dobor", jakDobrac(1, k.rpe)));
   karta.append(el("p", "drobne",
     "Jedno ciężkie powtórzenie przed pracą. Wyniku nie wpisujesz — "
@@ -1388,13 +1408,10 @@ function panelSerii(k, kroki, d) {
   karta.append(el("div", "seria-numer",
     `Seria ${k.seria} z ${k.zSerii}${k.wGrupie ? ` · superseria ${k.litera}` : ""}`));
 
-  const zadanie = el("div", "panel-zadanie");
-  zadanie.append(el("span", `duzy ${c.dobierzCiezar ? "dobierz" : ""}`,
-    typeof c.ciezar === "number" ? `${liczba(c.ciezar)} kg`
-      : c.dobierzCiezar ? "Dobierz ciężar" : String(c.ciezar || "—")));
-  zadanie.append(el("span", "obok",
-    `${c.powtorzenia} powt. · RPE ${liczba(c.rpe)}${c.jednostronne ? " · na stronę" : ""}`));
-  karta.append(zadanie);
+  karta.append(kolumnyZadania({
+    ciezar: c.ciezar, dobierz: c.dobierzCiezar,
+    powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+  }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 

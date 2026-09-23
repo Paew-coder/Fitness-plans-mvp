@@ -438,3 +438,30 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 }
 .stan-prowadzenia.tu { background: var(--akcent-tlo); color: var(--akcent); border-color: var(--akcent); }
 .stan-prowadzenia.zaczete { background: var(--karta-2); color: var(--tekst-slaby); border-color: var(--linia); }
+
+/* ── zadanie serii: równe kolumny ───────────────────────────────── */
+/* Podpis nad liczbą, wszystkie liczby tą samą wielkością. Duży ciężar obok
+   drobnych powtórzeń czytał się jak ciężar z dopiskiem. */
+.zadanie-kolumny {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .5rem;
+  margin: .6rem 0 .1rem;
+}
+.kolumna { display: flex; flex-direction: column; min-width: 0; }
+.kolumna .podpis {
+  font-family: var(--mono); font-size: .64rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tekst-blady);
+}
+.kolumna .wartosc {
+  font-family: var(--mono); font-weight: 700; font-size: 1.35rem;
+  letter-spacing: -.02em; line-height: 1.2; white-space: nowrap;
+}
+.kolumna .wartosc small { font-size: .62em; font-weight: 600; color: var(--tekst-slaby); }
+.kolumna .dopisek { font-size: .72rem; color: var(--akcent); }
+/* Słowo zamiast liczby — „masa ciała", „dobierz" — mniejsze, żeby się mieściło. */
+.kolumna.slowo .wartosc { font-size: .95rem; white-space: normal; padding-top: .2rem; }
+.kolumna.dobierz .wartosc { color: var(--latwe); }
+/* W panelu te same kolumny, tylko większe — to jedyna rzecz na ekranie. */
+.panel-karta .zadanie-kolumny { margin: 1rem 0 .3rem; }
+.panel-karta .kolumna .wartosc { font-size: 2rem; }
+.panel-karta .kolumna.slowo .wartosc { font-size: 1.15rem; }
+.panel-karta .kolumna .podpis { font-size: .7rem; }
