@@ -100,6 +100,11 @@ Po pierwszej serii następna ma już ciężar — **ten, który klient podniós�
 przy RPE 8"*. Pierwsza seria wyszła za lekko? Kolejna z tego samego treningu
 poprawia wyliczenie.
 
+Instrukcja doboru **znika w chwili wpisania serii** — tak samo na liście dnia,
+jak w prowadzeniu. Wisząca dalej wyglądała tak, jakby wpis nie zadziałał
+(zgłoszone z testów na planie Marka X). Bez zasięgu zamiast niej zostaje
+*„✓ Seria zapisana — z niej policzę Twój ciężar"*, dopóki seria czeka w kolejce.
+
 Zasady, które za tym stoją:
 
 * **Kalibruje wyłącznie ćwiczenie bez 1RM.** Gdy 1RM już jest, wpisane serie idą
