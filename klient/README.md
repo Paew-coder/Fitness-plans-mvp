@@ -181,8 +181,10 @@ Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej ch
 i pokazuje to samo, tylko naraz.
 
 **Gdzie jestem i jak wrócić.** Nad panelem stoi mapa dnia — kafelek na każde
-ćwiczenie (`TOP   ✓ A1   B1 B2   C1 C2 …`): zrobione na zielono z ptaszkiem,
-zaczęte z zieloną krawędzią, to, przy którym klient stoi — w ramce. Kafelki
+ćwiczenie (`TOP   ✓ A1   B1 2/3  B2   C1 C2 …`): zrobione na zielono z ptaszkiem,
+zaczęte bez zieleni, z licznikiem serii (`2/3`), to, przy którym klient stoi —
+w ramce. Zieleń znaczy wyłącznie „skończone": zielona ramka przy dwóch seriach
+z trzech wyglądała na pierwszy rzut oka jak ćwiczenie zrobione. Kafelki
 jednej litery stoją ciasno obok siebie, a między literami jest odstęp — superseria
 widać od razu jako parę, i na wąskim ekranie nie rozdziela się jej na dwie linie.
 Dotknięcie kafelka przenosi do ćwiczenia:
@@ -196,7 +198,8 @@ Dotknięcie kafelka przenosi do ćwiczenia:
   Przeskoczone ćwiczenie czeka i wraca na końcu, zamiast przepaść.
 
 Na **liście dnia** bieżące ćwiczenie ma ramkę i napis **▶ Tu jesteś · seria 2 z 3**,
-skończone — **✓ zrobione**, zaczęte — *◐ zrobione 1 z 3 serii*. Każdy z tych
+skończone — **✓ zrobione** (na zielono), zaczęte — *◐ zaczęte · 1 z 3 serii*
+(na szaro). Każdy z tych
 napisów wraca do panelu: „Tu jesteś" dokładnie tam, gdzie klient wyszedł (także
 w trwającą przerwę), pozostałe — do tego ćwiczenia. Przycisk nad listą mówi,
 dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.

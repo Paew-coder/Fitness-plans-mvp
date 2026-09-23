@@ -416,7 +416,9 @@ p.dobor.dobor-zapisane { color: var(--ok); }
   padding: .35rem .6rem; border-radius: 8px; min-width: 2.6rem;
   background: var(--karta); color: var(--tekst-slaby); border: 1px solid var(--linia);
 }
-.kafel-mapy.zaczete { border-color: var(--ok); color: var(--tekst); }
+/* Zaczęte: bez zieleni — zieleń znaczy „skończone". Stan niesie licznik 2/3. */
+.kafel-mapy.zaczete { color: var(--tekst); }
+.kafel-mapy .licznik-mapy { font-weight: 400; color: var(--tekst-blady); }
 .kafel-mapy.zrobione { background: var(--ok-tlo); border-color: var(--ok); color: var(--ok); }
 .kafel-mapy.tu { outline: 2px solid var(--akcent); outline-offset: 1px; color: var(--tekst); }
 
@@ -435,3 +437,4 @@ p.dobor.dobor-zapisane { color: var(--ok); }
   background: var(--ok-tlo); color: var(--ok); border: 1px solid var(--ok);
 }
 .stan-prowadzenia.tu { background: var(--akcent-tlo); color: var(--akcent); border-color: var(--akcent); }
+.stan-prowadzenia.zaczete { background: var(--karta-2); color: var(--tekst-slaby); border-color: var(--linia); }
