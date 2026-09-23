@@ -52,6 +52,17 @@ const kolejka = {
     let k = this.wczytaj();
     let odrzucone = 0;
     let powodOdmowy = null;   // to, co serwer napisał przy pierwszej odmowie
+    /*
+     * Widok z serwera przyjmujemy dopiero po opróżnieniu kolejki.
+     *
+     * Odpowiedź na zapis niesie stan sprzed zapisów, które czekają za nim.
+     * Przyjmowana od razu zdejmowała z telefonu serię wpisaną przed chwilą —
+     * a gdy następny zapis nie przeszedł (zasięg zgasł), telefon zostawał
+     * z tym nieaktualnym widokiem. Kolejna seria tego ćwiczenia zapisywała
+     * się wtedy na starej liście i poprzednia przepadała, także u trenera.
+     * Odpowiedź na ostatni zapis zna wszystkie wcześniejsze.
+     */
+    let ostatniWidok = null;
     while (k.length > 0) {
       const zadanie = k[0];
       let odp;
@@ -69,10 +80,7 @@ const kolejka = {
         // Odpowiedź bez planu znaczy „zapisane, ale trener właśnie poprawia
         // cykl". Podmiana widoku na taką odpowiedź skasowałaby klientowi
         // z pamięci trening, który ma przed sobą na ekranie.
-        if (swiezy?.planId) {
-          widok = swiezy;
-          zapiszWidokLokalnie();
-        }
+        if (swiezy?.planId) ostatniWidok = swiezy;
       } else if (odp.status >= 500) {
         return { wyslane: false, odrzucone, powodOdmowy };   // serwer ma zły dzień, nie zadanie
       } else {
@@ -86,6 +94,10 @@ const kolejka = {
       }
       k = this.wczytaj().slice(1);
       this.zapisz(k);
+    }
+    if (ostatniWidok) {
+      widok = ostatniWidok;
+      zapiszWidokLokalnie();
     }
     return { wyslane: true, odrzucone, powodOdmowy };
   },
@@ -577,9 +589,22 @@ const seriaWpisana = (c) =>
  * zdanie. Zwykle widać je ułamek sekundy, zanim wróci policzony ciężar —
  * na dłużej zostaje tylko bez zasięgu, kiedy seria czeka w kolejce.
  */
-const doborCiezaru = (c) => (seriaWpisana(c)
-  ? el("p", "dobor dobor-zapisane", "✓ Seria zapisana — z niej policzę Twój ciężar.")
-  : wskazowkaDoboru(c));
+function doborCiezaru(c) {
+  if (seriaWpisana(c)) {
+    return el("p", "dobor dobor-zapisane", "✓ Seria zapisana — z niej policzę Twój ciężar.");
+  }
+  // Seria bez pary — sam ciężar albo same powtórzenia. Z niej nic się nie
+  // policzy, a bez tego zdania klient widzi tylko, że instrukcja dalej wisi.
+  const polowka = (c.serieWykonane ?? []).find((x) => !pustaSeria(x));
+  if (polowka) {
+    const blok = wskazowkaDoboru(c);
+    blok.prepend(el("p", "dobor-brakuje", polowka.ciezar
+      ? "Dopisz powtórzenia do serii — bez nich nie policzę ciężaru."
+      : "Dopisz ciężar do serii — bez niego nie policzę reszty planu."));
+    return blok;
+  }
+  return wskazowkaDoboru(c);
+}
 
 /** Skąd się wziął ciężar — w tym treningu, w którym go policzyliśmy. */
 const notkaKalibracji = (k) => el("p", "kalibracja",
@@ -743,7 +768,13 @@ function odswiezKarte(positionId) {
  * klienta liczbami, a cztery serie w jednym zdaniu czyta się jednym rzutem oka.
  */
 function opisSerii(serie) {
-  const s = (serie ?? []).filter((x) => x && (x.ciezar || x.powtorzenia));
+  const wszystkie = listaSerii(serie ?? []);
+  // Dziura w środku zostaje na swoim miejscu jako „—": „— · 10×10 · 10×10"
+  // mówi, że pierwsza seria nie jest wpisana, a nie że były dwie.
+  if (wszystkie.some(pustaSeria)) {
+    return wszystkie.map((x) => (pustaSeria(x) ? "—" : zapisSerii(x))).join(" · ");
+  }
+  const s = wszystkie;
   if (s.length === 0) return "";
   if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} powt.`;
   const powt = s[0].powtorzenia;
@@ -872,27 +903,37 @@ function polaWykonania(c) {
     const bylDobor = c.dobierzCiezar;
     const wysylka = wyslijSerie(c, lista);
     podpisz();
-    dolozWiersz();
 
     // Ćwiczenie bez ciężaru: ta seria właśnie go ustala. Instrukcja znika od
     // razu — bez przerysowania, bo klient może jeszcze stać w polu obok —
     // a gdy serwer odda policzony ciężar, karta rysuje się od nowa.
-    if (bylDobor && seriaWpisana(c)) {
+    if (bylDobor) {
       blok.closest(".cwiczenie")?.querySelector(".dobor")?.replaceWith(doborCiezaru(c));
-      await wysylka;
-      odswiezKarte(c.positionId);
+      if (seriaWpisana(c)) {
+        await wysylka;
+        odswiezKarte(c.positionId);
+      }
     }
   };
 
+  /*
+   * Wiersz na każdą serię z planu — przy 3 seriach trzy wiersze.
+   *
+   * Bez szarych liczb w polach. Były tu podpowiedzi (poprzednia seria albo
+   * plan) i zgłoszone z testów wyszło, że na ekranie nie da się ich odróżnić
+   * od wpisanych: jedna niepełna seria („18 kg" bez powtórzeń) i pusty wiersz
+   * z podpowiedziami 18 × 8 wyglądały jak dwie zapisane serie. Tu puste pole
+   * jest puste, a zapisuje się dokładnie to, co w nim stoi. Wygodne liczby
+   * z góry zostały tam, gdzie się je zatwierdza przyciskiem — w prowadzeniu.
+   */
   const wiersz = (i) => {
     const w = el("div", "wiersz-serii");
     w.append(el("span", "nr", `${i + 1}.`));
-    const podpowiedz = podpowiedzSerii(c, i, serie);
     const wCiezar = el("input");
-    wCiezar.placeholder = podpowiedz.ciezar != null ? liczba(podpowiedz.ciezar) : "kg";
+    wCiezar.placeholder = "kg";
     wCiezar.value = serie[i]?.ciezar ?? "";
     const wPowt = el("input");
-    wPowt.placeholder = podpowiedz.powtorzenia != null ? String(podpowiedz.powtorzenia) : "powt.";
+    wPowt.placeholder = "powt.";
     wPowt.value = serie[i]?.powtorzenia ?? "";
     for (const x of [wCiezar, wPowt]) {
       x.type = "number";
@@ -900,21 +941,12 @@ function polaWykonania(c) {
       x.min = "0";
     }
     const zmien = () => {
-      // Liczba, którą widać w polu, to liczba, która się zapisze: puste pole
-      // z szarą podpowiedzią liczy się jak ta podpowiedź. Do samego pola
-      // niczego nie wstawiamy — klient właśnie przechodzi do niego palcem,
-      // a wstawione „6" skleiłoby się z jego „5" w „65". Oba pola puste to
-      // świadome wyczyszczenie serii.
-      const cos = wCiezar.value !== "" || wPowt.value !== "";
-      const kg = wCiezar.value !== "" ? wCiezar.value
-        : cos && !bezCiezaru ? podpowiedz.ciezar : null;
-      const powt = wPowt.value !== "" ? wPowt.value : cos ? podpowiedz.powtorzenia : null;
       // Kto pisze, ten chce dalej pisać — karta odświeżona po zapisie zostaje
       // rozwinięta, zamiast chować wiersze spod palca.
       otwarteWykonania.add(c.positionId);
       serie[i] = {
-        ciezar: bezCiezaru ? null : Number(String(kg ?? "").replace(",", ".")) || null,
-        powtorzenia: Number(powt ?? "") || null,
+        ciezar: bezCiezaru ? null : Number(String(wCiezar.value).replace(",", ".")) || null,
+        powtorzenia: Number(wPowt.value) || null,
       };
       zapisz();
     };
@@ -925,17 +957,8 @@ function polaWykonania(c) {
     return w;
   };
 
-  // Wpisane serie i jedna pusta na następną — nie więcej, niż mówi plan.
-  let ostatniaWpisana = -1;
-  serie.forEach((x, i) => { if (!pustaSeria(x)) ostatniaWpisana = i; });
-  let widoczne = Math.max(Math.min(planowane, ostatniaWpisana + 2), ostatniaWpisana + 1, 1);
-  for (let i = 0; i < widoczne; i++) pola.append(wiersz(i));
-  const dolozWiersz = () => {
-    if (widoczne < planowane && !pustaSeria(serie[widoczne - 1])) {
-      pola.append(wiersz(widoczne));
-      widoczne += 1;
-    }
-  };
+  const wierszy = Math.max(planowane, serie.length);
+  for (let i = 0; i < wierszy; i++) pola.append(wiersz(i));
 
   const naglowek = el("div", "wykonanie-naglowek");
   naglowek.append(opisEl, przelacz);
