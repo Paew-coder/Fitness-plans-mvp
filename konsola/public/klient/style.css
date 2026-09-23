@@ -465,3 +465,10 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .panel-karta .kolumna .wartosc { font-size: 2rem; }
 .panel-karta .kolumna.slowo .wartosc { font-size: 1.15rem; }
 .panel-karta .kolumna .podpis { font-size: .7rem; }
+
+/* RPE drobno pod kolumnami — przetłumaczone na „ile w zapasie". */
+.rpe-linia { font-family: var(--mono); font-size: .78rem; color: var(--tekst-slaby); margin-top: .25rem; }
+.panel-karta .rpe-linia { font-size: .9rem; margin-top: .45rem; }
+/* Numer serii w panelu: „3 z 3" — duża trójka, drobne „z 3". */
+.kolumna-seria .wartosc { color: var(--akcent); }
+.serie-wpisane .etykieta-serii { font-size: .78rem; color: var(--tekst-blady); align-self: center; }

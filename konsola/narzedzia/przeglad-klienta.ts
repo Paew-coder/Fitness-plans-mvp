@@ -719,6 +719,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
 
   const panel = s.locator("#panel");
+  /** Numer serii z kolumny SERIA: „1 z 6". */
+  const seriaNaPanelu = async () => (await panel.locator(".kolumna-seria .wartosc").innerText()
+    .catch(() => "")).replace(/\s+/g, " ").trim();
   sprawdz("prowadzenie zaczyna od TOP SETU",
     (await panel.innerText()).includes("TOP SET")
     && (await panel.innerText()).includes("Barbell row"),
@@ -742,7 +745,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
   await s.waitForSelector("#panel .panel-pola");
   sprawdz("po przerwie wchodzi pierwsza seria boju głównego",
-    (await panel.innerText()).includes("Seria 1 z 6"),
+    await seriaNaPanelu() === "1 z 6",
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
 
   // Seria wpisana na panelu ma trafić do trenera tą samą drogą, co z listy.
@@ -782,6 +785,16 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     JSON.stringify(poDrugiej.serieWykonane));
   await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
   await s.waitForSelector("#panel .panel-pola");
+  sprawdz("kafelki serii mają podpis",
+    (await panel.locator(".serie-wpisane").innerText()).startsWith("Poprzednie serie:"),
+    (await panel.locator(".serie-wpisane").innerText()).replace(/\n/g, " "));
+  const wysokosc = async (sel: string) => await panel.locator(sel)
+    .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  sprawdz("numer serii jest duży, a RPE drobne",
+    await wysokosc(".kolumna-seria .wartosc") === await wysokosc(".kolumna-ciezar .wartosc")
+    && await wysokosc(".rpe-linia") < await wysokosc(".kolumna-seria .wartosc") / 2,
+    `seria ${await wysokosc(".kolumna-seria .wartosc")}px · RPE ${await wysokosc(".rpe-linia")}px · `
+    + `„${await panel.locator(".rpe-linia").innerText()}"`);
   sprawdz("wpisane serie widać na panelu",
     (await panel.locator(".serie-wpisane .chip").allInnerTexts()).join(" ").includes("90"),
     (await panel.locator(".serie-wpisane .chip").allInnerTexts()).join(" | "));
@@ -798,7 +811,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.click("#prowadz");
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
   sprawdz("prowadzenie wraca w to samo miejsce",
-    (await panel.innerText()).includes("Seria 3 z 6"),
+    await seriaNaPanelu() === "3 z 6",
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
   sprawdz("wpisane wcześniej serie przeżyły zamknięcie aplikacji",
     (await panel.locator(".serie-wpisane .chip").allInnerTexts()).length === 2,
@@ -850,7 +863,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await kartaB1.locator(".stan-prowadzenia").click();
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
   sprawdz("„Tu jesteś” wraca do panelu w to samo miejsce",
-    (await panel.innerText()).includes("Seria 1 z 3 · superseria B"),
+    await seriaNaPanelu() === "1 z 3" && (await panel.innerText()).includes("superseria B"),
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
 
   // Powrót do zrobionego ćwiczenia z mapy — do poprawki, bez przerwy,
@@ -858,7 +871,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await kafel("A1").click();
   const przeglad = await panel.innerText();
   sprawdz("mapa przenosi do zrobionego ćwiczenia i mówi, że jest zrobione",
-    przeglad.includes("Seria 1 z 6") && przeglad.includes("już zrobiona")
+    await seriaNaPanelu() === "1 z 6" && przeglad.includes("już zrobiona")
     && przeglad.includes("Zapisz poprawkę"),
     przeglad.replace(/\n/g, " ").slice(0, 110));
   await polaPanelu.nth(0).fill("102.5");
@@ -866,7 +879,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForTimeout(600);
   sprawdz("poprawka wraca tam, gdzie się skończyło — bez przerwy",
     await s.locator("#licznik").count() === 0
-    && (await panel.innerText()).includes("Seria 1 z 3 · superseria B"),
+    && await seriaNaPanelu() === "1 z 3" && (await panel.innerText()).includes("superseria B"),
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
   const bojPoPoprawce = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
     .tygodnie[0].dni[0].cwiczenia[0].serieWykonane;
@@ -1040,7 +1053,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
   const panelDoboru = await panel.innerText();
   sprawdz("„zacznij od razu” prowadzi prosto do pierwszej serii",
-    panelDoboru.includes("Barbell row") && panelDoboru.includes("Seria 1 z 3"),
+    panelDoboru.includes("Barbell row") && await seriaNaPanelu() === "1 z 3",
     panelDoboru.replace(/\n/g, " ").slice(0, 60));
   sprawdz("zamiast „— brak 1RM” jest zaproszenie do dobrania ciężaru",
     /dobierz/i.test(panelDoboru) && /mieć jeszcze [\d–]+ w zapasie/.test(panelDoboru)
@@ -1067,7 +1080,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#panel .panel-pola");
   const drugaSeria = await panel.innerText();
   sprawdz("druga seria ma już ciężar — ten, który klient podniósł",
-    drugaSeria.includes("60 kg") && drugaSeria.includes("Seria 2 z 3"),
+    drugaSeria.includes("60 kg") && await seriaNaPanelu() === "2 z 3",
     drugaSeria.replace(/\n/g, " ").slice(0, 70));
   sprawdz("i mówi, skąd go wzięła",
     drugaSeria.includes("Policzone z Twojej serii"),
