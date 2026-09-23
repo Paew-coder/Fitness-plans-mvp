@@ -816,6 +816,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && await kafel("B1").getAttribute("class").then((k) => k?.includes("tu")),
     (await panel.locator(".kafel-mapy").allInnerTexts()).join(" "));
 
+  // Kafelki jednej superserii razem, między literami odstęp: TOP | A1 | B1 B2.
+  const grupyMapy = await panel.locator(".grupa-mapy").evaluateAll((grupy) =>
+    grupy.map((g) => [...g.querySelectorAll(".kafel-mapy")]
+      .map((k) => (k.textContent ?? "").replace("✓ ", "")).join(" ")));
+  sprawdz("mapa grupuje kafelki po literze superserii",
+    JSON.stringify(grupyMapy) === JSON.stringify(["TOP", "A1", "B1 B2"]),
+    grupyMapy.join(" | "));
+
   // Wyjście na listę w środku treningu — ma być widać, gdzie się jest.
   await panel.getByRole("button", { name: "Cały dzień na liście" }).click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
