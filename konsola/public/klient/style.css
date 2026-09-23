@@ -394,3 +394,7 @@ details.rpe p { margin: .5rem 0 0; line-height: 1.45; color: var(--tekst-slaby);
 }
 .rpe-liczba { font-family: var(--mono); font-weight: 700; color: var(--tekst); }
 p.dobor.dobor-zapisane { color: var(--ok); }
+/* „Zrobione: 9×11 · 10×10" i obok „✎ edytuj" — zapis, nie formularz. */
+.wykonanie-naglowek { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+.wykonanie-opis { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); }
+.wykonanie-opis:empty { display: none; }

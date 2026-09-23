@@ -811,6 +811,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Superseria idzie naprzemiennie i **bez przerwy w środku rundy**: po B1
   // od razu B2, dopiero potem odliczanie. Tak się je robi na sali.
   const pierwszeWRundzie = await panel.locator(".panel-gora .nazwa").innerText();
+  // Zgłoszone z testów: przy „9 kg · 10 powt." klient zmienił tylko
+  // powtórzenia na 11 i zapisało się „11" bez ciężaru — bo 9 w polu było
+  // tylko szarą podpowiedzią. Pola mają stać z prawdziwymi liczbami.
+  sprawdz("pierwsza seria ma w polach liczby z planu, nie szare podpowiedzi",
+    await polaPanelu.nth(0).inputValue() !== "" && await polaPanelu.nth(1).inputValue() !== "",
+    `${await polaPanelu.nth(0).inputValue()} kg × ${await polaPanelu.nth(1).inputValue()}`);
+  await polaPanelu.nth(1).fill("9");
   await panel.getByRole("button", { name: "Zakończ serię" }).click();
   await s.waitForTimeout(150);
   sprawdz("między B1 a B2 nie ma przerwy",
@@ -822,6 +829,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     `${pierwszeWRundzie} → ${drugieWRundzie}`);
 
   // B2 to ćwiczenie na masie ciała — pola na kilogramy nie ma czym wypełnić.
+  await s.waitForTimeout(500);
+  const wiosloPoZmianie = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[1];
+  sprawdz("zmiana samych powtórzeń zostawia ciężar",
+    wiosloPoZmianie.serieWykonane[0]?.ciezar === wiosloPoZmianie.ciezar
+    && wiosloPoZmianie.serieWykonane[0]?.powtorzenia === 9,
+    JSON.stringify(wiosloPoZmianie.serieWykonane[0]));
+
   sprawdz("przy masie ciała nie ma pola na kilogramy",
     await panel.locator(".panel-pola input").count() === 1,
     `${await panel.locator(".panel-pola input").count()} pola`);
@@ -875,31 +890,31 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const kartaBoju = s.locator('#cwiczenia [data-position="D1-S01"]');
-  const linijkaBoju = await kartaBoju.locator(".wykonanie-przelacz").innerText();
+  const linijkaBoju = await kartaBoju.locator(".wykonanie-opis").innerText();
   sprawdz("lista pokazuje wszystkie serie w jednej linijce",
-    linijkaBoju.includes("100 · 90 · 90 · 90 · 90 · 90 kg × 6"), linijkaBoju);
+    linijkaBoju.includes("Zrobione: 100 · 90 · 90 · 90 · 90 · 90 kg × 6"), linijkaBoju);
+  sprawdz("po treningu lista pokazuje zapis, a nie formularz na wierzchu",
+    await kartaBoju.locator(".wykonanie-pola.ukryty").count() === 1
+    && (await kartaBoju.locator(".wykonanie-przelacz").innerText()).includes("edytuj"),
+    await kartaBoju.locator(".wykonanie-przelacz").innerText());
   await kartaBoju.locator(".wykonanie-przelacz").click();
   sprawdz("rozwinięte: wiersz na każdą wpisaną serię",
     await kartaBoju.locator(".wiersz-serii").count() === 6,
     `${await kartaBoju.locator(".wiersz-serii").count()} wierszy`);
 
+  // Edycja z listy służy do poprawki — literówka w kilogramach szłaby prosto
+  // do propozycji 1RM. Poprawka ma trafić do trenera tą samą drogą.
   const kartaWioslowania = s.locator('#cwiczenia [data-position="D1-S02"]');
   await kartaWioslowania.locator(".wykonanie-przelacz").click();
-  sprawdz("bez wpisów jeden wiersz, a nie formularz na wszystkie serie",
-    await kartaWioslowania.locator(".wiersz-serii").count() === 1,
-    `${await kartaWioslowania.locator(".wiersz-serii").count()} wierszy`);
-  const pierwszyWiersz = kartaWioslowania.locator(".wiersz-serii").first().locator("input");
-  await pierwszyWiersz.nth(0).fill("70");
-  await pierwszyWiersz.nth(1).fill("8");
-  await pierwszyWiersz.nth(1).blur();
+  const drugiWiersz = kartaWioslowania.locator(".wiersz-serii").nth(1).locator("input");
+  await drugiWiersz.nth(1).fill("8");
+  await drugiWiersz.nth(1).blur();
   await s.waitForTimeout(600);
-  sprawdz("po wpisaniu serii odsłania się wiersz na następną",
-    await kartaWioslowania.locator(".wiersz-serii").count() === 2,
-    `${await kartaWioslowania.locator(".wiersz-serii").count()} wierszy`);
   const wioslowanieZListy = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
     .tygodnie[0].dni[0].cwiczenia[1];
-  sprawdz("seria z listy dochodzi do trenera tą samą drogą",
-    JSON.stringify(wioslowanieZListy.serieWykonane) === JSON.stringify([{ ciezar: 70, powtorzenia: 8 }]),
+  sprawdz("poprawka z listy trafia do trenera tą samą drogą",
+    wioslowanieZListy.serieWykonane[1]?.powtorzenia === 8
+    && wioslowanieZListy.serieWykonane[0]?.powtorzenia === 9,
     JSON.stringify(wioslowanieZListy.serieWykonane));
   await s.click("#wroc-z-treningu");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
@@ -999,11 +1014,24 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await kartaPrzysiadu().innerText()).replace(/\n/g, " ").slice(0, 80));
   const przysiad = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia
     .find((c: any) => c.positionId === "D1-S03");
+  sprawdz("bez wpisów jeden wiersz, a nie formularz na wszystkie serie",
+    await kartaPrzysiadu().locator(".wiersz-serii").count() === 1,
+    `${await kartaPrzysiadu().locator(".wiersz-serii").count()} wierszy przy ${przysiad.serie} seriach`);
+  // Sam ciężar — powtórzenia zostają w szarej podpowiedzi. Liczba, którą
+  // widać w polu, to liczba, która się zapisze.
   const polaPrzysiadu = kartaPrzysiadu().locator(".wykonanie-pola input");
   await polaPrzysiadu.nth(0).fill("80");
-  await polaPrzysiadu.nth(1).fill(String(przysiad.powtorzenia));
-  await polaPrzysiadu.nth(1).blur();
+  await polaPrzysiadu.nth(0).blur();
   await s.waitForTimeout(800);
+  const przysiadPoWpisie = (await widokBezMaksow()).tygodnie[0].dni[0].cwiczenia
+    .find((c: any) => c.positionId === "D1-S03");
+  sprawdz("wpisany sam ciężar bierze powtórzenia, które widać w polu",
+    JSON.stringify(przysiadPoWpisie.serieWykonane)
+      === JSON.stringify([{ ciezar: 80, powtorzenia: przysiad.powtorzenia }]),
+    JSON.stringify(przysiadPoWpisie.serieWykonane));
+  sprawdz("po wpisaniu serii odsłania się wiersz na następną",
+    await kartaPrzysiadu().locator(".wiersz-serii").count() === 2,
+    `${await kartaPrzysiadu().locator(".wiersz-serii").count()} wierszy`);
   const poWpisie = await kartaPrzysiadu().innerText();
   sprawdz("po wpisaniu serii na liście instrukcja znika bez wychodzenia z ekranu",
     !poWpisie.includes("Weź taki ciężar") && !poWpisie.includes("dobierz ciężar"),

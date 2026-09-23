@@ -1512,7 +1512,8 @@ function opisSerii(serie) {
   if (powt && s.every((x) => x.ciezar && x.powtorzenia === powt)) {
     return `${s.map((x) => kg(x.ciezar)).join(" · ")} kg × ${powt}`;
   }
-  return s.map((x) => `${x.ciezar ? kg(x.ciezar) : "—"}×${x.powtorzenia ?? "—"}`).join(" · ");
+  return s.map((x) => (x.ciezar && x.powtorzenia ? `${kg(x.ciezar)}×${x.powtorzenia}`
+    : x.ciezar ? `${kg(x.ciezar)} kg` : `${x.powtorzenia} powt.`)).join(" · ");
 }
 
 /**
