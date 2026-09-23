@@ -705,14 +705,17 @@ function rysujTrening() {
 }
 
 /**
- * Zadanie serii jako równe kolumny: podpis nad liczbą — CIĘŻAR · POWT. · RPE.
+ * Zadanie serii jako równe kolumny z podpisem nad liczbą, a pod nimi drobno RPE.
  *
- * Wcześniej ciężar stał dużą czcionką, a powtórzenia, serie i RPE drobnym
- * szarym drukiem obok, i czytały się jak dopisek. Zgłoszone z testów: taki
- * zapis jest mało czytelny — a na sali powtórzenia są tak samo ważne jak
- * kilogramy. Ciężar zostaje pierwszy, bo to on idzie na sztangę.
+ * Dwie rundy uwag z testów. Najpierw: duży ciężar obok drobnych powtórzeń
+ * i serii czytał się jak ciężar z dopiskiem — stąd równe kolumny. Potem:
+ * w panelu za mało widać, **która to seria**, a za bardzo RPE, które po
+ * pierwszym tygodniu nie jest już tak ważne (ciężar jest policzony). Seria
+ * dostała więc własną kolumnę, a RPE zeszło do linijki pod spodem — od razu
+ * przetłumaczone na to, co się z nim robi na sali: ile powtórzeń w zapasie.
  */
-function kolumnyZadania({ ciezar, dobierz, serie, powtorzenia, rpe, jednostronne }) {
+function kolumnyZadania({ seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne }) {
+  const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
   const kolumna = (klasa, podpis, wartosc, jednostka, dopisek) => {
     const k = el("div", `kolumna ${klasa}`);
@@ -723,14 +726,19 @@ function kolumnyZadania({ ciezar, dobierz, serie, powtorzenia, rpe, jednostronne
     if (dopisek) k.append(el("span", "dopisek", dopisek));
     siatka.append(k);
   };
+  if (seria != null) kolumna("kolumna-seria", "Seria", String(seria), `z ${zSerii}`);
   if (typeof ciezar === "number") kolumna("kolumna-ciezar", "Ciężar", liczba(ciezar), "kg");
   else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", "Ciężar", "dobierz");
   else kolumna("kolumna-ciezar slowo", "Ciężar", String(ciezar || "—"));
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
     null, jednostronne ? "na stronę" : null);
-  kolumna("kolumna-rpe", "RPE", liczba(rpe));
-  return siatka;
+  blok.append(siatka);
+  if (rpe) {
+    blok.append(el("div", "rpe-linia", `RPE ${liczba(rpe)} · `
+      + (rpe >= 10 ? "nic w zapasie" : `${wZapasie(rpe)} w zapasie`)));
+  }
+  return blok;
 }
 
 /**
@@ -1405,11 +1413,10 @@ function panelSerii(k, kroki, d) {
   }
 
   karta.append(gloweczka(c.lp, c.nazwa, c.film));
-  karta.append(el("div", "seria-numer",
-    `Seria ${k.seria} z ${k.zSerii}${k.wGrupie ? ` · superseria ${k.litera}` : ""}`));
+  if (k.wGrupie) karta.append(el("div", "seria-numer", `superseria ${k.litera}`));
 
   karta.append(kolumnyZadania({
-    ciezar: c.ciezar, dobierz: c.dobierzCiezar,
+    seria: k.seria, zSerii: k.zSerii, ciezar: c.ciezar, dobierz: c.dobierzCiezar,
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
   }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
@@ -1419,11 +1426,17 @@ function panelSerii(k, kroki, d) {
   const wpisane = serieCwiczenia(c.positionId).filter(Boolean);
   if (wpisane.length > 0) {
     const pasek = el("div", "serie-wpisane");
+    // Podpis przed kafelkami — goły „1: 10×9" nie mówił, co to jest.
+    // „Poprzednie", gdy wszystkie są przed tą serią; przy powrocie do
+    // zrobionej serii część jest za nią, więc wtedy po prostu „wpisane".
+    const numery = wpisane.map((s, i) => (pustaSeria(s) ? null : i)).filter((i) => i !== null);
+    pasek.append(el("span", "etykieta-serii",
+      numery.every((i) => i < k.seria - 1) ? "Poprzednie serie:" : "Wpisane serie:"));
     wpisane.forEach((s, i) => {
       if (!s.ciezar && !s.powtorzenia) return;
       pasek.append(el("span", "chip", `${i + 1}: ${zapisSerii(s)}`));
     });
-    if (pasek.childElementCount > 0) karta.append(pasek);
+    if (numery.length > 0) karta.append(pasek);
   }
 
   // Pola „co poszło" od razu z prawdziwymi liczbami: poprzednia seria, a przy

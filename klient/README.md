@@ -54,11 +54,17 @@ Link wygląda tak: `http://…/k/Zvy1GXQUGwM4wLdCqXC-Xh0Jno1V5Zed`
 
 **Wybór treningu** — sześć tygodni, dni w każdym, odhaczone oznaczone ptaszkiem.
 
-**Trening** — TOP SET, potem ćwiczenia po kolei, każde z link do filmu i z zadaniem
-w równych kolumnach: `CIĘŻAR · SERIE · POWT. · RPE`, podpis nad liczbą, wszystkie
-liczby tej samej wielkości. Wcześniej ciężar stał dużą czcionką, a serie
-i powtórzenia drobnym szarym drukiem obok — i czytały się jak dopisek, choć
-na sali są tak samo ważne. W panelu prowadzenia te same kolumny, większe. Wspólna litera (`B1`, `B2`) ma wspólny pasek z boku —
+**Trening** — TOP SET, potem ćwiczenia po kolei, każde z linkiem do filmu i z zadaniem
+w równych kolumnach: `CIĘŻAR · SERIE · POWT.`, podpis nad liczbą, wszystkie liczby
+tej samej wielkości. Pod nimi drobno RPE, od razu przetłumaczone na to, co się
+z nim robi na sali: *„RPE 8 · 2 w zapasie"*. W panelu prowadzenia pierwsza kolumna
+to **numer serii** — `SERIA 3 z 3 · CIĘŻAR 10 kg · POWTÓRZENIA 9` — a kafelki
+wpisanych serii mają podpis *„Poprzednie serie:"*.
+
+Tak po dwóch rundach uwag z testów: najpierw duży ciężar obok drobnych powtórzeń
+czytał się jak ciężar z dopiskiem; potem w panelu za mało było widać, która to
+seria, a za bardzo RPE, które po pierwszym tygodniu (ciężar już policzony) nie
+jest tak ważne. Wspólna litera (`B1`, `B2`) ma wspólny pasek z boku —
 to superseria, jak w arkuszu. Przy ćwiczeniu jednostronnym widnieje **na stronę**.
 
 **Ocena jednym dotknięciem** — `Za trudne` / `OK` / `Za łatwe`. To dokładnie
