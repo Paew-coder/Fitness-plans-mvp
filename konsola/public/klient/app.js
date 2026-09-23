@@ -565,7 +565,9 @@ function wskazowkaDoboru(c) {
 }
 
 /** Czy przy ćwiczeniu jest już pełna seria — ta, z której policzymy ciężar. */
-const seriaWpisana = (c) => c.ciezarWykonany > 0 && c.powtorzeniaWykonane > 0;
+const seriaWpisana = (c) =>
+  (c.serieWykonane ?? []).some((x) => x?.ciezar > 0 && x?.powtorzenia > 0)
+  || (c.ciezarWykonany > 0 && c.powtorzeniaWykonane > 0);
 
 /**
  * Instrukcja doboru ciężaru — tylko do chwili, w której klient wpisze serię.
@@ -734,11 +736,57 @@ function odswiezKarte(positionId) {
 }
 
 /**
+ * Serie w jednej linijce: „80 · 90 · 85 · 80 kg × 6", a przy różnych
+ * powtórzeniach „80×6 · 90×6 · 85×5".
+ *
+ * Jedna linijka, nie wiersz na serię: trener prosił, żeby nie zasypywać
+ * klienta liczbami, a cztery serie w jednym zdaniu czyta się jednym rzutem oka.
+ */
+function opisSerii(serie) {
+  const s = (serie ?? []).filter((x) => x && (x.ciezar || x.powtorzenia));
+  if (s.length === 0) return "";
+  if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} powt.`;
+  const powt = s[0].powtorzenia;
+  if (powt && s.every((x) => x.ciezar && x.powtorzenia === powt)) {
+    return `${s.map((x) => liczba(x.ciezar)).join(" · ")} kg × ${powt}`;
+  }
+  return s.map((x) => `${x.ciezar ? liczba(x.ciezar) : "—"}×${x.powtorzenia ?? "—"}`).join(" · ");
+}
+
+/** Serie ćwiczenia wpisane w tym treningu — ze wszystkich stron te same dane. */
+const serieWykonane = (c) => c.serieWykonane ?? [];
+
+const pustaSeria = (s) => !s || (!s.ciezar && !s.powtorzenia);
+
+/**
+ * Lista serii do wysłania: dziury wypełnione pustymi seriami (żeby kolejne nie
+ * zmieniły numerów), puste z końca odcięte — serwer robi to samo.
+ */
+function listaSerii(serie) {
+  const lista = Array.from(serie, (x) => x ?? { ciezar: null, powtorzenia: null });
+  while (lista.length > 0 && pustaSeria(lista.at(-1))) lista.pop();
+  return lista;
+}
+
+/**
+ * Wysyłka wszystkich serii ćwiczenia. Telefon zmienia widok od razu;
+ * najcięższą — tę, która idzie do 1RM — wylicza serwer.
+ */
+function wyslijSerie(c, serie) {
+  return wyslij("/odczucie",
+    { positionId: c.positionId, tydzien: biezacy.tydzien, serie },
+    () => { c.serieWykonane = serie; },
+    { odswiez: false });
+}
+
+/**
  * Co faktycznie poszło na sztandze. Ocena mówi „jak było", to mówi „ile było" —
  * i dopiero z tego da się policzyć nowe 1RM bez proszenia o serię maksymalną.
  *
- * Pola są zwinięte, bo na siłowni nikt nie chce wypełniać formularza. Kto chce,
- * dotyka „zapisz ciężar" i wpisuje; kto nie chce, ocenia i idzie dalej.
+ * Zwinięte, bo na siłowni nikt nie chce wypełniać formularza. Zwinięte pokazuje
+ * wpisane serie w jednej linijce; rozwinięte — wiersz na serię, odsłaniane po
+ * jednym: widać tylko te wpisane i jedną pustą na następną. Cztery puste wiersze
+ * naraz wyglądałyby jak formularz do wypełnienia w całości, a nie trzeba.
  */
 function polaWykonania(c) {
   const blok = el("div", "wykonanie");
@@ -763,56 +811,89 @@ function polaWykonania(c) {
     blok.append(wiersz);
   }
 
-  const maDane = c.ciezarWykonany != null || c.powtorzeniaWykonane != null;
-  // Przy ćwiczeniu bez ciężaru pola są od razu na wierzchu: tu wpisana seria
-  // nie jest dodatkiem, tylko jedynym źródłem ciężarów na cały plan.
-  const otwarte = maDane || otwarteWykonania.has(c.positionId) || c.dobierzCiezar;
+  const bezCiezaru = BEZ_POLA_CIEZARU.includes(c.ciezar);
+  const planowane = Math.max(1, c.serie || 1);
+  const serie = serieWykonane(c).map((x) => ({ ...x }));   // kopia robocza wierszy
 
-  const przelacz = el("button", "wykonanie-przelacz",
-    maDane ? "✎ zmień, co poszło" : "+ zapisz, co poszło");
+  // Przy ćwiczeniu bez ciężaru pola są od razu na wierzchu, dopóki klient nie
+  // wpisze serii: tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.
+  const otwarte = otwarteWykonania.has(c.positionId) || (c.dobierzCiezar && !seriaWpisana(c));
+
+  const przelacz = el("button", "wykonanie-przelacz");
+  const podpisz = () => {
+    const opis = opisSerii(serie);
+    przelacz.textContent = opis ? `✎ ${opis}` : "+ zapisz, co poszło";
+  };
+  podpisz();
   const pola = el("div", `wykonanie-pola ${otwarte ? "" : "ukryty"}`);
 
   przelacz.onclick = () => {
     const zwiniete = pola.classList.toggle("ukryty");
     if (zwiniete) otwarteWykonania.delete(c.positionId);
-    else { otwarteWykonania.add(c.positionId); pola.querySelector("input").focus(); }
+    else {
+      otwarteWykonania.add(c.positionId);
+      [...pola.querySelectorAll("input")].find((i) => i.value === "")?.focus();
+    }
   };
 
-  const wCiezar = el("input");
-  wCiezar.placeholder = typeof c.ciezar === "number" ? liczba(c.ciezar) : "kg";
-  wCiezar.value = c.ciezarWykonany ?? "";
-  const wPowt = el("input");
-  wPowt.placeholder = String(c.powtorzenia ?? "powt.");
-  wPowt.value = c.powtorzeniaWykonane ?? "";
-  for (const i of [wCiezar, wPowt]) {
-    i.type = "number";
-    i.inputMode = "decimal";
-    i.min = "0";
-  }
-
   const zapisz = async () => {
-    const ciezarWykonany = Number(wCiezar.value) || null;
-    const powtorzeniaWykonane = Number(wPowt.value) || null;
-    if (ciezarWykonany === c.ciezarWykonany && powtorzeniaWykonane === c.powtorzeniaWykonane) return;
-    const wysylka = wyslij("/odczucie",
-      { positionId: c.positionId, tydzien: biezacy.tydzien, ciezarWykonany, powtorzeniaWykonane },
-      () => { c.ciezarWykonany = ciezarWykonany; c.powtorzeniaWykonane = powtorzeniaWykonane; },
-      { odswiez: false });
-    przelacz.textContent = "✎ zmień, co poszło";
+    const lista = listaSerii(serie);
+    if (JSON.stringify(lista) === JSON.stringify(serieWykonane(c))) return;
+    const bylDobor = c.dobierzCiezar;
+    const wysylka = wyslijSerie(c, lista);
+    podpisz();
+    dolozWiersz();
 
     // Ćwiczenie bez ciężaru: ta seria właśnie go ustala. Instrukcja znika od
     // razu — bez przerysowania, bo klient może jeszcze stać w polu obok —
     // a gdy serwer odda policzony ciężar, karta rysuje się od nowa.
-    if (c.dobierzCiezar && seriaWpisana(c)) {
+    if (bylDobor && seriaWpisana(c)) {
       blok.closest(".cwiczenie")?.querySelector(".dobor")?.replaceWith(doborCiezaru(c));
       await wysylka;
       odswiezKarte(c.positionId);
     }
   };
-  wCiezar.onchange = zapisz;
-  wPowt.onchange = zapisz;
 
-  pola.append(wCiezar, el("span", "razy", "kg ×"), wPowt, el("span", "razy", "powt."));
+  const wiersz = (i) => {
+    const w = el("div", "wiersz-serii");
+    w.append(el("span", "nr", `${i + 1}.`));
+    const wCiezar = el("input");
+    wCiezar.placeholder = typeof c.ciezar === "number" ? liczba(c.ciezar) : "kg";
+    wCiezar.value = serie[i]?.ciezar ?? "";
+    const wPowt = el("input");
+    wPowt.placeholder = String(c.powtorzenia ?? "powt.");
+    wPowt.value = serie[i]?.powtorzenia ?? "";
+    for (const x of [wCiezar, wPowt]) {
+      x.type = "number";
+      x.inputMode = "decimal";
+      x.min = "0";
+    }
+    const zmien = () => {
+      serie[i] = {
+        ciezar: bezCiezaru ? null : Number(String(wCiezar.value).replace(",", ".")) || null,
+        powtorzenia: Number(wPowt.value) || null,
+      };
+      zapisz();
+    };
+    wCiezar.onchange = zmien;
+    wPowt.onchange = zmien;
+    if (!bezCiezaru) w.append(wCiezar, el("span", "razy", "kg ×"));
+    w.append(wPowt, el("span", "razy", "powt."));
+    return w;
+  };
+
+  // Wpisane serie i jedna pusta na następną — nie więcej, niż mówi plan.
+  let ostatniaWpisana = -1;
+  serie.forEach((x, i) => { if (!pustaSeria(x)) ostatniaWpisana = i; });
+  let widoczne = Math.max(Math.min(planowane, ostatniaWpisana + 2), ostatniaWpisana + 1, 1);
+  for (let i = 0; i < widoczne; i++) pola.append(wiersz(i));
+  const dolozWiersz = () => {
+    if (widoczne < planowane && !pustaSeria(serie[widoczne - 1])) {
+      pola.append(wiersz(widoczne));
+      widoczne += 1;
+    }
+  };
+
   blok.append(przelacz, pola);
   return blok;
 }
@@ -930,7 +1011,6 @@ function wczytajProwadzenie(d) {
     tydzien: biezacy.tydzien,
     dzien: d.dzien,
     krok: 0,
-    serie: {},        // positionId → [{ ciezar, powtorzenia }] po jednej na serię
     doKiedy: null,    // znacznik czasu końca przerwy, nie liczba sekund — patrz odliczanie
     przerwa: 0,
   };
@@ -941,8 +1021,13 @@ function zapiszProwadzenie() {
   catch { /* pełna pamięć — trening i tak się odbędzie */ }
 }
 
-/** Serie wpisane w tym treningu przy tym ćwiczeniu. */
-const serieCwiczenia = (positionId) => prowadzenie?.serie[positionId] ?? [];
+/**
+ * Serie wpisane w tym treningu przy tym ćwiczeniu — z widoku, czyli z serwera.
+ * Do 23.09 żyły osobno w pamięci prowadzenia, tylko dla jednego treningu
+ * i tylko w tym telefonie; lista dnia i trener widzieli z nich jedną.
+ */
+const serieCwiczenia = (positionId) =>
+  dzienBiezacy()?.cwiczenia.find((x) => x.positionId === positionId)?.serieWykonane ?? [];
 
 function rysujSerie() {
   const d = dzienBiezacy();
@@ -1145,42 +1230,18 @@ function cofnij() {
 }
 
 /**
- * Zapis jednej serii — lokalnie wszystkie, do trenera jedna.
- *
- * Nasza baza trzyma przy ćwiczeniu **jedną** parę „ciężar × powtórzenia"
- * na tydzień i z niej wychodzi propozycja nowego 1RM. Wysyłanie kolejnych
- * serii nadpisywałoby ją tak, że zostałaby ostatnia — czyli zwykle
- * najsłabsza, bo zmęczona. Idzie więc najcięższa: to ona opisuje, co klient
- * naprawdę udźwignął przy RPE z planu.
- *
- * Wszystkie serie zostają lokalnie i widać je na panelu. Gdyby kiedyś miały
- * trafiać do trenera co do jednej, zmienia się baza, nie ten ekran.
+ * Zapis jednej serii. Idzie cała lista serii ćwiczenia — serwer trzyma
+ * wszystkie, a najcięższą (tę, z której liczy się 1RM) wylicza sam.
  */
 function zapiszSerie(k, c, ciezarTekst, powtTekst) {
   const ciezar = Number(String(ciezarTekst ?? "").replace(",", ".")) || null;
   const powtorzenia = Number(powtTekst) || null;
-
-  const lista = serieCwiczenia(c.positionId).slice();
-  lista[k.seria - 1] = { ciezar, powtorzenia };
-  prowadzenie.serie[c.positionId] = lista;
-  zapiszProwadzenie();
-
-  const waga = (s) => (s.ciezar ?? 0) * 1000 + (s.powtorzenia ?? 0);
-  const pelne = lista.filter((s) => s && (s.ciezar || s.powtorzenia));
-  if (pelne.length === 0) return;
-  const najlepsza = pelne.reduce((a, b) => (waga(b) > waga(a) ? b : a));
-  if (najlepsza.ciezar === c.ciezarWykonany
-    && najlepsza.powtorzenia === c.powtorzeniaWykonane) return;
-
-  wyslij("/odczucie", {
-    positionId: c.positionId,
-    tydzien: prowadzenie.tydzien,
-    ciezarWykonany: najlepsza.ciezar,
-    powtorzeniaWykonane: najlepsza.powtorzenia,
-  }, () => {
-    c.ciezarWykonany = najlepsza.ciezar;
-    c.powtorzeniaWykonane = najlepsza.powtorzenia;
-  }, { odswiez: false });
+  const serie = serieWykonane(c).slice();
+  while (serie.length < k.seria - 1) serie.push({ ciezar: null, powtorzenia: null });
+  serie[k.seria - 1] = { ciezar, powtorzenia };
+  const lista = listaSerii(serie);
+  if (JSON.stringify(lista) === JSON.stringify(serieWykonane(c))) return;
+  wyslijSerie(c, lista);
 }
 
 /** Krok do przodu. Przerwa wchodzi po rundzie — i nigdy po ostatniej serii dnia. */
@@ -1279,8 +1340,7 @@ function panelKonca(d) {
   karta.append(el("div", "duzy-znak", "✓"));
   karta.append(el("h2", "", "Wszystkie serie za Tobą"));
 
-  const wpisane = Object.values(prowadzenie.serie).flat()
-    .filter((s) => s && (s.ciezar || s.powtorzenia)).length;
+  const wpisane = d.cwiczenia.flatMap(serieWykonane).filter((s) => !pustaSeria(s)).length;
   const bezOceny = d.cwiczenia.filter((c) => !c.feedback).length;
   karta.append(el("p", "drobne",
     `Zapisanych serii: ${wpisane}.`

@@ -271,9 +271,26 @@ function doWersji5(d: DatabaseSync): void {
   }
 }
 
+/**
+ * Wersja 6 — wykonanie pamięta wszystkie serie, nie tylko najcięższą.
+ *
+ * Trener widział przy ćwiczeniu jedną parę „ciężar × powtórzenia" i zakładał,
+ * że klient zrobił tak wszystkie serie. Klient przy planie na 80 kg robił
+ * 90, 85, 80 — przestrzelił i opadł z sił — a do bazy trafiało samo „90×6".
+ *
+ * Migracja tylko dokłada kolumnę. Stare wiersze zostają z `NULL`: z nich znana
+ * jest wyłącznie najcięższa para i tak ją pokazujemy — jako jedną serię.
+ * Rozpisywanie jej na „4 × 90" byłoby wymyślaniem serii, których nikt nie wpisał.
+ */
+function doWersji6(d: DatabaseSync): void {
+  if (maKolumne(d, "wykonanie", "serie_json")) return;
+  d.exec("ALTER TABLE wykonanie ADD COLUMN serie_json TEXT");
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
   { doWersji: 4, opis: "TOP SET zapisany tam, gdzie był widoczny", wykonaj: doWersji4 },
   { doWersji: 5, opis: "RPE TOP SETU osobno na każdy tydzień", wykonaj: doWersji5 },
+  { doWersji: 6, opis: "wykonanie pamięta wszystkie serie, nie tylko najcięższą", wykonaj: doWersji6 },
 ];

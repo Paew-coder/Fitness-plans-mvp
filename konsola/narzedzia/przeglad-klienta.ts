@@ -764,9 +764,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForTimeout(700);
   const poDrugiej = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
     .tygodnie[0].dni[0].cwiczenia[0];
-  sprawdz("do trenera idzie najcięższa seria, nie ostatnia",
+  sprawdz("do 1RM idzie najcięższa seria, nie ostatnia",
     poDrugiej.ciezarWykonany === 100,
     `${poDrugiej.ciezarWykonany} kg`);
+  sprawdz("a do trenera trafiają obie serie, nie jedna",
+    JSON.stringify(poDrugiej.serieWykonane)
+      === JSON.stringify([{ ciezar: 100, powtorzenia: 6 }, { ciezar: 90, powtorzenia: 6 }]),
+    JSON.stringify(poDrugiej.serieWykonane));
   await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
   await s.waitForSelector("#panel .panel-pola");
   sprawdz("wpisane serie widać na panelu",
@@ -864,6 +868,41 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const poProwadzeniu = await api(`/api/klient/${golySciezka.replace("/k/", "")}`);
   sprawdz("trening z prowadzenia jest zakończony",
     poProwadzeniu.tygodnie[0].dni[0].ukonczony === true);
+
+  // Serie z prowadzenia widać też na liście dnia — w jednej linijce, żeby nie
+  // zasypywać klienta liczbami. Rozwinięte: wiersz na serię, ale tylko wpisane
+  // i jeden pusty na następną, nie cały formularz naraz.
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const kartaBoju = s.locator('#cwiczenia [data-position="D1-S01"]');
+  const linijkaBoju = await kartaBoju.locator(".wykonanie-przelacz").innerText();
+  sprawdz("lista pokazuje wszystkie serie w jednej linijce",
+    linijkaBoju.includes("100 · 90 · 90 · 90 · 90 · 90 kg × 6"), linijkaBoju);
+  await kartaBoju.locator(".wykonanie-przelacz").click();
+  sprawdz("rozwinięte: wiersz na każdą wpisaną serię",
+    await kartaBoju.locator(".wiersz-serii").count() === 6,
+    `${await kartaBoju.locator(".wiersz-serii").count()} wierszy`);
+
+  const kartaWioslowania = s.locator('#cwiczenia [data-position="D1-S02"]');
+  await kartaWioslowania.locator(".wykonanie-przelacz").click();
+  sprawdz("bez wpisów jeden wiersz, a nie formularz na wszystkie serie",
+    await kartaWioslowania.locator(".wiersz-serii").count() === 1,
+    `${await kartaWioslowania.locator(".wiersz-serii").count()} wierszy`);
+  const pierwszyWiersz = kartaWioslowania.locator(".wiersz-serii").first().locator("input");
+  await pierwszyWiersz.nth(0).fill("70");
+  await pierwszyWiersz.nth(1).fill("8");
+  await pierwszyWiersz.nth(1).blur();
+  await s.waitForTimeout(600);
+  sprawdz("po wpisaniu serii odsłania się wiersz na następną",
+    await kartaWioslowania.locator(".wiersz-serii").count() === 2,
+    `${await kartaWioslowania.locator(".wiersz-serii").count()} wierszy`);
+  const wioslowanieZListy = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[1];
+  sprawdz("seria z listy dochodzi do trenera tą samą drogą",
+    JSON.stringify(wioslowanieZListy.serieWykonane) === JSON.stringify([{ ciezar: 70, powtorzenia: 8 }]),
+    JSON.stringify(wioslowanieZListy.serieWykonane));
+  await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
 
 
   // ── 23. start bez serii maksymalnych ──────────────────────────────

@@ -396,11 +396,11 @@ którego poprzednie nie umiały złapać.
 
 ```bash
 cd konsola
-npm test                    # 572 testy, bez żadnych narzędzi zewnętrznych
+npm test                    # 590 testów, bez żadnych narzędzi zewnętrznych
 npm run przeglad-ekranow    # klikanie po konsoli w prawdziwej przeglądarce
 npm run przeglad-klienta    # pętla klienta na telefonie, z trybem offline
 npm run sprawdz-kolko       # konsola → arkusz → konsola, wartość po wartości
-npm run sprawdz-odpornosc   # 92 próby zapytania API źle
+npm run sprawdz-odpornosc   # 108 prób zapytania API źle
 npm run sprawdz-skale       # 40 klientów × 6 cykli — czy nadąża
 npm run sprawdz-wdrozenie   # cała ścieżka wdrożeniowa na obrazie Dockera
 ```

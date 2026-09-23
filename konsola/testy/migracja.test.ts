@@ -140,7 +140,8 @@ describe("migracja v1 → v2", () => {
     assert.equal(w, polaczenie.WERSJA_SCHEMATU);
     // Liczba wpisana wprost, żeby podniesienie wersji było decyzją, a nie
     // skutkiem ubocznym — test ma wtedy zapytać, czy migracja rzeczywiście jest.
-    assert.equal(w, 5);
+    // 6: wykonanie pamięta wszystkie serie, nie tylko najcięższą (23.09.2026).
+    assert.equal(w, 6);
   });
 
   test("z nazw w planach powstali klienci", () => {
@@ -182,6 +183,28 @@ describe("migracja v1 → v2", () => {
     assert.equal(plan.wykonania![0]!.ciezarWykonany, 62.5);
     assert.deepEqual(plan.ukonczoneDni, [{ dzien: 1, tydzien: 2, data: "2026-06-28T10:30:00.000Z" }]);
     assert.equal(plan.poprzedniId, "zuzanna-c-3", "łańcuch cykli zostaje");
+  });
+
+  /**
+   * Wersja 6: wykonanie dostaje kolumnę na wszystkie serie. Stare wpisy znają
+   * tylko najcięższą parę — i tylko ją mają oddać, bez wymyślonej listy serii.
+   */
+  test("stary wpis zostaje najcięższą parą, bez wymyślonych serii", () => {
+    const kolumny = (polaczenie.baza().prepare("PRAGMA table_info(wykonanie)").all() as
+      { name: string }[]).map((k) => k.name);
+    assert.ok(kolumny.includes("serie_json"), "brak kolumny na wszystkie serie");
+    const wpis = magazyn.wczytaj(1, "zuzanna-c-4")!.wykonania![0]!;
+    assert.equal(wpis.ciezarWykonany, 62.5, "para zostaje, gdzie była");
+    assert.equal(wpis.serie, undefined, "serii nikt nie wpisał — nie wolno ich dopisać");
+  });
+
+  test("po migracji wszystkie serie zapisują się i wracają", () => {
+    const plan = magazyn.wczytaj(1, "zuzanna-c-4")!;
+    const serie = [{ ciezar: 80, powtorzenia: 6 }, { ciezar: 90, powtorzenia: 6 },
+      { ciezar: 85, powtorzenia: 6 }];
+    plan.wykonania![0]!.serie = serie;
+    magazyn.zapisz(plan);
+    assert.deepEqual(magazyn.wczytaj(1, "zuzanna-c-4")!.wykonania![0]!.serie, serie);
   });
 
   test("po migracji nie ma osieroconych wierszy", () => {

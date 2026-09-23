@@ -16,6 +16,7 @@ import type { Plan } from "../silnik/src/plan.ts";
 import type { DaneBiegowe } from "../silnik/src/bieg.ts";
 import { baza } from "./baza/polaczenie.ts";
 import { idKlienta, idPlanu } from "./nazwy.ts";
+import type { SeriaWykonana } from "./serie-wykonane.ts";
 
 export { trenerDomyslny } from "./baza/polaczenie.ts";
 export { idKlienta, idPlanu } from "./nazwy.ts";
@@ -38,8 +39,14 @@ export type Wykonanie = {
    * przeszłość. `undefined` w starych wpisach znaczy „to, co stoi w slocie".
    */
   cwiczenieId?: string;
+  /** Najcięższa z `serie` — z niej liczy się 1RM. */
   ciezarWykonany?: number;
   powtorzeniaWykonane?: number;
+  /**
+   * Wszystkie serie z tego treningu, po kolei. `undefined` we wpisach sprzed
+   * wersji 6 bazy — znana jest wtedy tylko najcięższa para.
+   */
+  serie?: SeriaWykonana[];
   feedback?: "OK" | "za łatwe" | "za trudne";
 };
 
@@ -290,17 +297,32 @@ const WYBOR_PLANU = `
     JOIN klient k ON k.trener_id = p.trener_id AND k.id = p.klient_id
 `;
 
+/**
+ * Serie z kolumny `serie_json`. Uszkodzony wpis to `undefined`, nie wyjątek:
+ * jedna zepsuta komórka nie może zabrać trenerowi całego planu — zostaje
+ * wtedy najcięższa para, jak we wpisach sprzed wersji 6.
+ */
+function odczytajSerie(json: string | null): SeriaWykonana[] | undefined {
+  if (!json) return undefined;
+  try {
+    const serie = JSON.parse(json);
+    return Array.isArray(serie) ? serie : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Wiersz z bazy → obiekt, którego oczekuje reszta aplikacji. */
 function zWiersza(w: WierszPlanu): ZapisanyPlan {
   const d = baza();
   const wykonania = d.prepare(
     `SELECT position_id, tydzien, data, cwiczenie_id, ciezar_wykonany,
-            powtorzenia_wykonane, feedback
+            powtorzenia_wykonane, serie_json, feedback
        FROM wykonanie WHERE trener_id = ? AND plan_id = ? ORDER BY data`,
   ).all(w.trener_id, w.id) as {
     position_id: string; tydzien: number; data: string; cwiczenie_id: string | null;
     ciezar_wykonany: number | null; powtorzenia_wykonane: number | null;
-    feedback: Wykonanie["feedback"] | null;
+    serie_json: string | null; feedback: Wykonanie["feedback"] | null;
   }[];
 
   // Wiersze z `node:sqlite` mają pusty prototyp — przepisujemy je na zwykłe
@@ -330,6 +352,9 @@ function zWiersza(w: WierszPlanu): ZapisanyPlan {
       cwiczenieId: x.cwiczenie_id ?? undefined,
       ciezarWykonany: x.ciezar_wykonany ?? undefined,
       powtorzeniaWykonane: x.powtorzenia_wykonane ?? undefined,
+      // Klucz tylko wtedy, gdy serie są — wpis sprzed wersji 6 ma wrócić
+      // dokładnie taki, jaki był, a nie z doklejonym pustym polem.
+      ...(x.serie_json ? { serie: odczytajSerie(x.serie_json) } : {}),
       feedback: x.feedback ?? undefined,
     })),
     ukonczoneDni,
@@ -462,14 +487,17 @@ export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
     d.prepare("DELETE FROM wykonanie WHERE trener_id = ? AND plan_id = ?").run(pelny.trenerId, pelny.id);
     const wstawWykonanie = d.prepare(`
       INSERT INTO wykonanie (trener_id, plan_id, position_id, tydzien, data,
-                             cwiczenie_id, ciezar_wykonany, powtorzenia_wykonane, feedback)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             cwiczenie_id, ciezar_wykonany, powtorzenia_wykonane,
+                             serie_json, feedback)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const w of pelny.wykonania ?? []) {
       wstawWykonanie.run(
         pelny.trenerId, pelny.id, w.positionId, w.tydzien, w.data,
         w.cwiczenieId ?? null,
-        w.ciezarWykonany ?? null, w.powtorzeniaWykonane ?? null, w.feedback ?? null,
+        w.ciezarWykonany ?? null, w.powtorzeniaWykonane ?? null,
+        w.serie ? JSON.stringify(w.serie) : null,
+        w.feedback ?? null,
       );
     }
 

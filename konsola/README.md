@@ -40,6 +40,11 @@ po tygodniu: kropka pełna to trening domknięty, blada to zaczęty (klient ocen
 notorycznie). Na liście klientów każdy ma sygnał: *aktywny* / *zwolnił* /
 *stanął*. Arkusz nie odpowiadał na to pytanie w ogóle.
 
+**Co klient faktycznie podniósł.** Pod ciężarem z planu, w tabeli oglądanego
+tygodnia, stoi drobna linijka *„zrobione: 90 · 85 · 80 kg × 6"* — wszystkie
+serie, które klient wpisał przy tym ćwiczeniu. Wpisy sprzed 23.09.2026 znają
+tylko najcięższą serię i tak się pokazują.
+
 **1RM z serii roboczych.** Jeśli klient wpisuje, ile faktycznie podniósł, konsola
 proponuje nowe 1RM policzone z tych serii — zamiast wysyłać go na kolejną serię
 maksymalną. Przy każdej propozycji widać, z czego wyszła i czy można jej ufać.
@@ -878,7 +883,7 @@ npm run kopia
 | `narzedzia/przeglad-ekranow.ts` | klikanie po kontrolkach konsoli w przeglądarce |
 | `narzedzia/przeglad-klienta.ts` | pętla klienta na telefonie, od oceny po zmianę ciężaru |
 | `narzedzia/sprawdz-kolko.ts` | kółko konsola → arkusz → konsola, wartość po wartości |
-| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 92 próby, serwer ma przeżyć i odmówić |
+| `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 108 prób, serwer ma przeżyć i odmówić |
 | `narzedzia/sprawdz-skale.ts` | 40 klientów × 6 cykli — czy konsola nadąża |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
