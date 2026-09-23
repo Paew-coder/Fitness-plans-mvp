@@ -389,3 +389,4 @@ details.rpe p { margin: .5rem 0 0; line-height: 1.45; color: var(--tekst-slaby);
   margin-top: .5rem; color: var(--tekst-slaby);
 }
 .rpe-liczba { font-family: var(--mono); font-weight: 700; color: var(--tekst); }
+p.dobor.dobor-zapisane { color: var(--ok); }

@@ -446,6 +446,13 @@ Przy okazji trzy błędy, każdy złapany przejściem w przeglądarce:
 
 Następne z listy 05: podgląd planu przy ustawianiu startu (4), historia ćwiczenia w panelu (5), rozgrzewka jako pozycja planu (6).
 
+**16. Poprawki z testów na planie Marka X — 23.09.2026.**
+
+* **Instrukcja doboru ciężaru wisiała po wpisaniu serii.** Zapis z listy dnia celowo nie przerysowuje ekranu (żeby nie zamknąć klawiatury w połowie liczby), więc karta zostawała w stanie sprzed wpisu. Teraz instrukcja znika w chwili wpisania pełnej serii, a karta rysuje się od nowa, gdy wróci policzony ciężar. W prowadzeniu ta sama zasada.
+* **Równoległe opróżnianie kolejki offline** — błąd starszy niż kalibracja. Dwa szybkie zapisy (ciężar, a zaraz powtórzenia) wysyłały kolejkę dwa razy naraz; odpowiedź na starszy zapis potrafiła przyjść później i nadpisać świeższy widok. Kontrola z przeglądu klienta łapała to co drugi przebieg. Teraz opróżnianie idzie łańcuchem — po poprawce sześć przebiegów z rzędu bez błędu.
+
+**Otwarte pytanie od trenera:** czy w „co poszło" pokazywać wszystkie serie, a nie tylko najcięższą. Dziś wszystkie serie żyją wyłącznie w telefonie i tylko dla jednego treningu naraz; do bazy idzie jedna para na ćwiczenie i tydzień. Pokazanie wszystkich wymaga zapisywania ich na serwerze (migracja bazy) — rekomendacja w rozmowie z 23.09.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
