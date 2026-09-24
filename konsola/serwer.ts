@@ -548,13 +548,25 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
       const punkty = w.punkty.sort((a, b) => a.tydzien - b.tydzien);
       const pierwszy = punkty[0]!;
       const ostatni = punkty.at(-1)!;
+      /*
+       * Zmiana liczona z szacowanego 1RM, a nie z kilogramów na sztandze.
+       *
+       * Kilogramy wynikają z programowania, nie z formy: plan zmienia ciężar
+       * i powtórzenia tydzień po tygodniu, a w T4 restartuje blok niżej.
+       * Zgłoszone z testów: przy 55 kg × 9 w T1 i 50 kg × 11 w T2 nagłówek
+       * mówił „−5 kg (−9,1%)", czyli regres — a siła zmieniła się o 2%.
+       * Kilogramy zostają w punktach tydzień po tygodniu, tam, gdzie mają sens.
+       */
       return {
         cwiczenieId,
         nazwa: w.nazwa,
         punkty,
-        zmianaKg: zaokraglij(ostatni.ciezar - pierwszy.ciezar, 1),
-        zmianaProc: pierwszy.ciezar > 0
-          ? zaokraglij(((ostatni.ciezar - pierwszy.ciezar) / pierwszy.ciezar) * 100, 1)
+        // Ile różnych tygodni — przy jednym nie ma z czym porównać.
+        tygodni: new Set(punkty.map((x) => x.tydzien)).size,
+        oneRMPierwszy: pierwszy.oneRM,
+        oneRMOstatni: ostatni.oneRM,
+        zmiana1RMProc: pierwszy.oneRM > 0
+          ? zaokraglij(((ostatni.oneRM - pierwszy.oneRM) / pierwszy.oneRM) * 100, 1)
           : null,
       };
     })

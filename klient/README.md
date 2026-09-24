@@ -95,8 +95,13 @@ policzę ciężaru"). Niewpisana seria w środku pokazuje się jako „—".
 **Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
 i powtórzenia, 1RM liczy się od razu.
 
-**Twój postęp** — osobny ekran: frekwencja tydzień po tygodniu, waga i to,
-jak rosną ciężary w każdym ćwiczeniu (razem z szacowanym 1RM). Wszystko liczy
+**Twój postęp** — osobny ekran: frekwencja tydzień po tygodniu, waga i postęp
+w każdym ćwiczeniu. Punkty tydzień po tygodniu to najcięższa seria
+(*55 kg × 9 · 1RM ≈ 79,1 kg*), a nagłówek karty porównuje **siłę, nie kilogramy
+na sztandze**: *„1RM ≈ 79,1 → 77,5 kg (−2%)"*. Kilogramy zmienia sam plan
+(w T4 restartuje blok niżej), więc porównane wprost mówiły „−5 kg (−9%)" komuś,
+kto zrobił dwa powtórzenia więcej. Przy jednym tygodniu wpisów stoi *„Pierwszy
+pomiar — zmianę zobaczysz za tydzień"*, a nie „bez zmiany". Wszystko liczy
 się z tego, co klient sam wpisał przy ćwiczeniach — jedyne dodatkowe pole to
 waga, jeden wpis na dzień.
 
