@@ -396,7 +396,7 @@ którego poprzednie nie umiały złapać.
 
 ```bash
 cd konsola
-npm test                    # 590 testów, bez żadnych narzędzi zewnętrznych
+npm test                    # 592 testy, bez żadnych narzędzi zewnętrznych
 npm run przeglad-ekranow    # klikanie po konsoli w prawdziwej przeglądarce
 npm run przeglad-klienta    # pętla klienta na telefonie, z trybem offline
 npm run sprawdz-kolko       # konsola → arkusz → konsola, wartość po wartości
