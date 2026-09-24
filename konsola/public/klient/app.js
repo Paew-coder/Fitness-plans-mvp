@@ -711,8 +711,7 @@ function rysujTrening() {
  * i serii czytał się jak ciężar z dopiskiem — stąd równe kolumny. Potem:
  * w panelu za mało widać, **która to seria**, a za bardzo RPE, które po
  * pierwszym tygodniu nie jest już tak ważne (ciężar jest policzony). Seria
- * dostała więc własną kolumnę, a RPE zeszło do linijki pod spodem — od razu
- * przetłumaczone na to, co się z nim robi na sali: ile powtórzeń w zapasie.
+ * dostała więc własną kolumnę, a RPE zeszło do drobnej linijki pod spodem.
  */
 function kolumnyZadania({ seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne }) {
   const blok = el("div", "zadanie-blok");
@@ -734,10 +733,9 @@ function kolumnyZadania({ seria, zSerii, ciezar, dobierz, serie, powtorzenia, rp
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
     null, jednostronne ? "na stronę" : null);
   blok.append(siatka);
-  if (rpe) {
-    blok.append(el("div", "rpe-linia", `RPE ${liczba(rpe)} · `
-      + (rpe >= 10 ? "nic w zapasie" : `${wZapasie(rpe)} w zapasie`)));
-  }
+  // Samo „RPE 8", bez „2 w zapasie" — trener: dopisek zbędny. Co znaczy
+  // RPE, mówi „Co to jest RPE?" tam, gdzie klient dobiera ciężar.
+  if (rpe) blok.append(el("div", "rpe-linia", `RPE ${liczba(rpe)}`));
   return blok;
 }
 

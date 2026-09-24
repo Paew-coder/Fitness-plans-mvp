@@ -792,7 +792,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
   sprawdz("numer serii jest duży, a RPE drobne",
     await wysokosc(".kolumna-seria .wartosc") === await wysokosc(".kolumna-ciezar .wartosc")
-    && await wysokosc(".rpe-linia") < await wysokosc(".kolumna-seria .wartosc") / 2,
+    && await wysokosc(".rpe-linia") < await wysokosc(".kolumna-seria .wartosc") / 2
+    // Samo „RPE 6,5" — bez dopisku „3–4 w zapasie" (trener, 24.09).
+    && /^RPE [\d,]+$/.test((await panel.locator(".rpe-linia").innerText()).trim()),
     `seria ${await wysokosc(".kolumna-seria .wartosc")}px · RPE ${await wysokosc(".rpe-linia")}px · `
     + `„${await panel.locator(".rpe-linia").innerText()}"`);
   sprawdz("wpisane serie widać na panelu",
