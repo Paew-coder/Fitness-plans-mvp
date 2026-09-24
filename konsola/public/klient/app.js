@@ -635,6 +635,19 @@ function doborCiezaru(c) {
   return wskazowkaDoboru(c);
 }
 
+/**
+ * Ciężar „ręcznie", a trener go nie wpisał — klient dobiera go sam.
+ *
+ * Zgłoszone przy „Dead bug izo + OH": w panelu pole kg stało na wierzchu,
+ * a na liście w kolumnie ciężaru wisiał napis z BAZY „ręczne ustawienie",
+ * a pola chowały się pod „+ zapisz, co poszło". Teraz w kolumnie stoi
+ * „dobierz", pola są otwarte, a zdanie znika po pierwszej pełnej serii.
+ * Bez RPE-owej instrukcji z `wskazowkaDoboru` — nic się tu nie liczy z 1RM.
+ */
+const wlasnyCiezarDoWpisania = (c) => c.ciezarWybieraKlient && !seriaWpisana(c);
+const wskazowkaWlasnegoCiezaru = () => el("p", "dobor dobor-wlasny",
+  "Ciężar dobierasz sam — wpisz, z jakim robisz serie. Trener zobaczy go w planie.");
+
 /** Skąd się wziął ciężar — w tym treningu, w którym go policzyliśmy. */
 const notkaKalibracji = (k) => el("p", "kalibracja",
   `✓ Policzone z Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia} `
@@ -830,10 +843,11 @@ function kartaCwiczenia(c, stan = null) {
   // Bez 1RM zamiast „— brak 1RM", które brzmiało jak awaria, stoi zaproszenie
   // do dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
   karta.append(kolumnyZadania({
-    ciezar: c.ciezar, dobierz: c.dobierzCiezar, serie: c.serie,
+    ciezar: c.ciezar, dobierz: c.dobierzCiezar || c.ciezarWybieraKlient, serie: c.serie,
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
   }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
+  if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
   const oceny = el("div", "oceny");
@@ -982,7 +996,8 @@ function polaWykonania(c) {
 
   // Przy ćwiczeniu bez ciężaru pola są od razu na wierzchu, dopóki klient nie
   // wpisze serii: tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.
-  const otwarte = otwarteWykonania.has(c.positionId) || (c.dobierzCiezar && !seriaWpisana(c));
+  const otwarte = otwarteWykonania.has(c.positionId)
+    || ((c.dobierzCiezar || c.ciezarWybieraKlient) && !seriaWpisana(c));
 
   // Po treningu: linijka, co poszło, i osobno „edytuj". Formularz na wierzchu
   // wyglądał jak coś do wypełnienia, a to jest zapis — do poprawienia literówki
@@ -1012,6 +1027,9 @@ function polaWykonania(c) {
     const bylDobor = c.dobierzCiezar;
     const wysylka = wyslijSerie(c, lista);
     podpisz();
+    if (!wlasnyCiezarDoWpisania(c)) {
+      blok.closest(".cwiczenie")?.querySelector(".dobor-wlasny")?.remove();
+    }
 
     // Ćwiczenie bez ciężaru: ta seria właśnie go ustala. Instrukcja znika od
     // razu — bez przerysowania, bo klient może jeszcze stać w polu obok —
@@ -1443,10 +1461,12 @@ function panelSerii(k, kroki, d) {
   if (k.wGrupie) karta.append(el("div", "seria-numer", `superseria ${k.litera}`));
 
   karta.append(kolumnyZadania({
-    seria: k.seria, zSerii: k.zSerii, ciezar: c.ciezar, dobierz: c.dobierzCiezar,
+    seria: k.seria, zSerii: k.zSerii, ciezar: c.ciezar,
+    dobierz: c.dobierzCiezar || c.ciezarWybieraKlient,
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
   }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
+  if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
   // Co już poszło w tym treningu przy tym ćwiczeniu.
