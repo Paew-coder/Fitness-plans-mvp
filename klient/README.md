@@ -100,8 +100,13 @@ w każdym ćwiczeniu. Punkty tydzień po tygodniu to najcięższa seria
 (*55 kg × 9 · 1RM ≈ 79,1 kg*), a nagłówek karty porównuje **siłę, nie kilogramy
 na sztandze**: *„1RM ≈ 79,1 → 77,5 kg (−2%)"*. Kilogramy zmienia sam plan
 (w T4 restartuje blok niżej), więc porównane wprost mówiły „−5 kg (−9%)" komuś,
-kto zrobił dwa powtórzenia więcej. Przy jednym tygodniu wpisów stoi *„Pierwszy
-pomiar — zmianę zobaczysz za tydzień"*, a nie „bez zmiany". Wszystko liczy
+kto zrobił dwa powtórzenia więcej. Przy jednym tygodniu wpisów stoi *„Na razie
+wpisy z jednego tygodnia — zmianę zobaczysz po kolejnym"* i zdanie, że liczą się
+tygodnie z wpisanym ciężarem i powtórzeniami — sama ocena ich nie ma (dawne
+„Pierwszy pomiar" myliło przy ćwiczeniu wcześniej tylko ocenionym). Ciężar
+ustawiany ręcznie (np. Dead bug z 2 kg) nie dostaje 1RM — porównuje same
+kilogramy. Punkt idzie do ćwiczenia, które klient faktycznie robił, także po
+podmianie w slocie. Wszystko liczy
 się z tego, co klient sam wpisał przy ćwiczeniach — jedyne dodatkowe pole to
 waga, jeden wpis na dzień.
 
@@ -215,7 +220,9 @@ Na **liście dnia** bieżące ćwiczenie ma ramkę i napis **▶ Tu jesteś · s
 skończone — **✓ zrobione** (na zielono), zaczęte — *◐ zaczęte · 1 z 3 serii*
 (na szaro). Każdy z tych
 napisów wraca do panelu: „Tu jesteś" dokładnie tam, gdzie klient wyszedł (także
-w trwającą przerwę), pozostałe — do tego ćwiczenia. Przycisk nad listą mówi,
+w trwającą przerwę), pozostałe — do tego ćwiczenia. Ćwiczenie jeszcze nietknięte
+ma **▶ Zacznij to ćwiczenie** — prosto do jego pierwszej serii w panelu,
+w dowolnej kolejności (także TOP SET). Przycisk nad listą mówi,
 dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
 
 ## Pętla się domyka

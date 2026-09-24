@@ -28,6 +28,7 @@ import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
 import { adresyLokalnejSieci } from "./adresy.ts";
 import { katalog } from "../silnik/src/katalog.ts";
+import { PROGRESJE_BEZ_CIEZARU } from "../silnik/src/typy.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
@@ -519,28 +520,36 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
   // Co ćwiczenie zrobiło w czasie — tylko tam, gdzie klient wpisał ciężar.
   const wgCwiczenia = new Map<string, {
     nazwa: string;
-    punkty: { tydzien: number; ciezar: number; powtorzenia: number; oneRM: number }[];
+    bez1RM: boolean;
+    punkty: { tydzien: number; ciezar: number; powtorzenia: number; oneRM: number | null }[];
   }>();
   for (const w of wykonania) {
     if (!w.ciezarWykonany || !w.powtorzeniaWykonane) continue;
     const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
     if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
-    const e = oneRMzSerii({
+    // Ćwiczenie, które klient wtedy faktycznie robił — trener mógł później
+    // wstawić w to miejsce inne, a cudze kilogramy nie są niczyim postępem.
+    const cwiczenie = (w.cwiczenieId ? katalog.poId(w.cwiczenieId) : null) ?? slot.cwiczenie;
+    // Ciężar ustawiany ręcznie (np. Dead bug z 2 kg) nie ma 1RM — tabela RPE
+    // nic o takim ruchu nie wie, a „1RM ≈ 6 kg" przy dead bugu to bzdura.
+    // Zostają same kilogramy.
+    const bez1RM = PROGRESJE_BEZ_CIEZARU.includes(cwiczenie.progresja);
+    const e = bez1RM ? null : oneRMzSerii({
       ciezar: w.ciezarWykonany,
       powtorzenia: w.powtorzeniaWykonane,
       rpePlanowane: slot.rpe,
       feedback: w.feedback ?? null,
     });
-    if (!e) continue;
-    const wpis = wgCwiczenia.get(slot.cwiczenie.id)
-      ?? { nazwa: slot.cwiczenie.nazwa, punkty: [] };
+    if (!bez1RM && !e) continue;
+    const wpis = wgCwiczenia.get(cwiczenie.id)
+      ?? { nazwa: cwiczenie.nazwa, bez1RM, punkty: [] };
     wpis.punkty.push({
       tydzien: w.tydzien,
       ciezar: w.ciezarWykonany,
       powtorzenia: w.powtorzeniaWykonane,
-      oneRM: e.oneRM,
+      oneRM: e?.oneRM ?? null,
     });
-    wgCwiczenia.set(slot.cwiczenie.id, wpis);
+    wgCwiczenia.set(cwiczenie.id, wpis);
   }
 
   const cwiczenia = [...wgCwiczenia]
@@ -560,14 +569,18 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
       return {
         cwiczenieId,
         nazwa: w.nazwa,
+        bez1RM: w.bez1RM,
         punkty,
         // Ile różnych tygodni — przy jednym nie ma z czym porównać.
         tygodni: new Set(punkty.map((x) => x.tydzien)).size,
         oneRMPierwszy: pierwszy.oneRM,
         oneRMOstatni: ostatni.oneRM,
-        zmiana1RMProc: pierwszy.oneRM > 0
+        zmiana1RMProc: pierwszy.oneRM && ostatni.oneRM
           ? zaokraglij(((ostatni.oneRM - pierwszy.oneRM) / pierwszy.oneRM) * 100, 1)
           : null,
+        // Przy ciężarze bez 1RM porównuje się same kilogramy.
+        ciezarPierwszy: pierwszy.ciezar,
+        ciezarOstatni: ostatni.ciezar,
       };
     })
     .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
