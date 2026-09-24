@@ -53,6 +53,14 @@ describe("kiedy seria maksymalna ma sens", () => {
     assert.ok(bez.some((c) => c.nazwa === "SLDL balance"));
     assert.ok(bez.some((c) => c.nazwa === "Dead bug izo + OH"));
   });
+
+  test("Dead bug izo + OH ma ciężar ustawiany ręcznie, nie masę ciała", () => {
+    // Decyzja trenera z 24.09.2026 (wcześniej, 21.09, zostało „masa ciała").
+    // Trener wpisuje ciężar sam, klient widzi go w planie i może zapisać kg.
+    const deadBug = katalog.wszystkie.find((c) => c.id === "EX-0049")!;
+    assert.equal(deadBug.nazwa, "Dead bug izo + OH");
+    assert.equal(deadBug.progresja, "ręczne ustawienie");
+  });
 });
 
 describe("to samo zdanie w silniku i w przeglądarce", () => {
