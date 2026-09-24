@@ -235,6 +235,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("ekran postępu pokazuje wykonaną pracę",
     tekstPostepu.toLocaleLowerCase("pl").includes("barbell back squat"),
     tekstPostepu.replace(/\n/g, " · ").slice(0, 160));
+  // Jeden tydzień z wpisami — nie ma z czym porównać. Dawniej stało tu
+  // „bez zmiany", czyli wniosek, którego z jednego pomiaru nie da się wyciągnąć.
+  sprawdz("przy jednym pomiarze nie ma udawanego „bez zmiany”",
+    tekstPostepu.includes("Pierwszy pomiar") && !tekstPostepu.includes("bez zmiany"),
+    tekstPostepu.split("\n").find((l) => l.includes("pomiar") || l.includes("zmian")) ?? "—");
 
   // ── 11. waga ──────────────────────────────────────────────────────
   //
@@ -1021,6 +1026,21 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && wioslowanieZListy.serieWykonane[0]?.powtorzenia === 9,
     JSON.stringify(wioslowanieZListy.serieWykonane));
   await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
+  // Drugi tydzień boju głównego: mniej kilogramów, więcej powtórzeń. Nagłówek
+  // karty w postępie ma mówić o sile (1RM), nie o kilogramach na sztandze.
+  await api(`/api/klient/${golySciezka.replace("/k/", "")}/odczucie`, "POST",
+    { positionId: "D1-S01", tydzien: 2, serie: [{ ciezar: 95, powtorzenia: 8 }] });
+  await s.reload({ waitUntil: "networkidle" });
+  await s.click("#pokaz-postep");
+  await s.waitForSelector("#ekran-postep:not(.ukryty)");
+  await s.waitForTimeout(500);
+  const kartaPostepuBoju = s.locator("#postep .cwiczenie").filter({ hasText: /barbell back squat/i });
+  const naglowekPostepu = await kartaPostepuBoju.first().locator(".modul-poziom").innerText();
+  sprawdz("postęp ćwiczenia porównuje 1RM, a nie kilogramy na sztandze",
+    /^1RM ≈ [\d,]+ → [\d,]+ kg/.test(naglowekPostepu), naglowekPostepu);
+  await s.click("#wroc-z-postepu");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
 
 
