@@ -472,3 +472,16 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 /* Numer serii w panelu: „3 z 3" — duża trójka, drobne „z 3". */
 .kolumna-seria .wartosc { color: var(--akcent); }
 .serie-wpisane .etykieta-serii { font-size: .78rem; color: var(--tekst-blady); align-self: center; }
+
+/* Waga ciała: pole, „kg" i przycisk w jednym rzędzie. Dawniej pole pożyczało
+   styl od wierszy serii — i rozjechało się, gdy te stały się siatką. */
+.pole-wagi { display: flex; align-items: center; gap: .5rem; margin-top: .55rem; }
+.pole-wagi input {
+  flex: 1; min-width: 0; font: inherit; font-family: var(--mono); font-size: 1.1rem;
+  text-align: center; padding: .6rem .4rem; border-radius: 9px;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.pole-wagi .razy { font-family: var(--mono); font-size: .85rem; color: var(--tekst-blady); }
+.pole-wagi .glowny { padding: .65rem 1.1rem; }
+.potwierdzenie-wagi { margin: .45rem 0 0; font-size: .88rem; color: var(--ok); }
+.potwierdzenie-wagi.blad { color: var(--trudne); }
