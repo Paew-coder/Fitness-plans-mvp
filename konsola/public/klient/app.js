@@ -466,9 +466,15 @@ function rysujPostep() {
   for (const c of p.cwiczenia) {
     const karta = el("div", "cwiczenie");
     karta.append(el("div", "modul-tytul", c.nazwa));
-    karta.append(el("div", "modul-poziom", c.zmianaKg === 0
-      ? "bez zmiany"
-      : `${zeZnakiem(c.zmianaKg)} kg${c.zmianaProc ? `  (${zeZnakiem(c.zmianaProc)}%)` : ""}`));
+    // Nagłówek z siły (szacowane 1RM), nie z kilogramów na sztandze — te
+    // zmienia sam plan. Przy jednym tygodniu nie ma z czym porównać, więc
+    // zamiast „bez zmiany" mówimy wprost, że to pierwszy pomiar.
+    karta.append(el("div", "modul-poziom", (c.tygodni ?? 1) < 2
+      ? "Pierwszy pomiar — zmianę zobaczysz za tydzień"
+      : c.oneRMOstatni === c.oneRMPierwszy
+        ? `1RM ≈ ${liczba(c.oneRMOstatni)} kg — bez zmiany`
+        : `1RM ≈ ${liczba(c.oneRMPierwszy)} → ${liczba(c.oneRMOstatni)} kg`
+          + (c.zmiana1RMProc != null ? `  (${zeZnakiem(c.zmiana1RMProc)}%)` : "")));
     for (const punkt of c.punkty) {
       const w = el("div", "modul-blok");
       w.append(el("span", "nazwa", `Tydzień ${punkt.tydzien}`));

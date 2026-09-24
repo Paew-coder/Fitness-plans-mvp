@@ -297,6 +297,29 @@ describe("wszystkie serie ćwiczenia, nie tylko najcięższa", () => {
   });
 });
 
+describe("postęp w ćwiczeniach liczy się z siły, nie z kilogramów", () => {
+  /**
+   * Przykład z testów trenera: 55 kg × 9 w T1, 50 kg × 11 w T2. Nagłówek
+   * mówił „−5 kg (−9,1%)", czyli regres — a szacowane 1RM zmieniło się
+   * o około 2%. Kilogramy na sztandze zmienia sam plan.
+   */
+  test("zmiana w nagłówku to zmiana 1RM, a tygodnie są policzone", async () => {
+    await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S02", tydzien: 4, serie: [{ ciezar: 55, powtorzenia: 9 }] });
+    await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S02", tydzien: 5, serie: [{ ciezar: 50, powtorzenia: 11 }] });
+    const { dane } = await api(`/api/klient/${token}`);
+    const c = dane.postep.cwiczenia.find((x: any) => x.cwiczenieId === "EX-0016");
+    const t4 = c.punkty.find((x: any) => x.tydzien === 4);
+    const t5 = c.punkty.find((x: any) => x.tydzien === 5);
+    assert.ok(c.tygodni >= 2);
+    assert.equal(c.oneRMOstatni, c.punkty.at(-1).oneRM);
+    assert.ok(Math.abs(t5.oneRM - t4.oneRM) / t4.oneRM < 0.05,
+      `1RM prawie bez zmiany (${t4.oneRM} → ${t5.oneRM}), choć kilogramy spadły o 5`);
+    assert.equal(c.zmianaKg, undefined, "kilogramy nie wracają do nagłówka");
+  });
+});
+
 describe("wartości spoza świata", () => {
   /**
    * Klient nie jest przeciwnikiem, ale jest **bez nadzoru**: zamiast 100 kg
