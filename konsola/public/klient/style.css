@@ -438,6 +438,9 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 }
 .stan-prowadzenia.tu { background: var(--akcent-tlo); color: var(--akcent); border-color: var(--akcent); }
 .stan-prowadzenia.zaczete { background: var(--karta-2); color: var(--tekst-slaby); border-color: var(--linia); }
+/* Wejście w nietknięte ćwiczenie — widoczne, ale ciszej niż stan treningu. */
+.stan-prowadzenia.start { background: transparent; color: var(--akcent); border-color: var(--linia); cursor: pointer; }
+@media (pointer: coarse) { .stan-prowadzenia { padding: .5rem .8rem; } }
 
 /* ── zadanie serii: równe kolumny ───────────────────────────────── */
 /* Podpis nad liczbą, wszystkie liczby tą samą wielkością. Duży ciężar obok

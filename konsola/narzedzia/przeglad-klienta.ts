@@ -240,9 +240,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     tekstPostepu.replace(/\n/g, " · ").slice(0, 160));
   // Jeden tydzień z wpisami — nie ma z czym porównać. Dawniej stało tu
   // „bez zmiany", czyli wniosek, którego z jednego pomiaru nie da się wyciągnąć.
-  sprawdz("przy jednym pomiarze nie ma udawanego „bez zmiany”",
-    tekstPostepu.includes("Pierwszy pomiar") && !tekstPostepu.includes("bez zmiany"),
-    tekstPostepu.split("\n").find((l) => l.includes("pomiar") || l.includes("zmian")) ?? "—");
+  // Potem „Pierwszy pomiar" — mylące, gdy ćwiczenie było robione wcześniej,
+  // tylko bez wpisanych serii. Teraz mówi, co się liczy.
+  sprawdz("przy jednym tygodniu nie ma udawanego „bez zmiany”",
+    tekstPostepu.includes("wpisy z jednego tygodnia") && !tekstPostepu.includes("bez zmiany"),
+    tekstPostepu.split("\n").find((l) => l.includes("tygodnia") || l.includes("zmian")) ?? "—");
+  sprawdz("i jedno zdanie, że liczą się tygodnie z wpisanym ciężarem",
+    tekstPostepu.includes("sama ocena ich nie ma"));
 
   // ── 11. waga ──────────────────────────────────────────────────────
   //
@@ -1310,12 +1314,21 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     wpisRecznego?.serie?.[0]?.ciezar === 2 && wpisRecznego?.serie?.[0]?.powtorzenia === 10,
     JSON.stringify(wpisRecznego?.serie));
 
-  // W prowadzeniu to samo słowo w kolumnie, a pole kg podpowiada ciężar
-  // wpisany przed chwilą na liście — to te same dane.
-  await s.click("#prowadz");
+  // Z listy prosto do panelu dowolnego ćwiczenia — tu B2, choć A1 i B1
+  // nikt jeszcze nie ruszył. W prowadzeniu to samo słowo w kolumnie, a pole
+  // kg podpowiada ciężar wpisany przed chwilą na liście — to te same dane.
+  const zacznijB2 = deadBug.getByRole("button", { name: "▶ Zacznij to ćwiczenie" });
+  sprawdz("każde nietknięte ćwiczenie ma na liście wejście do panelu",
+    await zacznijB2.isVisible()
+    && await s.locator("#cwiczenia .stan-prowadzenia.start").count() === 3,
+    `${await s.locator("#cwiczenia .stan-prowadzenia.start").count()} z 3`);
+  await zacznijB2.click();
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
-  await s.locator('#panel .kafel-mapy[data-lp="B2"]').click();
   await s.waitForTimeout(300);
+  sprawdz("przycisk otwiera panel od razu na tym ćwiczeniu, nie od początku dnia",
+    (await s.locator("#panel").innerText()).includes("Dead bug izo + OH")
+    && (await s.locator("#panel .kolumna-seria").innerText()).includes("1"),
+    (await s.locator("#panel .kolumna-seria").innerText()).replace(/\n/g, " "));
   sprawdz("w panelu też „dobierz”, a pole kg ma ciężar z listy",
     (await s.locator("#panel .kolumna-ciezar").innerText()).includes("dobierz")
     && await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue() === "2",

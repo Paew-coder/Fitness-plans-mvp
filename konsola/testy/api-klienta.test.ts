@@ -342,6 +342,19 @@ describe("ciężar ustawiany ręcznie, którego trener nie wpisał", () => {
       false, "ręczny ciężar nie udaje 1RM");
   });
 
+  test("postęp przy ręcznym ciężarze to kilogramy, bez udawanego 1RM", async () => {
+    await api(`/api/klient/${tokenReczny}/odczucie`, "POST",
+      { positionId: "D1-S03", tydzien: 2, serie: [{ ciezar: 4, powtorzenia: 11 }] });
+    const { dane } = await api(`/api/klient/${tokenReczny}`);
+    const c = dane.postep.cwiczenia.find((x: any) => x.cwiczenieId === "EX-0049");
+    assert.equal(c.bez1RM, true);
+    assert.equal(c.tygodni, 2);
+    assert.deepEqual(c.punkty.map((x: any) => x.oneRM), [null, null]);
+    assert.equal(c.ciezarPierwszy, 2);
+    assert.equal(c.ciezarOstatni, 4);
+    assert.equal(c.zmiana1RMProc, null);
+  });
+
   test("ciężar wpisany przez trenera zdejmuje flagę", async () => {
     const plan = (await api(`/api/plany/${planReczny}`)).dane.zapisany.plan;
     plan.sloty[2].tygodnie = { ...plan.sloty[2].tygodnie, 1: { ciezarOverride: 2.5 } };
@@ -738,6 +751,14 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     assert.equal(t1.ciezarWykonany, null,
       "przy nowej nazwie stoją kilogramy ze starego ćwiczenia");
     assert.equal(t1.feedback, null, "przy nowej nazwie stoi ocena starego ćwiczenia");
+  });
+
+  test("postęp po podmianie idzie do ćwiczenia, które klient robił", async () => {
+    const { dane } = await api(`/api/klient/${tokenPodmiany}`);
+    const nazwy = dane.postep.cwiczenia.map((c: any) => c.nazwa);
+    assert.ok(nazwy.some((n: string) => /back squat/i.test(n)), JSON.stringify(nazwy));
+    assert.ok(!nazwy.some((n: string) => /low bar/i.test(n)),
+      `kilogramy z przysiadu poszły na konto podmienionego ćwiczenia: ${JSON.stringify(nazwy)}`);
   });
 
   test("ale swoją historię widzi — pod prawdziwą nazwą", async () => {

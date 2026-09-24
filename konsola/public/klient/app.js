@@ -469,17 +469,31 @@ function rysujPostep() {
     // Nagłówek z siły (szacowane 1RM), nie z kilogramów na sztandze — te
     // zmienia sam plan. Przy jednym tygodniu nie ma z czym porównać, więc
     // zamiast „bez zmiany" mówimy wprost, że to pierwszy pomiar.
-    karta.append(el("div", "modul-poziom", (c.tygodni ?? 1) < 2
-      ? "Pierwszy pomiar — zmianę zobaczysz za tydzień"
-      : c.oneRMOstatni === c.oneRMPierwszy
-        ? `1RM ≈ ${liczba(c.oneRMOstatni)} kg — bez zmiany`
-        : `1RM ≈ ${liczba(c.oneRMPierwszy)} → ${liczba(c.oneRMOstatni)} kg`
-          + (c.zmiana1RMProc != null ? `  (${zeZnakiem(c.zmiana1RMProc)}%)` : "")));
+    //
+    // Liczą się tylko tygodnie z wpisanym ciężarem i powtórzeniami. Zgłoszone
+    // z testów: „Pierwszy pomiar" przy ćwiczeniu robionym już wcześniej —
+    // wtedy tylko ocenionym, bez serii. Stąd zdanie, co się tu liczy.
+    //
+    // Ciężar ustawiany ręcznie (bez1RM) porównuje same kilogramy.
+    const jedenTydzien = (c.tygodni ?? 1) < 2;
+    const [od, do_] = c.bez1RM
+      ? [c.ciezarPierwszy, c.ciezarOstatni] : [c.oneRMPierwszy, c.oneRMOstatni];
+    const co = c.bez1RM ? "Ciężar" : "1RM ≈";
+    karta.append(el("div", "modul-poziom", jedenTydzien
+      ? "Na razie wpisy z jednego tygodnia — zmianę zobaczysz po kolejnym"
+      : od === do_
+        ? `${co} ${liczba(do_)} kg — bez zmiany`
+        : `${co} ${liczba(od)} → ${liczba(do_)} kg`
+          + (!c.bez1RM && c.zmiana1RMProc != null ? `  (${zeZnakiem(c.zmiana1RMProc)}%)` : "")));
+    if (jedenTydzien) {
+      karta.append(el("p", "drobne",
+        "Liczą się tygodnie z wpisanym ciężarem i powtórzeniami — sama ocena ich nie ma."));
+    }
     for (const punkt of c.punkty) {
       const w = el("div", "modul-blok");
       w.append(el("span", "nazwa", `Tydzień ${punkt.tydzien}`));
-      w.append(el("span", "tresc",
-        `${liczba(punkt.ciezar)} kg × ${punkt.powtorzenia}  ·  1RM ≈ ${liczba(punkt.oneRM)} kg`));
+      w.append(el("span", "tresc", `${liczba(punkt.ciezar)} kg × ${punkt.powtorzenia}`
+        + (punkt.oneRM != null ? `  ·  1RM ≈ ${liczba(punkt.oneRM)} kg` : "")));
       karta.append(w);
     }
     kontener.append(karta);
@@ -721,6 +735,10 @@ function rysujTrening() {
     if (tuTop || stanTop?.zrobione.has("topset")) {
       top.append(przyciskStanu(tuTop ? "▶ Tu jesteś" : "✓ zrobione", tuTop,
         (k) => k.typ === "topset"));
+    } else if (!d.ukonczony) {
+      const b = przyciskStanu("▶ Zacznij to ćwiczenie", false, (k) => k.typ === "topset");
+      b.classList.add("start");
+      top.append(b);
     }
   } else {
     top.classList.add("ukryty");
@@ -823,10 +841,10 @@ function kartaCwiczenia(c, stan = null) {
   }
   karta.append(gora);
 
+  const pasuje = (k) => k.positionId === c.positionId;
+  const ile = stan ? stan.kroki.filter(pasuje).filter((k) => stan.zrobione.has(k.klucz)).length : 0;
   if (stan) {
-    const pasuje = (k) => k.positionId === c.positionId;
     const jego = stan.kroki.filter(pasuje);
-    const ile = jego.filter((k) => stan.zrobione.has(k.klucz)).length;
     if (tuJestes) {
       karta.append(przyciskStanu(`▶ Tu jesteś · seria ${stan.tu.seria} z ${stan.tu.zSerii}`,
         true, pasuje));
@@ -838,6 +856,15 @@ function kartaCwiczenia(c, stan = null) {
       b.classList.add("zaczete");
       karta.append(b);
     }
+  }
+  // Nietknięte ćwiczenie też ma wejście w prowadzenie — prosto do jego
+  // pierwszej serii, niezależnie od kolejności. Zgłoszone z testów: z listy
+  // dało się wrócić tylko do ćwiczeń już zaczętych, a klient na sali robi to,
+  // co akurat wolne. Po domkniętym treningu nie ma dokąd prowadzić.
+  if (!tuJestes && ile === 0 && !dzienBiezacy()?.ukonczony) {
+    const b = przyciskStanu("▶ Zacznij to ćwiczenie", false, pasuje);
+    b.classList.add("start");
+    karta.append(b);
   }
 
   // Bez 1RM zamiast „— brak 1RM", które brzmiało jak awaria, stoi zaproszenie
