@@ -388,22 +388,42 @@ function rysujPostep() {
   kontener.append(f);
 
   // waga
+  //
+  // Zgłoszone z testów: wpisanej wagi nie dało się zatwierdzić. Zapis szedł
+  // dopiero po stuknięciu obok pola — nic o tym nie mówiło — a po nim pole
+  // się czyściło, u góry dalej stało „—" i wyglądało to, jakby wpis zniknął.
+  // Teraz jest przycisk (i Enter), a zapisana waga pokazuje się od razu.
   const waga = el("div", "cwiczenie");
   waga.append(el("div", "modul-tytul", "Waga ciała"));
   const ostatnia = p.waga.punkty.at(-1);
-  waga.append(el("div", "modul-poziom", ostatnia
+  const poziom = el("div", "modul-poziom", ostatnia
     ? `${liczba(ostatnia.kg)} kg${p.waga.zmianaKg ? `  (${zeZnakiem(p.waga.zmianaKg)} kg)` : ""}`
-    : "—"));
-  const poleWagi = el("div", "wykonanie-pola");
+    : "—");
+  waga.append(poziom);
+  const formularz = el("form", "pole-wagi");
   const wKg = el("input");
   wKg.type = "number";
   wKg.inputMode = "decimal";
   wKg.min = "0";
   wKg.step = "0.1";
-  wKg.placeholder = "kg";
-  wKg.onchange = () => {
-    const kg = Number(wKg.value) || 0;
-    if (kg <= 0) return;
+  wKg.placeholder = "np. 78,5";
+  wKg.setAttribute("aria-label", "Dzisiejsza waga w kg");
+  const zapiszWage = el("button", "glowny", "Zapisz");
+  zapiszWage.type = "submit";
+  formularz.append(wKg, el("span", "razy", "kg"), zapiszWage);
+  const potwierdzenie = el("p", "potwierdzenie-wagi ukryty");
+  formularz.onsubmit = (e) => {
+    e.preventDefault();
+    const kg = Number(String(wKg.value).replace(",", ".")) || 0;
+    // Te same granice co na serwerze — lepiej powiedzieć przy polu, niż
+    // żeby zapis odbił się od serwera bez słowa wyjaśnienia.
+    if (kg < 20 || kg > 400) {
+      potwierdzenie.textContent = "Wpisz wagę w kilogramach, np. 78,5.";
+      potwierdzenie.classList.remove("ukryty");
+      potwierdzenie.classList.add("blad");
+      wKg.focus();
+      return;
+    }
     wyslij("/waga", { kg }, () => {
       // Dzień lokalny telefonu, nie UTC. Ważenie o wpół do pierwszej w nocy
       // lądowało pod wczorajszą datą, bo w UTC to jeszcze wczoraj — a serwer
@@ -412,11 +432,14 @@ function rysujPostep() {
       p.waga.punkty = [...p.waga.punkty.filter((x) => x.data !== dzisiaj), { data: dzisiaj, kg }];
     }, { odswiez: false });
     wKg.value = "";
+    wKg.blur();
+    poziom.textContent = `${liczba(kg)} kg`;
+    potwierdzenie.textContent = `✓ Zapisano: ${liczba(kg)} kg · dziś`;
+    potwierdzenie.classList.remove("ukryty", "blad");
   };
-  poleWagi.append(wKg, el("span", "razy", "dziś"));
-  waga.append(poleWagi);
+  waga.append(formularz, potwierdzenie);
   waga.append(el("p", "brama",
-    "Ile ważysz Ty, nie sztanga. Najlepiej rano, po przebudzeniu."));
+    "Wpisz swoją dzisiejszą wagę — najlepiej zmierzoną rano, po przebudzeniu."));
   if (p.waga.punkty.length > 1) {
     waga.append(el("p", "brama", p.waga.punkty
       .slice(-6)

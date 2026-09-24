@@ -244,18 +244,33 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // otwarciu tego ekranu brzmiało dokładnie „o co tu chodzi z tą wagą".
   const kartaWagi = s.locator("#postep .cwiczenie").filter({ has: s.locator("input") });
   const tekstWagi = (await kartaWagi.innerText()).toLocaleLowerCase("pl");
-  sprawdz("karta wagi mówi, że chodzi o ciało, nie o sztangę",
-    tekstWagi.includes("ważysz ty"), tekstWagi.replace(/\n/g, " · ").slice(0, 90));
+  // Tytuł „Waga ciała" mówi, że chodzi o ciało. Zdanie pod polem mówi, co
+  // wpisać — dawne „Ile ważysz Ty, nie sztanga" trener uznał za dziwne.
+  sprawdz("karta wagi mówi, co wpisać",
+    tekstWagi.includes("waga ciała") && tekstWagi.includes("dzisiejszą wagę")
+    && !tekstWagi.includes("sztanga"),
+    tekstWagi.replace(/\n/g, " · ").slice(0, 110));
   sprawdz("zdanie o podnoszonych ciężarach nie stoi w karcie wagi",
     !tekstWagi.includes("podniosłeś"), tekstWagi.replace(/\n/g, " · ").slice(0, 90));
 
-  const poleWagi = s.locator("#postep input").last();
+  // Zgłoszone z testów: wpisanej wagi nie dało się zatwierdzić — nie było
+  // przycisku, a po zapisie (stuknięciem obok) nic się na ekranie nie zmieniało.
+  const poleWagi = kartaWagi.locator("input");
   await poleWagi.fill("81.5");
-  await poleWagi.blur();
+  await kartaWagi.getByRole("button", { name: "Zapisz" }).click();
   await s.waitForTimeout(600);
+  const poZapisie = await kartaWagi.innerText();
+  sprawdz("wagę zatwierdza przycisk, a zapisana widać od razu",
+    poZapisie.includes("81,5 kg") && poZapisie.includes("✓ Zapisano"),
+    poZapisie.replace(/\n/g, " · ").slice(0, 90));
   const waga = (await widok()).postep.waga.punkty;
   sprawdz("waga zapisuje się i widać ją u trenera",
     waga.at(-1)?.kg === 81.5, `${waga.length} pomiar(ów), ostatni ${waga.at(-1)?.kg} kg`);
+  await poleWagi.fill("8150");
+  await kartaWagi.getByRole("button", { name: "Zapisz" }).click();
+  sprawdz("waga spoza świata dostaje zdanie przy polu, a nie cichą odmowę",
+    (await kartaWagi.innerText()).includes("Wpisz wagę w kilogramach"),
+    (await kartaWagi.innerText()).replace(/\n/g, " · ").slice(0, 90));
 
   // ── 12. kolejka offline nie blokuje się na odrzuconym zadaniu ─────
   // Scenariusz z życia: klient ocenia trening bez zasięgu, a w tym czasie
