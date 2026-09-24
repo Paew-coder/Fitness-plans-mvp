@@ -297,6 +297,61 @@ describe("wszystkie serie ćwiczenia, nie tylko najcięższa", () => {
   });
 });
 
+describe("ciężar ustawiany ręcznie, którego trener nie wpisał", () => {
+  /**
+   * „Dead bug izo + OH" od 24.09 ma progresję „ręczne ustawienie". Dopóki
+   * trener nie wpisze ciężaru, telefon dostał w kolumnie napis z BAZY
+   * i nic więcej — klient nie wiedział, że ciężar dobiera sam.
+   */
+  let planReczny = "";
+  let tokenReczny = "";
+  const deadBug = async () =>
+    (await api(`/api/klient/${tokenReczny}`)).dane.tygodnie[0].dni[0].cwiczenia[2];
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Ręczny Test", wersja: 1 });
+    planReczny = (await api("/api/plany")).dane.find((p: any) => p.klient === "Ręczny Test").id;
+    const plan = (await api(`/api/plany/${planReczny}`)).dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.sloty[1].cwiczenieId = "EX-0016";
+    plan.sloty[2].cwiczenieId = "EX-0049";   // Dead bug izo + OH
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 }];
+    await api(`/api/plany/${planReczny}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    tokenReczny = (await api(`/api/plany/${planReczny}/link`, "POST")).dane.token;
+  });
+
+  test("bez wpisu trenera telefon wie, że ciężar dobiera klient", async () => {
+    const c = await deadBug();
+    assert.equal(c.ciezarWybieraKlient, true);
+    assert.equal(c.dobierzCiezar, false, "to nie jest brak 1RM — nic się z tego nie liczy");
+  });
+
+  test("zwykłe ćwiczenia tej flagi nie mają", async () => {
+    const dzien = (await api(`/api/klient/${tokenReczny}`)).dane.tygodnie[0].dni[0].cwiczenia;
+    assert.equal(dzien[0].ciezarWybieraKlient, false, "bój z 1RM");
+    assert.equal(dzien[1].ciezarWybieraKlient, false, "akcesorium bez 1RM ma dobierzCiezar");
+  });
+
+  test("wpisany przez klienta ciężar trener widzi w wykonaniach", async () => {
+    await api(`/api/klient/${tokenReczny}/odczucie`, "POST",
+      { positionId: "D1-S03", tydzien: 1, serie: [{ ciezar: 2, powtorzenia: 10 }] });
+    const { dane } = await api(`/api/plany/${planReczny}`);
+    const w = dane.zapisany.wykonania.find((x: any) => x.positionId === "D1-S03");
+    assert.deepEqual(w.serie, [{ ciezar: 2, powtorzenia: 10 }]);
+    assert.equal(dane.zapisany.plan.serieMaksymalne.some((x: any) => x.cwiczenieId === "EX-0049"),
+      false, "ręczny ciężar nie udaje 1RM");
+  });
+
+  test("ciężar wpisany przez trenera zdejmuje flagę", async () => {
+    const plan = (await api(`/api/plany/${planReczny}`)).dane.zapisany.plan;
+    plan.sloty[2].tygodnie = { ...plan.sloty[2].tygodnie, 1: { ciezarOverride: 2.5 } };
+    await api(`/api/plany/${planReczny}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    const c = await deadBug();
+    assert.equal(c.ciezar, 2.5);
+    assert.equal(c.ciezarWybieraKlient, false);
+  });
+});
+
 describe("postęp w ćwiczeniach liczy się z siły, nie z kilogramów", () => {
   /**
    * Przykład z testów trenera: 55 kg × 9 w T1, 50 kg × 11 w T2. Nagłówek

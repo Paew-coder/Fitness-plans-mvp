@@ -1256,6 +1256,72 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && przysiadPoZasiegu.length === 2 && przysiadPoZasiegu[1].ciezar === 85,
     `wiosło ${JSON.stringify(wiosloPoZasiegu)} · przysiad ${JSON.stringify(przysiadPoZasiegu)}`);
 
+  // ── 25. ciężar ustawiany ręcznie, którego trener nie wpisał ────────
+  //
+  // Zgłoszone przy „Dead bug izo + OH" (od 24.09 „ręczne ustawienie"):
+  // w panelu pole kg stało na wierzchu, a na liście w kolumnie ciężaru
+  // wisiał napis z BAZY, pola chowały się pod „+ zapisz, co poszło"
+  // i wyglądało, że z listy ciężaru wpisać się nie da.
+  const RECZNY = "reczny";
+  await api("/api/plany", "POST", { klient: RECZNY, wersja: 1 });
+  const idRecznego = (await api("/api/plany")).find((p: any) => p.klient === RECZNY).id;
+  const planReczny = (await api(`/api/plany/${idRecznego}`)).zapisany.plan;
+  planReczny.sloty[0].cwiczenieId = "EX-0010";   // A1. bój główny
+  planReczny.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
+  planReczny.sloty[2].cwiczenieId = "EX-0049";   // B2. Dead bug izo + OH — ręcznie
+  planReczny.serieMaksymalne = [
+    { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
+    { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
+  ];
+  await api(`/api/plany/${idRecznego}`, "PUT",
+    { plan: planReczny, dataStartu: null, status: "wysłany" });
+  const sciezkaRecznego = (await api(`/api/plany/${idRecznego}/link`, "POST")).sciezka;
+
+  await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const deadBug = s.locator('#cwiczenia [data-position="D1-S03"]');
+  await deadBug.scrollIntoViewIfNeeded();
+  sprawdz("ręczny ciężar bez wpisu trenera: w kolumnie „dobierz”, nie napis z BAZY",
+    (await deadBug.locator(".kolumna-ciezar").innerText()).includes("dobierz")
+    && !(await deadBug.innerText()).includes("ręczne ustawienie"),
+    (await deadBug.locator(".kolumna-ciezar").innerText()).replace(/\n/g, " "));
+  sprawdz("pod spodem jedno zdanie, że ciężar dobiera klient",
+    await deadBug.locator(".dobor-wlasny").isVisible());
+  const polaDeadBuga = deadBug.locator(".wykonanie-pola");
+  sprawdz("pola na kg są na liście od razu, bez szukania „zapisz, co poszło”",
+    await polaDeadBuga.isVisible()
+    && await polaDeadBuga.locator('input[placeholder="kg"]').count() === 3,
+    `${await polaDeadBuga.locator('input[placeholder="kg"]').count()} pól kg`);
+
+  const pierwszy = polaDeadBuga.locator(".wiersz-serii").first().locator("input");
+  await pierwszy.nth(0).fill("2");
+  await pierwszy.nth(0).blur();
+  await pierwszy.nth(1).fill("10");
+  await pierwszy.nth(1).blur();
+  await s.waitForTimeout(900);
+  sprawdz("po pierwszej pełnej serii zdanie znika, a zapis zostaje",
+    await deadBug.locator(".dobor-wlasny").count() === 0
+    && (await deadBug.locator(".wykonanie-opis").innerText()).includes("2"),
+    await deadBug.locator(".wykonanie-opis").innerText());
+  const wpisRecznego = (await api(`/api/plany/${idRecznego}`)).zapisany.wykonania
+    .find((w: any) => w.positionId === "D1-S03");
+  sprawdz("trener dostaje ciężar wpisany na liście",
+    wpisRecznego?.serie?.[0]?.ciezar === 2 && wpisRecznego?.serie?.[0]?.powtorzenia === 10,
+    JSON.stringify(wpisRecznego?.serie));
+
+  // W prowadzeniu to samo słowo w kolumnie, a pole kg podpowiada ciężar
+  // wpisany przed chwilą na liście — to te same dane.
+  await s.click("#prowadz");
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  await s.locator('#panel .kafel-mapy[data-lp="B2"]').click();
+  await s.waitForTimeout(300);
+  sprawdz("w panelu też „dobierz”, a pole kg ma ciężar z listy",
+    (await s.locator("#panel .kolumna-ciezar").innerText()).includes("dobierz")
+    && await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue() === "2",
+    `${(await s.locator("#panel .kolumna-ciezar").innerText()).replace(/\n/g, " ")} · `
+    + `kg: ${await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue()}`);
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

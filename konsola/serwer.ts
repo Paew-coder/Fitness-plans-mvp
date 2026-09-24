@@ -841,6 +841,13 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             // porównywania napisu w telefonie: komunikat silnika może się
             // kiedyś zmienić, a znaczenie zostaje.
             dobierzCiezar: s.ciezar === "— brak 1RM",
+            // Ciężar ustawiany ręcznie, a trener go jeszcze nie wpisał. Klient
+            // dobiera go sam i zapisuje przy seriach; nic się z tego nie liczy
+            // (to nie 1RM), ale trener widzi wpis w konsoli i może ustawić
+            // ciężar na kolejne tygodnie. Bez tej flagi telefon pokazywał
+            // w kolumnie ciężaru napis z BAZY — „ręczne ustawienie".
+            ciezarWybieraKlient: s.cwiczenie!.progresja === "ręczne ustawienie"
+              && typeof s.ciezar !== "number",
             // Seria, z której policzono 1RM — tylko w tym treningu, w którym
             // to się stało. Klient widzi wtedy, skąd wziął się jego ciężar.
             kalibracja: kalibracjaW(s.cwiczenie!.id, s.positionId, t.tydzien),
