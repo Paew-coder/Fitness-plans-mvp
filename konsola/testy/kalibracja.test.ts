@@ -18,7 +18,7 @@ import { oneRMzKalibracji, oneRMzSerii } from "../../silnik/src/odczyt-1rm.ts";
 
 const BOJ = "EX-0010";          // A1. Barbell back squat — coeff 1,0
 const AKCESORIUM = "EX-0016";   // B1. Barbell row — coeff 0,75
-const MASA_CIALA = "EX-0049";   // B2. Dead bug izo + OH — masa ciała
+const MASA_CIALA = "EX-0050";   // B2. Dead bug straight legs — masa ciała
 const TERAZ = "2026-09-23T10:00:00.000Z";
 
 function plan(): Plan {

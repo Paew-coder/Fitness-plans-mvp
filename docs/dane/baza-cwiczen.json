@@ -490,9 +490,9 @@
    "part": "c",
    "coeff": 0.5,
    "skok_kg": 0.0,
-   "progresja": "masa ciała",
+   "progresja": "ręczne ustawienie",
    "film": "https://youtu.be/LomWOVw5QRA",
-   "uwagi": "DO WERYFIKACJI – konflikt category/part/coeff",
+   "uwagi": "DO WERYFIKACJI – konflikt category/part/coeff; progresja zmieniona przez trenera 24.09.2026: masa ciała → ręczne ustawienie",
    "scalone_id": null,
    "wiersz_baza": 40
   },

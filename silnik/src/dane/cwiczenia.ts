@@ -43,7 +43,7 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0046", nazwa: "Clean", kategoria: "Lower pull", part: "d", coeff: 1.0, skokKg: 2.5, progresja: "kg" },
   { id: "EX-0047", nazwa: "Clean pins", kategoria: "Lower pull", part: "d", coeff: 0.75, skokKg: 2.5, progresja: "kg" },
   { id: "EX-0048", nazwa: "Copenhagen plank", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 0.0, progresja: "czas", film: "https://youtu.be/Wv3O-CXt_YI" },
-  { id: "EX-0049", nazwa: "Dead bug izo + OH", kategoria: "Core", part: "c", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/LomWOVw5QRA", uwagi: "DO WERYFIKACJI – konflikt category/part/coeff" },
+  { id: "EX-0049", nazwa: "Dead bug izo + OH", kategoria: "Core", part: "c", coeff: 0.5, skokKg: 0.0, progresja: "ręczne ustawienie", film: "https://youtu.be/LomWOVw5QRA", uwagi: "DO WERYFIKACJI – konflikt category/part/coeff; progresja zmieniona przez trenera 24.09.2026: masa ciała → ręczne ustawienie" },
   { id: "EX-0050", nazwa: "Dead bug straight legs", kategoria: "Core", part: "c", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtube.com/shorts/wH1fFxR0v_s" },
   { id: "EX-0051", nazwa: "Dead stop barbell row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/zRu-zlvxgDA" },
   { id: "EX-0052", nazwa: "Deadbug OH", kategoria: "Core", part: "c", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/LomWOVw5QRA" },

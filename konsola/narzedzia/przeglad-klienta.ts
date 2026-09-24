@@ -43,7 +43,7 @@ async function zasiej({ api }: Srodowisko): Promise<string> {
   plan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
   // Ćwiczenie na masie ciała — nie ma przy nim czego mierzyć. W planie musi
   // być, żeby ekran pomiarów miał co pokazać w sekcji 9b.
-  plan.sloty[2].cwiczenieId = "EX-0049";   // B2. Dead bug izo + OH
+  plan.sloty[2].cwiczenieId = "EX-0050";   // B2. Dead bug straight legs
   plan.serieMaksymalne = [
     { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
     { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
@@ -187,8 +187,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // zgubiła jego liczby. Nic nie zgubiła — tylko nigdzie nie było napisane,
   // że przy tym ćwiczeniu nie ma czego liczyć. Teraz jest, i to w miejscu,
   // w którym człowiek chciałby te liczby wpisać.
+  //
+  // Od 24.09.2026 sam „Dead bug izo + OH" ma ręczne ustawienie ciężaru
+  // (decyzja trenera), więc masę ciała sprawdza tu jego krewniak.
   const kartyPomiarow = s.locator("#pomiary .pomiar");
-  const bezSerii = kartyPomiarow.filter({ hasText: "Dead bug izo + OH" }).first();
+  const bezSerii = kartyPomiarow.filter({ hasText: "Dead bug straight legs" }).first();
   sprawdz("ćwiczenie na masie ciała zostaje na liście pomiarów",
     await bezSerii.isVisible());
   sprawdz("ale zamiast pól ma napisane dlaczego",
@@ -673,7 +676,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   golyPlan.sloty[1].cwiczenieId = "EX-0016";   // B1. akcesorium
   // B2 — druga połowa superserii i ćwiczenie na masie ciała naraz. Obie te
   // rzeczy sprawdza sekcja 22; tu wystarczy je postawić w planie.
-  golyPlan.sloty[2].cwiczenieId = "EX-0049";   // B2. Dead bug izo + OH
+  golyPlan.sloty[2].cwiczenieId = "EX-0050";   // B2. Dead bug straight legs
   golyPlan.serieMaksymalne = [
     { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 3 },
     { cwiczenieId: "EX-0016", ciezar: 70, powtorzenia: 5 },
@@ -1057,7 +1060,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const idBezMaksow = (await api("/api/plany")).find((p: any) => p.klient === BEZ_MAKSOW).id;
   const planBezMaksow = (await api(`/api/plany/${idBezMaksow}`)).zapisany.plan;
   planBezMaksow.sloty[0].cwiczenieId = "EX-0016";   // A1. Barbell row — bez 1RM
-  planBezMaksow.sloty[1].cwiczenieId = "EX-0049";   // B1. Dead bug — masa ciała
+  planBezMaksow.sloty[1].cwiczenieId = "EX-0050";   // B1. Dead bug — masa ciała
   planBezMaksow.sloty[2].cwiczenieId = "EX-0010";   // B2. Barbell back squat — bez 1RM
   await api(`/api/plany/${idBezMaksow}`, "PUT",
     { plan: planBezMaksow, dataStartu: null, status: "wysłany" });

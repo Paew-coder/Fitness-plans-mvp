@@ -369,6 +369,8 @@ Cztery rzeczy z prawdziwego używania, wszystkie o tym samym: **aplikacja dział
 
 **Rozstrzygnięte przy okazji 21.09.2026:** pole ciężaru **nie** otwiera się przy ćwiczeniach na masie ciała. Padło pytanie, czy pozwolić wpisać tam stałe 2 kg (trener rozważał to przy „Dead bug izo + OH"); odpowiedź brzmi nie — „niech zostanie masa ciała tak jak jest". Pole ręcznego ciężaru ma wyłącznie progresja `ręczne ustawienie`, bo tylko ona mówi wprost, że ciężar ma się wziąć spoza 1RM.
 
+**Zmiana 24.09.2026:** trener jednak przestawił „Dead bug izo + OH” (EX-0049) z `masa ciała` na `ręczne ustawienie` — w `docs/dane/baza-cwiczen.json`, skąd generuje się katalog silnika. Zasada wyżej zostaje: masa ciała nadal nie ma pola ciężaru; zmieniło się tylko to jedno ćwiczenie, które teraz dostaje pole ręcznego ciężaru w konsoli, a klient widzi ten ciężar w planie i może zapisać kilogramy. Test w `konsola/testy/seria-maksymalna.test.ts` pilnuje, żeby nie wróciło po cichu.
+
 **13. Jak dużo da się przeczytać z Base44 bez planu Builder — 21.09.2026.**
 
 Trener zapytał, co zrobić, żeby dało się tamtą aplikację przestudiować dokładnie. Sprawdzone, co jest dostępne na jego obecnym planie:
