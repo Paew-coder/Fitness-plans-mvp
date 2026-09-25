@@ -65,6 +65,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
    * na ekranie — a cała umowa tej aplikacji brzmi „klient nie zauważa zmiany".
    */
   const wynik = przeliczPlan(plan);
+  // Arkusz 5.18 zna dwie części planu. Przy hipertrofii jego automat
+  // powtórzeń akcesoriów liczyłby 8/10 zamiast 12/14 — więc wpisujemy
+  // powtórzenia wprost, tak jak przy boju głównym.
+  const bezAutomatuArkusza = plan.czescPlanu === "hipertrofia";
   const policzony = (positionId: string, tydzien: number) =>
     wynik.tygodnie[tydzien - 1]?.sloty.find((s) => s.positionId === positionId);
 
@@ -87,7 +91,7 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Bój główny zawsze ma powtórzenia wpisane wprost; akcesorium tylko
         // wtedy, gdy trener świadomie nadpisał automat — inaczej nadpisalibyśmy
         // formułę, która w arkuszu liczy je sama.
-        powtorzenia_reczne: bojGlowny
+        powtorzenia_reczne: bojGlowny || bezAutomatuArkusza
           ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
           : (p.powtorzenia ?? null),
         // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby

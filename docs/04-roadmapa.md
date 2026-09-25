@@ -411,7 +411,7 @@ W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej,
 
 1. **Biblioteka szkieletów z Base44** — 14 szablonów czeka na decyzję w trzech nazwach bez odpowiednika w BAZIE: `Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`.
 2. ~~**Deload i tydzień max out**~~ — zrobione 25.09.2026 na prośbę trenera, przed pełnym cyklem z klientem (punkt 22).
-3. **Progresja hipertroficzna 12/14** — zaplanowana, nie dodana (punkt 10).
+3. ~~**Progresja hipertroficzna 12/14**~~ — zrobione 25.09.2026 (punkt 23).
 4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera.
 
 **14. Wiosłowanie zostaje akcesorium, a trening dostaje prowadzenie — 22.09.2026.**
@@ -503,6 +503,15 @@ Trener: „czy byłoby możliwe dodanie jako opcji w konsoli trenera dodawanie k
 * Tygodnie po cyklu leżą osobno (`tygodnieDodatkowe`): średnie, normy objętości, porównania cykli i historia liczą się dalej z sześciu tygodni pracy. Stres deloadu i maksów nie jest oceniany normą.
 
 Przy okazji wyszedł błąd sprzed tej zmiany: po podmianie ćwiczenia od T4 (`cwiczenieIdOverride`) wpis klienta zapisywał się pod starym ćwiczeniem ze slotu, a telefon pokazywał go jako „wcześniej tutaj". Serwer zapisuje teraz ćwiczenie z danego tygodnia.
+
+**23. Hipertrofia jako trzecia część planu — 25.09.2026.**
+
+Zaplanowana 21.09 („możemy zrobić osobną progresję 12/14"), dodana na prośbę trenera. Przełącznik *Część planu* ma trzecią pozycję, **hipertrofia (12/14)**:
+
+* **Bój główny** — 4 × 12 → 13 → 14 na RPE 8, w drugim bloku to samo na RPE 9. Liczby z szablonów „Hipertroficzny 1–4 dni" z aplikacji trenera w Base44 (pozycja A); tamte szablony stoją na tej samej skali RPE co nasze („Klasyczny 2 dni" to dokładnie nasza `objętość`).
+* **Bez TOP SETU** — tak jest we wszystkich czterech szablonach. Wpisane ręcznie RPE TOP SETU dalej wygrywa.
+* **Akcesoria 12/14** — trzecia kolumna obok 8/10 i 6/8: coeff ≥ 0,75 zaczyna od 12, lżejsze od 14, plus tydzień w bloku (+0, +1, +2), nie ponad 15 z tabeli. Serie i RPE akcesoriów jak w pozostałych częściach (3 serie, RPE 8 / 9).
+* **Eksport** — arkusz 5.18 zna dwie części, więc przy hipertrofii powtórzenia akcesoriów jadą wpisane wprost (jego automat liczyłby 8/10).
 
 ## Co jest zrobione tym dokumentem
 
