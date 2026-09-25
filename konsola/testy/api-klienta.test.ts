@@ -365,6 +365,155 @@ describe("ciężar ustawiany ręcznie, którego trener nie wpisał", () => {
   });
 });
 
+describe("deload i tydzień maksów po cyklu", () => {
+  /**
+   * Decyzje trenera z 25.09.2026: deload „jak T6, RPE o 2 niżej, bez TOP
+   * SETU", maksy 1 × 1 @ RPE 10 wszystkie jednego dnia, najpierw deload.
+   * Wynik z tygodnia maksów wchodzi do nowego cyklu jako seria maksymalna.
+   */
+  let planPo = "";
+  let tokenPo = "";
+  const sloty = (plan: any) => Object.fromEntries(plan.sloty.map((s: any) => [s.positionId, s]));
+  const widok = async () => (await api(`/api/klient/${tokenPo}`)).dane;
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Po Cyklu", wersja: 1 });
+    planPo = (await api("/api/plany")).dane.find((p: any) => p.klient === "Po Cyklu").id;
+    const plan = (await api(`/api/plany/${planPo}`)).dane.zapisany.plan;
+    const s = sloty(plan);
+    s["D1-S01"].cwiczenieId = "EX-0010";   // przysiad
+    s["D1-S02"].cwiczenieId = "EX-0016";   // wiosło — akcesorium, nie maksuje się
+    s["D2-S01"].cwiczenieId = "EX-0011";   // wyciskanie
+    s["D3-S01"].cwiczenieId = "EX-0053";   // martwy
+    plan.serieMaksymalne = [
+      { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 1 },
+      { cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
+      { cwiczenieId: "EX-0053", ciezar: 150, powtorzenia: 1 },
+    ];
+    plan.deload = true;
+    plan.tydzienMaksow = true;
+    await api(`/api/plany/${planPo}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    tokenPo = (await api(`/api/plany/${planPo}/link`, "POST")).dane.token;
+  });
+
+  test("klient dostaje osiem tygodni: sześć, deload i maksy", async () => {
+    const w = await widok();
+    assert.deepEqual(w.tygodnie.map((t: any) => [t.tydzien, t.numer, t.rodzaj]),
+      [[1, 1, null], [2, 2, null], [3, 3, null], [4, 4, null], [5, 5, null], [6, 6, null],
+        [7, 7, "deload"], [8, 8, "maksy"]]);
+  });
+
+  test("deload: te same dni i ćwiczenia, RPE o 2 niżej niż w T6", async () => {
+    const w = await widok();
+    const t6 = w.tygodnie[5].dni[0].cwiczenia[0];
+    const t7 = w.tygodnie[6].dni[0].cwiczenia[0];
+    assert.equal(w.tygodnie[6].dni.length, w.tygodnie[5].dni.length);
+    assert.equal(t7.serie, t6.serie);
+    assert.equal(t7.rpe, Math.max(6, t6.rpe - 2));
+    assert.ok(t7.ciezar < t6.ciezar, `${t6.ciezar} → ${t7.ciezar}`);
+  });
+
+  test("maksy: jeden dzień, trzy boje, 1 × 1 @ 10, bez akcesoriów", async () => {
+    const t8 = (await widok()).tygodnie[7];
+    assert.equal(t8.dni.length, 1);
+    const c = t8.dni[0].cwiczenia;
+    assert.deepEqual(c.map((x: any) => x.nazwa),
+      ["Barbell back squat", "Barbell bench press", "Deadlift"]);
+    assert.ok(c.every((x: any) => x.maks && x.serie === 1 && x.powtorzenia === 1 && x.rpe === 10));
+    assert.deepEqual(c.map((x: any) => x.ciezar), [120, 100, 150], "ciężar to obecne 1RM");
+    assert.ok(c.every((x: any) => x.dobierzCiezar === false));
+  });
+
+  test("wynik próby zapisuje się przy boju, a nie przy slocie dnia 1", async () => {
+    const { kod } = await api(`/api/klient/${tokenPo}/odczucie`, "POST",
+      { positionId: "D2-S01", tydzien: 8, serie: [{ ciezar: 105, powtorzenia: 1 }] });
+    assert.equal(kod, 200);
+    await api(`/api/klient/${tokenPo}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 8, serie: [{ ciezar: 130, powtorzenia: 1 }] });
+    const { dane } = await api(`/api/plany/${planPo}`);
+    const w = dane.zapisany.wykonania.find((x: any) => x.positionId === "D2-S01" && x.tydzien === 8);
+    assert.equal(w.cwiczenieId, "EX-0011");
+    assert.equal(w.ciezarWykonany, 105);
+  });
+
+  test("akcesorium nie ma próby maksymalnej — odmowa, nie cichy zapis", async () => {
+    const { kod, dane } = await api(`/api/klient/${tokenPo}/odczucie`, "POST",
+      { positionId: "D1-S02", tydzien: 8, serie: [{ ciezar: 90, powtorzenia: 1 }] });
+    assert.equal(kod, 400);
+    assert.match(dane.blad, /tygodniu maksów/);
+  });
+
+  test("zakończenie dnia maksów nie dopisuje ocen do dnia 1 planu", async () => {
+    const { kod } = await api(`/api/klient/${tokenPo}/dzien`, "POST", { dzien: 1, tydzien: 8 });
+    assert.equal(kod, 200);
+    const { dane } = await api(`/api/plany/${planPo}`);
+    assert.equal(sloty(dane.zapisany.plan)["D1-S02"].tygodnie?.[8], undefined);
+    assert.ok(!dane.zapisany.wykonania.some((x: any) => x.positionId === "D1-S02" && x.tydzien === 8));
+    assert.equal(dane.realizacja.ukonczonych, 1);
+    const t8 = dane.realizacja.tygodnie.find((t: any) => t.tydzien === 8);
+    assert.deepEqual([t8.ukonczonych, t8.rozpoczetych, t8.zDnia], [1, 0, 1],
+      "zapisane boje z różnych dni to jeden, domknięty dzień maksów");
+  });
+
+  test("realizacja liczy deload i dzień maksów do zaplanowanych", async () => {
+    const { dane } = await api(`/api/plany/${planPo}`);
+    // 3 dni × 6 tygodni + 3 dni deloadu + 1 dzień maksów
+    assert.equal(dane.realizacja.zaplanowanych, 22);
+  });
+
+  test("nowy cykl zaczyna od wyników z tygodnia maksów", async () => {
+    const { kod, dane } = await api(`/api/plany/${planPo}/kopia`, "POST", {});
+    assert.equal(kod, 201);
+    const serie = dane.zapisany.plan.serieMaksymalne;
+    const przysiad = serie.filter((x: any) => x.cwiczenieId === "EX-0010");
+    assert.deepEqual(przysiad, [{ cwiczenieId: "EX-0010", ciezar: 130, powtorzenia: 1, zTygodniaMaksow: 1 }]);
+    assert.equal(serie.find((x: any) => x.cwiczenieId === "EX-0053").ciezar, 150,
+      "bój bez próby zostaje przy starym 1RM");
+    assert.equal(dane.wynik.tygodnie[0].sloty.find((s: any) => s.positionId === "D1-S01").oneRM, 130);
+    assert.ok(!dane.propozycje1RM.some((p: any) => p.cwiczenieId === "EX-0010"),
+      "zmaksowany bój nie wraca jako propozycja z serii roboczych");
+    assert.equal(dane.zapisany.plan.deload, true, "nowa wersja zachowuje układ cyklu");
+  });
+
+  test("wyłączony tydzień nie przyjmuje zapisów", async () => {
+    const plan = (await api(`/api/plany/${planPo}`)).dane.zapisany;
+    plan.plan.deload = false;
+    await api(`/api/plany/${planPo}`, "PUT",
+      { plan: plan.plan, dataStartu: null, status: "wysłany", zmieniony: plan.zmieniony });
+    const { kod, dane } = await api(`/api/klient/${tokenPo}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 7, feedback: "OK" });
+    assert.equal(kod, 400);
+    assert.match(dane.blad, /nie ma w planie/);
+    const w = await widok();
+    assert.deepEqual(w.tygodnie.slice(6).map((t: any) => [t.tydzien, t.numer]), [[8, 7]],
+      "bez deloadu maksy są tygodniem siódmym na ekranie, klucz zostaje 8");
+  });
+});
+
+describe("podmiana od T4 — wpis klienta idzie do ćwiczenia z tego tygodnia", () => {
+  test("klient robi nowe ćwiczenie i widzi swój wpis przy nim, nie „wcześniej tutaj”", async () => {
+    await api("/api/plany", "POST", { klient: "Podmiana Od T4", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Podmiana Od T4").id;
+    const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.sloty[1].cwiczenieId = "EX-0016";
+    plan.sloty[1].tygodnie = { 4: { cwiczenieIdOverride: "EX-0012", oneRMReczny: 40 },
+      5: { cwiczenieIdOverride: "EX-0012", oneRMReczny: 40 },
+      6: { cwiczenieIdOverride: "EX-0012", oneRMReczny: 40 } };
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 1 }];
+    await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    await api(`/api/klient/${token}/odczucie`, "POST",
+      { positionId: "D1-S02", tydzien: 5, serie: [{ ciezar: 30, powtorzenia: 10 }] });
+    const { dane } = await api(`/api/plany/${id}`);
+    assert.equal(dane.zapisany.wykonania.find((w: any) => w.tydzien === 5).cwiczenieId, "EX-0012");
+    const c = (await api(`/api/klient/${token}`)).dane.tygodnie[4].dni[0].cwiczenia[1];
+    assert.equal(c.nazwa, "Barbell curl");
+    assert.deepEqual(c.serieWykonane, [{ ciezar: 30, powtorzenia: 10 }]);
+    assert.equal(c.wczesniej, null);
+  });
+});
+
 describe("postęp w ćwiczeniach liczy się z siły, nie z kilogramów", () => {
   /**
    * Przykład z testów trenera: 55 kg × 9 w T1, 50 kg × 11 w T2. Nagłówek

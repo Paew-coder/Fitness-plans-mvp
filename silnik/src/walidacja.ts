@@ -160,6 +160,14 @@ export function sprawdzPlan(
     konfliktSeriiMaksymalnych(plan.serieMaksymalne),
   );
 
+  // Tydzień maksów włączony, a nie ma w nim czego maksować — plan bez
+  // przysiadu, wyciskania i martwego, a trener nie zaznaczył nic innego.
+  // Klient dostałby pusty tydzień bez słowa wyjaśnienia.
+  const maksy = wynik.tygodnieDodatkowe?.find((t) => t.rodzaj === "maksy");
+  dodaj("MAKSY_BEZ_CWICZEN", "ostrzezenie",
+    "Tydzień maksów nie ma ćwiczeń — zaznacz boje albo go wyłącz",
+    plan.tydzienMaksow && maksy && maksy.sloty.length === 0 ? ["T8"] : []);
+
   const poprzednie = new Set(opcje.cwiczeniaZPoprzedniegoCyklu ?? []);
   dodaj(
     "POWTORKA_Z_POPRZEDNIEGO",

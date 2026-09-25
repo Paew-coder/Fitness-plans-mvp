@@ -14,7 +14,10 @@ import { tmpdir } from "node:os";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../silnik/src/plan.ts";
+import {
+  przeliczPlan, porownajLiczenieJednostronnych, tydzienWyliczony, tygodniePlanu,
+  numerTygodniaNaEkranie, TYDZIEN_MAKSOW, type Plan,
+} from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
@@ -236,7 +239,8 @@ function nazwaKlienta(wartosc: unknown): { nazwa: string } | { blad: string } {
  * prawdziwe, a nie zgadywać, co klient miał na myśli.
  */
 const GRANICE = {
-  tydzien: [1, 6],
+  // 7 — deload, 8 — maksy. Czy plan dany tydzień ma, sprawdza `tygodniePlanu`.
+  tydzien: [1, 8],
   dzien: [1, 5],
   /** Rekord świata w martwym ciągu to około 500 kg. */
   ciezar: [0, 1000],
@@ -287,11 +291,15 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
   const dzienSlotu = new Map(zapisany.plan.sloty.map((s) => [s.positionId, s.dzien]));
   const kluczDnia = (tydzien: number, dzien: number | undefined) => `${tydzien}/${dzien}`;
   const domkniete = new Set(ukonczone.map((u) => kluczDnia(u.tydzien, u.dzien)));
+  // Tydzień maksów to jeden dzień, choć boje stoją w planie w różnych dniach.
+  const dzienWpisu = (w: magazyn.Wykonanie) =>
+    w.tydzien === TYDZIEN_MAKSOW ? 1 : dzienSlotu.get(w.positionId);
   const rozpoczete = new Set(
     wykonania
-      .map((w) => kluczDnia(w.tydzien, dzienSlotu.get(w.positionId)))
+      .map((w) => kluczDnia(w.tydzien, dzienWpisu(w)))
       .filter((k) => !k.endsWith("/undefined") && !domkniete.has(k)),
   );
+  const tygodnie = tygodnieRealizacji(zapisany.plan, dniWPlanie.size);
   const wTygodniu = (zbior: Set<string>, tydzien: number) =>
     [...zbior].filter((k) => k.startsWith(`${tydzien}/`)).length;
 
@@ -299,7 +307,7 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
     // Link jest jeden na klienta i przeżywa cykle, więc pytamy o klienta.
     maDostep: Boolean((klient ?? magazyn.wczytajKlienta(zapisany.trenerId, zapisany.klientId))?.token),
     trenowaneDni: dniWPlanie.size,
-    zaplanowanych: dniWPlanie.size * 6,
+    zaplanowanych: tygodnie.reduce((a, t) => a + t.zDnia, 0),
     ukonczonych: domkniete.size,
     rozpoczetych: rozpoczete.size,
     ostatniaAktywnosc,
@@ -309,13 +317,30 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
       ok: wykonania.filter((w) => w.feedback === "OK").length,
       trudne: wykonania.filter((w) => w.feedback === "za trudne").length,
     },
-    tygodnie: [1, 2, 3, 4, 5, 6].map((tydzien) => ({
-      tydzien,
-      ukonczonych: wTygodniu(domkniete, tydzien),
-      rozpoczetych: wTygodniu(rozpoczete, tydzien),
-      zDnia: dniWPlanie.size,
+    tygodnie: tygodnie.map((t) => ({
+      ...t,
+      ukonczonych: wTygodniu(domkniete, t.tydzien),
+      rozpoczetych: wTygodniu(rozpoczete, t.tydzien),
     })),
   };
+}
+
+/**
+ * Tygodnie, które klient ma do zrobienia: sześć roboczych i te po cyklu.
+ * Deload ma tyle dni co plan, tydzień maksów — jeden (wszystkie boje naraz).
+ */
+function tygodnieRealizacji(plan: Plan, dniWPlanie: number) {
+  const maksy = plan.tydzienMaksow
+    ? (tydzienWyliczony(przeliczPlan(plan), TYDZIEN_MAKSOW)?.sloty.length ?? 0) > 0
+    : false;
+  return tygodniePlanu(plan)
+    .filter((tydzien) => tydzien !== TYDZIEN_MAKSOW || maksy)
+    .map((tydzien) => ({
+      tydzien,
+      numer: numerTygodniaNaEkranie(plan, tydzien),
+      rodzaj: tydzien === 7 ? "deload" : tydzien === TYDZIEN_MAKSOW ? "maksy" : null,
+      zDnia: tydzien === TYDZIEN_MAKSOW ? 1 : dniWPlanie,
+    }));
 }
 
 /**
@@ -349,6 +374,8 @@ function propozycje1RM(
   // Sloty grupujemy po ćwiczeniu — to samo ćwiczenie może stać w kilku dniach.
   const wgCwiczenia = new Map<string, SeriaRobocza[]>();
   for (const w of wykonania) {
+    // Tylko sześć tygodni pracy: deload idzie celowo lżej, a wynik z tygodnia
+    // maksów wchodzi do nowego cyklu wprost (`serieZTygodniaMaksow`).
     const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
     if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
     // Ćwiczenie z wpisu, nie ze slotu. Po podmianie w środku cyklu slot mówi,
@@ -402,8 +429,13 @@ function propozycjeZPoprzedniegoCyklu(zapisany: magazyn.ZapisanyPlan) {
   const poprzedni = magazyn.wczytaj(zapisany.trenerId, zapisany.poprzedniId);
   if (!poprzedni?.wykonania?.length) return [];
 
+  // Boje zmaksowane w tygodniu maksów mają już 1RM z próby — szacunek
+  // z serii roboczych tego samego cyklu mógłby go tylko po cichu zaniżyć.
+  const zMaksow = new Set(zapisany.plan.serieMaksymalne
+    .filter((s) => s.zTygodniaMaksow != null).map((s) => s.cwiczenieId));
   return propozycje1RM(poprzedni, przeliczPlan(poprzedni.plan), zapisany.plan.serieMaksymalne)
     .filter((p) => zapisany.plan.sloty.some((s) => s.cwiczenieId === p.cwiczenieId))
+    .filter((p) => !zMaksow.has(p.cwiczenieId))
     .map((p) => ({ ...p, zPoprzedniegoCyklu: poprzedni.wersja }));
 }
 
@@ -412,17 +444,22 @@ function propozycjeZPoprzedniegoCyklu(zapisany: magazyn.ZapisanyPlan) {
  * Cykl to sześć tygodni; po ostatnim czas na nową wersję planu.
  */
 function cyklWCzasie(zapisany: magazyn.ZapisanyPlan) {
+  // Z deloadem i maksami cykl ma siedem albo osiem tygodni, nie sześć.
+  const tygodni = tygodniePlanu(zapisany.plan).length;
+  const dlugosc = tygodni * 7;
   const dni = dniOd(zapisany.dataStartu);
-  if (dni === null) return { tydzien: null, doStartu: null, doKonca: null, poCyklu: false };
+  if (dni === null) return { tydzien: null, tygodni, doStartu: null, doKonca: null, poCyklu: false };
   // Data startu w przyszłości — plan czeka, cykl jeszcze się nie zaczął.
   if (dni < 0) {
-    return { tydzien: null, doStartu: -dni, doKonca: 42 - dni, poCyklu: false };
+    return { tydzien: null, tygodni, doStartu: -dni, doKonca: dlugosc - dni, poCyklu: false };
   }
   return {
-    tydzien: Math.min(Math.floor(dni / 7) + 1, 6),
+    // Numer na ekranie (1…7 albo 8), nie klucz tygodnia.
+    tydzien: Math.min(Math.floor(dni / 7) + 1, tygodni),
+    tygodni,
     doStartu: null,
-    doKonca: 42 - dni,
-    poCyklu: dni >= 42,
+    doKonca: dlugosc - dni,
+    poCyklu: dni >= dlugosc,
   };
 }
 
@@ -521,11 +558,16 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
   const wgCwiczenia = new Map<string, {
     nazwa: string;
     bez1RM: boolean;
-    punkty: { tydzien: number; ciezar: number; powtorzenia: number; oneRM: number | null }[];
+    punkty: {
+      tydzien: number; numer: number; rodzaj: string | null;
+      ciezar: number; powtorzenia: number; oneRM: number | null;
+    }[];
   }>();
   for (const w of wykonania) {
     if (!w.ciezarWykonany || !w.powtorzeniaWykonane) continue;
-    const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
+    // Także deload i maksy: jedno powtórzenie na RPE 10 to najczystszy
+    // odczyt siły, jaki ten ekran może dostać.
+    const slot = tydzienWyliczony(wynik, w.tydzien)?.sloty.find((s) => s.positionId === w.positionId);
     if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
     // Ćwiczenie, które klient wtedy faktycznie robił — trener mógł później
     // wstawić w to miejsce inne, a cudze kilogramy nie są niczyim postępem.
@@ -545,6 +587,8 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
       ?? { nazwa: cwiczenie.nazwa, bez1RM, punkty: [] };
     wpis.punkty.push({
       tydzien: w.tydzien,
+      numer: numerTygodniaNaEkranie(zapisany.plan, w.tydzien),
+      rodzaj: tydzienWyliczony(wynik, w.tydzien)?.rodzaj ?? null,
       ciezar: w.ciezarWykonany,
       powtorzenia: w.powtorzeniaWykonane,
       oneRM: e?.oneRM ?? null,
@@ -588,15 +632,17 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
   const waga = [...(zapisany.waga ?? [])].sort((a, b) => a.data.localeCompare(b.data));
 
   return {
-    frekwencja: {
-      ukonczonych: ukonczone.length,
-      zaplanowanych: dniWPlanie.size * 6,
-      tygodnie: [1, 2, 3, 4, 5, 6].map((tydzien) => ({
-        tydzien,
-        ukonczonych: ukonczone.filter((u) => u.tydzien === tydzien).length,
-        zDnia: dniWPlanie.size,
-      })),
-    },
+    frekwencja: (() => {
+      const tygodnie = tygodnieRealizacji(zapisany.plan, dniWPlanie.size);
+      return {
+        ukonczonych: ukonczone.length,
+        zaplanowanych: tygodnie.reduce((a, t) => a + t.zDnia, 0),
+        tygodnie: tygodnie.map((t) => ({
+          ...t,
+          ukonczonych: ukonczone.filter((u) => u.tydzien === t.tydzien).length,
+        })),
+      };
+    })(),
     cwiczenia,
     waga: {
       punkty: waga,
@@ -805,10 +851,19 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       : null;
   };
 
-  const tygodnie = wynik.tygodnie.map((t) => ({
+  // Sześć tygodni pracy i te po cyklu, które trener włączył. Tydzień maksów
+  // bez żadnego boju nie idzie do klienta — pusty kafelek niczego nie mówi.
+  const dniPlanu = [...new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien))]
+    .sort((a, b) => a - b);
+  const tygodnie = [...wynik.tygodnie, ...wynik.tygodnieDodatkowe]
+    .filter((t) => t.rodzaj !== "maksy" || t.sloty.length > 0)
+    .map((t) => ({
     tydzien: t.tydzien,
-    dni: [...new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien))]
-      .sort((a, b) => a - b)
+    // Numer na ekranie: bez deloadu maksy są tygodniem siódmym.
+    numer: numerTygodniaNaEkranie(zapisany.plan, t.tydzien),
+    rodzaj: t.rodzaj ?? null,
+    // Maksy to jeden dzień — wszystkie boje naraz, decyzja trenera z 25.09.
+    dni: (t.rodzaj === "maksy" ? [1] : dniPlanu)
       .map((dzien) => ({
         dzien,
         ukonczony: ukonczone.some((u) => u.dzien === dzien && u.tydzien === t.tydzien),
@@ -853,14 +908,18 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             // RPE, a pierwsza wpisana seria policzy resztę. Flaga zamiast
             // porównywania napisu w telefonie: komunikat silnika może się
             // kiedyś zmienić, a znaczenie zostaje.
-            dobierzCiezar: s.ciezar === "— brak 1RM",
+            dobierzCiezar: t.rodzaj !== "maksy" && s.ciezar === "— brak 1RM",
             // Ciężar ustawiany ręcznie, a trener go jeszcze nie wpisał. Klient
             // dobiera go sam i zapisuje przy seriach; nic się z tego nie liczy
             // (to nie 1RM), ale trener widzi wpis w konsoli i może ustawić
             // ciężar na kolejne tygodnie. Bez tej flagi telefon pokazywał
             // w kolumnie ciężaru napis z BAZY — „ręczne ustawienie".
-            ciezarWybieraKlient: s.cwiczenie!.progresja === "ręczne ustawienie"
+            ciezarWybieraKlient: t.rodzaj !== "maksy"
+              && s.cwiczenie!.progresja === "ręczne ustawienie"
               && typeof s.ciezar !== "number",
+            // Próba maksymalna: jedno powtórzenie na RPE 10. Ciężar w planie to
+            // obecne 1RM — punkt odniesienia, nie polecenie; wynik wpisuje klient.
+            maks: t.rodzaj === "maksy",
             // Seria, z której policzono 1RM — tylko w tym treningu, w którym
             // to się stało. Klient widzi wtedy, skąd wziął się jego ciężar.
             kalibracja: kalibracjaW(s.cwiczenie!.id, s.positionId, t.tydzien),
@@ -1652,6 +1711,16 @@ const serwer = createServer(async (req, res) => {
         // się do tego, co trener wstawi tam później.
         const slot = cel.plan.sloty.find((s) => s.positionId === positionId);
         if (!slot?.cwiczenieId) return blad(res, "Nie ma takiego ćwiczenia");
+        // Deload i maksy istnieją tylko wtedy, gdy trener je włączył. Zapis do
+        // wyłączonego tygodnia wisiałby w bazie niewidoczny dla nikogo.
+        if (!tygodniePlanu(cel.plan).includes(tydzien as 1)) {
+          return blad(res, "Tego tygodnia nie ma w planie");
+        }
+        const wTygodniu = tydzienWyliczony(przeliczPlan(cel.plan), tydzien)
+          ?.sloty.find((s) => s.positionId === positionId);
+        if (tydzien === TYDZIEN_MAKSOW && !wTygodniu?.cwiczenie) {
+          return blad(res, "Tego ćwiczenia nie ma w tygodniu maksów");
+        }
 
         // Historia wykonań — czego arkusz nie ma w ogóle.
         const wykonania = [...(cel.wykonania ?? [])];
@@ -1662,7 +1731,12 @@ const serwer = createServer(async (req, res) => {
         // cały cykl, więc bez tego podmiana w środku przepisywała przeszłość:
         // przerobione tygodnie dostawały nową nazwę, a podniesione kilogramy
         // szły do propozycji 1RM dla ćwiczenia, którego klient nie robił.
-        wpis.cwiczenieId = slot.cwiczenieId;
+        //
+        // Ćwiczenie z tego tygodnia, nie z samego slotu: po podmianie od T4
+        // (`cwiczenieIdOverride`) slot dalej trzyma stare, a klient robi nowe —
+        // i jego wpisy lądowały pod starą nazwą, więc telefon pokazywał je
+        // jako „wcześniej tutaj". Deload bierze ćwiczenie z T6, maksy — boje.
+        wpis.cwiczenieId = wTygodniu?.cwiczenie?.id ?? slot.cwiczenieId;
 
         if ("feedback" in cialoZadania) {
           // Nieznane odczucie kończyło się dotąd błędem 500 na ograniczeniu
@@ -1728,9 +1802,14 @@ const serwer = createServer(async (req, res) => {
         }
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        if (!tygodniePlanu(cel.plan).includes(tydzien as 1)) {
+          return blad(res, "Tego tygodnia nie ma w planie");
+        }
+        // Tydzień maksów to jeden dzień z bojami zebranymi z całego planu.
+        const maksy = tydzien === TYDZIEN_MAKSOW;
         // Domknięcie dnia, którego w planie nie ma, liczyłoby się do frekwencji
         // jako trening, którego nie było.
-        if (!cel.plan.sloty.some((s) => s.dzien === dzien && s.cwiczenieId)) {
+        if (maksy ? dzien !== 1 : !cel.plan.sloty.some((s) => s.dzien === dzien && s.cwiczenieId)) {
           return blad(res, "Ten dzień nie ma w planie ćwiczeń");
         }
         const ukonczoneDni = (cel.ukonczoneDni ?? [])
@@ -1742,7 +1821,9 @@ const serwer = createServer(async (req, res) => {
         // podsumowanie odczuć w konsoli liczyłoby tylko te wciśnięte ręcznie.
         const wykonania = [...(cel.wykonania ?? [])];
         const teraz = new Date().toISOString();
-        for (const slot of cel.plan.sloty) {
+        // Przy maksach nie: próba na RPE 10 nie ma „OK" ani „za łatwe",
+        // a dzień 1 planu to nie są boje z tygodnia maksów.
+        for (const slot of maksy ? [] : cel.plan.sloty) {
           if (slot.dzien !== dzien || !slot.cwiczenieId) continue;
           slot.tygodnie ??= {};
           slot.tygodnie[tydzien as 1] ??= {};

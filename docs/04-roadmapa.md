@@ -410,7 +410,7 @@ W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej,
 **Cztery rzeczy do przypomnienia** (trener: „trzymaj te 4 rzeczy i przypomnisz później"):
 
 1. **Biblioteka szkieletów z Base44** — 14 szablonów czeka na decyzję w trzech nazwach bez odpowiednika w BAZIE: `Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`.
-2. **Deload i tydzień max out** — dopiero po pierwszym pełnym cyklu z żywym klientem.
+2. ~~**Deload i tydzień max out**~~ — zrobione 25.09.2026 na prośbę trenera, przed pełnym cyklem z klientem (punkt 22).
 3. **Progresja hipertroficzna 12/14** — zaplanowana, nie dodana (punkt 10).
 4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera.
 
@@ -491,6 +491,18 @@ Prośba trenera: w panelach ma być możliwość powrotu do ćwiczeń oznaczonyc
 **21. Konsola tak samo na laptopie i na iPadzie — 23.09.2026.**
 
 Trener pracuje na zmianę na laptopie i na iPadzie. Przegląd konsoli sprawdzał tylko laptop i telefon, więc iPad dostawał wersję dla myszy: przyciski przy ćwiczeniu 14×11 px (rozmiary pod palec włączały się poniżej 760 px) i objaśnienia wyłącznie w dymkach po najechaniu. Teraz rozmiary pod palec zależą od sposobu sterowania (`pointer: coarse`), objaśnienia są widocznym tekstem na obu urządzeniach (legenda nad tabelą, podpowiedzi pod przełącznikami, „treningi: 2 z 12 + 1 zaczęty" zamiast „2+1/12"), a przyciski przy ćwiczeniu widać zawsze i wszędzie w tym samym układzie. Przegląd konsoli dostał dwa nowe ekrany: iPad w pionie i w poziomie. Szczegóły: [`konsola/README.md`](../konsola/README.md#laptop-i-ipad--to-samo-tak-samo).
+
+**22. Deload i tydzień maksów — 25.09.2026.**
+
+Trener: „czy byłoby możliwe dodanie jako opcji w konsoli trenera dodawanie komuś do planu albo maxów albo tygodnia deloadu?". Wzór z jego periodyzacji (`dane/periodyzacja-13-tygodni.json`), decyzje trenera w trzech punktach:
+
+* **Deload (T7)** — „jak T6, RPE o 2 niżej, bez TOP SETU". Serie i powtórzenia z T6 (z poprawkami trenera i podmianą ćwiczenia z T4–T6), RPE o 2 niżej, ale nie niżej niż 6 — tam zaczyna się tabela. Ciężar liczy się z tabeli jak zawsze, z korektą z ocen klienta. Każdą liczbę da się poprawić ręcznie; w deloadzie nie ma », T ani R.
+* **Maksy (T8)** — 1 × 1 @ RPE 10, **wszystkie boje jednego dnia**. Domyślnie przysiady, wyciskanie leżąc i martwe ciągi z planu (lista od TOP SETU), po razie; trener zaznacza w konsoli inne. Ciężar w planie to obecne 1RM — dla klienta „1RM teraz", punkt odniesienia. Bez ocen „za łatwe/za trudne".
+* **Kolejność jak w periodyzacji** — najpierw deload, potem maksy. Oba to osobne przełączniki „Po cyklu". Klucze tygodni są stałe (7 deload, 8 maksy), żeby włączenie deloadu po fakcie nie przenosiło wpisów klienta; bez deloadu maksy są na ekranie tygodniem siódmym.
+* **Wynik maksów wchodzi do nowego cyklu sam** — „Nowa wersja" wstawia go jako serię maksymalną (`zTygodniaMaksow`, konsola pisze skąd), a propozycja z serii roboczych dla tego boju znika.
+* Tygodnie po cyklu leżą osobno (`tygodnieDodatkowe`): średnie, normy objętości, porównania cykli i historia liczą się dalej z sześciu tygodni pracy. Stres deloadu i maksów nie jest oceniany normą.
+
+Przy okazji wyszedł błąd sprzed tej zmiany: po podmianie ćwiczenia od T4 (`cwiczenieIdOverride`) wpis klienta zapisywał się pod starym ćwiczeniem ze slotu, a telefon pokazywał go jako „wcześniej tutaj". Serwer zapisuje teraz ćwiczenie z danego tygodnia.
 
 ## Co jest zrobione tym dokumentem
 

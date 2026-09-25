@@ -377,7 +377,7 @@ function rysujPostep() {
     `${p.frekwencja.ukonczonych} z ${p.frekwencja.zaplanowanych} treningów`));
   for (const t of p.frekwencja.tygodnie) {
     const w = el("div", "modul-blok");
-    w.append(el("span", "nazwa", `Tydzień ${t.tydzien}`));
+    w.append(el("span", "nazwa", `Tydzień ${t.numer ?? t.tydzien}${dopisekTygodnia(t.rodzaj)}`));
     const kropki = el("span", "tresc kropki");
     for (let i = 0; i < t.zDnia; i++) {
       kropki.append(el("span", `kropka ${i < t.ukonczonych ? "zrobiona" : ""}`, "●"));
@@ -491,7 +491,8 @@ function rysujPostep() {
     }
     for (const punkt of c.punkty) {
       const w = el("div", "modul-blok");
-      w.append(el("span", "nazwa", `Tydzień ${punkt.tydzien}`));
+      w.append(el("span", "nazwa",
+        `Tydzień ${punkt.numer ?? punkt.tydzien}${dopisekTygodnia(punkt.rodzaj)}`));
       w.append(el("span", "tresc", `${liczba(punkt.ciezar)} kg × ${punkt.powtorzenia}`
         + (punkt.oneRM != null ? `  ·  1RM ≈ ${liczba(punkt.oneRM)} kg` : "")));
       karta.append(w);
@@ -667,6 +668,61 @@ const notkaKalibracji = (k) => el("p", "kalibracja",
   `✓ Policzone z Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia} `
   + `przy RPE ${liczba(k.rpe)}`);
 
+/**
+ * Tygodnie po cyklu (decyzja trenera z 25.09.2026): deload — lżej, RPE niżej,
+ * bez TOP SETU; maksy — jedno powtórzenie na maksa w każdym boju, jednego
+ * dnia. Numer na ekranie przychodzi z serwera: bez deloadu maksy są siódme.
+ */
+const tydzienWidoku = (nr) => widok.tygodnie.find((x) => x.tydzien === nr);
+/** `1 ćwiczenie · 2 ćwiczenia · 5 ćwiczeń` — ta sama reguła co w konsoli. */
+function odmiana(n, [jeden, kilka, wiele]) {
+  const ostatnia = n % 10;
+  const dwie = n % 100;
+  if (n === 1) return jeden;
+  if (ostatnia >= 2 && ostatnia <= 4 && !(dwie >= 12 && dwie <= 14)) return kilka;
+  return wiele;
+}
+const numerTygodnia = (t) => t?.numer ?? t?.tydzien;
+const dopisekTygodnia = (rodzaj) =>
+  rodzaj === "deload" ? " · deload" : rodzaj === "maksy" ? " · maksy" : "";
+const nazwaDnia = (t, d) =>
+  t?.rodzaj === "maksy" ? "Dzień maksów" : `Dzień ${RZYMSKIE[d.dzien - 1]}`;
+const OPIS_TYGODNIA = {
+  deload: "Tydzień lżejszy: RPE niżej, bez TOP SETU — odpoczynek przed kolejnym cyklem.",
+  maksy: "Jedno powtórzenie na maksa w każdym boju — wszystko jednego dnia.",
+};
+
+/**
+ * Próba maksymalna — co zrobić i co wpisać. Ciężar w planie to obecne 1RM:
+ * punkt odniesienia, nie polecenie. Wynik wchodzi do kolejnego cyklu.
+ */
+function wskazowkaMaksu(c) {
+  if (seriaWpisana(c)) {
+    return el("p", "dobor dobor-zapisane", "✓ Wynik zapisany — trener dostanie go do kolejnego cyklu.");
+  }
+  return el("p", "dobor dobor-maks",
+    "Rozgrzej się stopniowo, potem jedno powtórzenie na maksa (RPE 10). "
+    + (typeof c.ciezar === "number"
+      ? `Twoje obecne 1RM to ${liczba(c.ciezar)} kg — jeśli idzie lekko, dołóż. `
+      : "")
+    + "Wpisz ciężar, który udało się podnieść.");
+}
+
+/**
+ * Licznik pod tytułem dnia. Próby maksymalnej się nie ocenia — liczy się,
+ * ile wyników jest wpisanych. Osobno, bo wpis wyniku nie przerysowuje listy.
+ */
+function pokazPostepTreningu(d) {
+  const t = tydzienWidoku(biezacy.tydzien);
+  const ocenione = d.cwiczenia.filter((c) => c.feedback).length;
+  const wpisane = d.cwiczenia.filter((c) => seriaWpisana(c)).length;
+  $("#trening-postep").textContent = d.ukonczony
+    ? "Trening zakończony"
+    : t?.rodzaj === "maksy"
+      ? `${wpisane} z ${d.cwiczenia.length} wyników wpisanych`
+      : `${ocenione} z ${d.cwiczenia.length} ocenionych`;
+}
+
 /** Pierwszy trening, którego klient jeszcze nie zrobił — tam prowadzi „zacznij od razu". */
 function pierwszyNiezrobiony() {
   for (const t of widok.tygodnie) {
@@ -681,13 +737,18 @@ function rysujTygodnie() {
   kontener.replaceChildren();
 
   for (const t of widok.tygodnie) {
-    const blok = el("div", "tydzien");
-    blok.append(el("div", "tydzien-tytul", `Tydzień ${t.tydzien} z 6`));
+    const blok = el("div", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`);
+    blok.append(el("div", "tydzien-tytul",
+      `Tydzień ${numerTygodnia(t)} z ${widok.tygodnie.length}${dopisekTygodnia(t.rodzaj)}`));
+    if (t.rodzaj) blok.append(el("p", "drobne opis-tygodnia", OPIS_TYGODNIA[t.rodzaj] ?? ""));
 
     for (const d of t.dni) {
       const kafel = el("button", `dzien-kafel ${d.ukonczony ? "zrobiony" : ""}`);
-      kafel.append(el("span", "nazwa", `Dzień ${RZYMSKIE[d.dzien - 1]}`));
-      kafel.append(el("span", "ile", `${d.cwiczenia.length} ćwiczeń`));
+      const n = d.cwiczenia.length;
+      kafel.append(el("span", "nazwa", nazwaDnia(t, d)));
+      kafel.append(el("span", "ile", t.rodzaj === "maksy"
+        ? `${n} ${odmiana(n, ["bój", "boje", "bojów"])}`
+        : `${n} ${odmiana(n, ["ćwiczenie", "ćwiczenia", "ćwiczeń"])}`));
       if (d.ukonczony) kafel.append(el("span", "ptaszek", "✓"));
       kafel.onclick = () => {
         biezacy = { tydzien: t.tydzien, dzien: d.dzien };
@@ -708,12 +769,11 @@ function rysujTrening() {
   const d = dzienBiezacy();
   if (!d) return;
 
-  $("#trening-tytul").textContent =
-    `Dzień ${RZYMSKIE[d.dzien - 1]} · tydzień ${biezacy.tydzien}`;
-  const ocenione = d.cwiczenia.filter((c) => c.feedback).length;
-  $("#trening-postep").textContent = d.ukonczony
-    ? "Trening zakończony"
-    : `${ocenione} z ${d.cwiczenia.length} ocenionych`;
+  const t = tydzienWidoku(biezacy.tydzien);
+  $("#trening-tytul").textContent = `${nazwaDnia(t, d)} · tydzień ${numerTygodnia(t)}`;
+  pokazPostepTreningu(d);
+  // W dniu maksów ocen nie ma, a serwer niczego za klienta nie dopisuje.
+  $("#notka-ok").classList.toggle("ukryty", t?.rodzaj === "maksy");
 
   // TOP SET
   const top = $("#topset");
@@ -747,7 +807,8 @@ function rysujTrening() {
   // ćwiczenia
   const stan = stanProwadzenia(d);
   const kontener = $("#cwiczenia");
-  kontener.replaceChildren(...d.cwiczenia.map((c) => kartaCwiczenia(c, stan)));
+  const opis = t?.rodzaj ? [el("p", "drobne opis-tygodnia", OPIS_TYGODNIA[t.rodzaj] ?? "")] : [];
+  kontener.replaceChildren(...opis, ...d.cwiczenia.map((c) => kartaCwiczenia(c, stan)));
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
@@ -773,7 +834,9 @@ function rysujTrening() {
  * pierwszym tygodniu nie jest już tak ważne (ciężar jest policzony). Seria
  * dostała więc własną kolumnę, a RPE zeszło do drobnej linijki pod spodem.
  */
-function kolumnyZadania({ seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne }) {
+function kolumnyZadania({
+  seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne, podpisCiezaru = "Ciężar",
+}) {
   const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
   const kolumna = (klasa, podpis, wartosc, jednostka, dopisek) => {
@@ -786,9 +849,9 @@ function kolumnyZadania({ seria, zSerii, ciezar, dobierz, serie, powtorzenia, rp
     siatka.append(k);
   };
   if (seria != null) kolumna("kolumna-seria", "Seria", String(seria), `z ${zSerii}`);
-  if (typeof ciezar === "number") kolumna("kolumna-ciezar", "Ciężar", liczba(ciezar), "kg");
-  else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", "Ciężar", "dobierz");
-  else kolumna("kolumna-ciezar slowo", "Ciężar", String(ciezar || "—"));
+  if (typeof ciezar === "number") kolumna("kolumna-ciezar", podpisCiezaru, liczba(ciezar), "kg");
+  else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "dobierz");
+  else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"));
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
     null, jednostronne ? "na stronę" : null);
@@ -870,11 +933,14 @@ function kartaCwiczenia(c, stan = null) {
   // Bez 1RM zamiast „— brak 1RM", które brzmiało jak awaria, stoi zaproszenie
   // do dobrania ciężaru. Klient nie musi wiedzieć, co to 1RM.
   karta.append(kolumnyZadania({
-    ciezar: c.ciezar, dobierz: c.dobierzCiezar || c.ciezarWybieraKlient, serie: c.serie,
-    powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    ciezar: c.ciezar,
+    dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
+    serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
   }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
+  if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
   const oceny = el("div", "oceny");
@@ -893,7 +959,8 @@ function kartaCwiczenia(c, stan = null) {
     };
     oceny.append(b);
   }
-  karta.append(oceny);
+  // Próby na RPE 10 nie ma jak ocenić „za łatwo" — liczy się wpisany wynik.
+  if (!c.maks) karta.append(oceny);
   karta.append(polaWykonania(c));
   return karta;
 }
@@ -981,7 +1048,15 @@ function listaSerii(serie) {
 function wyslijSerie(c, serie) {
   return wyslij("/odczucie",
     { positionId: c.positionId, tydzien: biezacy.tydzien, serie },
-    () => { c.serieWykonane = serie; },
+    () => {
+      c.serieWykonane = serie;
+      // Karta nie przerysowuje się po zapisie, więc po pierwszej odpowiedzi
+      // serwera trzyma obiekt z poprzedniego widoku. Zapis musi trafić też
+      // do tego, który jest teraz w pamięci — inaczej licznik dnia i kopia
+      // w telefonie (bez zasięgu) nie widziały drugiej połowy serii.
+      const teraz = dzienBiezacy()?.cwiczenia.find((x) => x.positionId === c.positionId);
+      if (teraz) teraz.serieWykonane = serie;
+    },
     { odswiez: false });
 }
 
@@ -1024,7 +1099,7 @@ function polaWykonania(c) {
   // Przy ćwiczeniu bez ciężaru pola są od razu na wierzchu, dopóki klient nie
   // wpisze serii: tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.
   const otwarte = otwarteWykonania.has(c.positionId)
-    || ((c.dobierzCiezar || c.ciezarWybieraKlient) && !seriaWpisana(c));
+    || ((c.dobierzCiezar || c.ciezarWybieraKlient || c.maks) && !seriaWpisana(c));
 
   // Po treningu: linijka, co poszło, i osobno „edytuj". Formularz na wierzchu
   // wyglądał jak coś do wypełnienia, a to jest zapis — do poprawienia literówki
@@ -1056,6 +1131,13 @@ function polaWykonania(c) {
     podpisz();
     if (!wlasnyCiezarDoWpisania(c)) {
       blok.closest(".cwiczenie")?.querySelector(".dobor-wlasny")?.remove();
+    }
+    // Próba maksymalna: zdanie „wpisz wynik" zmienia się w „wynik zapisany",
+    // a licznik dnia liczy wpisane wyniki — bez przerysowania karty.
+    if (c.maks) {
+      blok.closest(".cwiczenie")?.querySelector(".dobor")?.replaceWith(wskazowkaMaksu(c));
+      const d = dzienBiezacy();
+      if (d) pokazPostepTreningu(d);
     }
 
     // Ćwiczenie bez ciężaru: ta seria właśnie go ustala. Instrukcja znika od
@@ -1315,8 +1397,8 @@ function rysujPanel() {
   const panel = $("#panel");
   panel.replaceChildren();
 
-  $("#seria-tytul").textContent =
-    `Dzień ${RZYMSKIE[d.dzien - 1]} · tydzień ${prowadzenie.tydzien}`;
+  const tp = tydzienWidoku(prowadzenie.tydzien);
+  $("#seria-tytul").textContent = `${nazwaDnia(tp, d)} · tydzień ${numerTygodnia(tp)}`;
   const zrobione = new Set(prowadzenie.zrobione);
   const ileZrobionych = kroki.filter((k) => zrobione.has(k.klucz)).length;
   $("#seria-postep").textContent = prowadzenie.krok >= kroki.length
@@ -1489,11 +1571,13 @@ function panelSerii(k, kroki, d) {
 
   karta.append(kolumnyZadania({
     seria: k.seria, zSerii: k.zSerii, ciezar: c.ciezar,
-    dobierz: c.dobierzCiezar || c.ciezarWybieraKlient,
+    dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
   }));
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
+  if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
   // Co już poszło w tym treningu przy tym ćwiczeniu.
@@ -1543,7 +1627,7 @@ function panelSerii(k, kroki, d) {
 
   // Odczucie pytamy przy ostatniej serii — wcześniej klient nie wie jeszcze,
   // jak było, a pytany przy każdej serii przestaje odpowiadać.
-  if (k.ostatniaSeria) {
+  if (k.ostatniaSeria && !c.maks) {
     karta.append(el("div", "pytanie", "Jak było to ćwiczenie?"));
     const oceny = el("div", "oceny");
     for (const [wartosc, etykieta, klasa] of [
@@ -1712,7 +1796,7 @@ function panelKonca(d) {
   karta.append(el("h2", "", "Wszystkie serie za Tobą"));
 
   const wpisane = d.cwiczenia.flatMap(serieWykonane).filter((s) => !pustaSeria(s)).length;
-  const bezOceny = d.cwiczenia.filter((c) => !c.feedback).length;
+  const bezOceny = d.cwiczenia.filter((c) => !c.feedback && !c.maks).length;
   karta.append(el("p", "drobne",
     `Zapisanych serii: ${wpisane}.`
     + (bezOceny > 0 ? ` Ćwiczenia bez oceny (${bezOceny}) zapiszą się jako „OK".` : "")));

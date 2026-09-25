@@ -17,6 +17,13 @@ z jednym wyjątkiem, który sam włączasz kluczem do API: [asystent](#asystent-
 kategorią szkieletu. Serie, powtórzenia i RPE ustawiasz osobno dla każdego
 z sześciu tygodni.
 
+**Po cyklu: deload i maksy** — przełączniki *+ deload* i *+ maksy* dokładają
+tydzień 7 (serie i powtórzenia z T6, RPE o 2 niżej, bez TOP SETU) i tydzień 8
+(1 × 1 @ RPE 10, wszystkie boje jednego dnia). W zakładce maksów zaznaczasz
+boje — domyślnie przysiady, wyciskanie leżąc i martwe z planu — i widzisz
+wynik klienta obok obecnego 1RM. *Nowa wersja* bierze ten wynik jako serię
+maksymalną sama. Eksport do arkusza ma dalej tylko T1–T6.
+
 **Widzisz skutki od razu.** Ciężar, stres na trzech osiach, bilans wzorców ruchu,
 obciążenie tydzień po tygodniu z oceną normy — wszystko przelicza się przy każdej
 zmianie, tak jak w arkuszu.

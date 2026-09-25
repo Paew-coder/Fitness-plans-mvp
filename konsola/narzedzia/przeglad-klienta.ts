@@ -1335,6 +1335,111 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     `${(await s.locator("#panel .kolumna-ciezar").innerText()).replace(/\n/g, " ")} · `
     + `kg: ${await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue()}`);
 
+  // ── 26. deload i tydzień maksów ───────────────────────────────────
+  //
+  // Decyzje trenera z 25.09.2026: po sześciu tygodniach deload (jak T6, RPE
+  // o 2 niżej, bez TOP SETU), potem maksy — 1 × 1 @ RPE 10 w przysiadzie,
+  // wyciskaniu i martwym, wszystkie jednego dnia. Wynik idzie do nowego cyklu.
+  const PO_CYKLU = "po-cyklu-tel";
+  await api("/api/plany", "POST", { klient: PO_CYKLU, wersja: 1 });
+  const idPoCyklu = (await api("/api/plany")).find((p: any) => p.klient === PO_CYKLU).id;
+  const planPoCyklu = (await api(`/api/plany/${idPoCyklu}`)).zapisany.plan;
+  const slotPo = (id: string) => planPoCyklu.sloty.find((x: any) => x.positionId === id);
+  slotPo("D1-S01").cwiczenieId = "EX-0010";   // przysiad
+  slotPo("D1-S02").cwiczenieId = "EX-0016";   // wiosło — nie maksuje się
+  slotPo("D2-S01").cwiczenieId = "EX-0011";   // wyciskanie
+  slotPo("D3-S01").cwiczenieId = "EX-0053";   // martwy
+  planPoCyklu.serieMaksymalne = [
+    { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 1 },
+    { cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
+    { cwiczenieId: "EX-0053", ciezar: 150, powtorzenia: 1 },
+    { cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 5 },
+  ];
+  planPoCyklu.deload = true;
+  planPoCyklu.tydzienMaksow = true;
+  await api(`/api/plany/${idPoCyklu}`, "PUT",
+    { plan: planPoCyklu, dataStartu: null, status: "wysłany" });
+  const sciezkaPoCyklu = (await api(`/api/plany/${idPoCyklu}/link`, "POST")).sciezka;
+
+  await s.goto(`${adres}${sciezkaPoCyklu}`, { waitUntil: "networkidle" });
+  // Tytuły są w CSS wielkimi literami — porównujemy treść, nie krój.
+  const tytulyTygodni = (await s.locator("#tygodnie .tydzien-tytul").allTextContents())
+    .map((t) => t.trim());
+  sprawdz("klient widzi osiem tygodni, dwa ostatnie podpisane",
+    tytulyTygodni.length === 8
+    && tytulyTygodni[6] === "Tydzień 7 z 8 · deload" && tytulyTygodni[7] === "Tydzień 8 z 8 · maksy",
+    tytulyTygodni.slice(5).join(" | "));
+  const blokMaksow = s.locator("#tygodnie .tydzien.maksy");
+  sprawdz("maksy to jeden dzień z trzema bojami i zdaniem, o co chodzi",
+    await blokMaksow.locator(".dzien-kafel").count() === 1
+    && (await blokMaksow.innerText()).includes("Dzień maksów")
+    && (await blokMaksow.innerText()).includes("3 boje")
+    && (await blokMaksow.innerText()).includes("jednego dnia"),
+    (await blokMaksow.innerText()).replace(/\n/g, " · "));
+
+  // Deload: bez TOP SETU, RPE niższe niż w T6.
+  await s.locator("#tygodnie .tydzien.deload .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const widokPoCyklu = async () => await api(`/api/klient/${sciezkaPoCyklu.replace("/k/", "")}`);
+  const przysiadT6 = (await widokPoCyklu()).tygodnie[5].dni[0].cwiczenia[0];
+  // O 2 niżej, ale nie poniżej 6 — tam zaczyna się tabela RPE.
+  sprawdz("deload: bez TOP SETU, RPE o 2 niżej niż w T6",
+    await s.locator("#topset").isHidden()
+    && (await s.locator("#cwiczenia .cwiczenie").first().locator(".rpe-linia").innerText())
+      === `RPE ${Math.max(6, przysiadT6.rpe - 2)}`.replace(".", ","),
+    `${await s.locator("#cwiczenia .cwiczenie").first().locator(".rpe-linia").innerText()} · T6 RPE ${przysiadT6.rpe}`);
+  await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
+  // Dzień maksów.
+  await blokMaksow.locator(".dzien-kafel").click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  sprawdz("tytuł mówi, co to za dzień",
+    (await s.locator("#trening-tytul").innerText()) === "Dzień maksów · tydzień 8",
+    await s.locator("#trening-tytul").innerText());
+  const kartyMaksow = s.locator("#cwiczenia .cwiczenie");
+  const przysiadMaks = kartyMaksow.first();
+  sprawdz("przy boju obecne 1RM, instrukcja próby i bez ocen „za łatwe”",
+    await kartyMaksow.count() === 3
+    && (await przysiadMaks.locator(".kolumna-ciezar").textContent())!.includes("1RM teraz")
+    && (await przysiadMaks.locator(".kolumna-ciezar").textContent())!.includes("120")
+    && (await przysiadMaks.locator(".dobor-maks").innerText()).includes("jedno powtórzenie na maksa")
+    && await s.locator("#cwiczenia .ocena-przycisk").count() === 0,
+    (await przysiadMaks.innerText()).replace(/\n/g, " · ").slice(0, 160));
+  const poleMaksu = przysiadMaks.locator(".wykonanie-pola");
+  sprawdz("pole na wynik otwarte od razu, jeden wiersz",
+    await poleMaksu.isVisible() && await poleMaksu.locator(".wiersz-serii").count() === 1);
+  const wynikMaksu = poleMaksu.locator(".wiersz-serii").first().locator("input");
+  await wynikMaksu.nth(0).fill("130");
+  await wynikMaksu.nth(0).blur();
+  await wynikMaksu.nth(1).fill("1");
+  await wynikMaksu.nth(1).blur();
+  await s.waitForTimeout(900);
+  sprawdz("po wpisaniu wyniku zdanie mówi, że trener go dostanie",
+    (await przysiadMaks.locator(".dobor").innerText()).includes("Wynik zapisany"),
+    await przysiadMaks.locator(".dobor").innerText());
+  sprawdz("licznik dnia liczy wpisane wyniki, nie oceny",
+    (await s.locator("#trening-postep").innerText()) === "1 z 3 wyników wpisanych",
+    await s.locator("#trening-postep").innerText());
+  sprawdz("w dniu maksów nie ma zdania o ocenach „OK” — ocen tu nie ma",
+    await s.locator("#notka-ok").isHidden());
+  await s.click("#zakoncz");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  sprawdz("kafelki liczą ćwiczenia po polsku",
+    (await s.locator("#tygodnie .tydzien").first().innerText()).includes("2 ćwiczenia"),
+    (await s.locator("#tygodnie .tydzien").first().innerText()).replace(/\n/g, " · "));
+  const poMaksach = await api(`/api/plany/${idPoCyklu}`);
+  const wpisMaksu = poMaksach.zapisany.wykonania.find((w: any) => w.tydzien === 8);
+  sprawdz("wynik zapisany przy przysiadzie, dzień maksów domknięty",
+    wpisMaksu?.cwiczenieId === "EX-0010" && wpisMaksu?.ciezarWykonany === 130
+    && poMaksach.realizacja.tygodnie.find((t: any) => t.tydzien === 8)?.ukonczonych === 1,
+    JSON.stringify(wpisMaksu));
+  const nowyCykl = await api(`/api/plany/${idPoCyklu}/kopia`, "POST", {});
+  sprawdz("nowy cykl zaczyna od 130 kg w przysiadzie — z próby, nie z szacunku",
+    nowyCykl.zapisany.plan.serieMaksymalne.some((x: any) =>
+      x.cwiczenieId === "EX-0010" && x.ciezar === 130 && x.powtorzenia === 1),
+    JSON.stringify(nowyCykl.zapisany.plan.serieMaksymalne));
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

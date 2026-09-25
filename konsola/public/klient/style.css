@@ -488,3 +488,9 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .pole-wagi .glowny { padding: .65rem 1.1rem; }
 .potwierdzenie-wagi { margin: .45rem 0 0; font-size: .88rem; color: var(--ok); }
 .potwierdzenie-wagi.blad { color: var(--trudne); }
+
+/* ── tygodnie po cyklu: deload i maksy ─────────────────────────── */
+/* Przerywana linia odróżnia je od sześciu tygodni pracy — to nie jest
+   „jeszcze jeden tydzień tego samego", tylko coś innego. */
+.tydzien.po-cyklu { border-top: 1px dashed var(--linia); padding-top: .6rem; }
+.opis-tygodnia { margin: .1rem 0 .5rem; }

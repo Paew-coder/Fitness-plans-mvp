@@ -12,7 +12,8 @@
  * tygodni) i historia dłuższa niż jeden cykl.
  */
 import { randomBytes } from "node:crypto";
-import type { Plan } from "../silnik/src/plan.ts";
+import { TYDZIEN_MAKSOW, type Plan } from "../silnik/src/plan.ts";
+import { POWT_MAX, type SeriaMaksymalna } from "../silnik/src/rpe.ts";
 import type { DaneBiegowe } from "../silnik/src/bieg.ts";
 import { baza } from "./baza/polaczenie.ts";
 import { idKlienta, idPlanu } from "./nazwy.ts";
@@ -573,7 +574,29 @@ export function cwiczeniaZPoprzedniegoCyklu(zapisany: ZapisanyPlan): string[] {
  *
  * Nowy plan wskazuje poprzedni, więc od razu działa ostrzeżenie o powtórkach.
  */
+/**
+ * Wyniki z tygodnia maksów jako serie maksymalne nowego cyklu.
+ *
+ * Jedno powtórzenie na RPE 10 **jest** serią maksymalną — najczystszą, jaką
+ * klient może zrobić. Dlatego wchodzi wprost, a nie jako propozycja do
+ * przyjęcia: szacunek z serii roboczych nie ma z nią czego porównywać.
+ * Seria ponad tabelę (więcej niż 15 powtórzeń) nic by nie policzyła.
+ */
+export function serieZTygodniaMaksow(zrodlo: ZapisanyPlan): SeriaMaksymalna[] {
+  if (!zrodlo.plan.tydzienMaksow) return [];
+  return (zrodlo.wykonania ?? [])
+    .filter((w) => w.tydzien === TYDZIEN_MAKSOW && w.cwiczenieId
+      && w.ciezarWykonany && w.powtorzeniaWykonane && w.powtorzeniaWykonane <= POWT_MAX)
+    .map((w) => ({
+      cwiczenieId: w.cwiczenieId!,
+      ciezar: w.ciezarWykonany!,
+      powtorzenia: w.powtorzeniaWykonane!,
+      zTygodniaMaksow: zrodlo.wersja,
+    }));
+}
+
 export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): ZapisanyPlan {
+  const zMaksow = serieZTygodniaMaksow(zrodlo);
   return {
     id: idPlanu(zrodlo.klient, wersja),
     trenerId: zrodlo.trenerId,
@@ -587,6 +610,11 @@ export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): Zapis
     poprzedniId: zrodlo.id,
     plan: {
       ...zrodlo.plan,
+      serieMaksymalne: [
+        ...zrodlo.plan.serieMaksymalne
+          .filter((s) => !zMaksow.some((m) => m.cwiczenieId === s.cwiczenieId)),
+        ...zMaksow,
+      ],
       sloty: zrodlo.plan.sloty.map((slot) => ({
         ...slot,
         tygodnie: Object.fromEntries(

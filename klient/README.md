@@ -225,6 +225,21 @@ ma **▶ Zacznij to ćwiczenie** — prosto do jego pierwszej serii w panelu,
 w dowolnej kolejności (także TOP SET). Przycisk nad listą mówi,
 dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
 
+## Po cyklu: deload i maksy
+
+Trener włącza w konsoli (**Po cyklu: + deload, + maksy**) jeden albo oba
+tygodnie po sześciu tygodniach pracy. Klient widzi je na liście jako
+*Tydzień 7 z 8 · deload* i *Tydzień 8 z 8 · maksy*, każdy z jednym zdaniem,
+o co chodzi.
+
+* **Deload** — te same dni i ćwiczenia co w T6, RPE o 2 niżej, bez TOP SETU.
+  Zwykły trening, tylko lżejszy.
+* **Dzień maksów** — jeden dzień, wszystkie boje naraz. Przy każdym *1RM teraz*
+  (obecne 1RM jako punkt odniesienia), zdanie „rozgrzej się stopniowo, potem
+  jedno powtórzenie na maksa" i otwarte pole na wynik. Bez ocen — próby na
+  RPE 10 nie ma jak ocenić; licznik pod tytułem liczy wpisane wyniki.
+  Wynik trafia do kolejnego cyklu jako seria maksymalna.
+
 ## Pętla się domyka
 
 To jest sedno fazy 2. Ocena klienta wraca do silnika i zmienia ciężar

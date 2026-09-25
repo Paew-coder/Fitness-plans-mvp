@@ -6,6 +6,7 @@ import type {
   Stres,
   TrybAkcesoriow,
   Tydzien,
+  TydzienCyklu,
   WynikCiezaru,
 } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
@@ -13,7 +14,7 @@ import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
 import { jestBojemGlownym, progresjaSlotu } from "./szablon-boju.ts";
-import { rpeTopSetu } from "./top-set.ts";
+import { rpeTopSetu, zwyczajowyTopSet } from "./top-set.ts";
 import {
   bilansTygodnia,
   NORMY,
@@ -28,6 +29,14 @@ import {
 import { procent1RM, rozwiaz1RM, type SeriaMaksymalna } from "./rpe.ts";
 
 export const TYGODNIE: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
+
+/** Tygodnie po cyklu mają stałe numery — patrz `numerTygodniaNaEkranie`. */
+export const TYDZIEN_DELOADU = 7;
+export const TYDZIEN_MAKSOW = 8;
+export const OBNIZENIE_RPE_DELOADU = 2;
+/** Tabela RPE zaczyna się od 6 — niżej nie ma z czego policzyć ciężaru. */
+export const RPE_MIN_DELOADU = 6;
+export const RPE_MAKSOW = 10;
 
 /** Co trener ustawia dla slotu w konkretnym tygodniu. Puste pole = policz automatem. */
 export type ParametryTygodnia = {
@@ -53,7 +62,7 @@ export type SlotPlanu = {
   lp: string;
   cwiczenieId: string | null;
   kategoriaSzkieletu?: Kategoria | null;
-  tygodnie?: Partial<Record<Tydzien, ParametryTygodnia>>;
+  tygodnie?: Partial<Record<TydzienCyklu, ParametryTygodnia>>;
   /**
    * Tryb liczenia ciężaru dla tego jednego ćwiczenia. Pusto = jak w planie.
    *
@@ -93,6 +102,15 @@ export type Plan = {
    * zmiana rozjeżdża wynik z MasterTemplate i z normami z zakładki Analiza.
    */
   liczenieJednostronnych?: TrybJednostronnych;
+  /**
+   * Tydzień lżejszy po cyklu (T7): serie i powtórzenia z T6, RPE o 2 niżej,
+   * bez TOP SETU. Z periodyzacji trenera — decyzja z 25.09.2026.
+   */
+  deload?: boolean;
+  /** Tydzień maksów na koniec (T8): 1 × 1 @ RPE 10, wszystkie boje jednego dnia. */
+  tydzienMaksow?: boolean;
+  /** Identyfikatory bojów do maksowania. Puste = domyślne (`domyslneCwiczeniaMaksow`). */
+  cwiczeniaMaksow?: readonly string[];
 };
 
 export type SlotWyliczony = {
@@ -130,7 +148,9 @@ export type PodsumowanieDnia = {
 };
 
 export type TydzienWyliczony = {
-  tydzien: Tydzien;
+  tydzien: TydzienCyklu;
+  /** Tylko przy tygodniach po cyklu. */
+  rodzaj?: "deload" | "maksy";
   sloty: SlotWyliczony[];
   topSety: TopSetWyliczony[];
   dni: PodsumowanieDnia[];
@@ -142,11 +162,16 @@ export type PlanWyliczony = {
   nazwa: string;
   dniTreningowe: number;
   tygodnie: TydzienWyliczony[];
+  /**
+   * T7 (deload) i T8 (maksy) — tylko te, które trener włączył. Osobno, bo
+   * średnie, normy i porównania cykli liczą się z sześciu tygodni pracy.
+   */
+  tygodnieDodatkowe: TydzienWyliczony[];
   /** Ocena średniej liczby serii per wzorzec z całego cyklu — jak w Analizie. */
   ocenaObjetosci: Record<string, { srednia: number; ocena: OcenaNormy }>;
 };
 
-function parametry(slot: SlotPlanu, tydzien: Tydzien): ParametryTygodnia {
+function parametry(slot: SlotPlanu, tydzien: TydzienCyklu): ParametryTygodnia {
   return slot.tygodnie?.[tydzien] ?? {};
 }
 
@@ -167,121 +192,124 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
   const dni = dniTreningowe(plan);
   const wyliczone = new Map<Tydzien, TydzienWyliczony>();
 
-  for (const tydzien of TYGODNIE) {
-    const sloty: SlotWyliczony[] = [];
+  /**
+   * Jeden slot w jednym tygodniu. `wzor` to ten sam slot policzony w T6 —
+   * podaje go tylko deload, który nie ma szablonu, a zaczyna od tego, gdzie
+   * cykl się skończył.
+   */
+  const wyliczSlot = (slot: SlotPlanu, tydzien: TydzienCyklu, wzor?: SlotWyliczony): SlotWyliczony => {
+    const p = parametry(slot, tydzien);
+    // Deload bierze ćwiczenie z T6: podmiana z T4–T6 trwa do końca cyklu.
+    const p6: ParametryTygodnia = wzor ? parametry(slot, 6) : {};
+    const cwiczenieIdOverride = p.cwiczenieIdOverride ?? p6.cwiczenieIdOverride;
+    const cwiczenieId = cwiczenieIdOverride ?? slot.cwiczenieId;
+    const cwiczenie = cwiczenieId ? (katalog.poId(cwiczenieId) ?? null) : null;
 
-    for (const slot of plan.sloty) {
-      const p = parametry(slot, tydzien);
-      const cwiczenieId = p.cwiczenieIdOverride ?? slot.cwiczenieId;
-      const cwiczenie = cwiczenieId ? (katalog.poId(cwiczenieId) ?? null) : null;
-
-      if (!cwiczenie) {
-        sloty.push({
-          positionId: slot.positionId,
-          dzien: slot.dzien,
-          lp: slot.lp,
-          cwiczenie: null,
-          serie: 0,
-          serieEfektywne: 0,
-          powtorzenia: 0,
-          rpe: 0,
-          procent1RM: null,
-          oneRM: 0,
-          mnoznik: 1,
-          ciezar: "",
-          ciezarNadpisany: false,
-          stres: { calkowity: 0, centralny: 0, obwodowy: 0 },
-        } as SlotWyliczony);
-        continue;
-      }
-
-      const bojGlowny = jestBojemGlownym(slot.lp, cwiczenie.coeff);
-      const odczucia = Object.fromEntries(
-        TYGODNIE.map((t) => [t, parametry(slot, t).feedback]),
-      ) as Partial<Record<Tydzien, Feedback | undefined>>;
-      const mnoznik = mnoznikNaTydzien(tydzien, odczucia);
-
-      /*
-       * Czego trener nie wpisał, to bierze się z szablonu 5.18 — z tych samych
-       * liczb, które wpisuje przycisk „progresja 5.18". Dzięki temu kliknięcie
-       * przycisku nie zmienia planu, tylko czyni go widocznym.
-       *
-       * Wcześniej stały tu liczby wzięte znikąd i bój główny bez wpisanych
-       * serii szedł do klienta jako `1 × 6`, czyli **jedna seria** — podczas
-       * gdy szablon mówi sześć. Na telefonie było to zwykłe polecenie do
-       * wykonania i tak też zostało odczytane: „mam robić jedną serię".
-       */
-      // Część planu rozstrzyga nie tylko o powtórzeniach akcesoriów, ale też
-      // o progresji boju: „objętość" to cz.1 trenera, „intensywność" — cz.2.
-      const szablon = progresjaSlotu(slot.lp, tydzien, cwiczenie.coeff, plan.czescPlanu);
-
-      const serie = p.serie ?? szablon.serie!;
-      const efektywne = serieEfektywne(
-        serie, cwiczenie.jednostronne, plan.liczenieJednostronnych ?? "jak w arkuszu",
-      );
-      const rpe = p.rpe ?? szablon.rpe!;
-      const powtorzenia =
-        p.powtorzenia ??
-        szablon.powtorzenia ??
-        powtorzeniaAkcesorium({
-          coeff: cwiczenie.coeff,
-          czesc: plan.czescPlanu,
-          tydzien,
-          korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
-        });
-
-      const zmienione = p.cwiczenieIdOverride !== undefined && p.cwiczenieIdOverride !== slot.cwiczenieId;
-      const oneRM = rozwiaz1RM(cwiczenie.id, plan.serieMaksymalne);
-
-      const bazowy = tydzienBazowyBloku(tydzien);
-      const slotBazowy = bazowy
-        ? wyliczone.get(bazowy)?.sloty.find((s) => s.positionId === slot.positionId)
-        : undefined;
-
-      const policzony = obliczCiezar({
-        tydzien,
-        jestBojemGlownym: bojGlowny,
-        trybAkcesoriow: slot.trybCiezaru ?? plan.trybAkcesoriow,
-        powtorzenia,
-        rpe,
-        skokKg: cwiczenie.skokKg,
-        progresja: cwiczenie.progresja,
-        oneRM,
-        mnoznik,
-        cwiczenieZmienioneWzgledemT1: zmienione,
-        oneRMReczny: p.oneRMReczny,
-        ciezarBazowy: slotBazowy?.ciezar,
-        mnoznikBazowy: slotBazowy?.mnoznik,
-      });
-
-      sloty.push({
+    if (!cwiczenie) {
+      return {
         positionId: slot.positionId,
         dzien: slot.dzien,
         lp: slot.lp,
-        cwiczenie,
-        serie,
-        serieEfektywne: efektywne,
-        powtorzenia,
-        rpe,
-        procent1RM: procent1RM(powtorzenia, rpe),
-        oneRM,
-        mnoznik,
-        ciezar: p.ciezarOverride ?? policzony,
-        ciezarNadpisany: p.ciezarOverride !== undefined,
-        stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
-      });
+        cwiczenie: null,
+        serie: 0,
+        serieEfektywne: 0,
+        powtorzenia: 0,
+        rpe: 0,
+        procent1RM: null,
+        oneRM: 0,
+        mnoznik: 1,
+        ciezar: "",
+        ciezarNadpisany: false,
+        stres: { calkowity: 0, centralny: 0, obwodowy: 0 },
+      } as SlotWyliczony;
     }
 
-    const aktywne: SlotObliczony[] = sloty
-      .filter((s) => s.cwiczenie !== null)
-      .map((s) => ({
-        part: s.cwiczenie!.part,
-        serie: s.serieEfektywne,
-        powtorzenia: s.powtorzenia,
-        stres: s.stres,
-      }));
+    const bojGlowny = jestBojemGlownym(slot.lp, cwiczenie.coeff);
+    const odczucia = Object.fromEntries(
+      TYGODNIE.map((t) => [t, parametry(slot, t).feedback]),
+    ) as Partial<Record<Tydzien, Feedback | undefined>>;
+    const mnoznik = mnoznikNaTydzien(tydzien as Tydzien, odczucia);
 
-    const bilans = bilansTygodnia(aktywne);
+    /*
+     * Czego trener nie wpisał, to bierze się z szablonu 5.18 — z tych samych
+     * liczb, które wpisuje przycisk „progresja 5.18". Dzięki temu kliknięcie
+     * przycisku nie zmienia planu, tylko czyni go widocznym.
+     *
+     * Wcześniej stały tu liczby wzięte znikąd i bój główny bez wpisanych
+     * serii szedł do klienta jako `1 × 6`, czyli **jedna seria** — podczas
+     * gdy szablon mówi sześć. Na telefonie było to zwykłe polecenie do
+     * wykonania i tak też zostało odczytane: „mam robić jedną serię".
+     */
+    // Część planu rozstrzyga nie tylko o powtórzeniach akcesoriów, ale też
+    // o progresji boju: „objętość" to cz.1 trenera, „intensywność" — cz.2.
+    // Deload nie ma własnego szablonu: serie i powtórzenia jak w T6, RPE niżej.
+    const szablon = wzor
+      ? { serie: wzor.serie, powtorzenia: wzor.powtorzenia, rpe: rpeDeloadu(wzor.rpe) }
+      : progresjaSlotu(slot.lp, tydzien as Tydzien, cwiczenie.coeff, plan.czescPlanu);
+
+    const serie = p.serie ?? szablon.serie!;
+    const efektywne = serieEfektywne(
+      serie, cwiczenie.jednostronne, plan.liczenieJednostronnych ?? "jak w arkuszu",
+    );
+    const rpe = p.rpe ?? szablon.rpe!;
+    const powtorzenia =
+      p.powtorzenia ??
+      szablon.powtorzenia ??
+      powtorzeniaAkcesorium({
+        coeff: cwiczenie.coeff,
+        czesc: plan.czescPlanu,
+        tydzien,
+        korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
+      });
+
+    const zmienione = cwiczenieIdOverride !== undefined && cwiczenieIdOverride !== slot.cwiczenieId;
+    const oneRM = rozwiaz1RM(cwiczenie.id, plan.serieMaksymalne);
+
+    const bazowy = tydzienBazowyBloku(tydzien as Tydzien);
+    const slotBazowy = bazowy
+      ? wyliczone.get(bazowy)?.sloty.find((s) => s.positionId === slot.positionId)
+      : undefined;
+
+    const policzony = obliczCiezar({
+      tydzien: tydzien as Tydzien,
+      jestBojemGlownym: bojGlowny,
+      trybAkcesoriow: slot.trybCiezaru ?? plan.trybAkcesoriow,
+      powtorzenia,
+      rpe,
+      skokKg: cwiczenie.skokKg,
+      progresja: cwiczenie.progresja,
+      oneRM,
+      mnoznik,
+      cwiczenieZmienioneWzgledemT1: zmienione,
+      oneRMReczny: p.oneRMReczny ?? p6.oneRMReczny,
+      ciezarBazowy: slotBazowy?.ciezar,
+      mnoznikBazowy: slotBazowy?.mnoznik,
+    });
+
+    return {
+      positionId: slot.positionId,
+      dzien: slot.dzien,
+      lp: slot.lp,
+      cwiczenie,
+      serie,
+      serieEfektywne: efektywne,
+      powtorzenia,
+      rpe,
+      procent1RM: procent1RM(powtorzenia, rpe),
+      oneRM,
+      mnoznik,
+      ciezar: p.ciezarOverride ?? policzony,
+      ciezarNadpisany: p.ciezarOverride !== undefined,
+      stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
+    };
+  };
+
+  for (const tydzien of TYGODNIE) {
+    const sloty: SlotWyliczony[] = [];
+
+    for (const slot of plan.sloty) sloty.push(wyliczSlot(slot, tydzien));
+
+    const bilans = bilansSlotow(sloty);
 
     const topSety: TopSetWyliczony[] = (plan.topSety ?? [])
       .filter((t) => t.wlaczony)
@@ -326,17 +354,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         } as TopSetWyliczony;
       });
 
-    const numeryDni = [...new Set(sloty.map((s) => s.dzien))].sort((a, b) => a - b);
-    const podsumowania: PodsumowanieDnia[] = numeryDni.map((dzien) => {
-      const wDniu = sloty.filter((s) => s.dzien === dzien && s.cwiczenie);
-      const topSetDnia = topSety.find((t) => t.dzien === dzien && t.cwiczenie);
-      return {
-        dzien,
-        serie: wDniu.reduce((a, s) => a + s.serieEfektywne, 0) + (topSetDnia ? 1 : 0),
-        powtorzenia: wDniu.reduce((a, s) => a + s.serieEfektywne * s.powtorzenia, 0),
-        stresCalkowity: Math.round(wDniu.reduce((a, s) => a + s.stres.calkowity, 0) * 1e4) / 1e4,
-      };
-    });
+    const podsumowania = podsumujDni(sloty, topSety);
 
     wyliczone.set(tydzien, {
       tydzien,
@@ -350,6 +368,36 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
 
   const tygodnie = TYGODNIE.map((t) => wyliczone.get(t)!);
 
+  // Tygodnie po cyklu. Osobno od sześciu roboczych: średnie, normy objętości
+  // i porównania cykli liczą się z pracy, a deload z definicji jej nie ma.
+  const tygodnieDodatkowe: TydzienWyliczony[] = [];
+  const t6 = wyliczone.get(6)!;
+  if (plan.deload) {
+    const sloty = plan.sloty.map((slot) =>
+      wyliczSlot(slot, TYDZIEN_DELOADU, t6.sloty.find((s) => s.positionId === slot.positionId)));
+    tygodnieDodatkowe.push({
+      tydzien: TYDZIEN_DELOADU,
+      rodzaj: "deload",
+      sloty,
+      topSety: [],   // bez TOP SETU — tak jest w periodyzacji trenera
+      dni: podsumujDni(sloty, []),
+      bilans: bilansSlotow(sloty),
+      ocenaStresu: "—",   // lżej niż norma to cel, nie usterka
+    });
+  }
+  if (plan.tydzienMaksow) {
+    const sloty = slotyMaksow(plan, t6, katalog);
+    tygodnieDodatkowe.push({
+      tydzien: TYDZIEN_MAKSOW,
+      rodzaj: "maksy",
+      sloty,
+      topSety: [],
+      dni: podsumujDni(sloty, []),
+      bilans: bilansSlotow(sloty),
+      ocenaStresu: "—",
+    });
+  }
+
   const ocenaObjetosci: PlanWyliczony["ocenaObjetosci"] = {};
   for (const part of ["s", "d", "b", "r", "c"] as const) {
     const serie = tygodnie.map((t) => t.bilans.wzorce.find((w) => w.part === part)!.serie);
@@ -360,7 +408,124 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     };
   }
 
-  return { nazwa: plan.nazwa, dniTreningowe: dni, tygodnie, ocenaObjetosci };
+  return { nazwa: plan.nazwa, dniTreningowe: dni, tygodnie, tygodnieDodatkowe, ocenaObjetosci };
+}
+
+function bilansSlotow(sloty: readonly SlotWyliczony[]): BilansTygodnia {
+  const aktywne: SlotObliczony[] = sloty
+    .filter((s) => s.cwiczenie !== null)
+    .map((s) => ({
+      part: s.cwiczenie!.part,
+      serie: s.serieEfektywne,
+      powtorzenia: s.powtorzenia,
+      stres: s.stres,
+    }));
+  return bilansTygodnia(aktywne);
+}
+
+function podsumujDni(
+  sloty: readonly SlotWyliczony[], topSety: readonly TopSetWyliczony[],
+): PodsumowanieDnia[] {
+  const numeryDni = [...new Set(sloty.map((s) => s.dzien))].sort((a, b) => a - b);
+  return numeryDni.map((dzien) => {
+    const wDniu = sloty.filter((s) => s.dzien === dzien && s.cwiczenie);
+    const topSetDnia = topSety.find((t) => t.dzien === dzien && t.cwiczenie);
+    return {
+      dzien,
+      serie: wDniu.reduce((a, s) => a + s.serieEfektywne, 0) + (topSetDnia ? 1 : 0),
+      powtorzenia: wDniu.reduce((a, s) => a + s.serieEfektywne * s.powtorzenia, 0),
+      stresCalkowity: Math.round(wDniu.reduce((a, s) => a + s.stres.calkowity, 0) * 1e4) / 1e4,
+    };
+  });
+}
+
+/**
+ * Tydzień maksów: 1 × 1 @ RPE 10 w wybranych bojach, wszystkie jednego dnia —
+ * decyzja trenera z 25.09.2026, jak tydzień 13 w jego periodyzacji.
+ *
+ * Każdy bój w osobnej grupie (A1, B1, C1…), żeby prowadzenie dawało pełną
+ * przerwę po każdej próbie — wspólna litera znaczyłaby superserię. Ciężar
+ * to obecne 1RM (jedno powtórzenie na RPE 10 to 100%): punkt odniesienia,
+ * nie polecenie. `positionId` zostaje z miejsca, w którym bój stoi w planie,
+ * więc wpis klienta ląduje przy tym samym ćwiczeniu co reszta jego historii.
+ */
+function slotyMaksow(plan: Plan, t6: TydzienWyliczony, katalog: Katalog): SlotWyliczony[] {
+  const wybrane = plan.cwiczeniaMaksow ?? domyslneCwiczeniaMaksow(t6);
+  const sloty: SlotWyliczony[] = [];
+  for (const id of wybrane) {
+    const zrodlo = t6.sloty.find((s) => s.cwiczenie?.id === id);
+    const cwiczenie = zrodlo?.cwiczenie ?? null;
+    if (!zrodlo || !cwiczenie || !katalog.poId(id)) continue;
+    const slotPlanu = plan.sloty.find((s) => s.positionId === zrodlo.positionId);
+    const oneRM = rozwiaz1RM(id, plan.serieMaksymalne)
+      || (slotPlanu ? parametry(slotPlanu, 6).oneRMReczny ?? 0 : 0);
+    sloty.push({
+      positionId: zrodlo.positionId,
+      dzien: 1,
+      lp: `${String.fromCharCode(65 + sloty.length)}1.`,
+      cwiczenie,
+      serie: 1,
+      serieEfektywne: 1,
+      powtorzenia: 1,
+      rpe: RPE_MAKSOW,
+      procent1RM: procent1RM(1, RPE_MAKSOW),
+      oneRM,
+      mnoznik: 1,
+      ciezar: obliczCiezarTopSetu({
+        oneRM, rpe: RPE_MAKSOW, skokKg: cwiczenie.skokKg, progresja: cwiczenie.progresja,
+      }),
+      ciezarNadpisany: false,
+      stres: stresSlotu({ coeff: cwiczenie.coeff, serie: 1, rpe: RPE_MAKSOW, powtorzenia: 1 }),
+    });
+  }
+  return sloty;
+}
+
+/**
+ * Które boje maksować, gdy trener nie wybrał sam: przysiady, wyciskanie
+ * leżąc i martwe ciągi z planu — ta sama lista, przy której zwykle stoi
+ * TOP SET. Po jednym razie, choćby bój stał w kilku dniach.
+ */
+export function domyslneCwiczeniaMaksow(t6: TydzienWyliczony): string[] {
+  const wynik: string[] = [];
+  for (const s of t6.sloty) {
+    const c = s.cwiczenie;
+    if (c && zwyczajowyTopSet(c.nazwa) && !wynik.includes(c.id)) wynik.push(c.id);
+  }
+  return wynik;
+}
+
+/** Tydzień cyklu po numerze — roboczy (1–6) albo dodatkowy (7 deload, 8 maksy). */
+export function tydzienWyliczony(
+  wynik: PlanWyliczony, tydzien: number,
+): TydzienWyliczony | undefined {
+  return wynik.tygodnie.find((t) => t.tydzien === tydzien)
+    ?? wynik.tygodnieDodatkowe?.find((t) => t.tydzien === tydzien);
+}
+
+/** Numery tygodni, które plan faktycznie ma — w tej kolejności widzi je klient. */
+export function tygodniePlanu(plan: Pick<Plan, "deload" | "tydzienMaksow">): TydzienCyklu[] {
+  return [
+    ...TYGODNIE,
+    ...(plan.deload ? [TYDZIEN_DELOADU] : []),
+    ...(plan.tydzienMaksow ? [TYDZIEN_MAKSOW] : []),
+  ];
+}
+
+/**
+ * Numer tygodnia na ekranie. Klucze są stałe (7 deload, 8 maksy), żeby
+ * włączenie deloadu po fakcie nie przenosiło wpisów klienta między
+ * tygodniami — ale bez deloadu maksy są po prostu tygodniem siódmym.
+ */
+export function numerTygodniaNaEkranie(
+  plan: Pick<Plan, "deload" | "tydzienMaksow">, tydzien: number,
+): number {
+  return tydzien === TYDZIEN_MAKSOW && !plan.deload ? TYDZIEN_DELOADU : tydzien;
+}
+
+/** RPE w deloadzie: o 2 niżej niż w T6, nie niżej niż 6 — tam zaczyna się tabela. */
+export function rpeDeloadu(rpeT6: number): number {
+  return Math.max(RPE_MIN_DELOADU, rpeT6 - OBNIZENIE_RPE_DELOADU);
 }
 
 export type PorownanieJednostronnych = {
