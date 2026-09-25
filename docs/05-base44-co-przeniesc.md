@@ -161,7 +161,7 @@ zapiszesz.
 ### 5. Historia ćwiczenia w panelu, nie na osobnym ekranie — ✅ zrobione 25.09.2026
 
 **Zrobione — prościej niż tam.** Zamiast zwijanej sekcji jedna linijka, zawsze
-widoczna, w panelu i na liście: *„Ostatnio (T1): 100 · 100 kg × 5 · za trudne"*.
+widoczna, w panelu i na liście: *„Ostatnio (T1): 100 · 100 kg × 5"* — bez oceny, bo dopisek „za trudne" czytał się jak ocena zaznaczona z góry.
 Liczy się to, co klient faktycznie robił przy tym ćwiczeniu (także w innym dniu),
 bez wpisów z samą oceną; w pierwszym tygodniu nowego cyklu — ostatni wpis
 z poprzedniego (*„Ostatnio (poprzedni cykl, T6): …"*).
