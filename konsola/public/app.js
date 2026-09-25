@@ -275,8 +275,10 @@ function sygnalAktywnosci(r) {
   const znak = { aktywny: "●", zwolnil: "●", stanal: "▲" }[klasa];
   // Słowami, nie „2+1/12": objaśnienie tego zapisu stało tylko w dymku po
   // najechaniu myszą, a na iPadzie dymków nie ma.
+  // „·", nie „+": plus czytał się jak dodawanie (2 + 1 = 3 treningi?),
+  // a zaczęty trening nie jest domkniętym.
   const zaczete = r.rozpoczetych
-    ? ` + ${r.rozpoczetych} ${odmiana(r.rozpoczetych, ["zaczęty", "zaczęte", "zaczętych"])}`
+    ? ` · ${r.rozpoczetych} ${odmiana(r.rozpoczetych, ["zaczęty", "zaczęte", "zaczętych"])}`
     : "";
   const rada = klasa === "stanal" ? " — zapytaj, co się dzieje" : "";
   const s = el("span", `sygnal ${klasa}`,
@@ -1004,10 +1006,13 @@ function rysujRealizacje() {
       kropki.append(k);
     }
     wiersz.append(kropki);
+    // Zgłoszone z iPada: „0 z 2 + 1 zaczęty" łamało się na trzy linijki
+    // w wąskiej kolumnie, a „+" czytał się jak dodawanie. Teraz w jednej
+    // linii: ile domkniętych z ilu, a obok — ile zaczętych bez domknięcia.
     const podpis = t.rozpoczetych
-      ? `${t.ukonczonych} z ${t.zDnia} + ${t.rozpoczetych} ${odmiana(t.rozpoczetych, ["zaczęty", "zaczęte", "zaczętych"])}`
+      ? `${t.ukonczonych} z ${t.zDnia} · ${t.rozpoczetych} ${odmiana(t.rozpoczetych, ["zaczęty", "zaczęte", "zaczętych"])}`
       : `${t.ukonczonych} z ${t.zDnia}`;
-    wiersz.append(el("span", "wartosc", podpis));
+    wiersz.append(el("span", "wartosc wartosc-realizacji", podpis));
     kontener.append(wiersz);
   }
 
