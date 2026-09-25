@@ -215,6 +215,8 @@ Silnik dostał opcję `liczenieJednostronnych`, **domyślnie `"jak w arkuszu"`**
 - przeliczyć normy na nowe liczenie i przełączyć tryb na stałe, albo
 - zostawić liczenie jak jest, a klientowi po prostu wyświetlać „na stronę”.
 
+**Rozstrzygnięte 25.09.2026: zostaje jak w arkuszu.** Trener: „zostawmy jak jest”. Normy powstały na tym liczeniu (przy planie z dwoma jednostronnymi przełączenie zmieniało stres z 16,6 „w normie” na 20,3 „powyżej”, choć plan nie był cięższy), a lokalnie każda strona i tak robi swoje serie. Klient widzi „na stronę”, konsola pod wzorcami pokazuje różnicę. Wariant „podwójnie tylko w stresie centralnym” zostaje do rozważenia, gdyby praktyka pokazała, że jednostronne męczą ogólnie bardziej.
+
 Warto przy tym rozważyć, czy płaskie ×2 jest właściwe na wszystkich trzech osiach stresu: koszt **obwodowy na kończynę** się nie podwaja (każda strona dostaje swoje `3 × 10`), podwaja się raczej **centralny**. Szczegóły: [`02-silnik-obliczeniowy.md`](02-silnik-obliczeniowy.md) §8a.
 
 **4. Zmiana liczby dni w trakcie cyklu — funkcja do dodania, nie na start.**
