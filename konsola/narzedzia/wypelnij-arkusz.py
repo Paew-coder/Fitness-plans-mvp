@@ -133,8 +133,65 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
     if dane.get("data_startu"):
         start["C2"] = dane["data_startu"]
 
+    # --- tygodnie po cyklu: deload i maksy ---
+    for i, tydzien in enumerate(dane.get("tygodnie_dodatkowe") or []):
+        dopisz_tydzien_dodatkowy(wb, tydzien, wb.sheetnames.index("T6") + 1 + i)
+        licznik["tygodnie_dodatkowe"] = licznik.get("tygodnie_dodatkowe", 0) + 1
+
     wb.save(cel)
     return licznik
+
+
+OPIS_TYGODNIA = {
+    "deload": "Deload: serie i powtórzenia jak w T6, RPE o 1 niżej, bez TOP SETU.",
+    "maksy": "Maksy: 1 × 1 @ RPE 10, wszystkie boje jednego dnia. "
+             "Ciężar to obecne 1RM — punkt odniesienia; wynik wpisz obok.",
+}
+
+
+def dopisz_tydzien_dodatkowy(wb, tydzien: dict, pozycja: int) -> None:
+    """
+    Zakladka z gotowymi wartosciami. Szablon 5.18 zna szesc tygodni, a ich
+    formuly odwoluja sie do siebie nawzajem — kopia T6 liczylaby T6, nie
+    deload. Dlatego liczby wpisujemy wprost i mowimy o tym nad tabela.
+    """
+    from openpyxl.styles import Font
+
+    ws = wb.create_sheet(tydzien["nazwa"], pozycja)
+    maksy = tydzien["rodzaj"] == "maksy"
+    ws["A1"] = tydzien["nazwa"].upper()
+    ws["A1"].font = Font(bold=True, size=14)
+    ws["A2"] = OPIS_TYGODNIA.get(tydzien["rodzaj"], "")
+    ws["A3"] = "Wartości policzone w CraftMyPlan — w tej zakładce nie ma formuł."
+    ws["A3"].font = Font(italic=True, color="777777")
+
+    naglowki = (["Lp.", "Bój", "Serie", "Powt.", "RPE", "1RM teraz (kg)", "Wynik (kg)"]
+                if maksy else
+                ["Dzień", "Lp.", "Ćwiczenie", "Serie", "Powt.", "RPE", "Ciężar (kg)"])
+    for k, tekst in enumerate(naglowki, start=1):
+        c = ws.cell(row=5, column=k, value=tekst)
+        c.font = Font(bold=True)
+
+    r = 6
+    poprzedni_dzien = None
+    for w in tydzien["wiersze"]:
+        ciezar = w["ciezar"] if isinstance(w["ciezar"], (int, float)) else (w["ciezar"] or None)
+        if maksy:
+            wartosci = [w["lp"], w["cwiczenie"], w["serie"], w["powtorzenia"], w["rpe"], ciezar, None]
+        else:
+            # Pusty wiersz miedzy dniami — tak czyta sie to jak plan, nie jak tabela.
+            if poprzedni_dzien is not None and w["dzien"] != poprzedni_dzien:
+                r += 1
+            poprzedni_dzien = w["dzien"]
+            dzien = ["I", "II", "III", "IV", "V"][w["dzien"] - 1] if 1 <= w["dzien"] <= 5 else w["dzien"]
+            wartosci = [dzien, w["lp"], w["cwiczenie"], w["serie"], w["powtorzenia"], w["rpe"], ciezar]
+        for k, v in enumerate(wartosci, start=1):
+            ws.cell(row=r, column=k, value=v)
+        r += 1
+
+    for kolumna, szerokosc in zip("ABCDEFG", (8, 8, 34, 8, 8, 8, 14) if not maksy
+                                  else (8, 34, 8, 8, 8, 16, 14)):
+        ws.column_dimensions[kolumna].width = szerokosc
 
 
 if __name__ == "__main__":
