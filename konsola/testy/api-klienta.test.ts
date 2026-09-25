@@ -1012,3 +1012,30 @@ describe("szablony z Base44 w konsoli", () => {
     assert.match(odmowa.dane.blad, /nową wersję/);
   });
 });
+
+describe("rozgrzewka na początek dnia", () => {
+  test("klient dostaje ją wiersz po wierszu w dniu, dla którego ją wpisano", async () => {
+    await api("/api/plany", "POST", { klient: "Rozgrzewka Test", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Rozgrzewka Test").id;
+    const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.sloty[12].cwiczenieId = "EX-0011";
+    plan.rozgrzewki = [{ dzien: 1, tekst: "5 min rower\n\n 2 × 10 dead bug ", film: "https://youtu.be/abc" }];
+    const zapis = await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    assert.equal(zapis.kod, 200);
+    const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    const { dane } = await api(`/api/klient/${token}`);
+    assert.deepEqual(dane.tygodnie[2].dni[0].rozgrzewka,
+      { linie: ["5 min rower", "2 × 10 dead bug"], film: "https://youtu.be/abc" });
+    assert.equal(dane.tygodnie[2].dni[1].rozgrzewka, null, "dzień II bez rozgrzewki");
+  });
+
+  test("link spoza http(s) nie wejdzie do planu", async () => {
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Rozgrzewka Test").id;
+    const { zapisany } = (await api(`/api/plany/${id}`)).dane;
+    zapisany.plan.rozgrzewki = [{ dzien: 1, tekst: "x", film: "javascript:alert(1)" }];
+    const { kod } = await api(`/api/plany/${id}`, "PUT", { plan: zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: zapisany.zmieniony });
+    assert.equal(kod, 400);
+  });
+});

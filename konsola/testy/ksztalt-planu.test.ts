@@ -176,3 +176,22 @@ describe("propozycja asystenta", () => {
     });
   }
 });
+
+describe("rozgrzewka dnia", () => {
+  const z = (rozgrzewki: unknown) => bladKsztaltuPlanu({ ...planPoprawny(), rozgrzewki });
+
+  test("tekst i link https przechodzą", () => {
+    assert.equal(z([{ dzien: 1, tekst: "5 min rower\n2 × 10 dead bug", film: "https://youtu.be/x" }]), null);
+    assert.equal(z([{ dzien: 2, tekst: "sam tekst" }]), null);
+  });
+
+  test("link spoza http(s) nie przechodzi — trafia wprost do href u klienta", () => {
+    assert.match(z([{ dzien: 1, tekst: "x", film: "javascript:alert(1)" }])!, /https/);
+    assert.match(z([{ dzien: 1, tekst: "x", film: "data:text/html,hej" }])!, /https/);
+  });
+
+  test("dzień spoza planu i za długi tekst dostają zdanie", () => {
+    assert.match(z([{ dzien: 7, tekst: "x" }])!, /dzień 1–5/);
+    assert.match(z([{ dzien: 1, tekst: "x".repeat(1001) }])!, /1000/);
+  });
+});

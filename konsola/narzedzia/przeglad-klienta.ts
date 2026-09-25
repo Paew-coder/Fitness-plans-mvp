@@ -1354,15 +1354,29 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   //
   // Punkt 5 z listy Base44 (25.09.2026): w T2 przy Dead bugu klient widzi,
   // co wpisał w T1 — na liście i w panelu, tam, gdzie stoi ze sztangą.
+  // Przy okazji rozgrzewka dnia I (25.09.2026) — wpisana przez trenera.
+  {
+    const { zapisany } = await api(`/api/plany/${idRecznego}`);
+    zapisany.plan.rozgrzewki = [{ dzien: 1, tekst: "5 min rower\n2 × 10 dead bug" }];
+    await api(`/api/plany/${idRecznego}`, "PUT", { plan: zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: zapisany.zmieniony });
+  }
   await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
   await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const rozgrzewkaListy = s.locator("#cwiczenia .rozgrzewka");
+  sprawdz("rozgrzewka stoi na początku dnia, rozwinięta, wiersz po wierszu",
+    await rozgrzewkaListy.getAttribute("open") !== null
+    && (await rozgrzewkaListy.locator("li").allInnerTexts()).join(" | ") === "5 min rower | 2 × 10 dead bug",
+    (await rozgrzewkaListy.innerText().catch(() => "brak")).replace(/\n/g, " | "));
   const deadBugT2 = s.locator('#cwiczenia [data-position="D1-S03"]');
   sprawdz("w T2 na liście stoi, co było w T1",
     (await deadBugT2.locator(".ostatnio").innerText().catch(() => "")) === "Ostatnio (T1): 2 kg × 10",
     await deadBugT2.locator(".ostatnio").innerText().catch(() => "brak linijki"));
   await deadBugT2.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  sprawdz("w pierwszym panelu dnia też jest rozgrzewka",
+    await s.locator("#panel .rozgrzewka").isVisible());
   sprawdz("i to samo w panelu, przy sztandze",
     (await s.locator("#panel .ostatnio").innerText().catch(() => "")) === "Ostatnio (T1): 2 kg × 10",
     await s.locator("#panel .ostatnio").innerText().catch(() => "brak linijki"));

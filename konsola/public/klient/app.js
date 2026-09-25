@@ -723,6 +723,33 @@ function pokazPostepTreningu(d) {
       : `${ocenione} z ${d.cwiczenia.length} ocenionych`;
 }
 
+/**
+ * Rozgrzewka na początek dnia — to, co trener wpisał przy dniu w konsoli
+ * (25.09.2026). Zwijana: rozwinięta, dopóki w dniu nic nie jest zrobione,
+ * potem zwinięta, żeby nie zabierała miejsca w środku treningu.
+ */
+function kartaRozgrzewki(r, otwarta) {
+  const karta = el("details", "rozgrzewka");
+  karta.open = otwarta;
+  karta.append(el("summary", "", "Rozgrzewka"));
+  const lista = el("ul", "rozgrzewka-lista");
+  for (const linia of r.linie) lista.append(el("li", "", linia));
+  karta.append(lista);
+  // Tylko http(s) — serwer sprawdza to samo, a tu i tak nie ufamy.
+  if (r.film && /^https?:\/\//.test(r.film)) {
+    const a = el("a", "film", "▶ film");
+    a.href = r.film;
+    a.target = "_blank";
+    a.rel = "noopener";
+    karta.append(a);
+  }
+  return karta;
+}
+
+/** Czy w dniu jest już cokolwiek zrobione — wtedy rozgrzewka się zwija. */
+const cosZrobione = (d) => d.ukonczony
+  || d.cwiczenia.some((c) => seriaWpisana(c) || (c.serieWykonane ?? []).some((x) => !pustaSeria(x)));
+
 /** Pierwszy trening, którego klient jeszcze nie zrobił — tam prowadzi „zacznij od razu". */
 function pierwszyNiezrobiony() {
   for (const t of widok.tygodnie) {
@@ -808,7 +835,8 @@ function rysujTrening() {
   const stan = stanProwadzenia(d);
   const kontener = $("#cwiczenia");
   const opis = t?.rodzaj ? [el("p", "drobne opis-tygodnia", OPIS_TYGODNIA[t.rodzaj] ?? "")] : [];
-  kontener.replaceChildren(...opis, ...d.cwiczenia.map((c) => kartaCwiczenia(c, stan)));
+  const rozgrzewka = d.rozgrzewka ? [kartaRozgrzewki(d.rozgrzewka, !cosZrobione(d))] : [];
+  kontener.replaceChildren(...opis, ...rozgrzewka, ...d.cwiczenia.map((c) => kartaCwiczenia(c, stan)));
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
@@ -1446,6 +1474,10 @@ function rysujPanel() {
     return;
   }
   zatrzymajOdliczanie();
+  // Rozgrzewka przed pierwszą serią — dopóki w dniu nic nie jest zrobione.
+  if (d.rozgrzewka && zrobione.size === 0 && !cosZrobione(d)) {
+    panel.append(kartaRozgrzewki(d.rozgrzewka, true));
+  }
   if (zrobione.has(k.klucz)) panel.append(przegladZrobionej(k, kroki, zrobione, d));
   panel.append(k.typ === "topset" ? panelTopSetu(k, kroki) : panelSerii(k, kroki, d));
 }

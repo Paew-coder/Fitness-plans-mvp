@@ -522,6 +522,10 @@ Trener: „dodaj szkielety z planów z Base44 do wykorzystania w konsoli trenera
 * **Liczb z Base44 szablon nie przenosi.** Serie, powtórzenia i RPE liczy „Część planu"; szablon ustawia ją na start: klasyczne i rozbudowane → objętość, „(część 2)" → intensywność, hipertroficzne → hipertrofia.
 * Plan, w którym klient już coś wpisał, jest historią — serwer odmawia i radzi nową wersję. Przy planie z wybranymi ćwiczeniami konsola pyta przed nadpisaniem.
 
+**25. Rozgrzewka na początek dnia — 25.09.2026.**
+
+Trener: „rozgrzewkę też dajmy jako opcjonalne miejsce, żeby wrzucić komuś przed planem (widoczne np. na początku dnia 1 / dnia 2 itd.)". Przy każdym dniu w konsoli jest *+ rozgrzewka*: tekst wiersz po wierszu i link do filmu (tylko http(s) — trafia wprost do `href` u klienta, serwer sprawdza). Ta sama w każdym tygodniu, w deloadzie też; w dniu maksów nie, bo tam każdy bój ma własną instrukcję rozgrzewki. Klient widzi kartę na początku dnia — rozwiniętą, dopóki nic nie zrobił — i w pierwszym panelu prowadzenia. Nie wchodzi do stresu ani objętości.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.

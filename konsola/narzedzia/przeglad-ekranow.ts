@@ -1159,6 +1159,20 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("tabela pokazuje wyciskanie w A1 dnia I od razu",
     await s.locator("table.sloty").first().locator('select option[value="EX-0011"]:checked').count() === 1);
 
+  // Rozgrzewka dnia (25.09.2026): pusta to sam przycisk, wpisana idzie do planu.
+  await s.locator("#dni .dzien").first().getByRole("button", { name: "+ rozgrzewka" }).click();
+  const edytor = s.locator("#dni .dzien").first().locator(".rozgrzewka-trenera");
+  await edytor.locator("textarea").fill("5 min rower\n2 × 10 dead bug");
+  await edytor.locator("textarea").dispatchEvent("change");
+  await edytor.locator('input[type="url"]').fill("https://youtu.be/abc");
+  await edytor.locator('input[type="url"]').dispatchEvent("change");
+  await s.waitForTimeout(1000);
+  const rozgrzewki = (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.rozgrzewki;
+  sprawdz("rozgrzewka dnia I zapisuje się z tekstem i filmem",
+    JSON.stringify(rozgrzewki) === JSON.stringify([{ dzien: 1, tekst: "5 min rower\n2 × 10 dead bug",
+      film: "https://youtu.be/abc" }]),
+    JSON.stringify(rozgrzewki));
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon

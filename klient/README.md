@@ -231,6 +231,12 @@ ma **▶ Zacznij to ćwiczenie** — prosto do jego pierwszej serii w panelu,
 w dowolnej kolejności (także TOP SET). Przycisk nad listą mówi,
 dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
 
+## Rozgrzewka
+
+Jeśli trener wpisał rozgrzewkę przy dniu, klient widzi na początku dnia kartę
+*Rozgrzewka* — wiersz po wierszu, z filmem, jeśli jest. Rozwinięta, dopóki
+w dniu nic nie jest zrobione; w prowadzeniu stoi nad pierwszą serią.
+
 ## Po cyklu: deload i maksy
 
 Trener włącza w konsoli (**Po cyklu: + deload, + maksy**) jeden albo oba
