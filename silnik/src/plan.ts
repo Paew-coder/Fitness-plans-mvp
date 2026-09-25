@@ -33,7 +33,19 @@ export const TYGODNIE: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 /** Tygodnie po cyklu mają stałe numery — patrz `numerTygodniaNaEkranie`. */
 export const TYDZIEN_DELOADU = 7;
 export const TYDZIEN_MAKSOW = 8;
-export const OBNIZENIE_RPE_DELOADU = 2;
+/**
+ * O ile RPE deloadu jest niżej niż w T6 — w skali planu, nie periodyzacji.
+ *
+ * Periodyzacja trenera pisze „o 2 niżej" (np. @9 → @7), ale jej RPE stoi
+ * o 0,5–1,5 wyżej niż w jego planach — to ustalone 21.09.2026 na kilogramach
+ * (arkusze cz.1/cz.2 obniżały RPE świadomie, żeby przy 100 % 1RM wychodziły
+ * te same ciężary). Ta sama różnica w skali planu to 1: deload waży wtedy
+ * średnio 91,5 % ostatniego tygodnia, a w periodyzacji 91,4 % (12 ćwiczeń,
+ * 87–96 %). Przy 2 wychodziło 85 %, a akcesoria „trzymaj z bloku" 79–83 %.
+ * Decyzja trenera z 25.09.2026: „żeby było spójne z resztą planu".
+ * Test w `tygodnie-dodatkowe.test.ts` pilnuje tych kilogramów.
+ */
+export const OBNIZENIE_RPE_DELOADU = 1;
 /** Tabela RPE zaczyna się od 6 — niżej nie ma z czego policzyć ciężaru. */
 export const RPE_MIN_DELOADU = 6;
 export const RPE_MAKSOW = 10;
@@ -103,7 +115,7 @@ export type Plan = {
    */
   liczenieJednostronnych?: TrybJednostronnych;
   /**
-   * Tydzień lżejszy po cyklu (T7): serie i powtórzenia z T6, RPE o 2 niżej,
+   * Tydzień lżejszy po cyklu (T7): serie i powtórzenia z T6, RPE o 1 niżej,
    * bez TOP SETU. Z periodyzacji trenera — decyzja z 25.09.2026.
    */
   deload?: boolean;
@@ -523,7 +535,7 @@ export function numerTygodniaNaEkranie(
   return tydzien === TYDZIEN_MAKSOW && !plan.deload ? TYDZIEN_DELOADU : tydzien;
 }
 
-/** RPE w deloadzie: o 2 niżej niż w T6, nie niżej niż 6 — tam zaczyna się tabela. */
+/** RPE w deloadzie: o 1 niżej niż w T6 (skala planu), nie niżej niż 6 — tam zaczyna się tabela. */
 export function rpeDeloadu(rpeT6: number): number {
   return Math.max(RPE_MIN_DELOADU, rpeT6 - OBNIZENIE_RPE_DELOADU);
 }

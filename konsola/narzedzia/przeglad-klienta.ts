@@ -1338,7 +1338,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // ── 26. deload i tydzień maksów ───────────────────────────────────
   //
   // Decyzje trenera z 25.09.2026: po sześciu tygodniach deload (jak T6, RPE
-  // o 2 niżej, bez TOP SETU), potem maksy — 1 × 1 @ RPE 10 w przysiadzie,
+  // o 1 niżej, bez TOP SETU), potem maksy — 1 × 1 @ RPE 10 w przysiadzie,
   // wyciskaniu i martwym, wszystkie jednego dnia. Wynik idzie do nowego cyklu.
   const PO_CYKLU = "po-cyklu-tel";
   await api("/api/plany", "POST", { klient: PO_CYKLU, wersja: 1 });
@@ -1383,10 +1383,10 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const widokPoCyklu = async () => await api(`/api/klient/${sciezkaPoCyklu.replace("/k/", "")}`);
   const przysiadT6 = (await widokPoCyklu()).tygodnie[5].dni[0].cwiczenia[0];
   // O 2 niżej, ale nie poniżej 6 — tam zaczyna się tabela RPE.
-  sprawdz("deload: bez TOP SETU, RPE o 2 niżej niż w T6",
+  sprawdz("deload: bez TOP SETU, RPE o 1 niżej niż w T6",
     await s.locator("#topset").isHidden()
     && (await s.locator("#cwiczenia .cwiczenie").first().locator(".rpe-linia").innerText())
-      === `RPE ${Math.max(6, przysiadT6.rpe - 2)}`.replace(".", ","),
+      === `RPE ${Math.max(6, przysiadT6.rpe - 1)}`.replace(".", ","),
     `${await s.locator("#cwiczenia .cwiczenie").first().locator(".rpe-linia").innerText()} · T6 RPE ${przysiadT6.rpe}`);
   await s.click("#wroc-z-treningu");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
