@@ -2521,12 +2521,57 @@ async function pokazLinkKlienta(klientId) {
 
 $("#link-klienta").onclick = () => pokazLinkKlienta(obraz.zapisany.klientId);
 
+/**
+ * Szablony z Base44 — układ dni, numeracja, kategorie, TOP SET, a przy
+ * czterech także ćwiczenia z zapisanych planów trenera (25.09.2026).
+ * Serie, powtórzenia i RPE dalej liczy „Część planu" — szablon ustawia ją
+ * tylko na start.
+ */
+const CZESC_NA_EKRANIE = { "objętość": "objętość", "intensywność": "intensywność", "hipertrofia": "hipertrofia" };
+function wypelnijListeSzablonow(szablony) {
+  const lista = $("#szablon-planu");
+  lista.replaceChildren(el("option", "", "— wybierz —"));
+  lista.firstChild.value = "";
+  for (const sz of szablony) {
+    const o = el("option", "", `${sz.nazwa}${sz.zCwiczeniami ? " · z ćwiczeniami" : ""}`);
+    o.value = sz.id;
+    o.title = `${sz.opis} · na start: ${CZESC_NA_EKRANIE[sz.czesc] ?? sz.czesc}`;
+    lista.append(o);
+  }
+  lista.onchange = async () => {
+    const sz = szablony.find((x) => x.id === lista.value);
+    if (!sz) return;
+    const maCwiczenia = obraz.zapisany.plan.sloty.some((x) => x.cwiczenieId);
+    if (maCwiczenia && !confirm(`„${sz.nazwa}" rozpisze plan od nowa: dni, kategorie`
+      + `${sz.zCwiczeniami ? " i ćwiczenia" : ""}. Obecny dobór ćwiczeń zniknie. Wstawić?`)) {
+      lista.value = "";
+      return;
+    }
+    try {
+      obraz = await api(`/api/plany/${obraz.zapisany.id}/szablon`, {
+        method: "POST", body: { szablonId: sz.id },
+      });
+      tydzien = 1;
+      rysujPlan();
+      const puste = obraz.zapisany.plan.sloty.filter((x) => x.kategoriaSzkieletu && !x.cwiczenieId).length;
+      $("#szablon-info").textContent = `wstawiono „${sz.nazwa}" · część: ${CZESC_NA_EKRANIE[sz.czesc]}`
+        + (puste ? ` · ${puste} ${odmiana(puste, ["pozycja czeka", "pozycje czekają", "pozycji czeka"])} na ćwiczenie`
+          + (sz.bezOdpowiednika.length ? ` (m.in. ${sz.bezOdpowiednika.join(", ")} — brak w BAZIE)` : "")
+          : "");
+    } catch (err) {
+      alert(err.message);
+    }
+    lista.value = "";
+  };
+}
+
 $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 
 // ── start ──────────────────────────────────────────────────────────
 (async () => {
   cwiczenia = await api("/api/cwiczenia");
   cwiczenia.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  wypelnijListeSzablonow(await api("/api/szablony"));
   await wczytajStanAsystenta();
   await pokazListe();
 })();

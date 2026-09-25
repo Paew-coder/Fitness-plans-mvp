@@ -17,6 +17,11 @@ z jednym wyjątkiem, który sam włączasz kluczem do API: [asystent](#asystent-
 kategorią szkieletu. Serie, powtórzenia i RPE ustawiasz osobno dla każdego
 z sześciu tygodni.
 
+**Szablony z Base44** — lista *Szablon z Base44* przy planie wstawia jeden
+z 14 Twoich szablonów: dni, numerację, kategorie pozycji i TOP SET, a przy
+czterech także ćwiczenia z Twoich zapisanych planów. Liczby dalej liczy
+*Część planu*.
+
 **Trzy części planu** — *objętość (cz.1)*, *intensywność (cz.2)* i *hipertrofia
 (12/14)*: bój 4 × 12–14 bez TOP SETU, akcesoria od 12 albo 14 powtórzeń.
 

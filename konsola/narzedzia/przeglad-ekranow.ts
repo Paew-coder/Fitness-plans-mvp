@@ -1143,6 +1143,22 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await s.locator("#koniec-cyklu").innerText()) === "koniec: nd 15.11 · 7 tyg. · T4 od pn 19.10",
     await s.locator("#koniec-cyklu").innerText());
 
+  // Szablon z Base44 (25.09.2026): „FBW 3 dni" z doborem ćwiczeń z planu
+  // trenera. Plan ma już przysiad, więc konsola pyta — i to pytanie przyjmujemy.
+  const pytanPrzedSzablonem = pytania.length;
+  await s.selectOption("#szablon-planu", "fbw_3dni_6w");
+  await s.waitForTimeout(1200);
+  const poSzablonie = await api(`/api/plany/${PLAN_NIEGOTOWY}`);
+  const dzien1 = poSzablonie.zapisany.plan.sloty.filter((x: any) => x.dzien === 1);
+  sprawdz("szablon „FBW 3 dni” rozpisuje plan i pyta, zanim nadpisze dobór",
+    pytania.length === pytanPrzedSzablonem + 1
+    && dzien1[0].cwiczenieId === "EX-0011" && dzien1[4].kategoriaSzkieletu === "Tricep"
+    && !dzien1[4].cwiczenieId
+    && (await s.locator("#szablon-info").innerText()).includes("brak w BAZIE"),
+    `${await s.locator("#szablon-info").innerText()}`);
+  sprawdz("tabela pokazuje wyciskanie w A1 dnia I od razu",
+    await s.locator("table.sloty").first().locator('select option[value="EX-0011"]:checked').count() === 1);
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon
