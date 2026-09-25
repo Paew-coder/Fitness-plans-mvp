@@ -1223,6 +1223,7 @@ function rysujDni() {
         `${podsumowanie.serie} serii · ${podsumowanie.powtorzenia} powt. · stres ${liczba(podsumowanie.stresCalkowity)}`));
     }
     blok.append(naglowek);
+    if (maCwiczenia) blok.append(edytorRozgrzewki(dzien));
 
     /*
      * TOP SET — pasek nad tabelą, jak wiersz TOP SET w arkuszu.
@@ -1377,6 +1378,58 @@ function rysujTydzienMaksow(kontener, t8) {
   tabela.append(cialo);
   blok.append(tabela);
   kontener.append(blok);
+}
+
+/**
+ * Rozgrzewka dnia — opcjonalne miejsce na początek treningu (25.09.2026).
+ *
+ * Tekst wiersz po wierszu i link do filmu. Ta sama w każdym tygodniu, więc
+ * poprawka w T3 zmienia ją wszędzie — dlatego tak stoi w podpowiedzi. Silnik
+ * jej nie liczy: nie wchodzi do stresu ani objętości. Dopóki nic nie wpisano,
+ * zostaje sam przycisk, żeby pusty formularz nie wisiał przy każdym dniu.
+ */
+const otwarteRozgrzewki = new Set();
+function edytorRozgrzewki(dzien) {
+  const plan = obraz.zapisany.plan;
+  const obecna = (plan.rozgrzewki ?? []).find((r) => r.dzien === dzien);
+  const blok = el("div", "rozgrzewka-trenera");
+  if (!obecna && !otwarteRozgrzewki.has(dzien)) {
+    const dodaj = el("button", "link", "+ rozgrzewka");
+    dodaj.type = "button";
+    dodaj.onclick = () => { otwarteRozgrzewki.add(dzien); rysujDni(); };
+    blok.append(dodaj);
+    return blok;
+  }
+  const zapisz = () => {
+    const tekst = pole.value.replace(/\s+$/, "");
+    const film = link.value.trim();
+    plan.rozgrzewki = (plan.rozgrzewki ?? []).filter((r) => r.dzien !== dzien);
+    if (tekst || film) plan.rozgrzewki.push({ dzien, tekst, ...(film ? { film } : {}) });
+    zapiszPozniej();
+  };
+  blok.append(el("span", "etykieta-rozgrzewki", "Rozgrzewka"));
+  const pole = el("textarea");
+  pole.rows = 3;
+  pole.maxLength = 1000;
+  pole.placeholder = "wiersz po wierszu, np.\n5 min rower\n2 × 10 dead bug";
+  pole.value = obecna?.tekst ?? "";
+  pole.onchange = zapisz;
+  const link = el("input");
+  link.type = "url";
+  link.placeholder = "link do filmu (opcjonalnie)";
+  link.value = obecna?.film ?? "";
+  link.onchange = zapisz;
+  const usun = el("button", "link", "usuń");
+  usun.type = "button";
+  usun.onclick = () => {
+    plan.rozgrzewki = (plan.rozgrzewki ?? []).filter((r) => r.dzien !== dzien);
+    otwarteRozgrzewki.delete(dzien);
+    zapiszPozniej();
+    rysujDni();
+  };
+  blok.append(pole, link, usun,
+    el("small", "podpowiedz-pola", "ta sama w każdym tygodniu · klient widzi ją na początku dnia"));
+  return blok;
 }
 
 /**

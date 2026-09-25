@@ -502,3 +502,12 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 
 /* „Ostatnio (T1): 60 kg × 8 · OK" — historia ćwiczenia jedną linijką. */
 .ostatnio { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); margin: .35rem 0 0; }
+
+/* ── rozgrzewka na początek dnia ───────────────────────────────── */
+.rozgrzewka {
+  background: var(--karta); border: 1px dashed var(--linia); border-radius: 14px;
+  padding: .7rem .9rem; margin-bottom: .8rem;
+}
+.rozgrzewka summary { font-weight: 600; cursor: pointer; min-height: 1.8rem; }
+.rozgrzewka-lista { margin: .4rem 0 .2rem 1.1rem; padding: 0; line-height: 1.5; }
+.rozgrzewka .film { display: inline-block; margin-top: .3rem; }
