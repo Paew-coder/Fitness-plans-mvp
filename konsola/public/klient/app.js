@@ -1050,16 +1050,19 @@ function opisSerii(serie) {
 }
 
 /**
- * „Ostatnio (T1): 60 · 62,5 kg × 8 · OK" — co klient zrobił przy tym ćwiczeniu
+ * „Ostatnio (T1): 60 · 62,5 kg × 8" — co klient zrobił przy tym ćwiczeniu
  * ostatnim razem. Jedna linijka, zawsze widoczna: na siłowni nikt niczego nie
  * rozwija (w Base44 była to zwijana sekcja). Liczy serwer, patrz `ostatnio`.
+ *
+ * Bez oceny. Dopisek „· za trudne" czytał się jak ocena zaznaczona z góry
+ * w nowym treningu (trener, 25.09.2026). Ocena robi swoje w ciężarze —
+ * tego tygodnia nie dotyczy i nie ma tu czego oglądać.
  */
 function linijkaOstatnio(c) {
   const o = c.ostatnio;
   if (!o) return null;
   const kiedy = o.cykl ? `poprzedni cykl, T${o.tydzien}` : `T${o.tydzien}`;
-  return el("p", "ostatnio",
-    `Ostatnio (${kiedy}): ${opisSerii(o.serie)}${o.feedback ? ` · ${o.feedback}` : ""}`);
+  return el("p", "ostatnio", `Ostatnio (${kiedy}): ${opisSerii(o.serie)}`);
 }
 
 /** Serie ćwiczenia wpisane w tym treningu — ze wszystkich stron te same dane. */
@@ -1721,6 +1724,12 @@ function panelSerii(k, kroki, d) {
 
   // Odczucie pytamy przy ostatniej serii — wcześniej klient nie wie jeszcze,
   // jak było, a pytany przy każdej serii przestaje odpowiadać.
+  // Wcześniej nic nie mówiło, że ocena w ogóle będzie — trener szukał jej
+  // na pierwszej serii i nie znalazł (25.09.2026).
+  if (!k.ostatniaSeria && !c.maks) {
+    karta.append(el("p", "drobne podpowiedz-oceny",
+      `Ocena ćwiczenia — po ostatniej serii (${k.zSerii} z ${k.zSerii}).`));
+  }
   if (k.ostatniaSeria && !c.maks) {
     karta.append(el("div", "pytanie", "Jak było to ćwiczenie?"));
     const oceny = el("div", "oceny");

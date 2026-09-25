@@ -64,7 +64,7 @@ wpisanych serii mają podpis *„Poprzednie serie:"* i są przyciskami: dotknię
 a *„↩ Wróć do"* prowadzi z powrotem tam, gdzie klient był.
 
 Pod zadaniem — na liście i w panelu — jedna linijka historii: *„Ostatnio (T1):
-100 · 100 kg × 5 · za trudne"*. To, co klient zrobił przy tym ćwiczeniu ostatnim
+100 · 100 kg × 5"*, bez oceny (czytała się jak zaznaczona z góry). To, co klient zrobił przy tym ćwiczeniu ostatnim
 razem (także w innym dniu); w pierwszym tygodniu nowego cyklu — z poprzedniego.
 
 Tak po dwóch rundach uwag z testów: najpierw duży ciężar obok drobnych powtórzeń

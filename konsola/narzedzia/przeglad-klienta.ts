@@ -830,6 +830,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     JSON.stringify(poDrugiej.serieWykonane));
   await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
   await s.waitForSelector("#panel .panel-pola");
+  // Ocena przychodzi po ostatniej serii — i panel mówi o tym wcześniej,
+  // bo trener szukał jej na pierwszej serii i nie znalazł (25.09.2026).
+  sprawdz("przed ostatnią serią panel mówi, kiedy będzie ocena",
+    (await panel.locator(".podpowiedz-oceny").innerText().catch(() => ""))
+      === "Ocena ćwiczenia — po ostatniej serii (6 z 6).",
+    await panel.locator(".podpowiedz-oceny").innerText().catch(() => "brak"));
   sprawdz("kafelki serii mają podpis",
     (await panel.locator(".serie-wpisane").innerText()).startsWith("Poprzednie serie:"),
     (await panel.locator(".serie-wpisane").innerText()).replace(/\n/g, " "));
