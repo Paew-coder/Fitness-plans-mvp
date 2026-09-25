@@ -88,6 +88,9 @@ export function zwyczajowyTopSet(nazwa?: string | null): boolean {
 export const PROGRESJA_TOP_SETU: Record<CzescPlanu, readonly (number | null)[]> = {
   "objętość":     [null, 6, 6.5, 7, 7.5, 8],
   "intensywność": [null, 7, 7.5, 8, 8.5, 9],
+  // Hipertrofia TOP SETU nie ma wcale — tak jest we wszystkich czterech
+  // szablonach „Hipertroficzny". Wpisane ręcznie RPE dalej wygrywa.
+  "hipertrofia":  [null, null, null, null, null, null],
 };
 
 /** RPE TOP SETU z szablonu na ten tydzień; `null` = w tym tygodniu go nie ma. */

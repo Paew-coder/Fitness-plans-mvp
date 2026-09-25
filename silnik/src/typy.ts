@@ -79,7 +79,12 @@ export type TydzienCyklu = Tydzien | TydzienDodatkowy;
 export const TRYBY_AKCESORIOW = ["trzymaj z bloku", "licz z RPE"] as const;
 export type TrybAkcesoriow = (typeof TRYBY_AKCESORIOW)[number];
 
-export const CZESCI_PLANU = ["objętość", "intensywność"] as const;
+/**
+ * Części planu. „hipertrofia" doszła 25.09.2026 (zaplanowana 21.09): akcesoria
+ * 12/14 powtórzeń, bój główny 4 × 12–14 bez TOP SETU — jak szablony
+ * „Hipertroficzny" z aplikacji trenera w Base44.
+ */
+export const CZESCI_PLANU = ["objętość", "intensywność", "hipertrofia"] as const;
 export type CzescPlanu = (typeof CZESCI_PLANU)[number];
 
 /** Komunikaty, które arkusz wyświetla w kolumnie CIĘŻAR zamiast liczby. */

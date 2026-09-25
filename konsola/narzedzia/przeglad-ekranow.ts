@@ -1126,6 +1126,19 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await s.locator("#data-startu").fill("2026-09-28");
   await s.locator("#data-startu").dispatchEvent("change");
   await s.waitForTimeout(900);
+  // Trzecia część planu: hipertrofia (25.09.2026). Bój główny 4 × 12 bez
+  // TOP SETU — przełącznik na ekranie ma to naprawdę zmienić w planie.
+  await s.selectOption("#czesc-planu", "hipertrofia");
+  await s.waitForTimeout(1200);
+  const poHipertrofii = await api(`/api/plany/${PLAN_NIEGOTOWY}`);
+  const bojT1 = poHipertrofii.wynik.tygodnie[0].sloty[0];
+  sprawdz("„hipertrofia” w części planu daje bój 4 × 12 na RPE 8",
+    poHipertrofii.zapisany.plan.czescPlanu === "hipertrofia"
+    && bojT1.serie === 4 && bojT1.powtorzenia === 12 && bojT1.rpe === 8,
+    `${poHipertrofii.zapisany.plan.czescPlanu} · ${bojT1.serie}×${bojT1.powtorzenia} @${bojT1.rpe}`);
+  await s.selectOption("#czesc-planu", "objętość");
+  await s.waitForTimeout(900);
+
   sprawdz("pod datą startu stoi koniec cyklu z tygodniami po cyklu",
     (await s.locator("#koniec-cyklu").innerText()) === "koniec: nd 15.11 · 7 tyg. · T4 od pn 19.10",
     await s.locator("#koniec-cyklu").innerText());

@@ -61,6 +61,16 @@ export const PROGRESJA_BOJU: Record<CzescPlanu, readonly ParametryBoju[]> = {
     { serie: 5, powtorzenia: 3, rpe: 8 },     // T5
     { serie: 6, powtorzenia: 2, rpe: 8 },     // T6
   ],
+  // Z szablonów „Hipertroficzny 1–4 dni" (Base44, pozycja A): 4 × 12 → 13 → 14
+  // na RPE 8, w drugim bloku to samo na RPE 9. TOP SETU w tej części nie ma.
+  "hipertrofia": [
+    { serie: 4, powtorzenia: 12, rpe: 8 },    // T1
+    { serie: 4, powtorzenia: 13, rpe: 8 },    // T2
+    { serie: 4, powtorzenia: 14, rpe: 8 },    // T3
+    { serie: 4, powtorzenia: 12, rpe: 9 },    // T4 — początek drugiego bloku
+    { serie: 4, powtorzenia: 13, rpe: 9 },    // T5
+    { serie: 4, powtorzenia: 14, rpe: 9 },    // T6
+  ],
 };
 
 /** Akcesoria mają w szablonie zawsze trzy serie. */
