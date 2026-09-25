@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { katalog } from "../silnik/src/katalog.ts";
-import { przeliczPlan, TYGODNIE } from "../silnik/src/plan.ts";
+import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE } from "../silnik/src/plan.ts";
 import { jestBojemGlownym } from "../silnik/src/import-arkusza.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
@@ -137,7 +137,30 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     })
     .filter((s): s is NonNullable<typeof s> => s !== null);
 
+  /*
+   * Deload i maksy — osobne zakładki z liczbami policzonymi w konsoli.
+   *
+   * Szablon 5.18 zna sześć tygodni i ich formuły wzajemnie się do siebie
+   * odwołują (T2/T3 z T1, T5/T6 z T4). Kopia zakładki T6 niosłaby formuły T6,
+   * czyli policzyłaby T6, a nie deload. Uczciwiej jest wpisać gotowe wartości
+   * i napisać nad tabelą, że formuł tu nie ma.
+   */
+  const tygodnieDodatkowe = wynik.tygodnieDodatkowe.map((t) => ({
+    nazwa: `T${numerTygodniaNaEkranie(plan, t.tydzien)} ${t.rodzaj === "deload" ? "deload" : "maksy"}`,
+    rodzaj: t.rodzaj,
+    wiersze: t.sloty.filter((s) => s.cwiczenie).map((s) => ({
+      dzien: s.dzien,
+      lp: s.lp,
+      cwiczenie: s.cwiczenie!.nazwa,
+      serie: s.serie,
+      powtorzenia: s.powtorzenia,
+      rpe: s.rpe,
+      ciezar: s.ciezar,
+    })),
+  }));
+
   return {
+    tygodnie_dodatkowe: tygodnieDodatkowe,
     ustawienia: {
       tryb_akcesoriow: plan.trybAkcesoriow,
       czesc_planu: plan.czescPlanu,

@@ -146,3 +146,31 @@ describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
     ]);
   });
 });
+
+describe("eksport — deload i maksy, gdy są w planie", () => {
+  test("bez nich nie ma żadnych dodatkowych zakładek", () => {
+    assert.deepEqual(daneDoArkusza(planDomyslny()).tygodnie_dodatkowe, []);
+  });
+
+  test("T7 deload i T8 maksy jadą z liczbami z konsoli", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.deload = true;
+    zapisany.plan.tydzienMaksow = true;
+    const dane = daneDoArkusza(zapisany);
+    const wynik = przeliczPlan(zapisany.plan);
+    assert.deepEqual(dane.tygodnie_dodatkowe.map((t) => t.nazwa), ["T7 deload", "T8 maksy"]);
+    const deload = dane.tygodnie_dodatkowe[0]!.wiersze;
+    const t7 = wynik.tygodnieDodatkowe[0]!.sloty.filter((s) => s.cwiczenie);
+    assert.deepEqual(deload.map((w) => [w.lp, w.serie, w.powtorzenia, w.rpe, w.ciezar]),
+      t7.map((s) => [s.lp, s.serie, s.powtorzenia, s.rpe, s.ciezar]));
+    const maksy = dane.tygodnie_dodatkowe[1]!.wiersze;
+    assert.deepEqual(maksy.map((w) => [w.cwiczenie, w.serie, w.powtorzenia, w.rpe, w.ciezar]),
+      [["Barbell back squat", 1, 1, 10, 120]]);
+  });
+
+  test("bez deloadu maksy są w arkuszu tygodniem siódmym", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.tydzienMaksow = true;
+    assert.deepEqual(daneDoArkusza(zapisany).tygodnie_dodatkowe.map((t) => t.nazwa), ["T7 maksy"]);
+  });
+});
