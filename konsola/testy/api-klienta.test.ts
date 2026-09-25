@@ -490,6 +490,58 @@ describe("deload i tydzień maksów po cyklu", () => {
   });
 });
 
+describe("historia ćwiczenia: co klient zrobił ostatnim razem", () => {
+  /**
+   * Punkt 5 z listy Base44 (25.09.2026): „Ostatnio (T1): 100 kg × 5 · za
+   * trudne" w panelu, tam, gdzie klient stoi ze sztangą.
+   */
+  let planH = "";
+  let tokenH = "";
+  const cw = async (tydzien: number, dzien: number, i: number) =>
+    (await api(`/api/klient/${tokenH}`)).dane.tygodnie[tydzien - 1].dni[dzien - 1].cwiczenia[i];
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Historia Test", wersja: 1 });
+    planH = (await api("/api/plany")).dane.find((p: any) => p.klient === "Historia Test").id;
+    const plan = (await api(`/api/plany/${planH}`)).dane.zapisany.plan;
+    const slot = (id: string) => plan.sloty.find((x: any) => x.positionId === id);
+    slot("D1-S01").cwiczenieId = "EX-0010";   // przysiad w dniu I
+    slot("D1-S02").cwiczenieId = "EX-0016";
+    slot("D2-S01").cwiczenieId = "EX-0010";   // ten sam przysiad w dniu II
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 1 }];
+    await api(`/api/plany/${planH}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    tokenH = (await api(`/api/plany/${planH}/link`, "POST")).dane.token;
+    await api(`/api/klient/${tokenH}/odczucie`, "POST", { positionId: "D1-S01", tydzien: 1,
+      serie: [{ ciezar: 100, powtorzenia: 5 }, { ciezar: 100, powtorzenia: 4 }], feedback: "za trudne" });
+    // Dzień I domknięty: wiosło dostaje samo „OK", bez serii.
+    await api(`/api/klient/${tokenH}/dzien`, "POST", { dzien: 1, tydzien: 1 });
+  });
+
+  test("w T2 przy przysiadzie stoi to, co było w T1 — serie i ocena", async () => {
+    const c = await cw(2, 1, 0);
+    assert.deepEqual(c.ostatnio, { tydzien: 1, feedback: "za trudne", cykl: null,
+      serie: [{ ciezar: 100, powtorzenia: 5 }, { ciezar: 100, powtorzenia: 4 }] });
+  });
+
+  test("ten sam przysiad w innym dniu też widzi ostatni raz", async () => {
+    assert.equal((await cw(1, 2, 0)).ostatnio, null, "dzień II T1 — wcześniej nic nie było");
+    assert.equal((await cw(2, 2, 0)).ostatnio?.tydzien, 1);
+  });
+
+  test("samo „OK” z domknięcia dnia to nie historia", async () => {
+    assert.equal((await cw(2, 1, 1)).ostatnio, null);
+  });
+
+  test("pierwszy tydzień nowego cyklu sięga do poprzedniego", async () => {
+    const { dane } = await api(`/api/plany/${planH}/kopia`, "POST", {});
+    await api(`/api/plany/${dane.zapisany.id}`, "PUT", { plan: dane.zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: dane.zapisany.zmieniony });
+    const c = await cw(1, 1, 0);
+    assert.equal(c.ostatnio?.cykl, 1, JSON.stringify(c.ostatnio));
+    assert.equal(c.ostatnio?.tydzien, 1);
+  });
+});
+
 describe("podmiana od T4 — wpis klienta idzie do ćwiczenia z tego tygodnia", () => {
   test("klient robi nowe ćwiczenie i widzi swój wpis przy nim, nie „wcześniej tutaj”", async () => {
     await api("/api/plany", "POST", { klient: "Podmiana Od T4", wersja: 1 });

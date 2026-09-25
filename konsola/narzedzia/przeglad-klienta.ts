@@ -1350,6 +1350,23 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     `${(await s.locator("#panel .kolumna-ciezar").innerText()).replace(/\n/g, " ")} · `
     + `kg: ${await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue()}`);
 
+  // ── 25b. historia ćwiczenia: „Ostatnio (T1)" ─────────────────────
+  //
+  // Punkt 5 z listy Base44 (25.09.2026): w T2 przy Dead bugu klient widzi,
+  // co wpisał w T1 — na liście i w panelu, tam, gdzie stoi ze sztangą.
+  await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
+  await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const deadBugT2 = s.locator('#cwiczenia [data-position="D1-S03"]');
+  sprawdz("w T2 na liście stoi, co było w T1",
+    (await deadBugT2.locator(".ostatnio").innerText().catch(() => "")) === "Ostatnio (T1): 2 kg × 10",
+    await deadBugT2.locator(".ostatnio").innerText().catch(() => "brak linijki"));
+  await deadBugT2.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  sprawdz("i to samo w panelu, przy sztandze",
+    (await s.locator("#panel .ostatnio").innerText().catch(() => "")) === "Ostatnio (T1): 2 kg × 10",
+    await s.locator("#panel .ostatnio").innerText().catch(() => "brak linijki"));
+
   // ── 26. deload i tydzień maksów ───────────────────────────────────
   //
   // Decyzje trenera z 25.09.2026: po sześciu tygodniach deload (jak T6, RPE

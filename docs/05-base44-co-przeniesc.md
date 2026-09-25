@@ -158,7 +158,13 @@ zapiszesz.
 
 **Warto:** drobiazg, ale tani i od razu widoczny w konsoli.
 
-### 5. Historia ćwiczenia w panelu, nie na osobnym ekranie
+### 5. Historia ćwiczenia w panelu, nie na osobnym ekranie — ✅ zrobione 25.09.2026
+
+**Zrobione — prościej niż tam.** Zamiast zwijanej sekcji jedna linijka, zawsze
+widoczna, w panelu i na liście: *„Ostatnio (T1): 100 · 100 kg × 5 · za trudne"*.
+Liczy się to, co klient faktycznie robił przy tym ćwiczeniu (także w innym dniu),
+bez wpisów z samą oceną; w pierwszym tygodniu nowego cyklu — ostatni wpis
+z poprzedniego (*„Ostatnio (poprzedni cykl, T6): …"*).
 
 **Tam:** w panelu ćwiczenia zwijana sekcja `Historia / najlepsza seria`
 z `Szacowane 1RM`.

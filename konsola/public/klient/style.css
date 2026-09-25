@@ -499,3 +499,6 @@ p.dobor.dobor-zapisane { color: var(--ok); }
    „jeszcze jeden tydzień tego samego", tylko coś innego. */
 .tydzien.po-cyklu { border-top: 1px dashed var(--linia); padding-top: .6rem; }
 .opis-tygodnia { margin: .1rem 0 .5rem; }
+
+/* „Ostatnio (T1): 60 kg × 8 · OK" — historia ćwiczenia jedną linijką. */
+.ostatnio { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); margin: .35rem 0 0; }
