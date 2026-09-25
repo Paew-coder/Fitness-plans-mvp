@@ -843,6 +843,44 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     };
   };
 
+  /**
+   * Co klient zrobił przy tym ćwiczeniu ostatnim razem — przed tym tygodniem.
+   *
+   * Punkt 5 z listy Base44 (25.09.2026): historia tam, gdzie klient stoi ze
+   * sztangą, a nie na osobnym ekranie. Ćwiczenie liczy się po tym, co klient
+   * faktycznie robił (`cwiczenieId` wpisu), więc to samo ćwiczenie z innego
+   * dnia też się liczy — a cudze kilogramy po podmianie nie. Wpisy z samą
+   * oceną pomijamy: „Zakończ trening" dopisuje „OK" każdemu ćwiczeniu dnia,
+   * także niezrobionemu. W pierwszym tygodniu nowego cyklu sięgamy do
+   * poprzedniego — tam jest to, od czego klient zaczyna.
+   */
+  const poprzedniCykl = zapisany.poprzedniId
+    ? magazyn.wczytaj(zapisany.trenerId, zapisany.poprzedniId) : null;
+  const cwiczenieWpisu = (w: magazyn.Wykonanie, plan: Plan) =>
+    w.cwiczenieId ?? plan.sloty.find((x) => x.positionId === w.positionId)?.cwiczenieId;
+  const zSeriami = (w: magazyn.Wykonanie) =>
+    serieWpisu(w).some((x) => x.ciezar || x.powtorzenia);
+  const najnowszy = (wpisy: magazyn.Wykonanie[], positionId: string) =>
+    [...wpisy].sort((a, b) => b.tydzien - a.tydzien
+      || Number(b.positionId === positionId) - Number(a.positionId === positionId)
+      || b.data.localeCompare(a.data))[0];
+  const ostatnio = (cwiczenieId: string, positionId: string, tydzien: number) => {
+    const tutaj = najnowszy((zapisany.wykonania ?? []).filter((w) => w.tydzien < tydzien
+      && cwiczenieWpisu(w, zapisany.plan) === cwiczenieId && zSeriami(w)), positionId);
+    if (tutaj) {
+      return { tydzien: numerTygodniaNaEkranie(zapisany.plan, tutaj.tydzien),
+        serie: serieWpisu(tutaj), feedback: tutaj.feedback ?? null, cykl: null };
+    }
+    if (!poprzedniCykl) return null;
+    const wczesniej = najnowszy((poprzedniCykl.wykonania ?? []).filter((w) =>
+      cwiczenieWpisu(w, poprzedniCykl.plan) === cwiczenieId && zSeriami(w)), positionId);
+    return wczesniej
+      ? { tydzien: numerTygodniaNaEkranie(poprzedniCykl.plan, wczesniej.tydzien),
+          serie: serieWpisu(wczesniej), feedback: wczesniej.feedback ?? null,
+          cykl: poprzedniCykl.wersja }
+      : null;
+  };
+
   const kalibracjaW = (cwiczenieId: string, positionId: string, tydzien: number) => {
     const k = zapisany.plan.serieMaksymalne
       .find((x) => x.cwiczenieId === cwiczenieId)?.kalibracja;
@@ -923,6 +961,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             // Seria, z której policzono 1RM — tylko w tym treningu, w którym
             // to się stało. Klient widzi wtedy, skąd wziął się jego ciężar.
             kalibracja: kalibracjaW(s.cwiczenie!.id, s.positionId, t.tydzien),
+            ostatnio: ostatnio(s.cwiczenie!.id, s.positionId, t.tydzien),
           })),
       })),
   }));

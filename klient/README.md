@@ -63,6 +63,10 @@ wpisanych serii mają podpis *„Poprzednie serie:"* i są przyciskami: dotknię
 *„2: 80×8"* otwiera serię 2 do poprawki (seria na ekranie jest podświetlona),
 a *„↩ Wróć do"* prowadzi z powrotem tam, gdzie klient był.
 
+Pod zadaniem — na liście i w panelu — jedna linijka historii: *„Ostatnio (T1):
+100 · 100 kg × 5 · za trudne"*. To, co klient zrobił przy tym ćwiczeniu ostatnim
+razem (także w innym dniu); w pierwszym tygodniu nowego cyklu — z poprzedniego.
+
 Tak po dwóch rundach uwag z testów: najpierw duży ciężar obok drobnych powtórzeń
 czytał się jak ciężar z dopiskiem; potem w panelu za mało było widać, która to
 seria, a za bardzo RPE, które po pierwszym tygodniu (ciężar już policzony) nie
