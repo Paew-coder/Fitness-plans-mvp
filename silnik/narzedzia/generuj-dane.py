@@ -122,3 +122,62 @@ lin += ["];", "",
         ""]
 (out / "bieg.ts").write_text("\n".join(lin), encoding="utf-8")
 print("oddech.ts + bieg.ts wygenerowane")
+
+# ── SZABLONY PLANOW Z BASE44 ──────────────────────────────────────────
+#
+# Uklad dni i kategorie z 14 szablonow aplikacji trenera w Base44, a przy
+# czterech — dobor cwiczen z jego zapisanych planow. Nazwy z Base44 mapujemy
+# na BAZE przez `mapowanie_nazw`; trzy bez odpowiednika (Close-Grip Bench
+# Press, Machine Shoulder Press, Plank) zostaja pustym slotem z kategoria —
+# nic nie zgadujemy za trenera.
+sz = json.load(open(dane / "szablony-base44.json", encoding="utf-8"))
+sk = json.load(open(dane / "szkielety-base44.json", encoding="utf-8"))
+po_nazwie = {e["nazwa"]: e["id"] for e in b["cwiczenia"]}
+mapa = {**sk["mapowanie_nazw"]["zgodne"], **sk["mapowanie_nazw"]["do_potwierdzenia"]}
+zapisane = {s["template_id"]: s["dni"] for s in sk["szkielety"]}
+KATEGORIE = {k.lower(): k for k in (
+    "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
+    "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep")}
+
+def czesc_szablonu(tid):
+    if tid.startswith("hyper"): return "hipertrofia"
+    if tid.endswith("_v2"):     return "intensywność"
+    return "objętość"
+
+lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
+       "// Zrodlo: docs/dane/szablony-base44.json + szkielety-base44.json (Base44, 21.09.2026)",
+       "// Regeneracja: python3 silnik/narzedzia/generuj-dane.py",
+       "",
+       'import type { SzablonPlanu } from "../szablony-planow.ts";',
+       "",
+       f"/** {len(sz['szablony'])} szablonow z aplikacji trenera w Base44. */",
+       "export const SZABLONY_BASE44: readonly SzablonPlanu[] = ["]
+brakujace = set()
+for s in sz["szablony"]:
+    tid = s["id"]
+    dni = []
+    for d in s["dni"]:
+        wybor = zapisane.get(tid, {}).get(d["id"], {})
+        sloty = []
+        for x in d["sloty"]:
+            kat = KATEGORIE[x["kategoria"].lower()]
+            prog = s["progresja"].get(f'{d["id"]}_{x["lp"]}', [])
+            top = any(len(t) > 1 for t in prog)
+            nazwa_b44 = wybor.get(x["lp"], {}).get("cwiczenie")
+            cid = po_nazwie.get(mapa.get(nazwa_b44)) if nazwa_b44 else None
+            if nazwa_b44 and not cid: brakujace.add(nazwa_b44)
+            p = [f'lp: "{x["lp"]}."', f'kategoria: {json.dumps(kat, ensure_ascii=False)}']
+            if top: p.append("topSet: true")
+            if cid: p.append(f'cwiczenieId: "{cid}"')
+            if nazwa_b44 and not cid: p.append(f'bezOdpowiednika: {json.dumps(nazwa_b44, ensure_ascii=False)}')
+            sloty.append("{ " + ", ".join(p) + " }")
+        dni.append("[\n      " + ",\n      ".join(sloty) + ",\n    ]")
+    lin.append("  {")
+    lin.append(f'    id: {json.dumps(tid)}, nazwa: {json.dumps(s["nazwa"], ensure_ascii=False)},')
+    lin.append(f'    opis: {json.dumps(s["opis"], ensure_ascii=False)},')
+    lin.append(f'    czesc: {json.dumps(czesc_szablonu(tid), ensure_ascii=False)}, zCwiczeniami: {"true" if tid in zapisane else "false"},')
+    lin.append("    dni: [\n    " + ",\n    ".join(dni) + ",\n    ],")
+    lin.append("  },")
+lin += ["];", ""]
+(out / "szablony.ts").write_text("\n".join(lin), encoding="utf-8")
+print("szablony.ts wygenerowane;", len(sz["szablony"]), "szablonow; bez odpowiednika:", sorted(brakujace))

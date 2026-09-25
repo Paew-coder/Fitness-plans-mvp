@@ -409,7 +409,7 @@ W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej,
 
 **Cztery rzeczy do przypomnienia** (trener: „trzymaj te 4 rzeczy i przypomnisz później"):
 
-1. **Biblioteka szkieletów z Base44** — 14 szablonów czeka na decyzję w trzech nazwach bez odpowiednika w BAZIE: `Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`.
+1. ~~**Biblioteka szkieletów z Base44**~~ — zrobione 25.09.2026 (punkt 24); trzy nazwy bez odpowiednika zostają pustą pozycją z kategorią.
 2. ~~**Deload i tydzień max out**~~ — zrobione 25.09.2026 na prośbę trenera, przed pełnym cyklem z klientem (punkt 22).
 3. ~~**Progresja hipertroficzna 12/14**~~ — zrobione 25.09.2026 (punkt 23).
 4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera.
@@ -512,6 +512,15 @@ Zaplanowana 21.09 („możemy zrobić osobną progresję 12/14"), dodana na pro�
 * **Bez TOP SETU** — tak jest we wszystkich czterech szablonach. Wpisane ręcznie RPE TOP SETU dalej wygrywa.
 * **Akcesoria 12/14** — trzecia kolumna obok 8/10 i 6/8: coeff ≥ 0,75 zaczyna od 12, lżejsze od 14, plus tydzień w bloku (+0, +1, +2), nie ponad 15 z tabeli. Serie i RPE akcesoriów jak w pozostałych częściach (3 serie, RPE 8 / 9).
 * **Eksport** — arkusz 5.18 zna dwie części, więc przy hipertrofii powtórzenia akcesoriów jadą wpisane wprost (jego automat liczyłby 8/10).
+
+**24. Szablony z Base44 w konsoli — 25.09.2026.**
+
+Trener: „dodaj szkielety z planów z Base44 do wykorzystania w konsoli trenera". Przy planie jest lista **Szablon z Base44** — 14 pozycji z `dane/szablony-base44.json`, generowanych do `silnik/src/dane/szablony.ts` (serwer w Dockerze nie ma katalogu `docs/`).
+
+* Szablon rozpisuje **układ**: dni, numerację (A1, A2, B1/B2…), kategorię każdej pozycji i TOP SET tam, gdzie stał w Base44. Pozycje za ostatnią zostają bez numeru, jak zapas w pustym planie.
+* Przy czterech szablonach, dla których trener miał w Base44 zapisany plan (`dane/szkielety-base44.json`), wchodzi też **dobór ćwiczeń** — nazwy zmapowane na BAZĘ (`High Bar Back Squat` → `Barbell back squat` itd.). Trzy bez odpowiednika (`Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`) zostają pustą pozycją z kategorią; konsola pisze, ile pozycji czeka i których nazw brak. Test pilnuje, że każde zmapowane ćwiczenie pasuje kategorią do swojej pozycji.
+* **Liczb z Base44 szablon nie przenosi.** Serie, powtórzenia i RPE liczy „Część planu"; szablon ustawia ją na start: klasyczne i rozbudowane → objętość, „(część 2)" → intensywność, hipertroficzne → hipertrofia.
+* Plan, w którym klient już coś wpisał, jest historią — serwer odmawia i radzi nową wersję. Przy planie z wybranymi ćwiczeniami konsola pyta przed nadpisaniem.
 
 ## Co jest zrobione tym dokumentem
 

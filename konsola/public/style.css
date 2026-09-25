@@ -158,6 +158,10 @@ label { display: flex; flex-direction: column; gap: .3rem;
 .taby { display: flex; gap: .25rem; }
 .taby button { padding: .3rem .6rem; font-family: var(--mono); font-size: .8rem; }
 .taby button.aktywny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+/* Szablon z Base44: nazwy są długie, a lista rośnie do najdłuższej opcji —
+   na telefonie wystawała poza ekran. */
+.pasek-ustawien label { min-width: 0; max-width: 100%; }
+#szablon-planu { max-width: min(22rem, 100%); }
 /* Tygodnie po cyklu — przerywana ramka odróżnia je od sześciu tygodni pracy. */
 .taby button.po-cyklu:not(.aktywny) { border-style: dashed; }
 .opis-po-cyklu { margin: .2rem 0 .6rem; }

@@ -24,6 +24,8 @@ export * from "./seria-maksymalna.ts";
 export * from "./przerwa.ts";
 export * from "./top-set.ts";
 export * from "./plan.ts";
+export * from "./szablony-planow.ts";
+export { SZABLONY_BASE44 } from "./dane/szablony.ts";
 export * from "./walidacja.ts";
 export { TABELA_RPE, TABELA_STRES_CALKOWITY, TABELA_STRES_CENTRALNY, TABELA_STRES_OBWODOWY } from "./dane/tabele.ts";
 export { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
