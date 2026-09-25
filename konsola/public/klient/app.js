@@ -938,6 +938,8 @@ function kartaCwiczenia(c, stan = null) {
     serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
   }));
+  const historia = linijkaOstatnio(c);
+  if (historia) karta.append(historia);
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.maks) karta.append(wskazowkaMaksu(c));
@@ -999,6 +1001,19 @@ function opisSerii(serie) {
     return `${s.map((x) => liczba(x.ciezar)).join(" · ")} kg × ${powt}`;
   }
   return s.map(zapisSerii).join(" · ");
+}
+
+/**
+ * „Ostatnio (T1): 60 · 62,5 kg × 8 · OK" — co klient zrobił przy tym ćwiczeniu
+ * ostatnim razem. Jedna linijka, zawsze widoczna: na siłowni nikt niczego nie
+ * rozwija (w Base44 była to zwijana sekcja). Liczy serwer, patrz `ostatnio`.
+ */
+function linijkaOstatnio(c) {
+  const o = c.ostatnio;
+  if (!o) return null;
+  const kiedy = o.cykl ? `poprzedni cykl, T${o.tydzien}` : `T${o.tydzien}`;
+  return el("p", "ostatnio",
+    `Ostatnio (${kiedy}): ${opisSerii(o.serie)}${o.feedback ? ` · ${o.feedback}` : ""}`);
 }
 
 /** Serie ćwiczenia wpisane w tym treningu — ze wszystkich stron te same dane. */
@@ -1575,6 +1590,8 @@ function panelSerii(k, kroki, d) {
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
   }));
+  const historia = linijkaOstatnio(c);
+  if (historia) karta.append(historia);
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.maks) karta.append(wskazowkaMaksu(c));
