@@ -22,7 +22,8 @@ tydzień 7 (serie i powtórzenia z T6, RPE o 1 niżej, bez TOP SETU) i tydzień 
 (1 × 1 @ RPE 10, wszystkie boje jednego dnia). W zakładce maksów zaznaczasz
 boje — domyślnie przysiady, wyciskanie leżąc i martwe z planu — i widzisz
 wynik klienta obok obecnego 1RM. *Nowa wersja* bierze ten wynik jako serię
-maksymalną sama. Eksport do arkusza ma dalej tylko T1–T6.
+maksymalną sama. Eksport do arkusza dokłada wtedy zakładki *T7 deload* i *T8 maksy*
+z liczbami policzonymi w konsoli (bez formuł — szablon 5.18 zna sześć tygodni).
 
 **Widzisz skutki od razu.** Ciężar, stres na trzech osiach, bilans wzorców ruchu,
 obciążenie tydzień po tygodniu z oceną normy — wszystko przelicza się przy każdej
