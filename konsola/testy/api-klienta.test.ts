@@ -519,6 +519,8 @@ describe("historia ćwiczenia: co klient zrobił ostatnim razem", () => {
 
   test("w T2 przy przysiadzie stoi to, co było w T1 — serie i ocena", async () => {
     const c = await cw(2, 1, 0);
+    // Ocena z T1 należy do T1: w T2 nic nie jest zaznaczone z góry.
+    assert.equal(c.feedback, null, "ocena z T1 przeszła na T2");
     assert.deepEqual(c.ostatnio, { tydzien: 1, feedback: "za trudne", cykl: null,
       serie: [{ ciezar: 100, powtorzenia: 5 }, { ciezar: 100, powtorzenia: 4 }] });
   });
