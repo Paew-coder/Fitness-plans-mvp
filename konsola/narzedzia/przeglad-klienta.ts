@@ -149,6 +149,24 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     cwiczenie(poZakonczeniu, 1, 1).feedback === "OK",
     String(cwiczenie(poZakonczeniu, 1, 1).feedback));
 
+  // Przycisk do następnego treningu (25.09.2026): pierwszy niedomknięty dzień,
+  // jednym dotknięciem — bez szukania go na liście.
+  const celNastepny = poZakonczeniu.tygodnie.flatMap((t: any) =>
+    t.dni.filter((d: any) => !d.ukonczony).map((d: any) => ({ t, d })))[0];
+  const oczekiwany = `▶ Następny trening: tydzień ${celNastepny.t.numer} · `
+    + `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]}`;
+  sprawdz("na górze listy stoi przycisk do następnego treningu",
+    (await s.locator("#nastepny-trening").innerText()) === oczekiwany,
+    `${await s.locator("#nastepny-trening").innerText()} · oczekiwane: ${oczekiwany}`);
+  await s.click("#nastepny-trening");
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  sprawdz("i otwiera dokładnie ten dzień",
+    (await s.locator("#trening-tytul").innerText())
+      === `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]} · tydzień ${celNastepny.t.numer}`,
+    await s.locator("#trening-tytul").innerText());
+  await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+
   // ── 8. podpowiedź o dodaniu do ekranu głównego ────────────────────
   // Aplikacja ma ikonę i działa bez zasięgu, ale nikt sam nie odkrywa, że da
   // się ją dodać. Podpowiedź ma się jednak odezwać dopiero wtedy, gdy zdążyła

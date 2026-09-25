@@ -763,6 +763,24 @@ function rysujTygodnie() {
   const kontener = $("#tygodnie");
   kontener.replaceChildren();
 
+  // Przycisk do następnego treningu — pierwszego niedomkniętego. Zaczęty,
+  // a niedomknięty (klient wyszedł w połowie) to „wróć", nie „następny".
+  const cel = pierwszyNiezrobiony();
+  const nastepny = $("#nastepny-trening");
+  nastepny.classList.toggle("ukryty", !cel);
+  if (cel) {
+    const t = tydzienWidoku(cel.tydzien);
+    const d = t.dni.find((x) => x.dzien === cel.dzien);
+    const zaczety = d.cwiczenia.some((c) => c.feedback
+      || (c.serieWykonane ?? []).some((x) => !pustaSeria(x)));
+    nastepny.textContent = `▶ ${zaczety ? "Wróć do treningu" : "Następny trening"}: `
+      + `tydzień ${numerTygodnia(t)} · ${nazwaDnia(t, d)}`;
+    nastepny.onclick = () => {
+      biezacy = { ...cel };
+      otworz("#ekran-trening");
+    };
+  }
+
   for (const t of widok.tygodnie) {
     const blok = el("div", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`);
     blok.append(el("div", "tydzien-tytul",

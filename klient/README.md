@@ -231,6 +231,12 @@ ma **▶ Zacznij to ćwiczenie** — prosto do jego pierwszej serii w panelu,
 w dowolnej kolejności (także TOP SET). Przycisk nad listą mówi,
 dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
 
+## Następny trening jednym dotknięciem
+
+Na górze listy tygodni stoi przycisk *„▶ Następny trening: tydzień 3 · Dzień I"*
+— pierwszy niedomknięty dzień, otwierany od razu. Gdy klient wyszedł z treningu
+w połowie, przycisk mówi *„▶ Wróć do treningu"*. Po całym cyklu znika.
+
 ## Rozgrzewka
 
 Jeśli trener wpisał rozgrzewkę przy dniu, klient widzi na początku dnia kartę

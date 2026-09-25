@@ -511,3 +511,6 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .rozgrzewka summary { font-weight: 600; cursor: pointer; min-height: 1.8rem; }
 .rozgrzewka-lista { margin: .4rem 0 .2rem 1.1rem; padding: 0; line-height: 1.5; }
 .rozgrzewka .film { display: inline-block; margin-top: .3rem; }
+
+/* Następny trening — pierwsza rzecz pod nagłówkiem listy tygodni. */
+.nastepny-trening { margin: 0 0 1rem; }
