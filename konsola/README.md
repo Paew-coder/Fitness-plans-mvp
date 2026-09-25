@@ -18,7 +18,7 @@ kategorią szkieletu. Serie, powtórzenia i RPE ustawiasz osobno dla każdego
 z sześciu tygodni.
 
 **Po cyklu: deload i maksy** — przełączniki *+ deload* i *+ maksy* dokładają
-tydzień 7 (serie i powtórzenia z T6, RPE o 2 niżej, bez TOP SETU) i tydzień 8
+tydzień 7 (serie i powtórzenia z T6, RPE o 1 niżej, bez TOP SETU) i tydzień 8
 (1 × 1 @ RPE 10, wszystkie boje jednego dnia). W zakładce maksów zaznaczasz
 boje — domyślnie przysiady, wyciskanie leżąc i martwe z planu — i widzisz
 wynik klienta obok obecnego 1RM. *Nowa wersja* bierze ten wynik jako serię

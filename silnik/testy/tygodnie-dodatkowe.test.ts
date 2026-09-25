@@ -5,11 +5,15 @@
  * i powtórzenia mniej więcej jak w ostatnim tygodniu, RPE około 7, bez TOP
  * SETU (przysiad 102,5 kg 4×4 @9 → 97,5 kg 5×4 @7). Na koniec max out:
  * 1 × 1 @ RPE 10 w przysiadzie, wyciskaniu i martwym ciągu. Decyzje trenera
- * z 25.09.2026: deload „jak T6, RPE o 2 niżej, bez TOP SETU", maksy
+ * z 25.09.2026: deload „jak T6, RPE niżej, bez TOP SETU" — o 1 w skali planu,
+ * „żeby było spójne z resztą planu" (patrz `OBNIZENIE_RPE_DELOADU`), maksy
  * wszystkie jednego dnia, kolejność jak w periodyzacji (najpierw deload).
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   przeliczPlan, tydzienWyliczony, tygodniePlanu, numerTygodniaNaEkranie, rpeDeloadu,
@@ -76,13 +80,13 @@ describe("deload — T7", () => {
     assert.deepEqual(tygodniePlanu({ deload: true }), [1, 2, 3, 4, 5, 6, 7]);
   });
 
-  test("serie i powtórzenia jak w T6, RPE o 2 niżej", () => {
+  test("serie i powtórzenia jak w T6, RPE o 1 niżej", () => {
     for (const positionId of ["D1-S01", "D1-S02", "D2-S01", "D2-S02"]) {
       const t6 = slot(w, 6, positionId);
       const t7 = slot(w, 7, positionId);
       assert.equal(t7.serie, t6.serie, positionId);
       assert.equal(t7.powtorzenia, t6.powtorzenia, positionId);
-      assert.equal(t7.rpe, Math.max(6, t6.rpe - 2), positionId);
+      assert.equal(t7.rpe, Math.max(6, t6.rpe - 1), positionId);
     }
   });
 
@@ -101,9 +105,10 @@ describe("deload — T7", () => {
   });
 
   test("RPE nie schodzi poniżej tabeli", () => {
-    assert.equal(rpeDeloadu(9), 7);
-    assert.equal(rpeDeloadu(7), 6);
+    assert.equal(rpeDeloadu(9), 8);
+    assert.equal(rpeDeloadu(7.5), 6.5);
     assert.equal(rpeDeloadu(6.5), 6);
+    assert.equal(rpeDeloadu(6), 6);
   });
 
   test("trener może poprawić deload ręcznie, jak każdy tydzień", () => {
@@ -129,6 +134,54 @@ describe("deload — T7", () => {
 
   test("średnie i normy cyklu liczą się dalej z sześciu tygodni pracy", () => {
     assert.deepEqual(w.ocenaObjetosci, przeliczPlan(plan()).ocenaObjetosci);
+  });
+});
+
+describe("deload waży tyle, co w periodyzacji trenera", () => {
+  /**
+   * „Żeby było spójne z resztą planu" (25.09.2026). Periodyzacja pisze RPE
+   * o 2 niżej, ale w swojej skali — wyższej od skali planów. Porównujemy więc
+   * kilogramy: ile deload waży względem ostatniego tygodnia pracy.
+   */
+  const periodyzacja = JSON.parse(readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "../../docs/dane/periodyzacja-13-tygodni.json"),
+    "utf-8"));
+  const wPeriodyzacji: number[] = [];
+  for (const blok of ["blok_I", "blok_II"]) {
+    for (const cw of Object.values<any>(periodyzacja[blok])) {
+      wPeriodyzacji.push(cw.praca[5][0] / cw.praca[4][0]);   // deload / ostatni tydzień
+    }
+  }
+
+  // Bój i cztery akcesoria, obie części planu, oba tryby akcesoriów.
+  const wPlanie: number[] = [];
+  for (const czescPlanu of ["objętość", "intensywność"] as const) {
+    for (const trybAkcesoriow of ["trzymaj z bloku", "licz z RPE"] as const) {
+      const LP = ["A1.", "B1.", "B2.", "C1.", "C2."];
+      const ID = [PRZYSIAD, WIOSLO, "EX-0003", "EX-0014", UGINANIE];
+      const p = plan({ czescPlanu, trybAkcesoriow, deload: true });
+      p.sloty.forEach((s, i) => { s.cwiczenieId = i < 5 ? ID[i]! : null; if (i < 5) s.lp = LP[i]!; });
+      (p as { serieMaksymalne: Plan["serieMaksymalne"] }).serieMaksymalne = [130, 90, 70, 60, 45]
+        .map((ciezar, i) => ({ cwiczenieId: ID[i]!, ciezar, powtorzenia: 1 }));
+      const w = przeliczPlan(p);
+      for (const s of tydzienWyliczony(w, 7)!.sloty.filter((x) => x.cwiczenie)) {
+        const t6 = slot(w, 6, s.positionId);
+        wPlanie.push((s.ciezar as number) / (t6.ciezar as number));
+      }
+    }
+  }
+  const srednia = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+  test("średnio tyle samo lżej — w granicach 2 punktów procentowych", () => {
+    assert.ok(Math.abs(srednia(wPlanie) - srednia(wPeriodyzacji)) < 0.02,
+      `plan ${srednia(wPlanie).toFixed(3)} · periodyzacja ${srednia(wPeriodyzacji).toFixed(3)}`);
+  });
+
+  test("żadne ćwiczenie nie wypada daleko poza rozrzut periodyzacji", () => {
+    const [min, max] = [Math.min(...wPeriodyzacji), Math.max(...wPeriodyzacji)];
+    for (const x of wPlanie) {
+      assert.ok(x >= min - 0.03 && x <= max + 0.01, `${x.toFixed(3)} poza ${min.toFixed(3)}–${max.toFixed(3)}`);
+    }
   });
 });
 

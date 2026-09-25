@@ -232,7 +232,7 @@ tygodnie po sześciu tygodniach pracy. Klient widzi je na liście jako
 *Tydzień 7 z 8 · deload* i *Tydzień 8 z 8 · maksy*, każdy z jednym zdaniem,
 o co chodzi.
 
-* **Deload** — te same dni i ćwiczenia co w T6, RPE o 2 niżej, bez TOP SETU.
+* **Deload** — te same dni i ćwiczenia co w T6, RPE o 1 niżej, bez TOP SETU.
   Zwykły trening, tylko lżejszy.
 * **Dzień maksów** — jeden dzień, wszystkie boje naraz. Przy każdym *1RM teraz*
   (obecne 1RM jako punkt odniesienia), zdanie „rozgrzej się stopniowo, potem
