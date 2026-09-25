@@ -17,6 +17,9 @@ z jednym wyjątkiem, który sam włączasz kluczem do API: [asystent](#asystent-
 kategorią szkieletu. Serie, powtórzenia i RPE ustawiasz osobno dla każdego
 z sześciu tygodni.
 
+**Trzy części planu** — *objętość (cz.1)*, *intensywność (cz.2)* i *hipertrofia
+(12/14)*: bój 4 × 12–14 bez TOP SETU, akcesoria od 12 albo 14 powtórzeń.
+
 **Po cyklu: deload i maksy** — przełączniki *+ deload* i *+ maksy* dokładają
 tydzień 7 (serie i powtórzenia z T6, RPE o 1 niżej, bez TOP SETU) i tydzień 8
 (1 × 1 @ RPE 10, wszystkie boje jednego dnia). W zakładce maksów zaznaczasz

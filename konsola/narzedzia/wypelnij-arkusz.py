@@ -35,6 +35,9 @@ KOL_START_CIEZAR, KOL_START_POWT = 3, 4
 CZESC_ARKUSZA = {
     "objętość": "część 1 (objętość)",
     "intensywność": "część 2 (intensyfikacja)",
+    # Arkusz nie zna hipertrofii. Serie, RPE i powtorzenia (takze akcesoriow)
+    # przychodza wtedy wpisane wprost, wiec przelacznik niczego nie liczy.
+    "hipertrofia": "część 1 (objętość)",
 }
 
 

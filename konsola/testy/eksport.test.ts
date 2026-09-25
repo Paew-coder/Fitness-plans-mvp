@@ -174,3 +174,15 @@ describe("eksport — deload i maksy, gdy są w planie", () => {
     assert.deepEqual(daneDoArkusza(zapisany).tygodnie_dodatkowe.map((t) => t.nazwa), ["T7 maksy"]);
   });
 });
+
+describe("eksport — hipertrofia", () => {
+  test("akcesoria dostają powtórzenia wprost — arkusz liczyłby 8/10, nie 12/14", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.czescPlanu = "hipertrofia";
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual([1, 2, 3].map((t) => pole(dane, "D1-S02", t).powtorzenia_reczne), [12, 13, 14]);
+    assert.deepEqual([1, 4].map((t) => pole(dane, "D1-S01", t).powtorzenia_reczne), [12, 12]);
+    assert.ok(dane.top_sety.every((t) => Object.values(t.rpe_tygodni).every((r) => r === null)),
+      "hipertrofia bez TOP SETU");
+  });
+});
