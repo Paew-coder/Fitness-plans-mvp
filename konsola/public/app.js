@@ -700,6 +700,7 @@ function rysujPlan() {
   $("#tryb-akcesoriow").value = z.plan.trybAkcesoriow;
   $("#czesc-planu").value = z.plan.czescPlanu;
   $("#data-startu").value = z.dataStartu ?? "";
+  pokazKoniecCyklu();
 
 
   rysujTaby();
@@ -769,6 +770,7 @@ function przelaczTydzienPoCyklu(pole, numer) {
     tydzien = numer;   // od razu pokaż, co doszło
   }
   rysujTaby();
+  pokazKoniecCyklu();
   poZapisie = () => rysujPlan();
   zapiszPozniej();
 }
@@ -1112,8 +1114,33 @@ $("#czesc-planu").onchange = (e) => {
 };
 $("#data-startu").onchange = (e) => {
   obraz.zapisany.dataStartu = e.target.value || null;
+  pokazKoniecCyklu();
   zapiszPozniej();
 };
+
+/**
+ * Data końca cyklu pod polem „Start" — liczona z liczby tygodni planu, bo
+ * z deloadem i maksami cykl ma siedem albo osiem tygodni, nie sześć.
+ * Pusta data startu to częsta rzecz, a bez niej „wymaga uwagi" nie zgłosi
+ * końca cyklu — stąd zdanie, które do jej wpisania zachęca.
+ */
+const DNI_TYGODNIA = ["nd", "pn", "wt", "śr", "cz", "pt", "sb"];
+function pokazKoniecCyklu() {
+  const pole = $("#koniec-cyklu");
+  const start = obraz.zapisany.dataStartu;
+  const tygodni = tygodniePlanu(obraz.zapisany.plan).length;
+  if (!start) {
+    pole.textContent = `wpisz datę — zobaczysz koniec cyklu (${tygodni} tyg.)`;
+    return;
+  }
+  // Południe UTC, żeby strefa czasowa nie przesunęła dnia.
+  const dzien = (przesuniecie) => {
+    const d = new Date(`${start}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + przesuniecie);
+    return `${DNI_TYGODNIA[d.getUTCDay()]} ${d.getUTCDate()}.${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  };
+  pole.textContent = `koniec: ${dzien(tygodni * 7 - 1)} · ${tygodni} tyg. · T4 od ${dzien(21)}`;
+}
 
 function slotPlanu(positionId) {
   return obraz.zapisany.plan.sloty.find((s) => s.positionId === positionId);

@@ -1121,6 +1121,15 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await taby()).includes("T7 maksy") && !(await taby()).includes("deload"),
     await taby());
 
+  // Pod datą startu stoi koniec cyklu — liczony z liczby tygodni, bo z maksami
+  // cykl ma siedem tygodni. Poniedziałek 28.09 + 7 tygodni = niedziela 15.11.
+  await s.locator("#data-startu").fill("2026-09-28");
+  await s.locator("#data-startu").dispatchEvent("change");
+  await s.waitForTimeout(900);
+  sprawdz("pod datą startu stoi koniec cyklu z tygodniami po cyklu",
+    (await s.locator("#koniec-cyklu").innerText()) === "koniec: nd 15.11 · 7 tyg. · T4 od pn 19.10",
+    await s.locator("#koniec-cyklu").innerText());
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon
