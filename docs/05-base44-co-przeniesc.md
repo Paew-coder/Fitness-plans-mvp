@@ -172,7 +172,13 @@ z `Szacowane 1RM`.
 **U nas:** osobny ekran postępu. Trafniejsze miejsce to tam, gdzie klient stoi
 ze sztangą.
 
-### 6. Rozgrzewka jako pozycja planu
+### 6. Rozgrzewka jako pozycja planu — ✅ zrobione 25.09.2026 (inaczej niż tam)
+
+**Zrobione jako opcjonalne miejsce przy dniu, nie jako ćwiczenie z BAZY.** Trener
+wpisuje w konsoli przy dniu tekst wiersz po wierszu i link do filmu; klient widzi
+kartę „Rozgrzewka" na początku dnia i w pierwszym panelu prowadzenia. Silnik jej
+nie liczy (stres, objętość). W BAZIE nie ma ćwiczeń rozgrzewkowych, a tekst
+pomieści wszystko — rower, mobilizacje, serie wstępne.
 
 **Tam:** pierwszy panel każdego treningu, z własnym ćwiczeniem (`WGS`).
 

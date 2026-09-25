@@ -653,3 +653,13 @@ td.ciezar .zrobione {
                    font-weight: 400; letter-spacing: 0; text-transform: none; margin-top: .25rem;
                    max-width: 16rem; line-height: 1.35; font-family: var(--sans); }
 .legenda-kropek .kropka { margin-left: .2rem; }
+
+/* Rozgrzewka dnia — pod nagłówkiem dnia, nad tabelą. */
+.rozgrzewka-trenera { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center;
+  padding: .5rem .9rem; border-bottom: 1px dashed var(--linia); }
+.rozgrzewka-trenera textarea { flex: 1 1 20rem; min-width: 0; font: inherit; font-size: .85rem;
+  padding: .4rem .5rem; border: 1px solid var(--linia); border-radius: 4px; background: var(--tlo); color: var(--tekst); }
+.rozgrzewka-trenera input[type="url"] { flex: 1 1 14rem; min-width: 0; }
+.rozgrzewka-trenera .podpowiedz-pola { flex-basis: 100%; }
+.etykieta-rozgrzewki { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tekst-blady); flex-basis: 100%; }

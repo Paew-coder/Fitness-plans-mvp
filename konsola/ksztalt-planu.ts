@@ -154,6 +154,27 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     return `Część planu musi być jedną z: ${CZESCI_PLANU.join(", ")}`;
   }
 
+  // ── rozgrzewki ────────────────────────────────────────────────────
+  // Tekst idzie do telefonu klienta, a link do filmu wprost w `href` —
+  // dlatego tylko http(s): „javascript:" w linku byłoby furtką.
+  if (plan.rozgrzewki != null) {
+    if (!Array.isArray(plan.rozgrzewki) || plan.rozgrzewki.length > 5) {
+      return "Rozgrzewki muszą być listą, najwyżej jedna na dzień";
+    }
+    for (const r of plan.rozgrzewki as unknown[]) {
+      if (!jestObiektem(r) || !jestLiczba(r.dzien) || r.dzien < 1 || r.dzien > 5) {
+        return "Rozgrzewka musi wskazywać dzień 1–5";
+      }
+      if (typeof r.tekst !== "string" || r.tekst.length > 1000) {
+        return `Rozgrzewka dnia ${r.dzien}: tekst najwyżej 1000 znaków`;
+      }
+      if (r.film != null && (typeof r.film !== "string" || r.film.length > 500
+          || !/^https?:\/\/\S+$/.test(r.film))) {
+        return `Rozgrzewka dnia ${r.dzien}: link do filmu musi zaczynać się od https://`;
+      }
+    }
+  }
+
   // ── tygodnie po cyklu ─────────────────────────────────────────────
   for (const pole of ["deload", "tydzienMaksow"] as const) {
     if (plan[pole] != null && typeof plan[pole] !== "boolean") {

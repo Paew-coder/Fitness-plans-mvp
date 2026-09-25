@@ -883,6 +883,13 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       : null;
   };
 
+  /** Rozgrzewka dnia — wiersz po wierszu. Pusta albo brak = `null`. */
+  const rozgrzewka = (dzien: number) => {
+    const r = zapisany.plan.rozgrzewki?.find((x) => x.dzien === dzien);
+    const linie = (r?.tekst ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+    return r && (linie.length > 0 || r.film) ? { linie, film: r.film ?? null } : null;
+  };
+
   const kalibracjaW = (cwiczenieId: string, positionId: string, tydzien: number) => {
     const k = zapisany.plan.serieMaksymalne
       .find((x) => x.cwiczenieId === cwiczenieId)?.kalibracja;
@@ -907,6 +914,8 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       .map((dzien) => ({
         dzien,
         ukonczony: ukonczone.some((u) => u.dzien === dzien && u.tydzien === t.tydzien),
+        // Dzień maksów ma własną instrukcję rozgrzewki przy każdym boju.
+        rozgrzewka: t.rodzaj === "maksy" ? null : rozgrzewka(dzien),
         topSet: (() => {
           const ts = t.topSety.find((x) => x.dzien === dzien);
           return ts ? { ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) } : null;

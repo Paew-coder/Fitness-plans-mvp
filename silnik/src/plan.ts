@@ -123,6 +123,19 @@ export type Plan = {
   tydzienMaksow?: boolean;
   /** Identyfikatory bojów do maksowania. Puste = domyślne (`domyslneCwiczeniaMaksow`). */
   cwiczeniaMaksow?: readonly string[];
+  /**
+   * Rozgrzewka na początek dnia — opcjonalna, ta sama w każdym tygodniu
+   * (25.09.2026). Silnik jej nie liczy: nie wchodzi do stresu ani objętości.
+   */
+  rozgrzewki?: readonly Rozgrzewka[];
+};
+
+export type Rozgrzewka = {
+  dzien: number;
+  /** Wiersz po wierszu, jak trener to napisał: „5 min rower", „2 × 10 dead bug". */
+  tekst: string;
+  /** Link do nagrania — tylko http(s). */
+  film?: string;
 };
 
 export type SlotWyliczony = {
