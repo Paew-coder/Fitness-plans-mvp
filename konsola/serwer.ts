@@ -36,6 +36,8 @@ import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { skalibruj } from "./kalibracja.ts";
+import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
+import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
 import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
@@ -1171,6 +1173,21 @@ const serwer = createServer(async (req, res) => {
       })));
     }
 
+    // ── szablony planów z Base44 ─────────────────────────────────────
+    // Lista do wyboru w konsoli: nazwa, liczba dni, część planu, na starcie
+    // i to, czy szablon niesie dobór ćwiczeń, a jeśli tak — czego w BAZIE brak.
+    if (sciezka === "/api/szablony" && req.method === "GET") {
+      return json(res, SZABLONY_BASE44.map((s) => ({
+        id: s.id,
+        nazwa: s.nazwa,
+        opis: s.opis,
+        czesc: s.czesc,
+        dni: s.dni.length,
+        zCwiczeniami: s.zCwiczeniami,
+        bezOdpowiednika: [...new Set(s.dni.flat().map((x) => x.bezOdpowiednika).filter(Boolean))],
+      })));
+    }
+
     if (sciezka === "/api/ja" && req.method === "GET") {
       const trener = auth.trenerPoId(trenerId);
       const tryb = auth.trybDostepu(TRENER).tryb;
@@ -1420,6 +1437,25 @@ const serwer = createServer(async (req, res) => {
           return blad(res, `Plan „${kopia.id}" już istnieje`);
         }
         return json(res, obrazPlanu(magazyn.zapisz(kopia)), 201);
+      }
+
+      /*
+       * Szablon z Base44 rozpisuje plan od nowa: dni, numerację, kategorie,
+       * TOP SET i — przy czterech szablonach — ćwiczenia. Plan, w którym
+       * klient już coś wpisał, jest historią: szablon przepisałby jego wpisy
+       * pod inne pozycje. Wtedy odmowa i rada: nowa wersja planu.
+       */
+      if (akcja === "/szablon" && req.method === "POST") {
+        const { szablonId } = await cialo(req);
+        const szablon = SZABLONY_BASE44.find((s) => s.id === szablonId);
+        if (!szablon) return blad(res, "Nie ma takiego szablonu");
+        if ((zapisany.wykonania ?? []).length > 0) {
+          return blad(res, "Klient ma już wpisy w tym planie — szablon rozpisałby go od nowa. "
+            + "Zrób nową wersję planu i tam wstaw szablon.", 409);
+        }
+        return json(res, obrazPlanu(magazyn.zapisz({
+          ...zapisany, plan: zastosujSzablon(zapisany.plan, szablon),
+        })));
       }
 
       if (akcja === "/przenies" && req.method === "POST") {

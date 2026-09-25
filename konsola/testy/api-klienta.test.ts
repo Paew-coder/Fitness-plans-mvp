@@ -979,3 +979,36 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     assert.equal(t3.wczesniej, null);
   });
 });
+
+describe("szablony z Base44 w konsoli", () => {
+  test("lista mówi, co szablon niesie", async () => {
+    const { kod, dane } = await api("/api/szablony");
+    assert.equal(kod, 200);
+    assert.equal(dane.length, 14);
+    const fbw3 = dane.find((s: any) => s.id === "fbw_3dni_6w");
+    assert.deepEqual([fbw3.dni, fbw3.czesc, fbw3.zCwiczeniami], [3, "objętość", true]);
+    assert.deepEqual(fbw3.bezOdpowiednika.sort(), ["Close-Grip Bench Press", "Plank"]);
+  });
+
+  test("wstawienie rozpisuje plan, a planu z wpisami klienta nie rusza", async () => {
+    await api("/api/plany", "POST", { klient: "Szablon Test", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Szablon Test").id;
+    const { kod, dane } = await api(`/api/plany/${id}/szablon`, "POST", { szablonId: "hyper_2dni_6w" });
+    assert.equal(kod, 200);
+    assert.equal(dane.zapisany.plan.czescPlanu, "hipertrofia");
+    assert.equal(dane.zapisany.plan.sloty.find((s: any) => s.positionId === "D2-S01").kategoriaSzkieletu,
+      "Upper pull horizontal", "dzień II szablonu zaczyna od wiosłowania");
+    assert.equal((await api(`/api/plany/${id}/szablon`, "POST", { szablonId: "nie-ma" })).kod, 400);
+
+    // Klient już coś wpisał — szablon przepisałby jego historię.
+    const plan = dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0011";
+    await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany",
+      zmieniony: dane.zapisany.zmieniony });
+    const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    await api(`/api/klient/${token}/odczucie`, "POST", { positionId: "D1-S01", tydzien: 1, feedback: "OK" });
+    const odmowa = await api(`/api/plany/${id}/szablon`, "POST", { szablonId: "fbw_3dni_6w" });
+    assert.equal(odmowa.kod, 409);
+    assert.match(odmowa.dane.blad, /nową wersję/);
+  });
+});
