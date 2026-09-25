@@ -1230,6 +1230,31 @@ async function sekcjaDotykowa(
     const po = await s.locator("table.sloty td.cwiczenie select").first().inputValue();
     sprawdz(`${gdzie} dotknięcie strzałki przestawia ćwiczenie`, przed !== po,
       `${przed || "—"} → ${po || "—"}`);
+
+    // „0 z 2 + 1 zaczęty" łamało się na iPadzie na trzy linijki w wąskiej
+    // kolumnie, a „+" czytał się jak dodawanie. Otwieramy cykl, w którym
+    // klient ocenił ćwiczenie bez „Zakończ trening" — zaczęty tydzień jest
+    // tam na pewno.
+    await s.goto(`${adres}/?plan=${plan}`, { waitUntil: "networkidle" });
+    await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
+    await s.locator("#lista-klientow .pozycja", { hasText: klient })
+      .getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-klient:not(.ukryty)", { timeout: 10000 });
+    await s.locator("#lista-cykli .pozycja", { hasText: "zaczęty" })
+      .getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 10000 });
+    await s.waitForTimeout(600);
+    const realizacja = await s.evaluate(() => [...document.querySelectorAll(
+      "#realizacja .wiersz-miary .wartosc")].map((e) => ({
+      tekst: (e as HTMLElement).innerText,
+      linie: Math.round(e.getBoundingClientRect().height
+        / parseFloat(getComputedStyle(e).lineHeight || "16")),
+    })));
+    const zaczety = realizacja.find((x) => x.tekst.includes("zaczęt"));
+    sprawdz(`${gdzie} realizacja: zaczęty tydzień w jednej linii, bez „+”`,
+      !!zaczety && zaczety.linie <= 1 && !zaczety.tekst.includes("+"),
+      zaczety ? `„${zaczety.tekst.replace(/\n/g, "⏎")}" · ${zaczety.linie} linii`
+        : "brak zaczętego tygodnia");
   } finally {
     console.log(bledy.length
       ? `  błędy ${gdzie}: ${JSON.stringify(bledy.slice(0, 2))}`
