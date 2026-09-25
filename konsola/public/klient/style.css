@@ -304,6 +304,11 @@ button { font: inherit; cursor: pointer; }
   background: var(--karta-2); border: 1px solid var(--linia);
   border-radius: 20px; padding: .18rem .55rem;
 }
+/* Kafelek serii to przycisk do poprawki — pod palcem ma być czym trafić. */
+.serie-wpisane button.chip { cursor: pointer; min-height: 2rem; padding: .3rem .7rem; }
+.serie-wpisane button.chip:not(:disabled) { color: var(--tekst); border-color: var(--akcent); }
+.serie-wpisane button.chip.biezaca { color: var(--akcent); border-color: var(--akcent);
+  background: var(--akcent-tlo); opacity: 1; }
 
 .panel-pola { display: flex; align-items: center; gap: .4rem; margin-top: .9rem; }
 .panel-pola input {

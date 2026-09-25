@@ -846,6 +846,21 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await panel.locator(".serie-wpisane .chip").allInnerTexts()).length === 2,
     (await panel.locator(".serie-wpisane .chip").allInnerTexts()).join(" | "));
 
+  // Poprawka dowolnej serii, nie tylko pierwszej. Zgłoszone z testów (25.09):
+  // po wejściu w zrobione ćwiczenie dało się poprawić tylko serię 1, bo
+  // „Zapisz poprawkę" wraca tam, gdzie klient był. Kafelek serii to przycisk.
+  await panel.locator(".serie-wpisane button.chip", { hasText: "2:" }).click();
+  await s.waitForTimeout(200);
+  sprawdz("dotknięcie kafelka „2:” otwiera serię 2 do poprawki",
+    await seriaNaPanelu() === "2 z 6"
+    && (await panel.innerText()).includes("Ta seria jest już zrobiona")
+    && await panel.locator(".serie-wpisane button.chip.biezaca").isDisabled(),
+    `${await seriaNaPanelu()} · ${(await panel.locator(".serie-wpisane").innerText()).replace(/\n/g, " ")}`);
+  await panel.locator(".przeglad-zrobionej button.link").click();
+  await s.waitForTimeout(200);
+  sprawdz("„Wróć do” prowadzi z powrotem do serii 3",
+    await seriaNaPanelu() === "3 z 6", await seriaNaPanelu());
+
   // Reszta boju głównego — po niej wchodzi superseria B1/B2.
   for (let i = 3; i <= 6; i++) {
     await panel.getByRole("button", { name: "Zakończ serię" }).click();

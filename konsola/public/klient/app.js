@@ -1590,10 +1590,37 @@ function panelSerii(k, kroki, d) {
     const numery = wpisane.map((s, i) => (pustaSeria(s) ? null : i)).filter((i) => i !== null);
     pasek.append(el("span", "etykieta-serii",
       numery.every((i) => i < k.seria - 1) ? "Poprzednie serie:" : "Wpisane serie:"));
+    /*
+     * Kafelek to przycisk: dotknięcie otwiera tę serię do poprawki.
+     *
+     * Zgłoszone z testów: po wejściu w zrobione ćwiczenie dało się poprawić
+     * tylko pierwszą serię — „Zapisz poprawkę" wraca tam, gdzie klient był,
+     * a do serii 2 i 3 nie było drogi. Seria na ekranie jest podświetlona
+     * i nieaktywna; seria ponad plan (klient zrobił więcej) nie ma kroku,
+     * więc też nie prowadzi nigdzie.
+     */
+    let klikalnych = 0;
     wpisane.forEach((s, i) => {
       if (!s.ciezar && !s.powtorzenia) return;
-      pasek.append(el("span", "chip", `${i + 1}: ${zapisSerii(s)}`));
+      const tutaj = i + 1 === k.seria;
+      const cel = kroki.findIndex((x) => x.klucz === `${c.positionId}#${i + 1}`);
+      const chip = el("button", `chip ${tutaj ? "biezaca" : ""}`, `${i + 1}: ${zapisSerii(s)}`);
+      chip.type = "button";
+      chip.setAttribute("aria-label", `Seria ${i + 1}: ${zapisSerii(s)}${tutaj ? " — na ekranie" : " — popraw"}`);
+      if (tutaj || cel < 0) chip.disabled = true;
+      else {
+        klikalnych += 1;
+        chip.onclick = () => {
+          prowadzenie.krok = cel;
+          prowadzenie.doKiedy = null;
+          prowadzenie.przerwa = 0;
+          zapiszProwadzenie();
+          rysujPanel();
+        };
+      }
+      pasek.append(chip);
     });
+    if (klikalnych > 0) pasek.append(el("span", "etykieta-serii", "dotknij, by poprawić"));
     if (numery.length > 0) karta.append(pasek);
   }
 
