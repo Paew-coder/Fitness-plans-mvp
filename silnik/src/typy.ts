@@ -72,6 +72,9 @@ export const ODCZUCIA = ["OK", "za łatwe", "za trudne"] as const;
 export type Feedback = (typeof ODCZUCIA)[number];
 
 export type Tydzien = 1 | 2 | 3 | 4 | 5 | 6;
+/** Tygodnie po cyklu: 7 — deload, 8 — maksy. Oba opcjonalne, numery stałe. */
+export type TydzienDodatkowy = 7 | 8;
+export type TydzienCyklu = Tydzien | TydzienDodatkowy;
 
 export const TRYBY_AKCESORIOW = ["trzymaj z bloku", "licz z RPE"] as const;
 export type TrybAkcesoriow = (typeof TRYBY_AKCESORIOW)[number];

@@ -28,6 +28,23 @@ const POWODY_BEZ_SERII = {
   "dystans": "Ćwiczenie na dystans — liczy się odległość, nie kilogramy.",
   "ręczne ustawienie": "Ciężar do tego ćwiczenia ustala się wprost, nie z 1RM.",
 };
+/**
+ * Tygodnie po cyklu — te same stałe co w silniku (`plan.ts`). Klucze są
+ * stałe: 7 to deload, 8 to maksy; bez deloadu maksy są na ekranie siódme.
+ */
+const TYDZIEN_DELOADU = 7;
+const TYDZIEN_MAKSOW = 8;
+const tygodniePlanu = (plan) => [1, 2, 3, 4, 5, 6,
+  ...(plan.deload ? [TYDZIEN_DELOADU] : []), ...(plan.tydzienMaksow ? [TYDZIEN_MAKSOW] : [])];
+const numerTygodnia = (plan, t) => (t === TYDZIEN_MAKSOW && !plan.deload ? TYDZIEN_DELOADU : t);
+const etykietaTygodnia = (plan, t) => t === TYDZIEN_DELOADU ? "T7 deload"
+  : t === TYDZIEN_MAKSOW ? `T${numerTygodnia(plan, t)} maksy` : `T${t}`;
+/** Tydzień z wyniku — roboczy albo dodatkowy. `undefined`, gdy serwer jeszcze nie przeliczył. */
+const wyliczonyTydzienNr = (t) => obraz.wynik.tygodnie.find((x) => x.tydzien === t)
+  ?? (obraz.wynik.tygodnieDodatkowe ?? []).find((x) => x.tydzien === t);
+/** Co zrobić po najbliższym udanym zapisie — np. przerysować zakładki tygodni. */
+let poZapisie = null;
+
 let obraz = null;      // { zapisany, klient, wynik, uwagi, gotowy, normy }
 let kartoteka = null;  // { klient, historia, plany, waga } — ekran klienta
 let tydzien = 1;
@@ -120,7 +137,7 @@ async function pokazListe() {
     const opisCyklu = !k.cykl ? ""
       : k.cykl.doStartu !== null ? ` · start za ${k.cykl.doStartu} dni`
         : k.cykl.tydzien === null ? ""
-          : k.cykl.poCyklu ? " · po cyklu" : ` · T${k.cykl.tydzien}/6`;
+          : k.cykl.poCyklu ? " · po cyklu" : ` · T${k.cykl.tydzien}/${k.cykl.tygodni ?? 6}`;
     const cykle = `${k.cykli} ${odmiana(k.cykli, ["cykl", "cykle", "cykli"])}`;
     const biezacy = k.najnowszaWersja ? ` · ostatni ${k.najnowszaWersja}.0 (${k.statusNajnowszego})` : "";
     wiersz.append(el("div", "meta", `${cykle}${biezacy}${opisCyklu}`));
@@ -345,7 +362,7 @@ function rysujCykle(plany) {
 
     const opisCyklu = p.cykl.doStartu !== null ? ` · start za ${p.cykl.doStartu} dni`
       : p.cykl.tydzien === null ? ""
-        : p.cykl.poCyklu ? " · po cyklu" : ` · T${p.cykl.tydzien}/6`;
+        : p.cykl.poCyklu ? " · po cyklu" : ` · T${p.cykl.tydzien}/${p.cykl.tygodni ?? 6}`;
     const meta = el("div", "meta", `${p.cwiczen} ćwiczeń${opisCyklu}`);
 
     wiersz.append(nazwa, status, meta, sygnalAktywnosci(p.realizacja));
@@ -655,6 +672,7 @@ function zapiszPozniej() {
       rysujAnalize();
       rysujDni();
       rysujSerieMax();
+      if (poZapisie) { const f = poZapisie; poZapisie = null; f(); }
     } catch (err) {
       $("#zapis").textContent = `błąd: ${err.message}`;
     }
@@ -684,16 +702,7 @@ function rysujPlan() {
   $("#data-startu").value = z.dataStartu ?? "";
 
 
-  const taby = $("#taby-tygodni");
-  taby.replaceChildren();
-  for (const t of [1, 2, 3, 4, 5, 6]) {
-    const b = el("button", t === tydzien ? "aktywny" : "", `T${t}`);
-    // Bez `type` przycisk jest przyciskiem wysyłki formularza. Poza formularzem
-    // nic to nie robi, ale zostawianie tego przypadkowi nie ma sensu.
-    b.type = "button";
-    b.onclick = () => { tydzien = t; rysujPlan(); };
-    taby.append(b);
-  }
+  rysujTaby();
 
   // Odczyt asystenta dotyczy konkretnego planu — przy zmianie planu znika,
   // żeby nikt nie czytał spostrzeżeń o cudzym cyklu.
@@ -710,6 +719,60 @@ function rysujPlan() {
   rysujModuly();
   rysujSerieMax(true);
 }
+
+/**
+ * Zakładki tygodni i przełączniki tygodni po cyklu.
+ *
+ * Deload i maksy to decyzja trenera przy konkretnym planie (25.09.2026):
+ * deload „jak T6, RPE o 2 niżej, bez TOP SETU", maksy 1 × 1 @ RPE 10,
+ * wszystkie boje jednego dnia, najpierw deload — jak w jego periodyzacji.
+ */
+function rysujTaby() {
+  const plan = obraz.zapisany.plan;
+  if (!tygodniePlanu(plan).includes(tydzien)) tydzien = 6;
+  const taby = $("#taby-tygodni");
+  taby.replaceChildren();
+  for (const t of tygodniePlanu(plan)) {
+    const b = el("button", `${t === tydzien ? "aktywny" : ""} ${t > 6 ? "po-cyklu" : ""}`,
+      etykietaTygodnia(plan, t));
+    // Bez `type` przycisk jest przyciskiem wysyłki formularza. Poza formularzem
+    // nic to nie robi, ale zostawianie tego przypadkowi nie ma sensu.
+    b.type = "button";
+    b.onclick = () => { tydzien = t; rysujPlan(); };
+    taby.append(b);
+  }
+  for (const [id, pole, nazwa] of [
+    ["#przelacz-deload", "deload", "deload"], ["#przelacz-maksy", "tydzienMaksow", "maksy"],
+  ]) {
+    const b = $(id);
+    b.classList.toggle("aktywny", !!plan[pole]);
+    b.textContent = plan[pole] ? `✓ ${nazwa}` : `+ ${nazwa}`;
+  }
+}
+
+/**
+ * Włącza albo wyłącza tydzień po cyklu. Wyłączenie tygodnia, w którym klient
+ * już coś wpisał, ukryłoby jego wpisy — więc wtedy pytamy.
+ */
+function przelaczTydzienPoCyklu(pole, numer) {
+  const plan = obraz.zapisany.plan;
+  if (plan[pole]) {
+    const wpisy = (obraz.zapisany.wykonania ?? []).filter((w) => w.tydzien === numer).length;
+    if (wpisy > 0 && !confirm(`Klient ma już ${wpisy} ${wpisy === 1 ? "wpis" : "wpisów"} `
+      + "w tym tygodniu. Po wyłączeniu zostaną w bazie, ale nie będzie ich widać. Wyłączyć?")) {
+      return;
+    }
+    plan[pole] = false;
+  } else {
+    plan[pole] = true;
+    tydzien = numer;   // od razu pokaż, co doszło
+  }
+  rysujTaby();
+  poZapisie = () => rysujPlan();
+  zapiszPozniej();
+}
+$("#przelacz-deload").onclick = () => przelaczTydzienPoCyklu("deload", TYDZIEN_DELOADU);
+$("#przelacz-maksy").onclick = () => przelaczTydzienPoCyklu("tydzienMaksow", TYDZIEN_MAKSOW);
 
 /**
  * ODDECH i BIEG — dwa kalkulatory towarzyszące planowi siłowemu.
@@ -994,7 +1057,8 @@ function rysujRealizacje() {
 
   for (const t of r.tygodnie) {
     const wiersz = el("div", "wiersz-miary");
-    wiersz.append(el("span", "etykieta", `T${t.tydzien}`));
+    wiersz.append(el("span", "etykieta", t.rodzaj
+      ? etykietaTygodnia(obraz.zapisany.plan, t.tydzien) : `T${t.tydzien}`));
     const kropki = el("span", "pasek");
     for (let i = 0; i < t.zDnia; i++) {
       const stan = i < t.ukonczonych ? "zrobiona"
@@ -1054,7 +1118,7 @@ function slotPlanu(positionId) {
   return obraz.zapisany.plan.sloty.find((s) => s.positionId === positionId);
 }
 function slotWyliczony(positionId) {
-  return obraz.wynik.tygodnie[tydzien - 1].sloty.find((s) => s.positionId === positionId);
+  return wyliczonyTydzienNr(tydzien)?.sloty.find((s) => s.positionId === positionId);
 }
 
 /**
@@ -1101,8 +1165,22 @@ function legendaPlanu() {
 function rysujDni() {
   const kontener = $("#dni");
   kontener.replaceChildren();
+  const wyliczonyTydzien = wyliczonyTydzienNr(tydzien);
+  // Tydzień właśnie włączony — wynik z serwera dojdzie za chwilę.
+  if (!wyliczonyTydzien) {
+    kontener.append(el("p", "wskazowka", "Przeliczam…"));
+    return;
+  }
+  if (tydzien === TYDZIEN_MAKSOW) {
+    rysujTydzienMaksow(kontener, wyliczonyTydzien);
+    return;
+  }
   kontener.append(legendaPlanu());
-  const wyliczonyTydzien = obraz.wynik.tygodnie[tydzien - 1];
+  if (tydzien === TYDZIEN_DELOADU) {
+    kontener.append(el("p", "wskazowka opis-po-cyklu",
+      "Deload: serie i powtórzenia jak w T6, RPE o 2 niżej, bez TOP SETU. "
+      + "Ciężar liczy się z tabeli; każdą liczbę możesz poprawić ręcznie."));
+  }
 
   for (let dzien = 1; dzien <= 5; dzien++) {
     const sloty = obraz.zapisany.plan.sloty.filter((s) => s.dzien === dzien);
@@ -1128,7 +1206,8 @@ function rysujDni() {
      * RPE i ciężar.
      */
     const top = (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
-    if (top?.wlaczony && maCwiczenia) {
+    // W deloadzie TOP SETU nie ma — pasek z polem RPE sugerowałby, że jest.
+    if (top?.wlaczony && maCwiczenia && tydzien <= 6) {
       const wyliczony = wyliczonyTydzien.topSety.find((t) => t.dzien === dzien);
       // Nazwa wprost z planu, nie z wyniku — po kliknięciu „T" ma być widać
       // od razu, a wynik z serwera dojdzie chwilę później razem z ciężarem.
@@ -1201,6 +1280,75 @@ function rysujDni() {
     blok.append(tabela);
     kontener.append(blok);
   }
+}
+
+/**
+ * Tydzień maksów — jeden dzień, 1 × 1 @ RPE 10 w zaznaczonych bojach.
+ *
+ * Domyślnie zaznaczone są przysiady, wyciskanie leżąc i martwe ciągi z planu
+ * (lista od TOP SETU). Trener może odznaczyć albo dołożyć każde ćwiczenie na
+ * kilogramy. Wynik klienta wchodzi do nowej wersji planu jako seria
+ * maksymalna — dlatego stoi tu obok obecnego 1RM.
+ */
+function rysujTydzienMaksow(kontener, t8) {
+  const plan = obraz.zapisany.plan;
+  const blok = el("section", "dzien maksy");
+  const naglowek = el("div", "dzien-naglowek");
+  naglowek.append(el("span", "tytul", "Dzień maksów"),
+    el("span", "suma", "1 × 1 @ RPE 10 · wszystkie boje jednego dnia"));
+  blok.append(naglowek);
+  blok.append(el("p", "wskazowka opis-po-cyklu",
+    "Zaznacz boje do sprawdzenia. Klient robi rozgrzewkę i jedno powtórzenie na maksa. "
+    + "Wynik wejdzie do nowej wersji planu jako seria maksymalna."));
+
+  const wybrane = t8.sloty.map((s) => s.cwiczenie.id);
+  // Kandydaci: ćwiczenia z T6 (po podmianach), po razie, tylko na kilogramy.
+  const kandydaci = [];
+  for (const s of wyliczonyTydzienNr(6).sloty) {
+    const c = s.cwiczenie;
+    if (!c || c.progresja in POWODY_BEZ_SERII || kandydaci.some((k) => k.id === c.id)) continue;
+    kandydaci.push({ id: c.id, nazwa: c.nazwa, oneRM: s.oneRM, positionId: s.positionId });
+  }
+  if (kandydaci.length === 0) {
+    blok.append(el("p", "wskazowka", "W planie nie ma ćwiczeń na kilogramy do zmaksowania."));
+  }
+
+  const tabela = el("table", "sloty maksy");
+  const glowa = el("tr");
+  for (const [tekst, klasa] of [["", ""], ["Bój", ""], ["1RM teraz", ""], ["Wynik klienta", ""]]) {
+    glowa.append(el("th", klasa, tekst));
+  }
+  tabela.append(el("thead"));
+  tabela.firstChild.append(glowa);
+  const cialo = el("tbody");
+  for (const k of kandydaci) {
+    const wiersz = el("tr", wybrane.includes(k.id) ? "wybrany" : "");
+    const pole = el("input");
+    pole.type = "checkbox";
+    pole.checked = wybrane.includes(k.id);
+    pole.setAttribute("aria-label", `Maksuj: ${k.nazwa}`);
+    pole.onchange = () => {
+      // Kolejność prób jak w planie — zwykle przysiad, wyciskanie, martwy.
+      plan.cwiczeniaMaksow = kandydaci
+        .filter((x) => (x.id === k.id ? pole.checked : wybrane.includes(x.id)))
+        .map((x) => x.id);
+      zapiszPozniej();
+    };
+    const zaznacz = el("td", "");
+    zaznacz.append(pole);
+    const wSlot = t8.sloty.find((s) => s.cwiczenie.id === k.id);
+    const oneRM = typeof wSlot?.ciezar === "number" ? wSlot.ciezar : k.oneRM;
+    const wynik = (obraz.zapisany.wykonania ?? []).find((w) => w.tydzien === TYDZIEN_MAKSOW
+      && w.cwiczenieId === k.id && w.ciezarWykonany);
+    wiersz.append(zaznacz, el("td", "cwiczenie", k.nazwa),
+      el("td", "ciezar", oneRM ? `${liczba(oneRM)} kg` : "brak 1RM"),
+      el("td", "", wynik
+        ? `${liczba(wynik.ciezarWykonany)} kg × ${wynik.powtorzeniaWykonane ?? "—"}` : "—"));
+    cialo.append(wiersz);
+  }
+  tabela.append(cialo);
+  blok.append(tabela);
+  kontener.append(blok);
 }
 
 /**
@@ -1285,10 +1433,13 @@ function rysujSlot(slot, pusty) {
      * to wprost: „jedno ćwiczenie może i miałoby sens, ale na pewno nie cały
      * plan". Kopiowanie zostało więc tam, gdzie ma sens, i nigdzie indziej.
      */
+    // Po cyklu (deload) », T i R nic nie znaczą: kopiowałyby deload na
+    // tygodnie pracy, a TOP SETU i trybu ciężaru deload nie ma.
+    const poCyklu = tydzien > 6;
     const rozniesc = el("button", "mikro", "»");
     rozniesc.title = `Skopiuj parametry tego ćwiczenia z T${tydzien} na pozostałe tygodnie`;
     rozniesc.onclick = () => wypelnijTygodnie("kopiuj", slot.positionId);
-    strzalki.append(rozniesc);
+    if (!poCyklu) strzalki.append(rozniesc);
 
     /*
      * TOP SET przy tym ćwiczeniu.
@@ -1309,7 +1460,7 @@ function rysujSlot(slot, pusty) {
           ? "Dodaj TOP SET — przy tym ćwiczeniu jest zwyczajowy"
           : "Dodaj TOP SET do tego ćwiczenia");
     dodajTop.onclick = () => przelaczTopSet(slot);
-    strzalki.append(dodajTop);
+    if (!poCyklu) strzalki.append(dodajTop);
 
     /*
      * Tryb liczenia ciężaru dla TEGO ćwiczenia.
@@ -1322,7 +1473,7 @@ function rysujSlot(slot, pusty) {
      *
      * Bój główny i tak zawsze liczy z RPE, więc przy nim tego nie pokazujemy.
      */
-    if (!bojGlowny(slot)) {
+    if (!bojGlowny(slot) && !poCyklu) {
       const przelaczTryb = el("button", `mikro ${slot.trybCiezaru === "licz z RPE" ? "wlaczony" : ""}`, "R");
       przelaczTryb.title = slot.trybCiezaru === "licz z RPE"
         ? "Wróć do trybu z planu (ciężar trzymany z bloku)"
@@ -1506,16 +1657,24 @@ function rysujAnalize() {
   for (const t of obraz.wynik.tygodnie) {
     obciazenie.append(wierszMiary(`T${t.tydzien}`, t.bilans.razem, maks, t.ocenaStresu));
   }
+  // Po cyklu bez oceny normą: lżej niż norma to cel deloadu, a maksy to
+  // kilka pojedynczych powtórzeń.
+  for (const t of obraz.wynik.tygodnieDodatkowe ?? []) {
+    obciazenie.append(wierszMiary(etykietaTygodnia(obraz.zapisany.plan, t.tydzien),
+      t.bilans.razem, maks, ""));
+  }
 
   // wzorce ruchu
   const wzorce = $("#wzorce");
   wzorce.replaceChildren();
-  const bilans = obraz.wynik.tygodnie[tydzien - 1].bilans;
+  const biezacy = wyliczonyTydzienNr(tydzien) ?? obraz.wynik.tygodnie[5];
+  const bilans = biezacy.bilans;
   const maksWzorca = Math.max(...bilans.wzorce.map((w) => w.calkowity), 0.001);
   const SKROT_WZORCA = { s: "przysiad", d: "m. ciąg", b: "wycisk.", r: "wiosł.", c: "core" };
   for (const w of bilans.wzorce) {
     const ocena = obraz.wynik.ocenaObjetosci[w.part];
-    wzorce.append(wierszMiary(SKROT_WZORCA[w.part] ?? w.part, w.calkowity, maksWzorca, ocena?.ocena ?? ""));
+    wzorce.append(wierszMiary(SKROT_WZORCA[w.part] ?? w.part, w.calkowity, maksWzorca,
+      biezacy.rodzaj ? "" : ocena?.ocena ?? ""));
   }
   if (bilans.razem > 0) {
     const proc = (x) => Math.round((x / bilans.razem) * 100);
@@ -1909,6 +2068,11 @@ function rysujSerieMax(pelne = false) {
       wiersz.append(el("div", "kalibracja-zrodlo",
         `z serii roboczej klienta: ${bezZera(k.ciezar)} kg × ${k.powtorzenia} `
         + `przy RPE ${bezZera(k.rpe)} · T${k.tydzien}, dzień ${RZYMSKIE[k.dzien - 1] ?? k.dzien}`));
+    }
+    // Wynik z tygodnia maksów poprzedniego cyklu — wszedł sam, bez przyjmowania.
+    if (istniejaca?.zTygodniaMaksow != null && !k) {
+      wiersz.append(el("div", "kalibracja-zrodlo",
+        `z tygodnia maksów w cyklu ${istniejaca.zTygodniaMaksow}.0`));
     }
     kontener.append(wiersz);
   }

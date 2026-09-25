@@ -158,6 +158,13 @@ label { display: flex; flex-direction: column; gap: .3rem;
 .taby { display: flex; gap: .25rem; }
 .taby button { padding: .3rem .6rem; font-family: var(--mono); font-size: .8rem; }
 .taby button.aktywny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+/* Tygodnie po cyklu — przerywana ramka odróżnia je od sześciu tygodni pracy. */
+.taby button.po-cyklu:not(.aktywny) { border-style: dashed; }
+.opis-po-cyklu { margin: .2rem 0 .6rem; }
+.dzien.maksy .opis-po-cyklu { padding: .4rem .9rem 0; }
+table.sloty.maksy td.cwiczenie { font-weight: 600; }
+table.sloty.maksy tr:not(.wybrany) td { color: var(--tekst-blady); }
+table.sloty.maksy input[type="checkbox"] { width: 1.2rem; height: 1.2rem; }
 
 /* ── układ główny ───────────────────────────────────────────────── */
 .uklad { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 1.2rem; align-items: start; }

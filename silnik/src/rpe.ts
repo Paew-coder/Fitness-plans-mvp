@@ -35,6 +35,12 @@ export type SeriaMaksymalna = {
    * roboczej — patrz `KalibracjaSerii`.
    */
   kalibracja?: KalibracjaSerii;
+  /**
+   * Numer cyklu, w którego tygodniu maksów klient to podniósł. Wpis jest wtedy
+   * prawdziwą serią maksymalną — wstawia ją „Nowa wersja" planu. Silnik tego
+   * nie czyta; konsola pokazuje, skąd liczba.
+   */
+  zTygodniaMaksow?: number;
 };
 
 /**

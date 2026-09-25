@@ -1069,6 +1069,58 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("na laptopie legenda znaków w tabeli jest widoczna",
     (await s.locator("#dni .legenda").innerText().catch(() => "")).includes("TOP SET"));
 
+  // ── 19c. deload i tydzień maksów po cyklu ─────────────────────────
+  //
+  // Decyzje trenera z 25.09.2026: deload „jak T6, RPE o 2 niżej, bez TOP
+  // SETU", maksy 1 × 1 @ RPE 10 wszystkie jednego dnia, najpierw deload.
+  // Plan na ekranie ma w T1 przysiad — bój z listy do maksowania.
+  const planZBazy = async () => (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan;
+  const taby = async () => (await s.locator("#taby-tygodni button").allInnerTexts()).join(" ");
+  // Wysłanie planu otwiera okno z linkiem dla klienta — zamykamy je.
+  await s.locator("#modal-zamknij").click({ timeout: 3000 }).catch(() => {});
+  await s.click("#przelacz-deload");
+  await s.waitForTimeout(1200);
+  sprawdz("„+ deload” dokłada zakładkę T7 i od razu ją pokazuje",
+    (await taby()).includes("T7 deload")
+    && (await s.locator("#taby-tygodni button.aktywny").innerText()) === "T7 deload"
+    && (await planZBazy()).deload === true,
+    await taby());
+  sprawdz("w deloadzie stoi, skąd biorą się liczby",
+    (await s.locator("#dni .opis-po-cyklu").innerText().catch(() => "")).includes("RPE o 2 niżej"));
+  const przyciskiDeloadu = await s.locator("table.sloty .strzalki button").allInnerTexts();
+  sprawdz("w deloadzie nie ma », T ani R — kopiowałyby deload na tygodnie pracy",
+    przyciskiDeloadu.length > 0 && przyciskiDeloadu.every((t) => !["»", "T", "R"].includes(t)),
+    przyciskiDeloadu.join(" "));
+
+  await s.click("#przelacz-maksy");
+  await s.waitForTimeout(1200);
+  const wierszeMaksow = s.locator("table.sloty.maksy tbody tr");
+  sprawdz("„+ maksy” dokłada T8 z przysiadem zaznaczonym domyślnie",
+    (await taby()).includes("T8 maksy")
+    && (await wierszeMaksow.filter({ hasText: "Barbell back squat" })
+      .locator("input[type=checkbox]").isChecked()),
+    `${await taby()} · ${(await wierszeMaksow.allInnerTexts()).join(" | ")}`);
+  await wierszeMaksow.filter({ hasText: "Barbell back squat" }).locator("input[type=checkbox]").uncheck();
+  await s.waitForTimeout(1200);
+  sprawdz("odznaczenie zapisuje wybór, a pusty tydzień maksów dostaje ostrzeżenie",
+    JSON.stringify((await planZBazy()).cwiczeniaMaksow) === "[]"
+    && (await s.locator("#uwagi").innerText()).includes("Tydzień maksów nie ma ćwiczeń"),
+    JSON.stringify((await planZBazy()).cwiczeniaMaksow));
+  await wierszeMaksow.filter({ hasText: "Barbell back squat" }).locator("input[type=checkbox]").check();
+  await s.waitForTimeout(1200);
+  sprawdz("ponowne zaznaczenie wraca do przysiadu",
+    JSON.stringify((await planZBazy()).cwiczeniaMaksow) === JSON.stringify(["EX-0010"]));
+  const obciazenie = await s.locator("#obciazenie").innerText();
+  sprawdz("obciążenie pokazuje tygodnie po cyklu bez oceny normą",
+    obciazenie.includes("T7 deload") && obciazenie.includes("T8 maksy"),
+    obciazenie.replace(/\n/g, " ").slice(-80));
+
+  await s.click("#przelacz-deload");
+  await s.waitForTimeout(1200);
+  sprawdz("bez deloadu maksy są tygodniem siódmym",
+    (await taby()).includes("T7 maksy") && !(await taby()).includes("deload"),
+    await taby());
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon
