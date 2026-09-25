@@ -59,7 +59,9 @@ w równych kolumnach: `CIĘŻAR · SERIE · POWT.`, podpis nad liczbą, wszystki
 tej samej wielkości. Pod nimi drobno samo *„RPE 8"* (dopisek „2 w zapasie"
 był i zniknął — trener uznał go za zbędny). W panelu prowadzenia pierwsza kolumna
 to **numer serii** — `SERIA 3 z 3 · CIĘŻAR 10 kg · POWTÓRZENIA 9` — a kafelki
-wpisanych serii mają podpis *„Poprzednie serie:"*.
+wpisanych serii mają podpis *„Poprzednie serie:"* i są przyciskami: dotknięcie
+*„2: 80×8"* otwiera serię 2 do poprawki (seria na ekranie jest podświetlona),
+a *„↩ Wróć do"* prowadzi z powrotem tam, gdzie klient był.
 
 Tak po dwóch rundach uwag z testów: najpierw duży ciężar obok drobnych powtórzeń
 czytał się jak ciężar z dopiskiem; potem w panelu za mało było widać, która to
