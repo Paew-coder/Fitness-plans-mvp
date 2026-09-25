@@ -275,6 +275,9 @@ razem z informacją, przy których wzorcach ocena normy się zmienia.
 > Podwaja się raczej koszt **centralny**: dwa razy więcej serii, dwa razy dłuższa
 > jednostka. Rozdzielenie tego wymagałoby innego mnożnika per oś — do decyzji,
 > gdy będzie na czym to skalibrować.
+>
+> **25.09.2026 trener zdecydował: zostaje `"jak w arkuszu"`.** Szczegóły
+> w [`04-roadmapa.md`](04-roadmapa.md), punkt 3a.
 
 Ciężar nie zmienia się w żadnym trybie: to samo obciążenie na stronę.
 
