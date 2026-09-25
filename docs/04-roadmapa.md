@@ -412,7 +412,7 @@ W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej,
 1. ~~**Biblioteka szkieletów z Base44**~~ — zrobione 25.09.2026 (punkt 24); trzy nazwy bez odpowiednika zostają pustą pozycją z kategorią.
 2. ~~**Deload i tydzień max out**~~ — zrobione 25.09.2026 na prośbę trenera, przed pełnym cyklem z klientem (punkt 22).
 3. ~~**Progresja hipertroficzna 12/14**~~ — zrobione 25.09.2026 (punkt 23).
-4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera.
+4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera. **25.09.2026: zostaje jak jest.** Serwer bierze zmiany z gałęzi roboczej co kwadrans i trener woli to od zatwierdzania. Wersja testowa (`test.craftmyplan.pl` na gałęzi roboczej, klienci na `main` po „Merge") — do przypomnienia przed pierwszym pełnym cyklem z prawdziwym klientem.
 
 **14. Wiosłowanie zostaje akcesorium, a trening dostaje prowadzenie — 22.09.2026.**
 
