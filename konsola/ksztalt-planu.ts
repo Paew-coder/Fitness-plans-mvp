@@ -94,6 +94,10 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
         return `${gdzie}: opis serii, z której policzono 1RM, jest uszkodzony`;
       }
     }
+    // Numer cyklu, w którego tygodniu maksów padł ten wynik — czyta go konsola.
+    if (seria.zTygodniaMaksow != null && !jestLiczba(seria.zTygodniaMaksow)) {
+      return `${gdzie}: numer cyklu z tygodnia maksów musi być liczbą`;
+    }
   }
 
   // ── TOP SETY ──────────────────────────────────────────────────────
@@ -148,6 +152,22 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
   }
   if (!CZESCI_PLANU.includes(plan.czescPlanu as never)) {
     return `Część planu musi być jedną z: ${CZESCI_PLANU.join(", ")}`;
+  }
+
+  // ── tygodnie po cyklu ─────────────────────────────────────────────
+  for (const pole of ["deload", "tydzienMaksow"] as const) {
+    if (plan[pole] != null && typeof plan[pole] !== "boolean") {
+      return `${pole === "deload" ? "Deload" : "Tydzień maksów"} musi być prawdą albo fałszem`;
+    }
+  }
+  if (plan.cwiczeniaMaksow != null) {
+    if (!Array.isArray(plan.cwiczeniaMaksow)
+        || plan.cwiczeniaMaksow.some((id) => typeof id !== "string" || !id)) {
+      return "Boje do maksowania muszą być listą identyfikatorów ćwiczeń";
+    }
+    if (plan.cwiczeniaMaksow.length > MAX_SLOTOW) {
+      return `Boi do maksowania może być najwyżej ${MAX_SLOTOW}`;
+    }
   }
 
   return null;
