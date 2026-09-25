@@ -1071,7 +1071,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
 
   // ── 19c. deload i tydzień maksów po cyklu ─────────────────────────
   //
-  // Decyzje trenera z 25.09.2026: deload „jak T6, RPE o 2 niżej, bez TOP
+  // Decyzje trenera z 25.09.2026: deload „jak T6, RPE o 1 niżej, bez TOP
   // SETU", maksy 1 × 1 @ RPE 10 wszystkie jednego dnia, najpierw deload.
   // Plan na ekranie ma w T1 przysiad — bój z listy do maksowania.
   const planZBazy = async () => (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan;
@@ -1086,7 +1086,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     && (await planZBazy()).deload === true,
     await taby());
   sprawdz("w deloadzie stoi, skąd biorą się liczby",
-    (await s.locator("#dni .opis-po-cyklu").innerText().catch(() => "")).includes("RPE o 2 niżej"));
+    (await s.locator("#dni .opis-po-cyklu").innerText().catch(() => "")).includes("RPE o 1 niżej"));
   const przyciskiDeloadu = await s.locator("table.sloty .strzalki button").allInnerTexts();
   sprawdz("w deloadzie nie ma », T ani R — kopiowałyby deload na tygodnie pracy",
     przyciskiDeloadu.length > 0 && przyciskiDeloadu.every((t) => !["»", "T", "R"].includes(t)),

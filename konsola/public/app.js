@@ -724,7 +724,8 @@ function rysujPlan() {
  * Zakładki tygodni i przełączniki tygodni po cyklu.
  *
  * Deload i maksy to decyzja trenera przy konkretnym planie (25.09.2026):
- * deload „jak T6, RPE o 2 niżej, bez TOP SETU", maksy 1 × 1 @ RPE 10,
+ * deload „jak T6, RPE niżej, bez TOP SETU" (o 1 w skali planu — „spójne
+ * z resztą planu"), maksy 1 × 1 @ RPE 10,
  * wszystkie boje jednego dnia, najpierw deload — jak w jego periodyzacji.
  */
 function rysujTaby() {
@@ -1178,7 +1179,7 @@ function rysujDni() {
   kontener.append(legendaPlanu());
   if (tydzien === TYDZIEN_DELOADU) {
     kontener.append(el("p", "wskazowka opis-po-cyklu",
-      "Deload: serie i powtórzenia jak w T6, RPE o 2 niżej, bez TOP SETU. "
+      "Deload: serie i powtórzenia jak w T6, RPE o 1 niżej, bez TOP SETU. "
       + "Ciężar liczy się z tabeli; każdą liczbę możesz poprawić ręcznie."));
   }
 

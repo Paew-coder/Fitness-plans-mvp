@@ -367,7 +367,7 @@ describe("ciężar ustawiany ręcznie, którego trener nie wpisał", () => {
 
 describe("deload i tydzień maksów po cyklu", () => {
   /**
-   * Decyzje trenera z 25.09.2026: deload „jak T6, RPE o 2 niżej, bez TOP
+   * Decyzje trenera z 25.09.2026: deload „jak T6, RPE o 1 niżej, bez TOP
    * SETU", maksy 1 × 1 @ RPE 10 wszystkie jednego dnia, najpierw deload.
    * Wynik z tygodnia maksów wchodzi do nowego cyklu jako seria maksymalna.
    */
@@ -403,13 +403,13 @@ describe("deload i tydzień maksów po cyklu", () => {
         [7, 7, "deload"], [8, 8, "maksy"]]);
   });
 
-  test("deload: te same dni i ćwiczenia, RPE o 2 niżej niż w T6", async () => {
+  test("deload: te same dni i ćwiczenia, RPE o 1 niżej niż w T6", async () => {
     const w = await widok();
     const t6 = w.tygodnie[5].dni[0].cwiczenia[0];
     const t7 = w.tygodnie[6].dni[0].cwiczenia[0];
     assert.equal(w.tygodnie[6].dni.length, w.tygodnie[5].dni.length);
     assert.equal(t7.serie, t6.serie);
-    assert.equal(t7.rpe, Math.max(6, t6.rpe - 2));
+    assert.equal(t7.rpe, Math.max(6, t6.rpe - 1));
     assert.ok(t7.ciezar < t6.ciezar, `${t6.ciezar} → ${t7.ciezar}`);
   });
 
