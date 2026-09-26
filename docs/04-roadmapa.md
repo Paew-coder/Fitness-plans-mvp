@@ -554,6 +554,18 @@ Trener: „ktoś pierwszą zrobił normalnie, ale w drugiej stwierdził, że jes
 
 Przy okazji błąd: dotknięcie oceny przy ostatniej serii przerysowywało panel i czyściło wpisane, jeszcze niezapisane liczby.
 
+**29. Poprawki wyglądu przed samodzielnym testem — 26.09.2026.**
+
+Trener poprosił o ocenę wyglądu, a potem o poprawki z dwóch pierwszych grup („popraw 1 i 2"; logo jeszcze nie ma, marka zostaje na później).
+
+* **Błędy:** w panelu na telefonie ciężar wjeżdżał na powtórzenia („77,5 kg6"); link filmu przy rozgrzewce miał domyślny niebieski z podkreśleniem; w konsoli znacznik „TS" przy A1 był ucięty do „T" pod listą ćwiczeń (teraz stoi pod numerem, razem z „RPE"); podpis strony startowej konsoli mówił, że plan idzie do klienta jako arkusz.
+* **Lista tygodni:** rozwinięty tydzień następnego treningu, reszta zwinięta do linijki z licznikiem; skład dnia na kafelku; następny trening z ramką.
+* **iPad:** większa podstawa czcionki i szersza kolumna.
+* **Jedna czcionka** zamiast pisma maszynowego przy podpisach i liczbach; cyfry o równej szerokości.
+* **Tytuł u klienta:** samo imię, cykl w podtytule.
+
+Szczegóły: `klient/README.md`, „Ekran startowy i wygląd". Przegląd klienta sprawdza zwijanie tygodni, tytuł i kolumny panelu na ekranie 360 px (ta kontrola jest czerwona na starym układzie).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

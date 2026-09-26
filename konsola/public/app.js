@@ -1514,7 +1514,12 @@ function rysujSlot(slot, pusty) {
   const wiersz = el("tr", `${"BDbd".includes(litera) ? "grupa-b" : ""} ${pusty ? "pusty" : ""}`);
 
   const komorkaLp = el("td", "lp");
-  komorkaLp.append(el("span", "", slot.lp || "—"));
+  // Numer i znaczniki (TS, RPE) jeden pod drugim. Obok numeru wychodziły poza
+  // komórkę i chowały się pod listą ćwiczeń — z „TS" zostawało samo „T"
+  // (26.09.2026; wcześniej tak samo zniknął znacznik „BÓJ").
+  const numer = el("span", "numer-lp");
+  numer.append(el("span", "", slot.lp || "—"));
+  komorkaLp.append(numer);
   if (!pusty) {
     const strzalki = el("span", "strzalki");
     for (const [kierunek, znak, tytul] of [
@@ -1608,12 +1613,12 @@ function rysujSlot(slot, pusty) {
     // włączeniu, i to drobna. Znacznik przy Lp. mówi to wprost.
     const znacznik = el("span", "znacznik-topset", "TS");
     znacznik.title = "To ćwiczenie ma TOP SET";
-    komorkaLp.append(znacznik);
+    numer.append(znacznik);
   }
   if (slot.trybCiezaru === "licz z RPE") {
     const znacznik = el("span", "znacznik-tryb", "RPE");
     znacznik.title = "Ciężar liczony z RPE co tydzień, nie trzymany z bloku";
-    komorkaLp.append(znacznik);
+    numer.append(znacznik);
   }
   wiersz.append(komorkaLp);
 

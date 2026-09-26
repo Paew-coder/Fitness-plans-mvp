@@ -14,7 +14,6 @@
   --ok-tlo: #14291F;
   --latwe: #D19A3E;
   --trudne: #F2837B;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -34,7 +33,11 @@ body {
   background: var(--tlo);
   color: var(--tekst);
   font-family: var(--sans);
-  font-size: 16px;
+  /* Jedna czcionka w całej aplikacji (26.09.2026). Pismo maszynowe przy
+     podpisach, liczbach i przyciskach dawało wygląd techniczny, trochę
+     przypadkowy. Cyfry o równej szerokości trzymają liczby w słupkach. */
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
   line-height: 1.45;
   padding: 0 1rem calc(2rem + env(safe-area-inset-bottom));
   max-width: 34rem;
@@ -97,7 +100,7 @@ button { font: inherit; cursor: pointer; }
   font-size: .82rem; color: var(--tekst-blady);
   margin: .1rem 0 .5rem; line-height: 1.4;
 }
-.wczesniej .etykieta { font-family: var(--mono); font-size: .74rem; }
+.wczesniej .etykieta { font-size: .74rem; }
 .wczesniej .nazwa { color: var(--tekst); }
 
 /* Domknięcie cyklu — jedyny baner, który jest nagrodą, a nie zadaniem.
@@ -115,21 +118,40 @@ button { font: inherit; cursor: pointer; }
 .akcje-baneru button { flex: 1 1 auto; }
 
 /* ── tygodnie i dni ─────────────────────────────────────────────── */
-.tydzien { margin-bottom: 1.4rem; }
+.tydzien { border-bottom: 1px solid var(--linia); }
+.tydzien[open] { padding-bottom: .6rem; }
+/* Nagłówek tygodnia to wiersz do dotknięcia: „Tydzień 2 z 6 ···· 1 z 3 ▸". */
 .tydzien-tytul {
-  font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
-  letter-spacing: .1em; color: var(--tekst-blady); margin-bottom: .5rem;
+  display: flex; align-items: center; gap: .6rem; min-height: 3rem;
+  cursor: pointer; list-style: none; font-weight: 600; font-size: .95rem;
 }
+.tydzien-tytul::-webkit-details-marker { display: none; }
+.tydzien-tytul .tydzien-nazwa { flex: 1; }
+.tydzien-tytul .tydzien-stan { font-size: .82rem; font-weight: 500; color: var(--tekst-blady); }
+.tydzien-tytul .tydzien-stan.caly { color: var(--ok); }
+.tydzien-tytul::after {
+  content: "▸"; color: var(--tekst-blady); width: 1rem; text-align: center;
+  transition: transform .15s ease;
+}
+.tydzien[open] > .tydzien-tytul::after { transform: rotate(90deg); }
 .dzien-kafel {
-  display: flex; align-items: center; gap: .8rem; width: 100%;
+  display: flex; flex-direction: column; gap: .2rem; width: 100%;
   background: var(--karta); border: 1px solid var(--linia); border-radius: 12px;
-  padding: .95rem 1rem; margin-bottom: .5rem; text-align: left; color: inherit;
+  padding: .85rem 1rem; margin-bottom: .5rem; text-align: left; color: inherit;
 }
+.dzien-kafel .kafel-gora { display: flex; align-items: center; gap: .8rem; }
 .dzien-kafel:disabled { opacity: .5; }
 .dzien-kafel .nazwa { font-weight: 600; flex: 1; }
 .dzien-kafel .ile { font-size: .82rem; color: var(--tekst-blady); }
-.dzien-kafel .ptaszek { color: var(--ok); font-size: 1.2rem; }
+.dzien-kafel .ptaszek { color: var(--ok); font-size: 1.2rem; line-height: 1; }
+.dzien-kafel .sklad {
+  font-size: .8rem; color: var(--tekst-slaby);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .dzien-kafel.zrobiony { background: var(--karta-2); }
+.dzien-kafel.zrobiony .sklad { color: var(--tekst-blady); }
+/* Ten, do którego prowadzi „Następny trening" — żeby było go widać też na liście. */
+.dzien-kafel.nastepny { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }
 
 /* ── ćwiczenia ──────────────────────────────────────────────────── */
 .cwiczenie {
@@ -139,7 +161,7 @@ button { font: inherit; cursor: pointer; }
 .cwiczenie.grupa { border-left: 3px solid var(--akcent); }
 .cwiczenie-gora { display: flex; align-items: baseline; gap: .55rem; }
 .cwiczenie .lp {
-  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); flex: none;
+  font-size: .78rem; color: var(--tekst-blady); flex: none;
 }
 .cwiczenie .nazwa { font-weight: 600; flex: 1; }
 .cwiczenie .film {
@@ -147,7 +169,7 @@ button { font: inherit; cursor: pointer; }
 }
 .zadanie {
   display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
-  margin: .55rem 0 .1rem; font-family: var(--mono);
+  margin: .55rem 0 .1rem;
 }
 .zadanie .ciezar { font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; }
 .zadanie .schemat { color: var(--tekst-slaby); font-size: .92rem; }
@@ -166,13 +188,13 @@ button { font: inherit; cursor: pointer; }
 
 /* ── oddech i bieg ──────────────────────────────────────────────── */
 .modul-tytul {
-  font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+  font-size: .72rem; text-transform: uppercase;
   letter-spacing: .08em; color: var(--tekst-blady); margin-bottom: .5rem;
 }
 .modul-poziom { font-weight: 600; font-size: 1.05rem; margin-bottom: .6rem; }
 .modul-blok { display: flex; gap: .6rem; padding: .3rem 0; font-size: .88rem; }
 .modul-blok .nazwa {
-  flex: 0 0 6.5rem; font-family: var(--mono); font-size: .72rem;
+  flex: 0 0 6.5rem; font-size: .72rem;
   color: var(--tekst-blady);
 }
 .modul-blok .tresc { flex: 1; color: var(--tekst-slaby); }
@@ -181,7 +203,7 @@ button { font: inherit; cursor: pointer; }
 .modul-jednostka .nazwa { display: block; font-size: .92rem; }
 .modul-jednostka .dane {
   display: block; margin-top: .2rem;
-  font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady);
+  font-size: .76rem; color: var(--tekst-blady);
 }
 .brama {
   margin: .7rem 0 0; font-size: .8rem; color: var(--tekst-blady);
@@ -194,22 +216,22 @@ button { font: inherit; cursor: pointer; }
 .wykonanie { margin-top: .55rem; }
 .wykonanie-przelacz {
   background: none; border: none; padding: .2rem 0;
-  color: var(--tekst-blady); font-size: .78rem; font-family: var(--mono);
+  color: var(--tekst-blady); font-size: .78rem;
 }
 /* Wiersz na serię, jeden pod drugim. */
 .wykonanie-pola { display: grid; gap: .35rem; margin-top: .45rem; }
 .wiersz-serii { display: flex; align-items: center; gap: .4rem; }
 .wiersz-serii .nr {
-  font-family: var(--mono); font-size: .75rem; color: var(--tekst-blady);
+  font-size: .75rem; color: var(--tekst-blady);
   width: 1.3rem; flex: none;
 }
 .wykonanie-pola input {
-  font: inherit; font-family: var(--mono); text-align: center;
+  font: inherit; text-align: center;
   padding: .55rem .3rem; border-radius: 9px; width: 100%; min-width: 0;
   border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
 }
 .wykonanie-pola .razy {
-  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady);
+  font-size: .78rem; color: var(--tekst-blady);
   white-space: nowrap;
 }
 
@@ -219,11 +241,11 @@ button { font: inherit; cursor: pointer; }
   border-radius: 12px; padding: .85rem 1rem; margin-bottom: .9rem;
 }
 .topset .etykieta {
-  font-family: var(--mono); font-size: .7rem; letter-spacing: .1em;
+  font-size: .7rem; letter-spacing: .1em;
   text-transform: uppercase; color: var(--akcent); font-weight: 700;
 }
 .topset .wiersz { display: flex; align-items: baseline; gap: .6rem; margin-top: .3rem; }
-.topset .ciezar { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; margin-left: auto; }
+.topset .ciezar { font-size: 1.35rem; font-weight: 700; margin-left: auto; }
 
 /* ── serie maksymalne ───────────────────────────────────────────── */
 .pomiar {
@@ -233,12 +255,12 @@ button { font: inherit; cursor: pointer; }
 .pomiar .nazwa { font-weight: 600; margin-bottom: .6rem; }
 .pomiar .pola { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; align-items: center; }
 .pomiar input {
-  font: inherit; font-family: var(--mono); text-align: center;
+  font: inherit; text-align: center;
   padding: .7rem .4rem; border-radius: 9px; width: 100%;
   border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
 }
 .pomiar .rm {
-  font-family: var(--mono); font-weight: 700; color: var(--akcent);
+  font-weight: 700; color: var(--akcent);
   white-space: nowrap; font-size: .95rem;
 }
 /* Ćwiczenie bez serii maksymalnej — karta zostaje, pola znikają, powód
@@ -251,7 +273,7 @@ button { font: inherit; cursor: pointer; }
 }
 .pomiar .etykiety {
   display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem;
-  font-size: .7rem; color: var(--tekst-blady); font-family: var(--mono);
+  font-size: .7rem; color: var(--tekst-blady);
   text-transform: uppercase; letter-spacing: .06em; margin-bottom: .25rem;
 }
 
@@ -281,26 +303,26 @@ button { font: inherit; cursor: pointer; }
 }
 .panel-gora { display: flex; align-items: baseline; gap: .55rem; }
 .panel-gora .lp {
-  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); flex: none;
+  font-size: .78rem; color: var(--tekst-blady); flex: none;
 }
 .panel-gora .nazwa { font-weight: 600; font-size: 1.15rem; flex: 1; line-height: 1.25; }
 .panel-gora .film {
   color: var(--akcent); text-decoration: none; font-size: .82rem; flex: none;
 }
 .seria-numer {
-  font-family: var(--mono); font-size: .8rem; color: var(--tekst-blady);
+  font-size: .8rem; color: var(--tekst-blady);
   margin-top: .35rem; letter-spacing: .02em;
 }
 .panel-zadanie {
   display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
-  margin: .9rem 0 .2rem; font-family: var(--mono);
+  margin: .9rem 0 .2rem;
 }
 .panel-zadanie .duzy { font-size: 2.1rem; font-weight: 700; letter-spacing: -.03em; }
 .panel-zadanie .obok { color: var(--tekst-slaby); font-size: .95rem; }
 
 .serie-wpisane { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .6rem; }
 .serie-wpisane .chip {
-  font-family: var(--mono); font-size: .75rem; color: var(--tekst-slaby);
+  font-size: .75rem; color: var(--tekst-slaby);
   background: var(--karta-2); border: 1px solid var(--linia);
   border-radius: 20px; padding: .18rem .55rem;
 }
@@ -312,12 +334,12 @@ button { font: inherit; cursor: pointer; }
 
 .panel-pola { display: flex; align-items: center; gap: .4rem; margin-top: .9rem; }
 .panel-pola input {
-  font: inherit; font-family: var(--mono); font-size: 1.2rem; text-align: center;
+  font: inherit; font-size: 1.2rem; text-align: center;
   padding: .7rem .3rem; border-radius: 10px; width: 100%; min-width: 0;
   border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
 }
 .panel-pola .razy {
-  font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); white-space: nowrap;
+  font-size: .78rem; color: var(--tekst-blady); white-space: nowrap;
 }
 .pytanie { margin-top: 1rem; font-size: .88rem; color: var(--tekst-slaby); }
 
@@ -331,7 +353,7 @@ button { font: inherit; cursor: pointer; }
 
 .topset-panel { background: var(--akcent-tlo); border-color: var(--akcent); }
 .topset-panel .etykieta {
-  font-family: var(--mono); font-size: .7rem; letter-spacing: .1em;
+  font-size: .7rem; letter-spacing: .1em;
   text-transform: uppercase; color: var(--akcent); font-weight: 700;
   margin-bottom: .3rem;
 }
@@ -349,10 +371,10 @@ button { font: inherit; cursor: pointer; }
   display: grid; place-items: center; align-content: center;
 }
 .pierscien .licznik {
-  font-family: var(--mono); font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em;
+  font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em;
 }
 .pierscien .etykieta {
-  font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
+  font-size: .7rem; letter-spacing: .18em;
   color: var(--tekst-blady);
 }
 .przerwa .dalej { margin: 0 0 1rem; font-size: .92rem; color: var(--tekst-slaby); }
@@ -397,11 +419,11 @@ details.rpe p { margin: .5rem 0 0; line-height: 1.45; color: var(--tekst-slaby);
   display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem;
   margin-top: .5rem; color: var(--tekst-slaby);
 }
-.rpe-liczba { font-family: var(--mono); font-weight: 700; color: var(--tekst); }
+.rpe-liczba { font-weight: 700; color: var(--tekst); }
 p.dobor.dobor-zapisane { color: var(--ok); }
 /* „Zrobione: 9×11 · 10×10" i obok „✎ edytuj" — zapis, nie formularz. */
 .wykonanie-naglowek { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
-.wykonanie-opis { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); }
+.wykonanie-opis { font-size: .8rem; color: var(--tekst-slaby); }
 .wykonanie-opis:empty { display: none; }
 /* Seria bez pary — czego brakuje, żeby policzyć ciężar. */
 .dobor-brakuje { margin: 0 0 .35rem; font-size: .85rem; font-weight: 600; color: var(--latwe); }
@@ -417,7 +439,7 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 /* Jedna litera = jedna superseria: kafelki ciasno obok siebie. */
 .grupa-mapy { display: flex; gap: .25rem; }
 .kafel-mapy {
-  font-family: var(--mono); font-size: .78rem; font-weight: 600;
+  font-size: .78rem; font-weight: 600;
   padding: .35rem .6rem; border-radius: 8px; min-width: 2.6rem;
   background: var(--karta); color: var(--tekst-slaby); border: 1px solid var(--linia);
 }
@@ -438,7 +460,7 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .cwiczenie.biezace, .topset.biezace { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }
 .stan-prowadzenia {
   display: inline-block; margin-top: .4rem; padding: .25rem .6rem; border-radius: 8px;
-  font-size: .78rem; font-weight: 600; font-family: var(--mono);
+  font-size: .78rem; font-weight: 600;
   background: var(--ok-tlo); color: var(--ok); border: 1px solid var(--ok);
 }
 .stan-prowadzenia.tu { background: var(--akcent-tlo); color: var(--akcent); border-color: var(--akcent); }
@@ -456,11 +478,11 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 }
 .kolumna { display: flex; flex-direction: column; min-width: 0; }
 .kolumna .podpis {
-  font-family: var(--mono); font-size: .64rem; letter-spacing: .08em;
+  font-size: .64rem; letter-spacing: .08em;
   text-transform: uppercase; color: var(--tekst-blady);
 }
 .kolumna .wartosc {
-  font-family: var(--mono); font-weight: 700; font-size: 1.35rem;
+  font-weight: 700; font-size: 1.35rem;
   letter-spacing: -.02em; line-height: 1.2; white-space: nowrap;
 }
 .kolumna .wartosc small { font-size: .62em; font-weight: 600; color: var(--tekst-slaby); }
@@ -469,13 +491,18 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .kolumna.slowo .wartosc { font-size: .95rem; white-space: normal; padding-top: .2rem; }
 .kolumna.dobierz .wartosc { color: var(--latwe); }
 /* W panelu te same kolumny, tylko większe — to jedyna rzecz na ekranie. */
-.panel-karta .zadanie-kolumny { margin: 1rem 0 .3rem; }
-.panel-karta .kolumna .wartosc { font-size: 2rem; }
+/* Kolumny w panelu po treści, nie po równo: przy trzech równych „77,5 kg"
+   wjeżdżało na powtórzenia („77,5 kg6", 26.09.2026). Na wąskim telefonie
+   liczby odrobinę maleją, zamiast na siebie wchodzić. */
+.panel-karta .zadanie-kolumny {
+  margin: 1rem 0 .3rem; grid-auto-columns: auto; justify-content: space-between; column-gap: 1rem;
+}
+.panel-karta .kolumna .wartosc { font-size: clamp(1.6rem, 8vw, 2rem); }
 .panel-karta .kolumna.slowo .wartosc { font-size: 1.15rem; }
 .panel-karta .kolumna .podpis { font-size: .7rem; }
 
 /* RPE drobno pod kolumnami — przetłumaczone na „ile w zapasie". */
-.rpe-linia { font-family: var(--mono); font-size: .78rem; color: var(--tekst-slaby); margin-top: .25rem; }
+.rpe-linia { font-size: .78rem; color: var(--tekst-slaby); margin-top: .25rem; }
 .panel-karta .rpe-linia { font-size: .9rem; margin-top: .45rem; }
 /* Numer serii w panelu: „3 z 3" — duża trójka, drobne „z 3". */
 .kolumna-seria .wartosc { color: var(--akcent); }
@@ -485,11 +512,11 @@ p.dobor.dobor-zapisane { color: var(--ok); }
    styl od wierszy serii — i rozjechało się, gdy te stały się siatką. */
 .pole-wagi { display: flex; align-items: center; gap: .5rem; margin-top: .55rem; }
 .pole-wagi input {
-  flex: 1; min-width: 0; font: inherit; font-family: var(--mono); font-size: 1.1rem;
+  flex: 1; min-width: 0; font: inherit; font-size: 1.1rem;
   text-align: center; padding: .6rem .4rem; border-radius: 9px;
   border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
 }
-.pole-wagi .razy { font-family: var(--mono); font-size: .85rem; color: var(--tekst-blady); }
+.pole-wagi .razy { font-size: .85rem; color: var(--tekst-blady); }
 .pole-wagi .glowny { padding: .65rem 1.1rem; }
 .potwierdzenie-wagi { margin: .45rem 0 0; font-size: .88rem; color: var(--ok); }
 .potwierdzenie-wagi.blad { color: var(--trudne); }
@@ -497,11 +524,11 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 /* ── tygodnie po cyklu: deload i maksy ─────────────────────────── */
 /* Przerywana linia odróżnia je od sześciu tygodni pracy — to nie jest
    „jeszcze jeden tydzień tego samego", tylko coś innego. */
-.tydzien.po-cyklu { border-top: 1px dashed var(--linia); padding-top: .6rem; }
+.tydzien.po-cyklu { border-top: 1px dashed var(--linia); }
 .opis-tygodnia { margin: .1rem 0 .5rem; }
 
 /* „Ostatnio (T1): 60 kg × 8 · OK" — historia ćwiczenia jedną linijką. */
-.ostatnio { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); margin: .35rem 0 0; }
+.ostatnio { font-size: .8rem; color: var(--tekst-slaby); margin: .35rem 0 0; }
 
 /* ── rozgrzewka na początek dnia ───────────────────────────────── */
 .rozgrzewka {
@@ -510,7 +537,10 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 }
 .rozgrzewka summary { font-weight: 600; cursor: pointer; min-height: 1.8rem; }
 .rozgrzewka-lista { margin: .4rem 0 .2rem 1.1rem; padding: 0; line-height: 1.5; }
-.rozgrzewka .film { display: inline-block; margin-top: .3rem; }
+.rozgrzewka .film {
+  display: inline-block; margin-top: .3rem;
+  color: var(--akcent); text-decoration: none; font-size: .88rem;
+}
 
 /* Następny trening — pierwsza rzecz pod nagłówkiem listy tygodni. */
 .nastepny-trening { margin: 0 0 1rem; }
@@ -520,3 +550,17 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 .ocena-w-panelu .podpowiedz-oceny { margin: .1rem 0 .4rem; }
 .korekta-serii { color: var(--akcent); font-size: .88rem; margin: .45rem 0 0; }
 .korekta-serii:empty { display: none; }
+
+/* ── iPad i szersze ekrany ─────────────────────────────────────── */
+/* Ten sam układ, tylko większy (26.09.2026). Dotąd na iPadzie stała wąska
+   kolumna telefonu na środku pustego ekranu, z drobnym tekstem. Wszystko
+   liczy się w `rem`, więc większa podstawa powiększa całość naraz. */
+@media (min-width: 700px) {
+  html { font-size: 18px; }
+  body { max-width: 42rem; padding-inline: 1.5rem; }
+  .panel-karta { padding: 1.4rem 1.5rem; }
+  .panel-karta .kolumna .wartosc { font-size: 2.6rem; }
+  .pierscien { width: 13rem; height: 13rem; }
+  .pierscien-srodek { width: 11.2rem; height: 11.2rem; }
+  .pierscien .licznik { font-size: 2.9rem; }
+}

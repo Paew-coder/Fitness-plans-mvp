@@ -34,6 +34,21 @@ const TELEFON = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouc
  * i progresja z szablonu. Sianie idzie przez API konsoli, a nie przez klikanie —
  * układanie planu sprawdza `przeglad-ekranow.ts`, tu chodzi o telefon.
  */
+/**
+ * Lista tygodni ma rozwinięty tylko tydzień następnego treningu (26.09.2026).
+ * Kafelki z innych tygodni trzeba najpierw odsłonić — tak jak klient,
+ * dotknięciem nagłówka.
+ */
+async function rozwinTydzien(tydzien: any): Promise<void> {
+  if (!(await tydzien.evaluate((d: HTMLDetailsElement) => d.open))) {
+    await tydzien.locator("summary").click();
+  }
+}
+async function rozwinWszystkieTygodnie(s: any): Promise<void> {
+  const tygodnie = s.locator("#tygodnie .tydzien");
+  for (let i = 0; i < await tygodnie.count(); i++) await rozwinTydzien(tygodnie.nth(i));
+}
+
 async function zasiej({ api }: Srodowisko): Promise<string> {
   await api("/api/plany", "POST", { klient: KLIENT, wersja: 1 });
 
@@ -77,6 +92,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("link otwiera plan klienta",
     (await s.locator("#tytul").innerText()).includes(KLIENT),
     await s.locator("#tytul").innerText());
+  // Samo imię, cykl w podtytule — „Klient telefon 1.0" mówiło o wersji
+  // pliku, nie o kliencie.
+  sprawdz("tytuł to imię klienta, numer cyklu w podtytule, bez „1.0”",
+    (await s.locator("#tytul").innerText()) === KLIENT
+    && (await s.locator("#podtytul").innerText()).startsWith("Cykl 1 · "),
+    `${await s.locator("#tytul").innerText()} · ${await s.locator("#podtytul").innerText()}`);
 
   // Podpowiedź o dodaniu do ekranu głównego ma milczeć, dopóki aplikacja się
   // do czegoś nie przyda. Sprawdzamy to tutaj, zanim klient cokolwiek zrobi.
@@ -88,7 +109,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await s.locator("#tygodnie .tydzien").count() === 6,
     `${await s.locator("#tygodnie .tydzien").count()} tygodni`);
 
+  // Osiemnaście jednakowych kafelków trzeba było przewijać. Teraz rozwinięty
+  // jest tydzień następnego treningu, reszta to jedna linijka z licznikiem.
+  const otwarte = await s.locator("#tygodnie details.tydzien[open]").count();
+  const pierwszyKafel = s.locator("#tygodnie .dzien-kafel").first();
+  sprawdz("rozwinięty tylko bieżący tydzień, reszta zwinięta z licznikiem",
+    otwarte === 1
+    && await s.locator("#tygodnie details.tydzien").first().evaluate((d: HTMLDetailsElement) => d.open)
+    && (await s.locator("#tygodnie .tydzien").nth(1).locator(".tydzien-stan").innerText()) === "0 z 1"
+    && !(await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel").isVisible()),
+    `otwartych: ${otwarte}`);
+  sprawdz("kafelek pokazuje skład dnia i wyróżnia następny trening",
+    (await pierwszyKafel.locator(".sklad").innerText()).split(" · ").length === 3
+    && await pierwszyKafel.evaluate((k: Element) => k.classList.contains("nastepny")),
+    await pierwszyKafel.locator(".sklad").innerText());
+  // Dotknięcie nagłówka rozwija tydzień i to zostaje po przerysowaniu listy.
+  await s.locator("#tygodnie .tydzien").nth(2).locator("summary").click();
+  sprawdz("dotknięcie nagłówka rozwija tydzień",
+    await s.locator("#tygodnie .tydzien").nth(2).locator(".dzien-kafel").isVisible());
+  await s.locator("#tygodnie .tydzien").nth(2).locator("summary").click();
+
   // ── 2. otwarcie treningu ──────────────────────────────────────────
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const karty = s.locator("#cwiczenia .cwiczenie");
@@ -310,6 +352,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.click("#wroc-z-postepu");
   const bledyPrzedOffline = bledy.length;
   await kontekst.setOffline(true);
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   await karty.nth(0).getByRole("button", { name: "Za trudne" }).click();
@@ -367,8 +410,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForTimeout(600);
   sprawdz("telefon sam przeszedł na nowy cykl",
-    (await s.locator("#tytul").innerText()).includes("2.0"),
-    await s.locator("#tytul").innerText());
+    (await s.locator("#podtytul").innerText()).startsWith("Cykl 2 · "),
+    await s.locator("#podtytul").innerText());
 
   await s.click("#pokaz-postep");
   await s.waitForSelector("#ekran-postep:not(.ukryty)");
@@ -427,6 +470,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   await t2.goForward({ waitUntil: "networkidle" });
   await t2.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await rozwinTydzien(t2.locator("#tygodnie .tydzien").first());
   await t2.locator("#tygodnie .dzien-kafel").first().click();
   await t2.waitForSelector("#ekran-trening:not(.ukryty)");
 
@@ -558,6 +602,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   const bledyPrzedSzkicem = bledy.length;
   await kontekst.setOffline(true);
+  await rozwinWszystkieTygodnie(s);
   await s.locator("#tygodnie .dzien-kafel").nth(1).click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   await s.locator("#cwiczenia .cwiczenie").first()
@@ -633,6 +678,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   await s.waitForTimeout(400);
@@ -726,6 +772,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const golySciezka = (await api(`/api/plany/${idGolego}/link`, "POST")).sciezka;
 
   await s.goto(`${adres}${golySciezka}`, { waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const schematy = await s.locator("#cwiczenia .kolumna-serie .wartosc").allInnerTexts();
@@ -857,6 +904,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // gaśnie, wypada z kieszeni i bywa zamykany — bez tego klient wracał na
   // początek dnia i nie miał jak trafić tam, gdzie skończył.
   await s.reload({ waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   sprawdz("przerwany trening zaprasza z powrotem, a nie od nowa",
@@ -1007,6 +1055,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // tyknięcie. Telefon na siłowni leży zablokowany, a przeglądarka w tle
   // zwalnia licznik albo zatrzymuje go zupełnie — po powrocie ma być prawda.
   await s.reload({ waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.click("#prowadz");
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
@@ -1043,6 +1092,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Serie z prowadzenia widać też na liście dnia — w jednej linijce, żeby nie
   // zasypywać klienta liczbami. Rozwinięte: wiersz na serię, ale tylko wpisane
   // i jeden pusty na następną, nie cały formularz naraz.
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const kartaBoju = s.locator('#cwiczenia [data-position="D1-S01"]');
@@ -1244,6 +1294,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // przepadała. Na sali ze słabym zasięgiem: zwykła sytuacja.
   await s.click("#wroc-z-pomiarow");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
 
@@ -1282,6 +1333,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Ekran od nowa — z tego, co telefon ma w pamięci.
   await s.click("#wroc-z-treningu");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const przysiadWPamieci = await kartaPrzysiaduB2.locator(".wykonanie-opis").innerText();
@@ -1322,6 +1374,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const sciezkaRecznego = (await api(`/api/plany/${idRecznego}/link`, "POST")).sciezka;
 
   await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const deadBug = s.locator('#cwiczenia [data-position="D1-S03"]');
@@ -1390,6 +1443,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       status: "wysłany", zmieniony: zapisany.zmieniony });
   }
   await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").nth(1));
   await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const rozgrzewkaListy = s.locator("#cwiczenia .rozgrzewka");
@@ -1441,14 +1495,15 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const sciezkaPoCyklu = (await api(`/api/plany/${idPoCyklu}/link`, "POST")).sciezka;
 
   await s.goto(`${adres}${sciezkaPoCyklu}`, { waitUntil: "networkidle" });
-  // Tytuły są w CSS wielkimi literami — porównujemy treść, nie krój.
-  const tytulyTygodni = (await s.locator("#tygodnie .tydzien-tytul").allTextContents())
+  const tytulyTygodni = (await s.locator("#tygodnie .tydzien-nazwa").allTextContents())
     .map((t) => t.trim());
   sprawdz("klient widzi osiem tygodni, dwa ostatnie podpisane",
     tytulyTygodni.length === 8
     && tytulyTygodni[6] === "Tydzień 7 z 8 · deload" && tytulyTygodni[7] === "Tydzień 8 z 8 · maksy",
     tytulyTygodni.slice(5).join(" | "));
   const blokMaksow = s.locator("#tygodnie .tydzien.maksy");
+  await rozwinTydzien(blokMaksow);
+  await rozwinTydzien(s.locator("#tygodnie .tydzien.deload"));
   sprawdz("maksy to jeden dzień z trzema bojami i zdaniem, o co chodzi",
     await blokMaksow.locator(".dzien-kafel").count() === 1
     && (await blokMaksow.innerText()).includes("Dzień maksów")
@@ -1534,6 +1589,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await api(`/api/plany/${idOceny}`, "PUT", { plan: planOceny, dataStartu: null, status: "wysłany" });
   const sciezkaOceny = (await api(`/api/plany/${idOceny}/link`, "POST")).sciezka;
   await s.goto(`${adres}${sciezkaOceny}`, { waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   await s.click("#prowadz");
@@ -1566,6 +1622,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const dopisek = await panel.locator(".kolumna-ciezar .dopisek").innerText();
   sprawdz("duża liczba „Ciężar” mówi to samo co pole, plan zostaje w dopisku",
     duza === "67,5 kg" && dopisek.startsWith("w planie "), `${duza} · ${dopisek}`);
+  // Najwęższy popularny telefon (360 px), ciężar z przecinkiem: nie może
+  // wjechać na powtórzenia. Przy trzech równych kolumnach było „77,5 kg6" (26.09.2026).
+  await s.setViewportSize({ width: 360, height: 740 });
+  const kolumny = await panel.locator(".zadanie-kolumny .kolumna").evaluateAll((els: Element[]) =>
+    els.map((k) => {
+      // Zasięg tekstu, nie pudełka: tekst bez zawijania wystaje poza kolumnę,
+      // a jej pudełko tego nie pokazuje.
+      const zasieg = (e: Element) => {
+        const r = document.createRange();
+        r.selectNodeContents(e);
+        return r.getBoundingClientRect();
+      };
+      const w = zasieg(k.querySelector(".wartosc")!);
+      const p = zasieg(k.querySelector(".podpis")!);
+      return { lewa: Math.min(w.left, p.left), prawa: Math.max(w.right, p.right) };
+    }));
+  const karta = await panel.locator(".panel-karta").boundingBox();
+  const zachodza = kolumny.some((k: any, i: number) => i > 0 && k.lewa < kolumny[i - 1].prawa + 4);
+  sprawdz("na wąskim telefonie kolumny panelu nie wchodzą na siebie ani za kartę",
+    kolumny.length === 3 && !zachodza && kolumny[2].prawa <= karta!.x + karta!.width,
+    kolumny.map((k: any) => `${Math.round(k.lewa)}–${Math.round(k.prawa)}`).join(" | "));
+  await s.setViewportSize({ width: 390, height: 844 });
   await s.waitForTimeout(500);
   const wpisOceny = (await api(`/api/plany/${idOceny}`)).zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback;
   sprawdz("ta sama ocena ćwiczenia idzie do trenera i do kolejnych tygodni",

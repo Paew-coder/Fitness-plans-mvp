@@ -5,6 +5,33 @@ swój plan z policzonymi ciężarami. Kod leży w
 [`../konsola/public/klient/`](../konsola/public/klient/) — chodzi na tym samym
 serwerze co konsola trenera.
 
+## Ekran startowy i wygląd
+
+**Lista tygodni.** Rozwinięty jest tylko tydzień następnego treningu; pozostałe
+to po jednej linijce: *Tydzień 3 z 6 · 0 z 3 ▸*, a skończony *✓ 3 z 3*
+na zielono. Dotknięcie nagłówka rozwija tydzień i aplikacja to pamięta do
+zamknięcia. Kafelek dnia ma pod nazwą skład — *Barbell back squat · Barbell
+row · …* — bo samo „Dzień II" nic nie mówi, a kafelek, do którego prowadzi
+*Następny trening*, ma ramkę w akcencie. Dotąd było osiemnaście jednakowych
+kafelków „Dzień I · 7 ćwiczeń" do przewijania.
+
+**Tytuł** to samo imię klienta; cykl stoi w podtytule — *Cykl 2 · 4 z 18
+treningów za Tobą*. „Marek X 1.0" mówiło o wersji pliku, nie o kliencie.
+
+**Jedna czcionka.** Podpisy, liczby i przyciski szły pismem maszynowym obok
+zwykłego — wyglądało to technicznie i trochę przypadkowo. Teraz całość jest
+czcionką systemu (na iPhonie SF), a cyfry mają równą szerokość, więc liczby
+dalej stoją w słupkach.
+
+**iPad.** Ten sam układ, tylko większy: szersza kolumna, większa podstawa
+czcionki, większe liczby w panelu i pierścień przerwy. Dotąd na iPadzie stała
+wąska kolumna telefonu na środku pustego ekranu.
+
+**Panel na wąskim telefonie.** Kolumny *Seria · Ciężar · Powtórzenia* mają
+szerokość po treści, a liczby na bardzo wąskim ekranie odrobinę maleją.
+Przy trzech równych kolumnach „77,5 kg" wjeżdżało na powtórzenia („77,5 kg6").
+Przegląd klienta mierzy to na ekranie 360 px.
+
 ## Postęp przez wszystkie cykle
 
 Ekran *Twój postęp* zaczyna się teraz od tego, czego arkusz nie pokazywał nigdy:
