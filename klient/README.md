@@ -168,6 +168,13 @@ Panel mówi, co teraz: ćwiczenie, która to seria z ilu, ciężar dużą czcion
 powtórzenia i RPE. Pod spodem dwa pola — ile poszło naprawdę. Puste pola są
 w porządku; kto nie chce pisać, dotyka **`Zakończ serię`** i idzie dalej.
 
+**Duża liczba to ta sama liczba, co w polu.** Plan 3 × 10 na 50 kg, druga seria
+zrobiona na 45 — trzecia stoi na 45 i w polu, i dużą czcionką, z dopiskiem
+*„w planie 50"*. Do 26.09 duża liczba zostawała na planie, a pole szło za
+poprzednią serią: dwie różne liczby na jednym ekranie. Powtórzenia dużą
+czcionką zostają z planu — to cel serii. Przy maksach duża liczba to dalej
+obecne 1RM.
+
 Po serii wchodzi **przerwa z odliczaniem** — pierścień, czas w środku,
 `Pomiń przerwę` i `+30 s`. Gdy dojdzie do zera, telefon zawibruje (Android;
 iPhone tego nie robi) i sam pokaże następną serię.
