@@ -514,3 +514,9 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 
 /* Następny trening — pierwsza rzecz pod nagłówkiem listy tygodni. */
 .nastepny-trening { margin: 0 0 1rem; }
+
+/* Ocena przy serii i korekta ±5 % na następną (26.09.2026). */
+.ocena-w-panelu { margin-top: .9rem; }
+.ocena-w-panelu .podpowiedz-oceny { margin: .1rem 0 .4rem; }
+.korekta-serii { color: var(--akcent); font-size: .88rem; margin: .45rem 0 0; }
+.korekta-serii:empty { display: none; }
