@@ -518,7 +518,7 @@ Zaplanowana 21.09 („możemy zrobić osobną progresję 12/14"), dodana na pro�
 Trener: „dodaj szkielety z planów z Base44 do wykorzystania w konsoli trenera". Przy planie jest lista **Szablon z Base44** — 14 pozycji z `dane/szablony-base44.json`, generowanych do `silnik/src/dane/szablony.ts` (serwer w Dockerze nie ma katalogu `docs/`).
 
 * Szablon rozpisuje **układ**: dni, numerację (A1, A2, B1/B2…), kategorię każdej pozycji i TOP SET tam, gdzie stał w Base44. Pozycje za ostatnią zostają bez numeru, jak zapas w pustym planie.
-* Przy czterech szablonach, dla których trener miał w Base44 zapisany plan (`dane/szkielety-base44.json`), wchodzi też **dobór ćwiczeń** — nazwy zmapowane na BAZĘ (`High Bar Back Squat` → `Barbell back squat` itd.). Trzy bez odpowiednika (`Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`) zostają pustą pozycją z kategorią; konsola pisze, ile pozycji czeka i których nazw brak. Test pilnuje, że każde zmapowane ćwiczenie pasuje kategorią do swojej pozycji.
+* *(Wycofane 26.09.2026 — punkt 30.)* Przy czterech szablonach, dla których trener miał w Base44 zapisany plan (`dane/szkielety-base44.json`), wchodzi też **dobór ćwiczeń** — nazwy zmapowane na BAZĘ (`High Bar Back Squat` → `Barbell back squat` itd.). Trzy bez odpowiednika (`Close-Grip Bench Press`, `Machine Shoulder Press`, `Plank`) zostają pustą pozycją z kategorią; konsola pisze, ile pozycji czeka i których nazw brak. Test pilnuje, że każde zmapowane ćwiczenie pasuje kategorią do swojej pozycji.
 * **Liczb z Base44 szablon nie przenosi.** Serie, powtórzenia i RPE liczy „Część planu"; szablon ustawia ją na start: klasyczne i rozbudowane → objętość, „(część 2)" → intensywność, hipertroficzne → hipertrofia.
 * Plan, w którym klient już coś wpisał, jest historią — serwer odmawia i radzi nową wersję. Przy planie z wybranymi ćwiczeniami konsola pyta przed nadpisaniem.
 
@@ -565,6 +565,16 @@ Trener poprosił o ocenę wyglądu, a potem o poprawki z dwóch pierwszych grup 
 * **Tytuł u klienta:** samo imię, cykl w podtytule.
 
 Szczegóły: `klient/README.md`, „Ekran startowy i wygląd". Przegląd klienta sprawdza zwijanie tygodni, tytuł i kolumny panelu na ekranie 360 px (ta kontrola jest czerwona na starym układzie).
+
+**30. Szablony pod nazwami z Base44, bez ćwiczeń — 26.09.2026.**
+
+Trener po pierwszym użyciu: „nazwy się nie zgadzają, są jakieś wersje »z ćwiczeniami«, gdzie nie powinno być czegoś takiego, a jak wybrałem jeden z takich, to rozpisały się głupoty — jakieś pomijanie kolejności ćwiczeń (bez D1) i nie wiem, skąd akurat takie ćwiczenia są wybrane".
+
+* **Nazwy.** Konsola pokazywała wewnętrzne nazwy z kodu Base44 („FBW 3 dni – 3 główne ćwiczenia", „FBW 6 ćwiczeń złożonych" — bez liczby dni, choć ma trzy). Trener zna je z ekranu „Wybierz szablon" jako **Klasyczny / Rozbudowany / Hipertroficzny – 1…4 dni** i kontynuacje „(cz. 2)". Mapę id → nazwa i opisy rodzin wyciągnięto z tego samego publicznego pakietu: [`dane/rodziny-szablonow-base44.json`](dane/rodziny-szablonow-base44.json). Lista w konsoli jest pogrupowana w te rodziny, w kolejności z Base44. Base44 wymienia 24 warianty, ale treść ma tylko dla 14 — pozostałe kontynuacje stoją tam na liście puste, więc ich nie ma.
+* **Bez ćwiczeń.** Dobór w czterech szablonach pochodził z pięciu zapisanych planów w „Głównej wersji 10.05.26r." — trener go nie rozpoznał, a trzy nazwy spoza BAZY zostawiały w środku dnia puste pozycje. Szablon rozpisuje teraz tylko układ: dni, numerację, kategorie i TOP SET. `szkielety-base44.json` zostaje w `docs/dane/` jako zapis, generator go nie czyta.
+* **Cały szkielet na ekranie.** Konsola chowała puste pozycje po ostatnim ćwiczeniu, więc po szablonie widać było samo A1 w każdym dniu. Pozycja z kategorią to część szkieletu i jest widoczna; chowany jest tylko zapas bez kategorii. Przegląd ekranów sprawdza osiem wierszy dnia I z kategoriami (na starej regule — jeden).
+
+Układ czternastu szablonów (pozycje, kategorie, TOP SET) jest identyczny jak przed zmianą — sprawdzone porównaniem starego i nowego pliku.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 

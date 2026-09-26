@@ -995,13 +995,14 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
 });
 
 describe("szablony z Base44 w konsoli", () => {
-  test("lista mówi, co szablon niesie", async () => {
+  test("lista: nazwa z ekranu Base44, rodzina, liczba dni i część planu", async () => {
     const { kod, dane } = await api("/api/szablony");
     assert.equal(kod, 200);
     assert.equal(dane.length, 14);
     const fbw3 = dane.find((s: any) => s.id === "fbw_3dni_6w");
-    assert.deepEqual([fbw3.dni, fbw3.czesc, fbw3.zCwiczeniami], [3, "objętość", true]);
-    assert.deepEqual(fbw3.bezOdpowiednika.sort(), ["Close-Grip Bench Press", "Plank"]);
+    assert.deepEqual([fbw3.nazwa, fbw3.rodzina, fbw3.dni, fbw3.czesc],
+      ["Klasyczny – 3 dni", "Klasyczny", 3, "objętość"]);
+    assert.ok(!("zCwiczeniami" in fbw3) && !("bezOdpowiednika" in fbw3));
   });
 
   test("wstawienie rozpisuje plan, a planu z wpisami klienta nie rusza", async () => {
