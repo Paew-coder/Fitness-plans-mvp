@@ -15,7 +15,7 @@
  * ukrytej domyślności — to była właśnie ta pułapka, przez którą arkusz pokazywał
  * kiedyś inne ciężary niż konsola.
  */
-import type { Plan, SlotPlanu } from "./plan.ts";
+import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
 import type { Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
@@ -34,6 +34,20 @@ export {
  * nadpisane ciężary zostają nietknięte — należą do wykonanego treningu,
  * a nie do szkieletu planu.
  */
+/**
+ * To, co należy do konkretnego tygodnia, a nie do szkieletu: ocena klienta,
+ * ciężar wpisany przez trenera i ciężar wybrany przez klienta. Progresja
+ * i kopiowanie tygodni tego nie ruszają — do 26.09 gubiły wybór klienta.
+ */
+function wlasneTygodnia(p: ParametryTygodnia | undefined): ParametryTygodnia {
+  const { feedback, ciezarOverride, ciezarKlienta } = p ?? {};
+  return {
+    ...(feedback !== undefined ? { feedback } : {}),
+    ...(ciezarOverride !== undefined ? { ciezarOverride } : {}),
+    ...(ciezarKlienta !== undefined ? { ciezarKlienta } : {}),
+  };
+}
+
 export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny): Plan {
   return {
     ...plan,
@@ -45,11 +59,9 @@ export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny
       const coeff = katalog.poId(slot.cwiczenieId)?.coeff;
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
-        const { feedback, ciezarOverride } = tygodnie[t] ?? {};
         tygodnie[t] = {
-          ...progresjaSlotu(slot.lp, t, coeff, plan.czescPlanu),
-          ...(feedback !== undefined ? { feedback } : {}),
-          ...(ciezarOverride !== undefined ? { ciezarOverride } : {}),
+          ...progresjaSlotu(slot.lp, t, coeff, plan.czescPlanu, slot.bojGlowny),
+          ...wlasneTygodnia(tygodnie[t]),
         };
       }
       return { ...slot, tygodnie };
@@ -78,17 +90,12 @@ export function skopiujTydzien(plan: Plan, zrodlo: Tydzien, positionId?: string)
       if (positionId !== undefined && slot.positionId !== positionId) return { ...slot };
 
       const wzorzec = slot.tygodnie?.[zrodlo] ?? {};
-      const { feedback: _f, ciezarOverride: _c, ...doSkopiowania } = wzorzec;
+      const { feedback: _f, ciezarOverride: _c, ciezarKlienta: _k, ...doSkopiowania } = wzorzec;
 
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
         if (t === zrodlo) continue;
-        const { feedback, ciezarOverride } = tygodnie[t] ?? {};
-        tygodnie[t] = {
-          ...doSkopiowania,
-          ...(feedback !== undefined ? { feedback } : {}),
-          ...(ciezarOverride !== undefined ? { ciezarOverride } : {}),
-        };
+        tygodnie[t] = { ...doSkopiowania, ...wlasneTygodnia(tygodnie[t]) };
       }
       return { ...slot, tygodnie };
     }),

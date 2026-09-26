@@ -1174,6 +1174,7 @@ function legendaPlanu() {
     ["▲ ▼", "przenieś ćwiczenie"],
     ["»", "skopiuj parametry tego tygodnia na pozostałe"],
     ["T", "dodaj lub zdejmij TOP SET"],
+    ["G", "bój główny — podświetlone, gdy ćwiczenie liczy się jak bój; klik zmienia rolę"],
     ["R", "licz ciężar akcesorium z RPE"],
     ["TS", "przy numerze: ćwiczenie ma TOP SET"],
     ["RPE", "przy numerze: ciężar liczony z RPE"],
@@ -1442,8 +1443,29 @@ function edytorRozgrzewki(dzien) {
  * i tak nic nie robią.
  */
 function bojGlowny(slot) {
+  return slot.bojGlowny ?? bojGlownyZReguly(slot);
+}
+function bojGlownyZReguly(slot) {
   const c = cwiczenia.find((x) => x.id === slot.cwiczenieId);
   return (slot.lp || "").trim().toUpperCase().startsWith("A") && c?.coeff === 1;
+}
+
+/**
+ * „G" — bój główny z decyzji trenera, w obie strony (26.09.2026: front squat
+ * na B1 u Marka X miał liczyć się jak bój). Zmiana roli czyści serie,
+ * powtórzenia i RPE tego ćwiczenia, żeby weszła progresja właściwa nowej
+ * roli — stare liczby akcesorium zasłoniłyby progresję boju. Oceny klienta
+ * i ciężary wpisane ręcznie zostają.
+ */
+function przelaczBojGlowny(slot) {
+  const nowy = !bojGlowny(slot);
+  if (nowy === bojGlownyZReguly(slot)) delete slot.bojGlowny;
+  else slot.bojGlowny = nowy;
+  for (const p of Object.values(slot.tygodnie ?? {})) {
+    delete p.serie; delete p.powtorzenia; delete p.rpe;
+  }
+  zapiszPozniej();
+  rysujDni();
 }
 
 /** TOP SET dnia, do którego należy ten slot — albo `undefined`. */
@@ -1558,6 +1580,14 @@ function rysujSlot(slot, pusty) {
      *
      * Bój główny i tak zawsze liczy z RPE, więc przy nim tego nie pokazujemy.
      */
+    if (!poCyklu) {
+      const g = el("button", `mikro ${bojGlowny(slot) ? "wlaczony" : ""}`, "G");
+      g.title = bojGlowny(slot)
+        ? "Liczone jak bój główny — kliknij, żeby liczyć jak akcesorium"
+        : "Licz jak bój główny: progresja bloku, ciężar z RPE co tydzień";
+      g.onclick = () => przelaczBojGlowny(slot);
+      strzalki.append(g);
+    }
     if (!bojGlowny(slot) && !poCyklu) {
       const przelaczTryb = el("button", `mikro ${slot.trybCiezaru === "licz z RPE" ? "wlaczony" : ""}`, "R");
       przelaczTryb.title = slot.trybCiezaru === "licz z RPE"

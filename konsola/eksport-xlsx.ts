@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 import { katalog } from "../silnik/src/katalog.ts";
 import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE } from "../silnik/src/plan.ts";
-import { jestBojemGlownym } from "../silnik/src/import-arkusza.ts";
+import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
   from "./blad-pythona.ts";
@@ -78,7 +78,11 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     // Z `coeff`, nie z samej pozycji. Bez niego `jestBojemGlownym` zwraca zawsze
     // fałsz, więc bój główny wychodził do arkusza bez powtórzeń i arkusz liczył
     // mu je automatem akcesorium — czyli inaczej, niż pokazuje konsola.
-    const bojGlowny = jestBojemGlownym(slot.lp, cwiczenie?.coeff);
+    //
+    // Do 26.09 szła tu funkcja z importu arkusza, która patrzy tylko na literę
+    // A i `coeff` po cichu pomijała — więc powyższy komentarz nie był prawdą.
+    // Teraz ta sama reguła co w silniku, razem z decyzją trenera („G").
+    const bojGlowny = bojGlownySlotu(slot, cwiczenie?.coeff);
 
     const tygodnie: Record<string, unknown> = {};
     for (const t of TYGODNIE) {
