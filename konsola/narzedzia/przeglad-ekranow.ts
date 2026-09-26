@@ -745,6 +745,28 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     && (await wierszSerii.innerText()).includes("nie z 1RM"),
     (await wierszSerii.innerText()).replace(/\n/g, " "));
 
+  // „G" — bój główny z decyzji trenera (26.09.2026, front squat na B1 u Marka
+  // X). Tu SLDL balance z A1, ale ta sama mechanika: klik zmienia rolę
+  // i progresję, drugi klik wraca do reguły, a „G" świeci przy boju.
+  const przyciskG = () => s.locator("#dni tr").filter({ hasText: "SLDL balance" }).first()
+    .locator(".strzalki button", { hasText: /^G$/ });
+  await przyciskG().click();
+  await s.waitForTimeout(1000);
+  const poG = await (await fetch(`${ADRES}/api/plany/${PLAN_AKC}`)).json();
+  const slotPoG = poG.wynik.tygodnie[0].sloty.find((x: any) => x.cwiczenie?.nazwa === "SLDL balance");
+  sprawdz("„G” przestawia ćwiczenie na bój główny: progresja bloku i podświetlony przycisk",
+    poG.zapisany.plan.sloty[0].bojGlowny === true && slotPoG.serie === 6
+    && ((await przyciskG().getAttribute("class")) ?? "").includes("wlaczony")
+    && !poG.uwagi.some((u: any) => u.kod === "POZYCJA_A_BEZ_BOJU"),
+    `bojGlowny: ${poG.zapisany.plan.sloty[0].bojGlowny} · ${slotPoG.serie}×${slotPoG.powtorzenia} @${slotPoG.rpe}`);
+  await przyciskG().click();
+  await s.waitForTimeout(1000);
+  const poDrugimG = await (await fetch(`${ADRES}/api/plany/${PLAN_AKC}`)).json();
+  sprawdz("drugi klik wraca do reguły",
+    poDrugimG.zapisany.plan.sloty[0].bojGlowny === undefined
+    && poDrugimG.wynik.tygodnie[0].sloty[0].serie === 3,
+    `bojGlowny: ${poDrugimG.zapisany.plan.sloty[0].bojGlowny}`);
+
   // ── 13d. 1RM policzone z serii roboczej klienta ───────────────────
   //
   // Klient zaczął cykl bez serii maksymalnych i dobrał ciężar według RPE;

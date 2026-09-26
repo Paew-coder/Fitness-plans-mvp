@@ -123,6 +123,20 @@ export function jestBojemGlownym(lp: string, coeff?: Coeff): boolean {
 }
 
 /**
+ * Bój główny w konkretnym slocie: decyzja trenera, a bez niej reguła wyżej.
+ *
+ * Trener, 26.09.2026: front squat stał u Marka X na B1 i liczył się jak
+ * akcesorium — „chciałbym, żeby liczył się jak ćwiczenie główne". Reguła
+ * zostaje (bez niej każdy przysiad z B1 w szablonach dostałby 6 × 6), ale
+ * trener może ją przestawić przy ćwiczeniu w obie strony — przyciskiem „G".
+ */
+export function bojGlownySlotu(
+  slot: { lp: string; bojGlowny?: boolean }, coeff?: Coeff,
+): boolean {
+  return slot.bojGlowny ?? jestBojemGlownym(slot.lp, coeff);
+}
+
+/**
  * Parametry jednej pozycji w jednym tygodniu, wg szablonu.
  *
  * Powtórzeń akcesoriów **nie ustawiamy** — w arkuszu liczy je formuła i tak
@@ -138,8 +152,10 @@ export function progresjaSlotu(
   tydzien: Tydzien,
   coeff?: Coeff,
   czesc: CzescPlanu = "objętość",
+  /** Decyzja trenera przy slocie (`SlotPlanu.bojGlowny`); pusto = reguła. */
+  bojGlownyTrenera?: boolean,
 ): ParametryTygodnia {
-  if (jestBojemGlownym(lp, coeff)) {
+  if (bojGlownyTrenera ?? jestBojemGlownym(lp, coeff)) {
     const p = PROGRESJA_BOJU[czesc][tydzien - 1]!;
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }

@@ -13,7 +13,7 @@ import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
-import { jestBojemGlownym, progresjaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, progresjaSlotu } from "./szablon-boju.ts";
 import { rpeTopSetu, zwyczajowyTopSet } from "./top-set.ts";
 import {
   bilansTygodnia,
@@ -89,6 +89,11 @@ export type SlotPlanu = {
    * z rosnącymi powtórzeniami, a reszcie nie. Tu decyduje wiersz.
    */
   trybCiezaru?: TrybAkcesoriow;
+  /**
+   * Bój główny z decyzji trenera — w obie strony. Pusto = reguła: pozycja A
+   * i ćwiczenie złożone (`jestBojemGlownym`). Patrz `bojGlownySlotu`.
+   */
+  bojGlowny?: boolean;
 };
 
 export type TopSet = {
@@ -260,7 +265,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       } as SlotWyliczony;
     }
 
-    const bojGlowny = jestBojemGlownym(slot.lp, cwiczenie.coeff);
+    const bojGlowny = bojGlownySlotu(slot, cwiczenie.coeff);
     const odczucia = Object.fromEntries(
       TYGODNIE.map((t) => [t, parametry(slot, t).feedback]),
     ) as Partial<Record<Tydzien, Feedback | undefined>>;
@@ -281,7 +286,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // Deload nie ma własnego szablonu: serie i powtórzenia jak w T6, RPE niżej.
     const szablon = wzor
       ? { serie: wzor.serie, powtorzenia: wzor.powtorzenia, rpe: rpeDeloadu(wzor.rpe) }
-      : progresjaSlotu(slot.lp, tydzien as Tydzien, cwiczenie.coeff, plan.czescPlanu);
+      : progresjaSlotu(slot.lp, tydzien as Tydzien, cwiczenie.coeff, plan.czescPlanu, slot.bojGlowny);
 
     const serie = p.serie ?? szablon.serie!;
     const efektywne = serieEfektywne(
