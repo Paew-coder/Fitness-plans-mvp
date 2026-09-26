@@ -1102,6 +1102,8 @@ function podpowiedzSerii(c, i, serie) {
       : wlasna?.ciezar ?? poprzednia?.ciezar ?? (typeof c.ciezar === "number" ? c.ciezar : null),
     powtorzenia: wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
     korekta: skorygowana ? korekta.kierunek : 0,
+    /** Skąd ciężar w polu — do dopisku pod dużą liczbą. */
+    zrodlo: skorygowana ? "korekta" : wlasna?.ciezar ? "wlasna" : poprzednia?.ciezar ? "poprzednia" : "plan",
   };
 }
 
@@ -1741,20 +1743,25 @@ function panelSerii(k, kroki, d) {
   // ćwiczeniu, w którym klient dopiero go dobiera.
   const bezCiezaru = BEZ_POLA_CIEZARU.includes(c.ciezar);
   const podpowiedz = podpowiedzSerii(c, k.seria - 1, serieCwiczenia(c.positionId));
-  // Po ocenie z poprzedniej serii duża liczba mówi to samo co pole: dwie różne
-  // liczby na jednym ekranie („57,5" wyżej, „55" w polu) każą zgadywać, która
-  // obowiązuje. Plan zostaje w dopisku.
+  // Duża liczba mówi to samo co pole: dwie różne liczby na jednym ekranie
+  // („50" wyżej, „45" w polu) każą zgadywać, która obowiązuje (trener,
+  // 26.09.2026). Klient zrobił drugą serię na 45 — trzecia stoi na 45, a plan
+  // zostaje w dopisku. Przy maksach nie: tam duża liczba to obecne 1RM,
+  // a pole to próba.
+  const zPola = !bezCiezaru && !c.maks && typeof podpowiedz.ciezar === "number"
+    && podpowiedz.ciezar !== c.ciezar ? podpowiedz.ciezar : null;
   const skorygowany = podpowiedz.korekta && !bezCiezaru;
 
   karta.append(kolumnyZadania({
-    seria: k.seria, zSerii: k.zSerii, ciezar: skorygowany ? podpowiedz.ciezar : c.ciezar,
+    seria: k.seria, zSerii: k.zSerii, ciezar: zPola ?? c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
-    dopisekCiezaru: skorygowany
-      ? (typeof c.ciezar === "number" ? `w planie ${liczba(c.ciezar)}` : "po Twojej ocenie")
-      : c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
+    dopisekCiezaru: zPola === null ? (c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null)
+      : typeof c.ciezar === "number" ? `w planie ${liczba(c.ciezar)}`
+      : podpowiedz.zrodlo === "korekta" ? "po Twojej ocenie"
+      : podpowiedz.zrodlo === "poprzednia" ? `jak w serii ${k.seria - 1}` : null,
   }));
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);

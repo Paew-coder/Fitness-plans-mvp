@@ -549,6 +549,7 @@ Trener: „ktoś pierwszą zrobił normalnie, ale w drugiej stwierdził, że jes
 * W panelu prowadzenia każda seria poza ostatnią ma **`Za trudne` / `Za łatwe`** bez `OK`, z dopiskiem „Jeśli jest OK — nic nie klikaj". Ostatnia seria ma pełną ocenę jak dotąd.
 * Ocena przy serii zmienia **następną serię tego treningu**: ciężar faktycznie wpisany ±5 %, zaokrąglony do skoku ćwiczenia (`skokKg` z BAZY, w widoku klienta od tej zmiany). Gdy zaokrąglenie wróciłoby do tej samej liczby, schodzi o jeden skok. Duża liczba „Ciężar" pokazuje wtedy ciężar po korekcie z dopiskiem „w planie …", a nad polami stoi zdanie, skąd ta liczba. To podpowiedź w polu — klient zmienia ją jak każdą inną; silnik niczego tu nie liczy od nowa.
 * Ta sama ocena idzie do trenera i do następnych tygodni bez zmian (jedna na ćwiczenie w tygodniu, ostatnia wygrywa) i przy ostatniej serii stoi zaznaczona.
+* **Duża liczba „Ciężar" w panelu idzie za polem** także bez oceny — trener: „zmieńmy tak, że duża liczba też się zmienia". Druga seria na 45 kg przy planie 50 → trzecia pokazuje 45 z dopiskiem „w planie 50". Powtórzenia zostają z planu; przy maksach duża liczba to dalej obecne 1RM.
 * Korekta trzyma się miejsca w treningu (`prowadzenie.korekty`), więc przeżywa przerwę i zamknięcie aplikacji; ręcznie wpisany ciężar w następnej serii ją wyłącza.
 
 Przy okazji błąd: dotknięcie oceny przy ostatniej serii przerysowywało panel i czyściło wpisane, jeszcze niezapisane liczby.

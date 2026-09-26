@@ -1570,7 +1570,16 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const wpisOceny = (await api(`/api/plany/${idOceny}`)).zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback;
   sprawdz("ta sama ocena ćwiczenia idzie do trenera i do kolejnych tygodni",
     wpisOceny === "za trudne", String(wpisOceny));
-  for (let i = 3; i <= 5; i++) await dalejPoSerii();       // seria 3, 4, 5
+  await dalejPoSerii();                                     // seria 3 na 67,5
+  // Bez oceny: czwarta idzie za tym, co klient zrobił w trzeciej — i duża
+  // liczba też, nie tylko pole (trener: „duża liczba też się zmienia").
+  const duza4 = (await panel.locator(".kolumna-ciezar .wartosc").innerText()).replace(/\s+/g, " ");
+  const dopisek4 = await panel.locator(".kolumna-ciezar .dopisek").innerText();
+  sprawdz("bez oceny następna seria idzie za zrobionym ciężarem — pole i duża liczba",
+    await poleKg.inputValue() === "67.5" && duza4 === "67,5 kg" && dopisek4 === "w planie 70"
+      && await panel.locator(".korekta-serii:not(:empty)").count() === 0,
+    `pole: ${await poleKg.inputValue()} · ${duza4} · ${dopisek4}`);
+  for (let i = 4; i <= 5; i++) await dalejPoSerii();       // seria 4, 5
   sprawdz("przy ostatniej serii pełne pytanie z „OK”, a „za trudne” stoi zaznaczone",
     (await panel.locator(".ocena-w-panelu .ocena-przycisk").allInnerTexts()).join(" | ")
       === "Za trudne | OK | Za łatwe"
