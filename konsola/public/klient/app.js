@@ -1734,13 +1734,27 @@ function panelSerii(k, kroki, d) {
   karta.append(gloweczka(c.lp, c.nazwa, c.film));
   if (k.wGrupie) karta.append(el("div", "seria-numer", `superseria ${k.litera}`));
 
+  // Wcześniej stały tu szare podpowiedzi z planu, a zapisywało się tylko to,
+  // co klient wpisał sam. Zgłoszone z testów: przy „9 kg · 10 powt." wpisane
+  // samo „11" zapisało się jako 11 powtórzeń bez ciężaru, choć na ekranie
+  // stało 9. Pusty zostaje tylko ciężar, którego nie ma skąd wziąć — przy
+  // ćwiczeniu, w którym klient dopiero go dobiera.
+  const bezCiezaru = BEZ_POLA_CIEZARU.includes(c.ciezar);
+  const podpowiedz = podpowiedzSerii(c, k.seria - 1, serieCwiczenia(c.positionId));
+  // Po ocenie z poprzedniej serii duża liczba mówi to samo co pole: dwie różne
+  // liczby na jednym ekranie („57,5" wyżej, „55" w polu) każą zgadywać, która
+  // obowiązuje. Plan zostaje w dopisku.
+  const skorygowany = podpowiedz.korekta && !bezCiezaru;
+
   karta.append(kolumnyZadania({
-    seria: k.seria, zSerii: k.zSerii, ciezar: c.ciezar,
+    seria: k.seria, zSerii: k.zSerii, ciezar: skorygowany ? podpowiedz.ciezar : c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
-    dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
+    dopisekCiezaru: skorygowany
+      ? (typeof c.ciezar === "number" ? `w planie ${liczba(c.ciezar)}` : "po Twojej ocenie")
+      : c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
   }));
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);
@@ -1797,14 +1811,6 @@ function panelSerii(k, kroki, d) {
   // pierwszej plan. Klient zmienia tylko to, co było inaczej, i dotyka
   // „Zakończ serię" — zapisuje się dokładnie to, co widać w polach.
   //
-  // Wcześniej stały tu szare podpowiedzi z planu, a zapisywało się tylko to,
-  // co klient wpisał sam. Zgłoszone z testów: przy „9 kg · 10 powt." wpisane
-  // samo „11" zapisało się jako 11 powtórzeń bez ciężaru, choć na ekranie
-  // stało 9. Pusty zostaje tylko ciężar, którego nie ma skąd wziąć — przy
-  // ćwiczeniu, w którym klient dopiero go dobiera.
-  const bezCiezaru = BEZ_POLA_CIEZARU.includes(c.ciezar);
-  const podpowiedz = podpowiedzSerii(c, k.seria - 1, serieCwiczenia(c.positionId));
-
   const pola = el("div", "panel-pola");
   const wCiezar = el("input");
   wCiezar.placeholder = "kg";
@@ -1820,8 +1826,8 @@ function panelSerii(k, kroki, d) {
   if (!bezCiezaru) pola.append(wCiezar, el("span", "razy", "kg ×"));
   pola.append(wPowt, el("span", "razy", "powt."));
   // Ciężar w polu to nie plan, tylko korekta po ocenie z poprzedniej serii —
-  // mówimy to wprost, bo kolumna wyżej dalej pokazuje plan.
-  if (podpowiedz.korekta && !bezCiezaru) {
+  // mówimy wprost, skąd się wziął.
+  if (skorygowany) {
     karta.append(el("p", "korekta-serii", `${podpowiedz.korekta < 0 ? "Lżej" : "Ciężej"} o 5% `
       + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
       + `${liczba(podpowiedz.ciezar)} kg.`));

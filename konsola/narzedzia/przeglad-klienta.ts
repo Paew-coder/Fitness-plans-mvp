@@ -1562,6 +1562,10 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && (await panel.locator(".korekta-serii").first().innerText())
       === "Lżej o 5% po Twojej ocenie „za trudne”: 67,5 kg.",
     `pole: ${await poleKg.inputValue()} · ${await panel.locator(".korekta-serii").first().innerText()}`);
+  const duza = (await panel.locator(".kolumna-ciezar .wartosc").innerText()).replace(/\s+/g, " ");
+  const dopisek = await panel.locator(".kolumna-ciezar .dopisek").innerText();
+  sprawdz("duża liczba „Ciężar” mówi to samo co pole, plan zostaje w dopisku",
+    duza === "67,5 kg" && dopisek.startsWith("w planie "), `${duza} · ${dopisek}`);
   await s.waitForTimeout(500);
   const wpisOceny = (await api(`/api/plany/${idOceny}`)).zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback;
   sprawdz("ta sama ocena ćwiczenia idzie do trenera i do kolejnych tygodni",

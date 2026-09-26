@@ -207,8 +207,9 @@ ostatnią stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
 `Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"*. Nie ma
 tu `OK`, bo klient pomyślałby, że musi go dotykać po każdej serii. Dotknięcie
 dopasowuje **następną serię**: ciężar faktycznie zrobiony w tej serii ±5 %,
-zaokrąglony do skoku ćwiczenia z BAZY (57,5 kg „za trudne" → 55 kg). Nad polami
-następnej serii stoi, skąd ta liczba; kto wpisze swoją, ma swoją. Ta sama ocena
+zaokrąglony do skoku ćwiczenia z BAZY (57,5 kg „za trudne" → 55 kg). Duża
+liczba „Ciężar" pokazuje wtedy 55 z dopiskiem „w planie 57,5", nad polami stoi,
+skąd ta liczba; kto wpisze swoją, ma swoją. Ta sama ocena
 idzie do trenera i do następnych tygodni jak dotąd (jedna na ćwiczenie w tygodniu,
 ostatnie dotknięcie wygrywa) i przy ostatniej serii stoi już zaznaczona — tam
 jest pełne `Za trudne / OK / Za łatwe`. Ocena nie przerysowuje panelu, więc
