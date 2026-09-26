@@ -1,11 +1,13 @@
 /**
  * Szablony planów z aplikacji trenera w Base44 — do wykorzystania w konsoli.
  *
- * Czternaście szkieletów (klasyczne FBW 1–4 dni, rozbudowane, hipertroficzne
- * i kontynuacje bloków), wyciągniętych 21.09.2026 i dodanych do konsoli
- * 25.09.2026. Szablon rozpisuje **układ**: dni, numerację (A1, B1/B2…),
- * kategorię każdej pozycji i miejsce TOP SETU; przy czterech szablonach,
- * dla których trener miał w Base44 zapisany plan, także dobór ćwiczeń.
+ * Czternaście szkieletów — Klasyczny, Rozbudowany i Hipertroficzny po 1–4 dni
+ * oraz dwie kontynuacje „(cz. 2)" — wyciągniętych 21.09.2026 i dodanych do
+ * konsoli 25.09.2026, pod nazwami z ekranu Base44 od 26.09.2026. Szablon
+ * rozpisuje **układ**: dni, numerację (A1, B1/B2…), kategorię każdej pozycji
+ * i miejsce TOP SETU. **Ćwiczeń nie wybiera** — do 26.09 cztery szablony
+ * niosły dobór z zapisanych planów w Base44, którego trener nie rozpoznał,
+ * a trzy pozycje zostawały w środku dnia puste (nazwy spoza BAZY).
  *
  * Czego szablon **nie** przenosi: liczb z Base44 tydzień po tygodniu. Serie,
  * powtórzenia i RPE liczy dalej silnik z „części planu" — tej samej, którą
@@ -15,9 +17,6 @@
  * wszędzie („Klasyczny 2 dni" to dokładnie nasza objętość), a tam, gdzie się
  * różnią, rozstrzygnął już trener: obowiązują jego arkusze.
  *
- * Trzy nazwy z Base44 nie mają odpowiednika w BAZIE (Close-Grip Bench Press,
- * Machine Shoulder Press, Plank). Takie pozycje zostają puste, z kategorią —
- * trener wybiera ćwiczenie z listy, nic nie zgadujemy za niego.
  */
 import type { CzescPlanu, Kategoria } from "./typy.ts";
 import type { Plan, SlotPlanu, TopSet } from "./plan.ts";
@@ -27,19 +26,16 @@ export type SlotSzablonu = {
   kategoria: Kategoria;
   /** Przy tej pozycji w Base44 stał TOP SET (w progresji od T2). */
   topSet?: boolean;
-  /** Ćwiczenie z zapisanego planu trenera, zmapowane na BAZĘ. */
-  cwiczenieId?: string;
-  /** Nazwa z Base44, której w BAZIE nie ma — pozycja zostaje pusta. */
-  bezOdpowiednika?: string;
 };
 
 export type SzablonPlanu = {
   id: string;
+  /** Tak jak na ekranie Base44: „Klasyczny – 3 dni", „Klasyczny – 2 dni (cz. 2)". */
   nazwa: string;
+  /** Grupa na liście w konsoli: Klasyczny, Rozbudowany, Hipertroficzny, Kontynuacje (cz. 2). */
+  rodzina: string;
   opis: string;
   czesc: CzescPlanu;
-  /** Czy szablon niesie dobór ćwiczeń z zapisanego planu trenera. */
-  zCwiczeniami: boolean;
   /** Dzień po dniu, pozycje w kolejności. */
   dni: readonly (readonly SlotSzablonu[])[];
 };
@@ -68,7 +64,7 @@ export function zastosujSzablon(plan: Plan, szablon: SzablonPlanu): Plan {
         positionId: slot.positionId,
         dzien: slot.dzien,
         lp: wzor ? (z?.lp ?? "") : slot.lp,
-        cwiczenieId: z?.cwiczenieId ?? null,
+        cwiczenieId: null,
         kategoriaSzkieletu: z?.kategoria ?? null,
         tygodnie: {},
       });
