@@ -1092,10 +1092,102 @@ const zapisSerii = (x) => (x.ciezar && x.powtorzenia ? `${liczba(x.ciezar)}×${x
 function podpowiedzSerii(c, i, serie) {
   const wlasna = serie[i];
   const poprzednia = serie[i - 1];
+  // Ocena „za trudne / za łatwe" przy poprzedniej serii: ta dostaje ciężar
+  // ±5 % od tego, co klient właśnie podniósł (trener, 26.09.2026).
+  const korekta = prowadzenie?.korekty?.[c.positionId];
+  const skorygowana = !wlasna?.ciezar && poprzednia?.ciezar && korekta?.od === i + 1;
   return {
-    ciezar: wlasna?.ciezar ?? poprzednia?.ciezar ?? (typeof c.ciezar === "number" ? c.ciezar : null),
+    ciezar: skorygowana
+      ? poKorekcie(poprzednia.ciezar, korekta.kierunek, c.skokKg)
+      : wlasna?.ciezar ?? poprzednia?.ciezar ?? (typeof c.ciezar === "number" ? c.ciezar : null),
     powtorzenia: wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
+    korekta: skorygowana ? korekta.kierunek : 0,
   };
+}
+
+/** Korekta serii po ocenie: 5 %, jak korekta tygodnia z ocen. */
+const KOREKTA_SERII = 0.05;
+
+/**
+ * Ciężar po korekcie ±5 %, zaokrąglony do skoku z BAZY (co najmniej 0,5 kg).
+ * Przy małych ciężarach 5 % nie sięga skoku — wtedy o jeden skok, bo klient
+ * powiedział „za trudne" i ta sama liczba byłaby odpowiedzią „nie słyszę".
+ */
+function poKorekcie(kg, kierunek, skok) {
+  const s = Math.max(Number(skok) || 0, 0.5);
+  let nowy = Math.round((kg * (1 + kierunek * KOREKTA_SERII)) / s) * s;
+  if (nowy === kg) nowy = kg + kierunek * s;
+  return Math.max(0, Number(nowy.toFixed(2)));
+}
+
+/**
+ * Ocena w panelu — przy każdej serii, nie tylko przy ostatniej.
+ *
+ * Trener, 26.09.2026: „ktoś pierwszą serię zrobił normalnie, ale w drugiej
+ * stwierdził, że jest za ciężko — wtedy aplikacja powinna mu już na trzeciej
+ * pokazać ułatwioną wersję". I zaraz: „nie chciałbym, żeby ktoś pomyślał, że
+ * w każdej serii musi kliknąć OK". Stąd przy seriach przed ostatnią tylko
+ * „za trudne / za łatwe", bez „OK" i ze zdaniem, że nic nie trzeba klikać.
+ * Przy ostatniej pełne pytanie, jak dotąd.
+ *
+ * To jest ta sama ocena ćwiczenia co zawsze — jedna na tydzień, liczy się
+ * też do kolejnych tygodni. Kliknięta przy serii 2 stoi zaznaczona przy
+ * ostatniej; tam można ją zmienić na „OK".
+ *
+ * Bez przerysowania panelu: klient mógł już wpisać liczby tej serii,
+ * a przerysowanie wracało do podpowiedzi i kasowało je (tak było przy
+ * ocenie z ostatniej serii do 26.09).
+ */
+function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
+  const blok = el("div", "ocena-w-panelu");
+  const ostatnia = k.ostatniaSeria;
+  blok.append(el("div", "pytanie", ostatnia ? "Jak było to ćwiczenie?" : "Za ciężko albo za lekko?"));
+  if (!ostatnia) {
+    blok.append(el("p", "drobne podpowiedz-oceny",
+      "Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię."));
+  }
+  const oceny = el("div", "oceny");
+  const notka = el("p", "korekta-serii");
+  const przyciski = [];
+  const pokaz = () => {
+    for (const [b, wartosc, klasa] of przyciski) {
+      b.className = `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`;
+    }
+    const korekta = prowadzenie.korekty?.[c.positionId];
+    const baza = Number(String(wCiezar.value).replace(",", ".")) || null;
+    notka.textContent = !ostatnia && !bezCiezaru && baza && korekta?.od === k.seria + 1
+      ? `Następna seria: ${liczba(poKorekcie(baza, korekta.kierunek, c.skokKg))} kg `
+        + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} o 5%).`
+      : "";
+  };
+  const warianty = [["za trudne", "Za trudne", "trudne"],
+    ...(ostatnia ? [["OK", "OK", "ok"]] : []), ["za łatwe", "Za łatwe", "latwe"]];
+  for (const [wartosc, etykieta, klasa] of warianty) {
+    const b = el("button", "ocena-przycisk", etykieta);
+    b.onclick = () => {
+      const nowa = c.feedback === wartosc ? null : wartosc;
+      wyslij("/odczucie",
+        { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: nowa },
+        () => { c.feedback = nowa; }, { odswiez: false });
+      if (!ostatnia) {
+        prowadzenie.korekty ??= {};
+        if (nowa === "za trudne" || nowa === "za łatwe") {
+          prowadzenie.korekty[c.positionId] = { od: k.seria + 1, kierunek: nowa === "za trudne" ? -1 : 1 };
+        } else {
+          delete prowadzenie.korekty[c.positionId];
+        }
+        zapiszProwadzenie();
+      }
+      pokaz();
+    };
+    przyciski.push([b, wartosc, klasa]);
+    oceny.append(b);
+  }
+  // Zmiana liczby w polu zmienia i zapowiedź następnej serii.
+  wCiezar.addEventListener("input", pokaz);
+  blok.append(oceny, notka);
+  pokaz();
+  return blok;
 }
 
 const pustaSeria = (s) => !s || (!s.ciezar && !s.powtorzenia);
@@ -1727,37 +1819,17 @@ function panelSerii(k, kroki, d) {
   }
   if (!bezCiezaru) pola.append(wCiezar, el("span", "razy", "kg ×"));
   pola.append(wPowt, el("span", "razy", "powt."));
+  // Ciężar w polu to nie plan, tylko korekta po ocenie z poprzedniej serii —
+  // mówimy to wprost, bo kolumna wyżej dalej pokazuje plan.
+  if (podpowiedz.korekta && !bezCiezaru) {
+    karta.append(el("p", "korekta-serii", `${podpowiedz.korekta < 0 ? "Lżej" : "Ciężej"} o 5% `
+      + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
+      + `${liczba(podpowiedz.ciezar)} kg.`));
+  }
   karta.append(pola);
 
-  // Odczucie pytamy przy ostatniej serii — wcześniej klient nie wie jeszcze,
-  // jak było, a pytany przy każdej serii przestaje odpowiadać.
-  // Wcześniej nic nie mówiło, że ocena w ogóle będzie — trener szukał jej
-  // na pierwszej serii i nie znalazł (25.09.2026).
-  if (!k.ostatniaSeria && !c.maks) {
-    karta.append(el("p", "drobne podpowiedz-oceny",
-      `Ocena ćwiczenia — po ostatniej serii (${k.zSerii} z ${k.zSerii}).`));
-  }
-  if (k.ostatniaSeria && !c.maks) {
-    karta.append(el("div", "pytanie", "Jak było to ćwiczenie?"));
-    const oceny = el("div", "oceny");
-    for (const [wartosc, etykieta, klasa] of [
-      ["za trudne", "Za trudne", "trudne"],
-      ["OK", "OK", "ok"],
-      ["za łatwe", "Za łatwe", "latwe"],
-    ]) {
-      const b = el("button",
-        `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`, etykieta);
-      b.onclick = () => {
-        const nowa = c.feedback === wartosc ? null : wartosc;
-        wyslij("/odczucie",
-          { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: nowa },
-          () => { c.feedback = nowa; }, { odswiez: false });
-        rysujPanel();
-      };
-      oceny.append(b);
-    }
-    karta.append(oceny);
-  }
+  // Ocena przy każdej serii — przy wcześniejszych bez „OK", patrz ocenaWPanelu.
+  if (!c.maks) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru));
 
   const poprawka = prowadzenie.zrobione.includes(k.klucz);
   const zakoncz = el("button", "glowny szeroki", poprawka ? "Zapisz poprawkę" : "Zakończ serię");
