@@ -554,6 +554,10 @@ Trener: „ktoś pierwszą zrobił normalnie, ale w drugiej stwierdził, że jes
 
 Przy okazji błąd: dotknięcie oceny przy ostatniej serii przerysowywało panel i czyściło wpisane, jeszcze niezapisane liczby.
 
+**Kopia bazy poza serwerem — odłożona 26.09.2026.**
+
+Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
