@@ -1,0 +1,236 @@
+/**
+ * Eksport planu do arkusza w formacie 5.18.
+ *
+ * Klient dostaje dokładnie taki plik, jaki dostawał zawsze — z żywymi formułami,
+ * walidacjami i zakładkami ODDECH/BIEG. Zmienia się tylko to, że plan powstał
+ * w konsoli, a nie przez ręczne wypełnianie szablonu.
+ *
+ * Wypełniamy wyłącznie komórki wejściowe trenera. Formuły zostają nietknięte —
+ * arkusz przelicza się sam po otwarciu.
+ */
+import { execFileSync } from "node:child_process";
+import { mkdirSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { katalog } from "../silnik/src/katalog.ts";
+import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE } from "../silnik/src/plan.ts";
+import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
+import type { ZapisanyPlan } from "./magazyn.ts";
+import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
+  from "./blad-pythona.ts";
+
+const KATALOG = dirname(fileURLToPath(import.meta.url));
+const SZABLON = join(KATALOG, "..", "arkusz", "MasterTemplate-5-18.xlsx");
+
+/**
+ * Awaria, za którą odpowiada środowisko, nie serwer.
+ *
+ * Rozróżnienie ma skutek: kod 500 znaczy „spróbuj za chwilę", a brakującego
+ * Pythona żadne czekanie nie doinstaluje. Trener klikałby „Eksportuj" w kółko.
+ */
+export class BladEksportu extends Error {}
+const WYJSCIE = join(KATALOG, "dane", "eksport");
+
+/** `D3-S07` → `{ dzien: 3, pozycja: 7 }` */
+function rozbijPositionId(positionId: string): { dzien: number; pozycja: number } {
+  const m = positionId.match(/^D(\d+)-S(\d+)$/);
+  if (!m) throw new Error(`Nieznany position_id: ${positionId}`);
+  return { dzien: Number(m[1]), pozycja: Number(m[2]) };
+}
+
+function bezpiecznaNazwa(tekst: string): string {
+  return tekst.replace(/[^\p{L}\p{N} ._-]/gu, "").trim() || "plan";
+}
+
+/**
+ * Co dokładnie wpisujemy do arkusza.
+ *
+ * Wydzielone z `eksportujDoArkusza`, żeby dało się to sprawdzić testem bez
+ * Pythona i bez LibreOffice — a jest co sprawdzać: to tutaj rozstrzyga się,
+ * czy klient dostanie te same liczby, które trener widział na ekranie.
+ */
+export function daneDoArkusza(zapisany: ZapisanyPlan) {
+  const { plan } = zapisany;
+
+  /**
+   * Do arkusza wpisujemy wartości **policzone**, a nie surowe pola planu.
+   *
+   * Powód wyszedł przy pełnym kółku konsola → arkusz → konsola: slot, w którym
+   * trener nie ruszył serii ani RPE, wychodził z konsoli jako „nie ustawione".
+   * Wypełniacz pomijał puste pola, więc w arkuszu zostawały wartości szablonu
+   * (6 serii, RPE 6,5 dla boju głównego w T1), a silnik liczył swoje domyślne
+   * (1 seria, RPE 8). Klient dostawał inne liczby niż te, które trener widział
+   * na ekranie — a cała umowa tej aplikacji brzmi „klient nie zauważa zmiany".
+   */
+  const wynik = przeliczPlan(plan);
+  // Arkusz 5.18 zna dwie części planu. Przy hipertrofii jego automat
+  // powtórzeń akcesoriów liczyłby 8/10 zamiast 12/14 — więc wpisujemy
+  // powtórzenia wprost, tak jak przy boju głównym.
+  const bezAutomatuArkusza = plan.czescPlanu === "hipertrofia";
+  const policzony = (positionId: string, tydzien: number) =>
+    wynik.tygodnie[tydzien - 1]?.sloty.find((s) => s.positionId === positionId);
+
+  const sloty = plan.sloty.map((slot) => {
+    const { dzien, pozycja } = rozbijPositionId(slot.positionId);
+    const cwiczenie = slot.cwiczenieId ? katalog.poId(slot.cwiczenieId) : null;
+    // Z `coeff`, nie z samej pozycji. Bez niego `jestBojemGlownym` zwraca zawsze
+    // fałsz, więc bój główny wychodził do arkusza bez powtórzeń i arkusz liczył
+    // mu je automatem akcesorium — czyli inaczej, niż pokazuje konsola.
+    //
+    // Do 26.09 szła tu funkcja z importu arkusza, która patrzy tylko na literę
+    // A i `coeff` po cichu pomijała — więc powyższy komentarz nie był prawdą.
+    // Teraz ta sama reguła co w silniku, razem z decyzją trenera („G").
+    const bojGlowny = bojGlownySlotu(slot, cwiczenie?.coeff);
+
+    const tygodnie: Record<string, unknown> = {};
+    for (const t of TYGODNIE) {
+      if (!cwiczenie) continue;
+      const p = slot.tygodnie?.[t] ?? {};
+      const obliczony = policzony(slot.positionId, t);
+      tygodnie[`T${t}`] = {
+        serie: obliczony?.serie ?? p.serie ?? null,
+        rpe: obliczony?.rpe ?? p.rpe ?? null,
+        // Bój główny zawsze ma powtórzenia wpisane wprost; akcesorium tylko
+        // wtedy, gdy trener świadomie nadpisał automat — inaczej nadpisalibyśmy
+        // formułę, która w arkuszu liczy je sama.
+        powtorzenia_reczne: bojGlowny || bezAutomatuArkusza
+          ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
+          : (p.powtorzenia ?? null),
+        // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby
+        // od mnożnika 1 i od T2 pokazywał inne ciężary niż konsola.
+        feedback: p.feedback ?? null,
+        // Ciężar wpisany ręcznie zastępuje w arkuszu formułę — dokładnie tak,
+        // jak robił to trener, wpisując liczbę do komórki. Bez tego klient
+        // zobaczyłby w arkuszu ciężar policzony, a w konsoli stoi inny.
+        // Przy „ręcznym ustawieniu" także ciężar przeniesiony z wcześniejszego
+        // tygodnia albo wybrany przez klienta — plik ma pokazać to, co konsola.
+        ciezar_reczny: p.ciezarOverride
+          ?? (obliczony?.ciezarZrodlo && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
+        // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
+        // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
+        // klienta pokazywałby ćwiczenie i ciężar sprzed podmiany.
+        cwiczenie_podmienione: p.cwiczenieIdOverride
+          && p.cwiczenieIdOverride !== slot.cwiczenieId
+          ? (katalog.poId(p.cwiczenieIdOverride)?.nazwa ?? null)
+          : null,
+        // 1RM podmienionego ćwiczenia (kolumna AA) — arkusz nie sięga po jego
+        // serię maksymalną, tylko po tę liczbę.
+        one_rm_reczny: p.oneRMReczny ?? null,
+      };
+    }
+
+    return {
+      position_id: slot.positionId,
+      dzien,
+      pozycja,
+      lp: slot.lp,
+      nazwa: cwiczenie?.nazwa ?? null,
+      kategoria_szkieletu: slot.kategoriaSzkieletu ?? null,
+      tygodnie,
+    };
+  });
+
+  // Seria maksymalna trafia do wiersza START odpowiadającego slotowi ćwiczenia.
+  const pierwszySlotDla = new Map<string, string>();
+  for (const slot of plan.sloty) {
+    if (slot.cwiczenieId && !pierwszySlotDla.has(slot.cwiczenieId)) {
+      pierwszySlotDla.set(slot.cwiczenieId, slot.positionId);
+    }
+  }
+  const serieMaksymalne = plan.serieMaksymalne
+    .map((s) => {
+      const positionId = pierwszySlotDla.get(s.cwiczenieId);
+      if (!positionId) return null;
+      const { dzien, pozycja } = rozbijPositionId(positionId);
+      return { dzien, pozycja, ciezar: s.ciezar, powtorzenia: s.powtorzenia };
+    })
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+
+  /*
+   * Deload i maksy — osobne zakładki z liczbami policzonymi w konsoli.
+   *
+   * Szablon 5.18 zna sześć tygodni i ich formuły wzajemnie się do siebie
+   * odwołują (T2/T3 z T1, T5/T6 z T4). Kopia zakładki T6 niosłaby formuły T6,
+   * czyli policzyłaby T6, a nie deload. Uczciwiej jest wpisać gotowe wartości
+   * i napisać nad tabelą, że formuł tu nie ma.
+   */
+  const tygodnieDodatkowe = wynik.tygodnieDodatkowe.map((t) => ({
+    nazwa: `T${numerTygodniaNaEkranie(plan, t.tydzien)} ${t.rodzaj === "deload" ? "deload" : "maksy"}`,
+    rodzaj: t.rodzaj,
+    wiersze: t.sloty.filter((s) => s.cwiczenie).map((s) => ({
+      dzien: s.dzien,
+      lp: s.lp,
+      cwiczenie: s.cwiczenie!.nazwa,
+      serie: s.serie,
+      powtorzenia: s.powtorzenia,
+      rpe: s.rpe,
+      ciezar: s.ciezar,
+    })),
+  }));
+
+  return {
+    tygodnie_dodatkowe: tygodnieDodatkowe,
+    ustawienia: {
+      tryb_akcesoriow: plan.trybAkcesoriow,
+      czesc_planu: plan.czescPlanu,
+    },
+    data_startu: zapisany.dataStartu,
+    sloty,
+    serie_maksymalne: serieMaksymalne,
+    /*
+     * TOP SETY — RPE osobno na każdy tydzień.
+     *
+     * Przełącznik jest w arkuszu jeden na cykl (stoi w T1, reszta go lustrzy),
+     * ale RPE ma każdy tydzień własne i to tam siedzi rampa 6 → 6,5 → 7 →
+     * 7,5 → 8. Wcześniej wypełniacz pisał RPE tylko do T1, więc sześć tygodni
+     * dostawało jedną liczbę — plik pokazywał klientowi co innego niż konsola.
+     *
+     * `null` **czyści** komórkę i to jest jego sens: pusty RPE znaczy
+     * w poprawionym arkuszu „w tym tygodniu TOP SETU nie ma", czyli dokładnie
+     * to, co silnik mówi o T1.
+     */
+    top_sety: (plan.topSety ?? []).map((t) => ({
+      dzien: t.dzien,
+      wlaczony: t.wlaczony,
+      rpe_tygodni: Object.fromEntries(TYGODNIE.map((w) => [
+        `T${w}`,
+        wynik.tygodnie[w - 1]?.topSety.find((x) => x.dzien === t.dzien)?.rpe ?? null,
+      ])),
+    })),
+  };
+}
+
+export async function eksportujDoArkusza(zapisany: ZapisanyPlan): Promise<string> {
+  const wypelnienie = daneDoArkusza(zapisany);
+
+  mkdirSync(WYJSCIE, { recursive: true });
+  const nazwa = `${bezpiecznaNazwa(zapisany.klient)} ${zapisany.wersja}.0.xlsx`;
+  const cel = join(WYJSCIE, nazwa);
+
+  const tymczasowy = mkdtempSync(join(tmpdir(), "eksport-"));
+  const plikDanych = join(tymczasowy, "wypelnienie.json");
+  try {
+    writeFileSync(plikDanych, JSON.stringify(wypelnienie), "utf-8");
+    try {
+      execFileSync(
+        "python3",
+        [join(KATALOG, "narzedzia", "wypelnij-arkusz.py"), SZABLON, plikDanych, cel],
+        { stdio: ["ignore", "pipe", "pipe"] },
+      );
+    } catch (blad) {
+      // Pełny ślad zostaje w logu serwera; do trenera idzie jedno zdanie.
+      console.error(blad);
+      const powod = pierwszaLiniaBledu(blad);
+      throw new BladEksportu(bladSrodowiskaPythona(blad)
+        ?? (powod === "nieznany błąd"
+          ? bladBezWyjasnienia()
+          : `Nie udało się zapisać arkusza: ${powod}`));
+    }
+  } finally {
+    rmSync(tymczasowy, { recursive: true, force: true });
+  }
+
+  return cel;
+}

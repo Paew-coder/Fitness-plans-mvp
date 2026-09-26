@@ -1,0 +1,463 @@
+# Aplikacja klienta
+
+Dzisiejszy trening w telefonie. Klient dostaje jeden link, otwiera go i widzi
+swój plan z policzonymi ciężarami. Kod leży w
+[`../konsola/public/klient/`](../konsola/public/klient/) — chodzi na tym samym
+serwerze co konsola trenera.
+
+## Ekran startowy i wygląd
+
+**Lista tygodni.** Rozwinięty jest tylko tydzień następnego treningu; pozostałe
+to po jednej linijce: *Tydzień 3 z 6 · 0 z 3 ▸*, a skończony *✓ 3 z 3*
+na zielono. Dotknięcie nagłówka rozwija tydzień i aplikacja to pamięta do
+zamknięcia. Kafelek dnia ma pod nazwą skład — *Barbell back squat · Barbell
+row · …* — bo samo „Dzień II" nic nie mówi, a kafelek, do którego prowadzi
+*Następny trening*, ma ramkę w akcencie. Dotąd było osiemnaście jednakowych
+kafelków „Dzień I · 7 ćwiczeń" do przewijania.
+
+**Tytuł** to samo imię klienta; cykl stoi w podtytule — *Cykl 2 · 4 z 18
+treningów za Tobą*. „Marek X 1.0" mówiło o wersji pliku, nie o kliencie.
+
+**Jedna czcionka.** Podpisy, liczby i przyciski szły pismem maszynowym obok
+zwykłego — wyglądało to technicznie i trochę przypadkowo. Teraz całość jest
+czcionką systemu (na iPhonie SF), a cyfry mają równą szerokość, więc liczby
+dalej stoją w słupkach.
+
+**iPad.** Ten sam układ, tylko większy: szersza kolumna, większa podstawa
+czcionki, większe liczby w panelu i pierścień przerwy. Dotąd na iPadzie stała
+wąska kolumna telefonu na środku pustego ekranu.
+
+**Panel na wąskim telefonie.** Kolumny *Seria · Ciężar · Powtórzenia* mają
+szerokość po treści, a liczby na bardzo wąskim ekranie odrobinę maleją.
+Przy trzech równych kolumnach „77,5 kg" wjeżdżało na powtórzenia („77,5 kg6").
+Przegląd klienta mierzy to na ekranie 360 px.
+
+## Postęp przez wszystkie cykle
+
+Ekran *Twój postęp* zaczyna się teraz od tego, czego arkusz nie pokazywał nigdy:
+ile cykli klient ma za sobą, od kiedy trenuje, ile treningów domknął — i jak
+zmieniał się jego ciężar maksymalny **przez kolejne cykle**, a nie tylko w tych
+sześciu tygodniach: `100 → 112,5 → 125 kg (+25%)`.
+
+Historia pobiera się osobnym zapytaniem, dopiero przy otwarciu tego ekranu —
+widok treningu wraca z serwera przy każdym dotknięciu oceny i nie ma po co
+przeliczać przy tym wszystkich cykli. Raz pobrana zapisuje się lokalnie, więc
+następnym razem widać ją od razu, także bez zasięgu. Szkiców klient nie widzi
+także tutaj.
+
+## Zanim wyślesz link — sprawdź, czy jest do wysłania
+
+Konsola uruchomiona na Twoim komputerze stoi pod adresem `localhost`. To słowo
+znaczy „to urządzenie" — więc **na telefonie klienta wskazuje jego telefon**.
+Skopiowany link nie ma prawa zadziałać: klient dostaje „nie można nawiązać
+połączenia", Ty nie wiesz dlaczego, i na tym kończy się pierwszy cykl.
+
+Konsola mówi o tym teraz wprost w okienku z linkiem. Są dwa wyjścia:
+
+**Ta sama sieć Wi-Fi.** Ustaw hasło (`npm run haslo`) — bez niego konsola
+celowo nie przyjmuje połączeń z innych urządzeń. Wtedy w okienku pojawi się
+gotowy adres tego komputera w sieci, na przykład
+`http://192.168.1.23:4173/k/…`. Ten komputer musi być włączony, a telefon
+w tej samej sieci: dobre na spróbowanie z jednym klientem, za mało na co dzień.
+
+**Własny serwer.** Klient wchodzi zawsze i skądkolwiek, niezależnie od tego,
+czy Twój laptop jest włączony. Instrukcja od zera: [`../WDROZENIE.md`](../WDROZENIE.md).
+
+## Jak to działa u Ciebie
+
+1. W konsoli otwórz kartotekę klienta → **Link dla klienta** → skopiuj adres.
+2. Wyślij go klientowi. **Raz** — ten sam adres działa przez kolejne cykle.
+3. Klient otwiera na telefonie, może dodać do ekranu głównego jak zwykłą aplikację.
+
+Link należy do klienta, nie do planu: gdy oznaczysz nowy cykl jako *wysłany*,
+klient zobaczy go pod tym samym adresem. Szkic nie jest widoczny — do czasu
+wysyłki klient widzi „trener przygotowuje Twój plan". Wcześniej token wisiał
+przy planie, więc każdy cykl znaczył nowy link, a stary zamrażał klienta
+na poprzednim planie.
+
+Link wygląda tak: `http://…/k/Zvy1GXQUGwM4wLdCqXC-Xh0Jno1V5Zed`
+
+## Co widzi klient
+
+**Wybór treningu** — sześć tygodni, dni w każdym, odhaczone oznaczone ptaszkiem.
+
+**Trening** — TOP SET, potem ćwiczenia po kolei, każde z linkiem do filmu i z zadaniem
+w równych kolumnach: `CIĘŻAR · SERIE · POWT.`, podpis nad liczbą, wszystkie liczby
+tej samej wielkości. Pod nimi drobno samo *„RPE 8"* (dopisek „2 w zapasie"
+był i zniknął — trener uznał go za zbędny). W panelu prowadzenia pierwsza kolumna
+to **numer serii** — `SERIA 3 z 3 · CIĘŻAR 10 kg · POWTÓRZENIA 9` — a kafelki
+wpisanych serii mają podpis *„Poprzednie serie:"* i są przyciskami: dotknięcie
+*„2: 80×8"* otwiera serię 2 do poprawki (seria na ekranie jest podświetlona),
+a *„↩ Wróć do"* prowadzi z powrotem tam, gdzie klient był.
+
+Pod zadaniem — na liście i w panelu — jedna linijka historii: *„Ostatnio (T1):
+100 · 100 kg × 5"*, bez oceny (czytała się jak zaznaczona z góry). To, co klient zrobił przy tym ćwiczeniu ostatnim
+razem (także w innym dniu); w pierwszym tygodniu nowego cyklu — z poprzedniego.
+
+Tak po dwóch rundach uwag z testów: najpierw duży ciężar obok drobnych powtórzeń
+czytał się jak ciężar z dopiskiem; potem w panelu za mało było widać, która to
+seria, a za bardzo RPE, które po pierwszym tygodniu (ciężar już policzony) nie
+jest tak ważne. Wspólna litera (`B1`, `B2`) ma wspólny pasek z boku —
+to superseria, jak w arkuszu. Przy ćwiczeniu jednostronnym widnieje **na stronę**.
+
+**Ocena jednym dotknięciem** — `Za trudne` / `OK` / `Za łatwe`. To dokładnie
+kolumna `H` z arkusza, tylko że kciukiem.
+
+**Co poszło** — pod oceną jest zwinięte `+ zapisz, co poszło`. Kto chce, wpisuje
+faktyczny ciężar i powtórzenia **każdej serii**; kto nie chce, ocenia i idzie
+dalej. Nic nie jest obowiązkowe, bo na siłowni nikt nie wypełnia formularzy.
+
+Żeby nie zasypywać liczbami: po treningu karta pokazuje wpisane serie **w jednej
+linijce** — *Zrobione: 80 · 90 · 85 · 80 kg × 6*, a przy różnych powtórzeniach
+*80×6 · 90×6 · 85×5* — i obok **✎ edytuj**. To zapis, nie formularz do
+wypełnienia; edycja służy do poprawienia literówki (100 zamiast 10 poszłoby
+prosto do propozycji 1RM) i do dopisania serii przez kogoś, kto trenuje z listy,
+a nie z prowadzenia. Rozwinięte daje wiersz na każdą serię z planu — przy trzech
+seriach trzy wiersze.
+
+**Liczba, którą widać w polu, to liczba, która się zapisze.** W prowadzeniu pola
+stoją od razu z prawdziwymi liczbami — poprzednia seria, a przy pierwszej plan —
+i klient zmienia tylko to, co było inaczej, a zatwierdza przyciskiem. Na liście
+nie ma żadnych szarych liczb: puste pole jest puste („kg", „powt."). Zgłoszone
+z testów: podpowiedzi nie dało się odróżnić od wpisanych liczb — jedna niepełna
+seria („18 kg" bez powtórzeń) i pusty wiersz z podpowiedziami 18 × 8 wyglądały
+jak dwie zapisane serie. Niepełna seria przy ćwiczeniu, w którym klient dobiera
+ciężar, dostaje zdanie, czego brakuje („Dopisz powtórzenia — bez nich nie
+policzę ciężaru"). Niewpisana seria w środku pokazuje się jako „—".
+
+**Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
+i powtórzenia, 1RM liczy się od razu.
+
+**Twój postęp** — osobny ekran: frekwencja tydzień po tygodniu, waga i postęp
+w każdym ćwiczeniu. Punkty tydzień po tygodniu to najcięższa seria
+(*55 kg × 9 · 1RM ≈ 79,1 kg*), a nagłówek karty porównuje **siłę, nie kilogramy
+na sztandze**: *„1RM ≈ 79,1 → 77,5 kg (−2%)"*. Kilogramy zmienia sam plan
+(w T4 restartuje blok niżej), więc porównane wprost mówiły „−5 kg (−9%)" komuś,
+kto zrobił dwa powtórzenia więcej. Przy jednym tygodniu wpisów stoi *„Na razie
+wpisy z jednego tygodnia — zmianę zobaczysz po kolejnym"* i zdanie, że liczą się
+tygodnie z wpisanym ciężarem i powtórzeniami — sama ocena ich nie ma (dawne
+„Pierwszy pomiar" myliło przy ćwiczeniu wcześniej tylko ocenionym). Ciężar
+ustawiany ręcznie (np. Dead bug z 2 kg) nie dostaje 1RM — porównuje same
+kilogramy. Punkt idzie do ćwiczenia, które klient faktycznie robił, także po
+podmianie w slocie. Wszystko liczy
+się z tego, co klient sam wpisał przy ćwiczeniach — jedyne dodatkowe pole to
+waga, jeden wpis na dzień.
+
+**Oddech i bieg** — osobny ekran, gdy trener wypełni te moduły w konsoli.
+Dawka oddechowa z testu TWOT i sześć tygodni jednostek biegowych: czas, tempo,
+tętno, szacowany dystans.
+
+## Dwie drogi na start
+
+Gdy w planie są ćwiczenia bez 1RM, nad listą tygodni stoi baner **Skąd wziąć
+ciężary** z dwoma przyciskami:
+
+* **Zacznij trening od razu** — klient dobiera ciężar sam, według RPE z planu.
+  Przy „8 powt. · RPE 8" bierze taki, żeby po ósmym powtórzeniu mieć jeszcze dwa
+  w zapasie. Pierwsza wpisana seria zamienia się w 1RM, a z niego liczy się cały
+  cykl. Przycisk prowadzi prosto w [prowadzenie](#prowadzenie--seria-po-serii),
+  na pierwszy niezrobiony trening.
+* **Najpierw serie maksymalne** — jak dotąd: jedna seria do odmowy na ćwiczenie.
+
+Tam, gdzie ciężaru jeszcze nie ma, zamiast „— brak 1RM" klient widzi **dobierz
+ciężar** i jedno zdanie, jak to zrobić. Pola na wpisanie serii są od razu na
+wierzchu — bo tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.
+Przy każdym takim miejscu jest zwinięte **Co to jest RPE?**: skala w pięciu
+wierszach (RPE 10 — nic w zapasie … RPE 6 — cztery i więcej) i jeden przykład.
+
+Po pierwszej serii następna ma już ciężar — **ten, który klient podniósł**
+(po zaokrągleniu do skoku), z dopiskiem *„✓ Policzone z Twojej serii: 60 kg × 8
+przy RPE 8"*. Pierwsza seria wyszła za lekko? Kolejna z tego samego treningu
+poprawia wyliczenie.
+
+Instrukcja doboru **znika w chwili wpisania serii** — tak samo na liście dnia,
+jak w prowadzeniu. Wisząca dalej wyglądała tak, jakby wpis nie zadziałał
+(zgłoszone z testów na planie Marka X). Bez zasięgu zamiast niej zostaje
+*„✓ Seria zapisana — z niej policzę Twój ciężar"*, dopóki seria czeka w kolejce.
+
+Zasady, które za tym stoją:
+
+* **Kalibruje wyłącznie ćwiczenie bez 1RM.** Gdy 1RM już jest, wpisane serie idą
+  do trenera jako propozycja — zmiana istniejącego 1RM to jego decyzja.
+* **Seria maksymalna wygrywa zawsze.** Wpisana później zastępuje wyliczenie.
+* **Ocena „za łatwe / za trudne" nie wchodzi do wyliczenia** — działa już przez
+  mnożnik i podnosi albo obniża ciężar w kolejnym tygodniu. Policzona dwa razy
+  dałaby skok, którego nikt nie zaplanował.
+* **Trener widzi, skąd jest 1RM.** W konsoli pod wierszem serii maksymalnych:
+  *„z serii roboczej klienta: 60 kg × 8 przy RPE 8 · T1, dzień I"*.
+
+## Prowadzenie — seria po serii
+
+Nad listą ćwiczeń stoi **`▶ Prowadź mnie seria po serii`**. To ten sam trening,
+pokazany inaczej: **jeden panel naraz** zamiast całego dnia.
+
+Panel mówi, co teraz: ćwiczenie, która to seria z ilu, ciężar dużą czcionką,
+powtórzenia i RPE. Pod spodem dwa pola — ile poszło naprawdę. Puste pola są
+w porządku; kto nie chce pisać, dotyka **`Zakończ serię`** i idzie dalej.
+
+**Duża liczba to ta sama liczba, co w polu.** Plan 3 × 10 na 50 kg, druga seria
+zrobiona na 45 — trzecia stoi na 45 i w polu, i dużą czcionką, z dopiskiem
+*„w planie 50"*. Do 26.09 duża liczba zostawała na planie, a pole szło za
+poprzednią serią: dwie różne liczby na jednym ekranie. Powtórzenia dużą
+czcionką zostają z planu — to cel serii. Przy maksach duża liczba to dalej
+obecne 1RM.
+
+Po serii wchodzi **przerwa z odliczaniem** — pierścień, czas w środku,
+`Pomiń przerwę` i `+30 s`. Gdy dojdzie do zera, telefon zawibruje (Android;
+iPhone tego nie robi) i sam pokaże następną serię.
+
+Ile trwa przerwa, **liczy silnik z `coeff`** — tej samej liczby, która w BAZIE
+mówi, jak ciężkie jest ćwiczenie:
+
+| ćwiczenie | przerwa |
+|---|---|
+| bój główny (coeff 1,0) | 3 min |
+| pomocnicze złożone (0,75) | 2 min |
+| semi-izolacja (0,5) | 1,5 min |
+| izolacja (0,25) | 1 min |
+
+Trzy rzeczy, które ten tryb robi inaczej, niż mogłoby się wydawać:
+
+**Superserie idą naprzemiennie.** `B1` seria 1 → `B2` seria 1 → przerwa →
+`B1` seria 2… Między `B1` a `B2` przerwy nie ma, bo na tym polega superseria.
+Przerwa rundy trwa tyle, ile każe jej najcięższe ćwiczenie.
+
+**Odliczanie przeżywa zablokowany telefon.** Liczy się ze znacznika końca,
+a nie z odejmowania sekundy co tyknięcie — przeglądarka w tle zwalnia albo
+zatrzymuje liczniki, więc odejmowanie pokazałoby po powrocie czas, który nie
+minął. Tak samo przeżywa zamknięcie aplikacji: miejsce w treningu zostaje
+w telefonie, wpisane serie — na serwerze, a przycisk zmienia się na **`▶ Wróć do przerwanego
+treningu`**.
+
+**Do trenera idą wszystkie serie, do 1RM — najcięższa.** Trener widzi w konsoli
+całą listę pod ciężarem z planu, bo „90 · 85 · 80" mówi co innego niż samo „90":
+przy planie na 80 kg klient przestrzelił i opadł z sił. Propozycja nowego 1RM
+dalej liczy się z najcięższej serii — ostatnia byłaby zwykle najsłabsza, bo
+zmęczona. Najcięższą wybiera serwer, nie telefon. Serie wpisane w prowadzeniu
+widać też na liście dnia i odwrotnie — to te same dane.
+
+**Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii poza
+ostatnią stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
+`Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"*. Nie ma
+tu `OK`, bo klient pomyślałby, że musi go dotykać po każdej serii. Dotknięcie
+dopasowuje **następną serię**: ciężar faktycznie zrobiony w tej serii ±5 %,
+zaokrąglony do skoku ćwiczenia z BAZY (57,5 kg „za trudne" → 55 kg). Duża
+liczba „Ciężar" pokazuje wtedy 55 z dopiskiem „w planie 57,5", nad polami stoi,
+skąd ta liczba; kto wpisze swoją, ma swoją. Ta sama ocena
+idzie do trenera i do następnych tygodni jak dotąd (jedna na ćwiczenie w tygodniu,
+ostatnie dotknięcie wygrywa) i przy ostatniej serii stoi już zaznaczona — tam
+jest pełne `Za trudne / OK / Za łatwe`. Ocena nie przerysowuje panelu, więc
+wpisane liczby zostają w polach (do 26.09 dotknięcie oceny przy ostatniej serii
+je czyściło).
+
+Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej chwili
+i pokazuje to samo, tylko naraz.
+
+**Gdzie jestem i jak wrócić.** Nad panelem stoi mapa dnia — kafelek na każde
+ćwiczenie (`TOP   ✓ A1   B1 2/3  B2   C1 C2 …`): zrobione na zielono z ptaszkiem,
+zaczęte bez zieleni, z licznikiem serii (`2/3`), to, przy którym klient stoi —
+w ramce. Zieleń znaczy wyłącznie „skończone": zielona ramka przy dwóch seriach
+z trzech wyglądała na pierwszy rzut oka jak ćwiczenie zrobione. Kafelki
+jednej litery stoją ciasno obok siebie, a między literami jest odstęp — superseria
+widać od razu jako parę, i na wąskim ekranie nie rozdziela się jej na dwie linie.
+Dotknięcie kafelka przenosi do ćwiczenia:
+
+* **do zrobionego** — seria otwiera się z dopiskiem *„Ta seria jest już zrobiona
+  — możesz ją poprawić"*, przycisk mówi **Zapisz poprawkę**, a po zapisie klient
+  wraca tam, gdzie skończył. Bez przerwy: poprawka to zapis, nie kolejna seria.
+  Obok jest *„↩ Wróć do: C1 Incline dumbbell curl · seria 3 z 3"*, gdy nic nie
+  trzeba poprawiać;
+* **do przodu** — maszyna zajęta, więc klient robi najpierw co innego.
+  Przeskoczone ćwiczenie czeka i wraca na końcu, zamiast przepaść.
+
+Na **liście dnia** bieżące ćwiczenie ma ramkę i napis **▶ Tu jesteś · seria 2 z 3**,
+skończone — **✓ zrobione** (na zielono), zaczęte — *◐ zaczęte · 1 z 3 serii*
+(na szaro). Każdy z tych
+napisów wraca do panelu: „Tu jesteś" dokładnie tam, gdzie klient wyszedł (także
+w trwającą przerwę), pozostałe — do tego ćwiczenia. Ćwiczenie jeszcze nietknięte
+ma **▶ Zacznij to ćwiczenie** — prosto do jego pierwszej serii w panelu,
+w dowolnej kolejności (także TOP SET). Przycisk nad listą mówi,
+dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
+
+## Ciężar ustawiany ręcznie zostaje na kolejne tygodnie
+
+Przy ćwiczeniach z progresją „ręczne ustawienie" (np. SLDL balance) ciężar, który
+klient raz wpisze przy serii — albo trener w konsoli — przechodzi na kolejne
+tygodnie: *„2 kg · jak w T1"*. Nowy wpis zastępuje go od swojego tygodnia.
+
+## Następny trening jednym dotknięciem
+
+Na górze listy tygodni stoi przycisk *„▶ Następny trening: tydzień 3 · Dzień I"*
+— pierwszy niedomknięty dzień, otwierany od razu. Gdy klient wyszedł z treningu
+w połowie, przycisk mówi *„▶ Wróć do treningu"*. Po całym cyklu znika.
+
+## Rozgrzewka
+
+Jeśli trener wpisał rozgrzewkę przy dniu, klient widzi na początku dnia kartę
+*Rozgrzewka* — wiersz po wierszu, z filmem, jeśli jest. Rozwinięta, dopóki
+w dniu nic nie jest zrobione; w prowadzeniu stoi nad pierwszą serią.
+
+## Po cyklu: deload i maksy
+
+Trener włącza w konsoli (**Po cyklu: + deload, + maksy**) jeden albo oba
+tygodnie po sześciu tygodniach pracy. Klient widzi je na liście jako
+*Tydzień 7 z 8 · deload* i *Tydzień 8 z 8 · maksy*, każdy z jednym zdaniem,
+o co chodzi.
+
+* **Deload** — te same dni i ćwiczenia co w T6, RPE o 1 niżej, bez TOP SETU.
+  Zwykły trening, tylko lżejszy.
+* **Dzień maksów** — jeden dzień, wszystkie boje naraz. Przy każdym *1RM teraz*
+  (obecne 1RM jako punkt odniesienia), zdanie „rozgrzej się stopniowo, potem
+  jedno powtórzenie na maksa" i otwarte pole na wynik. Bez ocen — próby na
+  RPE 10 nie ma jak ocenić; licznik pod tytułem liczy wpisane wyniki.
+  Wynik trafia do kolejnego cyklu jako seria maksymalna.
+
+## Pętla się domyka
+
+To jest sedno fazy 2. Ocena klienta wraca do silnika i zmienia ciężar
+w kolejnym tygodniu — bez wysyłania czegokolwiek, bez odsyłania arkusza.
+
+Sprawdzone na żywo:
+
+| ćwiczenie | ocena w T1 | ciężar T1 | mnożnik | ciężar T2 |
+|---|---|---|---|---|
+| Barbell bench press | za łatwe | 85 kg | 1,05 | **87,5 kg** |
+| Barbell row | za trudne | 62,5 kg | 0,95 | **57,5 kg** |
+| Rope pushdown | *(bez oceny)* | 29 kg | 1,00 | 27 kg |
+
+Trzeci wiersz też się zmienił, choć mnożnik został 1 — bo automat akcesoriów
+podnosi powtórzenia z 10 na 11, a wyższe powtórzenia to niższy %1RM. Tak działa
+arkusz i tak ma być.
+
+Dodatkowo każde dotknięcie ląduje w **historii wykonań** — czego arkusz nie ma
+w ogóle. To materiał na automatyczną aktualizację 1RM i porównanie cykli w fazie 3.
+
+## Działa bez zasięgu
+
+Na siłowni zasięg bywa żaden, więc nic nie może się zgubić:
+
+- **Szkielet aplikacji** siedzi w cache przeglądarki (service worker), więc otwiera
+  się offline.
+- **Plan** leży w pamięci przeglądarki po pierwszym otwarciu z zasięgiem.
+- **Oceny** zapisują się lokalnie od razu i czekają w kolejce; wysyłają się same,
+  gdy wróci połączenie. U góry widnieje wtedy pasek „Offline".
+
+Warunek jest jeden: klient musi otworzyć link **raz z zasięgiem**, żeby plan
+zdążył się pobrać.
+
+> **To przez długi czas nie działało — i wyglądało, jakby działało.** Service
+> worker leży w `/klient/`, więc rejestrował się z domyślnym zakresem
+> `/klient/`. Klient otwiera `/k/<token>`, czyli adres **spoza** tego zakresu:
+> worker instalował się poprawnie i nigdy nie przejmował strony, którą klient
+> faktycznie otwiera. Bez zasięgu przeglądarka pokazywała własny błąd, a plan
+> zapisany lokalnie nie miał kto odczytać. Widać to było dopiero w narzędziach
+> przeglądarki: `navigator.serviceWorker.controller === null`.
+>
+> Naprawa wymaga zgody trzech miejsc: rejestracji z `scope: "/"`, nagłówka
+> `Service-Worker-Allowed: /` od serwera i filtra w samym workerze, żeby przy
+> szerszym zakresie nie zaczął obsługiwać konsoli trenera. Pilnuje tego pięć
+> testów w `konsola/testy/offline-klienta.test.ts`.
+>
+> Sprawdzone po naprawie: pierwsze wejście z zasięgiem, potem tryb samolotowy —
+> aplikacja otwiera się, pokazuje plan i historię przez cykle.
+
+
+**Słaby zasięg nie gubi serii.** Zapisy idą po kolei, a widok z serwera telefon
+przyjmuje dopiero wtedy, gdy kolejka jest pusta. Wcześniej przyjmował odpowiedź
+na każdy zapis — a ta niesie stan sprzed zapisów czekających za nim. Gdy zasięg
+gasł w połowie kolejki, telefon zostawał z widokiem bez serii wpisanej przed
+chwilą, a kolejna seria tego ćwiczenia zapisywała się na starej liście
+i poprzednia przepadała.
+## Postęp przez wszystkie cykle — sprawdzony na dwóch
+
+Blok „Przez wszystkie cykle" pojawia się dopiero od drugiego cyklu, więc
+jednocyklowe przejście nigdy go nie dotykało — a to jedyne miejsce, w którym
+klient widzi, że przez pół roku cokolwiek się zmieniło.
+
+Sprawdzone na prawdziwym przebiegu: klient trenuje cykl pierwszy z serią
+maksymalną 120 kg × 3, potem dostaje cykl drugi i wpisuje 140 kg × 3.
+Trajektoria pokazuje **1RM 127 → 148,1 kg, czyli +16,6%** — i tyle właśnie
+widzi na telefonie. Przejście klikane potwierdza też, że po wysłaniu drugiego
+cyklu **telefon sam na niego przechodzi**, bez nowego linku.
+
+## Na ekranie głównym wygląda jak aplikacja
+
+Klient może dodać link do ekranu głównego telefonu — otwiera się wtedy bez
+paska adresu, na pełnym ekranie, z własną ikoną. Od zwykłej zakładki różni ją
+właśnie ikona, a tu była pułapka: **iOS nie czyta ikon z manifestu**. Bierze
+wyłącznie `apple-touch-icon` i wyłącznie PNG. Bez tego iPhone stawiał na
+ekranie głównym **zrzut strony** — rozmazany prostokąt z fragmentem treningu.
+
+Ikona (sztanga na ciemnym tle, w kolorze akcentu konsoli) leży w trzech
+rozmiarach, razem z wersją maskowalną dla Androida, który przycina ikony do
+własnego kształtu. Wszystkie trafiają do pamięci telefonu razem z aplikacją,
+więc działają bez zasięgu.
+
+Rysuje je [`konsola/narzedzia/ikony.py`](../konsola/narzedzia/ikony.py) — bez
+żadnych bibliotek, sam PNG składany z `zlib`. Ikona zapisana bez źródła to
+plik, którego za pół roku nikt nie umie zmienić.
+
+### Klient musi jeszcze wiedzieć, że może ją dodać
+
+Ikona i pełny ekran nic nie dają, jeśli klient do końca cyklu otwiera link
+z SMS-a. **Nikt sam nie odkrywa, że stronę da się dodać do ekranu głównego** —
+na iPhonie to schowane pod ikoną udostępniania, na Androidzie w menu.
+
+Aplikacja mówi o tym sama, ale pod trzema warunkami, żeby to była podpowiedź,
+a nie naganianie:
+
+1. **dopiero po pierwszym domkniętym treningu** — zanim się do czegokolwiek
+   przyda, proszenie o miejsce na ekranie głównym jest bezczelne;
+2. **raz** — „nie teraz" znaczy nigdy więcej;
+3. **nigdy**, gdy aplikacja jest już dodana.
+
+Android pozwala zrobić to jednym przyciskiem i tak też jest zrobione. iOS nie
+daje na to żadnego mechanizmu, więc tam zostaje napisanie wprost, w co dotknąć —
+bez tego podpowiedź byłaby bezużyteczna.
+
+## Aktualizacje docierają same
+
+Aplikacja klienta zapisuje się w telefonie, żeby otwierała się bez zasięgu —
+i to jest cały sens tego rozwiązania. Ma jednak drugą stronę: plik raz
+zapisany zostaje tam na długo. Przez pierwsze wersje worker odpowiadał
+wyłącznie z zapisanej kopii, więc **poprawka docierała do klienta tylko wtedy,
+gdy ktoś pamiętał podbić numer wersji w kodzie workera**. Zabezpieczenie
+oparte na pamięci: jedno przeoczenie i wszyscy klienci zostają ze starym
+kodem, bez żadnego objawu po stronie trenera.
+
+Teraz jest inaczej: aplikacja otwiera się **z kopii** (czyli natychmiast,
+także w piwnicy bez zasięgu), a świeża wersja pobiera się **w tle** i wchodzi
+w życie przy następnym otwarciu. Kolejność jest celowa — „najpierw sieć"
+dawałoby świeższy kod kosztem tego, po co ten mechanizm w ogóle istnieje.
+
+Sprawdzone klikaniem, nie na słowo: `npm run przeglad-klienta` podmienia plik
+aplikacji na dysku i potwierdza, że zmiana dociera przy drugim otwarciu.
+Ta sama kontrola puszczona na starym kodzie pokazuje, że zmiana **nie
+docierała nigdy**, choćby klient otwierał aplikację bez końca.
+
+## O bezpieczeństwie — wprost
+
+Link jest kluczem. Kto go ma, ten widzi plan; nie ma hasła ani logowania.
+
+Przy kilkunastu klientach uważam to za proporcjonalne: plan treningowy to nie
+dane medyczne, a konta z hasłami to osobny kawałek pracy i osobny kłopot dla
+klienta. Token ma 192 bity losowości, więc zgadnąć się go nie da.
+
+Co z tego wynika w praktyce:
+
+- Link nie powinien trafiać na grupowe czaty ani nigdzie publicznie.
+- Gdyby wyciekł — **Unieważnij link** w konsoli. Stary przestaje działać
+  natychmiast, generujesz nowy.
+- Każdy plan ma własny token. Unieważnienie jednego nie rusza pozostałych.
+
+Gdy klientów będzie kilkuset albo dojdą dane wrażliwe (kontuzje, historia
+zdrowotna), trzeba to zamienić na prawdziwe konta. Wtedy też przyda się baza
+danych z `docs/03-architektura.md`.
+
+## Czego jeszcze nie ma
+
+- Powiadomień o zaplanowanym treningu.
+- Dźwięku na koniec przerwy — tylko wibracja. Przeglądarka odtworzy dźwięk
+  wyłącznie tuż po dotknięciu ekranu, a klient trzyma wtedy sztangę.
+- Kalendarza z datami treningów i przesuwaniem ich na inny dzień
+  (punkt 2 z [`docs/05-base44-co-przeniesc.md`](../docs/05-base44-co-przeniesc.md)).

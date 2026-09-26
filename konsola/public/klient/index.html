@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15171F">
+  <title>Trening</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <!-- iOS nie czyta ikon z manifestu — bierze wyłącznie to i wyłącznie PNG.
+       Bez tego dodanie do ekranu głównego iPhone'a daje zrzut strony
+       zamiast ikony. -->
+  <link rel="apple-touch-icon" href="/klient/ikona-180.png">
+  <!-- Manifest bez `start_url`: przeglądarka bierze wtedy adres otwartej strony,
+       czyli /k/<token>. Z `start_url` aplikacja dodana do ekranu głównego
+       otwierałaby /klient/ — adres bez tokenu, czyli pustkę. -->
+  <link rel="manifest" href="/klient/manifest.json">
+  <link rel="stylesheet" href="/klient/style.css">
+</head>
+<body>
+
+<div id="stan-polaczenia" class="offline ukryty">Offline — zapiszę, gdy wróci zasięg</div>
+
+<!-- ── wybór treningu ─────────────────────────────────────────────── -->
+<div id="ekran-tygodnie" class="ekran">
+  <header class="gora">
+    <h1 id="tytul">—</h1>
+    <p id="podtytul" class="drobne"></p>
+  </header>
+
+  <!-- Jednym dotknięciem do treningu, który jest następny — bez szukania go
+       na liście (prośba trenera z 25.09.2026). Chowa się po całym cyklu. -->
+  <button id="nastepny-trening" class="glowny szeroki nastepny-trening ukryty"></button>
+
+  <!-- Wszystkie treningi z cyklu odhaczone. Bez tego ostatni trening kończył
+       się tak samo jak każdy inny, a klient zostawał z listą samych ptaszków
+       i bez odpowiedzi na pytanie „i co teraz". -->
+  <section id="baner-koniec" class="baner koniec ukryty">
+    <strong>Cykl zrobiony — wszystkie treningi za Tobą</strong>
+    <p id="koniec-tresc"></p>
+  </section>
+
+  <!-- Trener właśnie poprawia plan albo szykuje kolejny cykl. Pokazujemy
+       ostatni, który klient dostał — zamiast zabierać mu ekran. -->
+  <section id="baner-przygotowania" class="baner ukryty">
+    <strong>Trener przygotowuje nowy plan</strong>
+    <p>Poniżej jest ostatni, który dostałeś. Otwórz aplikację ponownie,
+       gdy trener się odezwie.</p>
+  </section>
+
+  <!-- Dwie drogi do ciężarów. Dotąd była jedna — seria maksymalna — i baner
+       mówił „bez nich nie policzę ciężarów". Teraz klient może zacząć od razu
+       i dobrać ciężar według RPE; pierwsza wpisana seria liczy resztę planu. -->
+  <section id="pomiary-baner" class="baner ukryty">
+    <strong>Skąd wziąć ciężary</strong>
+    <p id="pomiary-tresc"></p>
+    <div class="drogi">
+      <button id="od-razu" class="droga glowny">
+        <span class="droga-tytul">Zacznij trening od razu</span>
+        <span class="droga-opis">Ciężar dobierzesz sam, według RPE. Z pierwszej
+          wpisanej serii policzę resztę planu.</span>
+      </button>
+      <button id="do-pomiarow" class="droga poboczny">
+        <span class="droga-tytul">Najpierw serie maksymalne</span>
+        <span class="droga-opis">Jedna seria do odmowy na każde ćwiczenie —
+          osobny trening pomiarowy.</span>
+      </button>
+    </div>
+    <div id="rpe-baner"></div>
+  </section>
+
+  <!-- Podpowiedź o dodaniu do ekranu głównego. Pojawia się dopiero po
+       pierwszym domkniętym treningu i tylko raz — patrz app.js. -->
+  <section id="baner-instalacji" class="baner ukryty">
+    <strong>Miej trening pod ręką</strong>
+    <p id="instalacja-tresc"></p>
+    <div class="akcje-baneru">
+      <button id="zainstaluj" class="glowny ukryty">Dodaj do ekranu głównego</button>
+      <button id="instalacja-nie" class="poboczny">Nie teraz</button>
+    </div>
+  </section>
+
+  <div id="tygodnie"></div>
+
+  <button id="pokaz-pomiary" class="poboczny szeroki">Serie maksymalne</button>
+  <button id="pokaz-moduly" class="poboczny szeroki ukryty">Oddech i bieg</button>
+  <button id="pokaz-postep" class="poboczny szeroki">Twój postęp</button>
+</div>
+
+<!-- ── postęp ─────────────────────────────────────────────────────── -->
+<div id="ekran-postep" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-postepu">←</button>
+    <div>
+      <h1>Twój postęp</h1>
+      <p class="drobne">Twoje cykle, ciężary i waga.</p>
+    </div>
+  </header>
+  <div id="postep"></div>
+</div>
+
+<!-- ── oddech i bieg ──────────────────────────────────────────────── -->
+<div id="ekran-moduly" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-modulow">←</button>
+    <div>
+      <h1>Oddech i bieg</h1>
+      <p class="drobne">Praca obok siłowni. Czas jest zadaniem, tempo celem.</p>
+    </div>
+  </header>
+  <div id="moduly"></div>
+</div>
+
+<!-- ── trening ────────────────────────────────────────────────────── -->
+<div id="ekran-trening" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-treningu">←</button>
+    <div>
+      <h1 id="trening-tytul">—</h1>
+      <p id="trening-postep" class="drobne"></p>
+    </div>
+  </header>
+
+  <button id="prowadz" class="glowny szeroki prowadz">▶ Prowadź mnie seria po serii</button>
+
+  <div id="topset" class="topset ukryty"></div>
+  <div id="cwiczenia"></div>
+
+  <button id="zakoncz" class="glowny szeroki">Zakończ trening</button>
+  <p class="drobne srodek" id="notka-ok">Ćwiczenia bez oceny zapiszą się jako „OK".</p>
+</div>
+
+<!-- ── prowadzenie: seria po serii ────────────────────────────────── -->
+<div id="ekran-seria" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-serii">←</button>
+    <div>
+      <h1 id="seria-tytul">—</h1>
+      <p id="seria-postep" class="drobne"></p>
+    </div>
+  </header>
+  <div class="pasek"><div id="pasek-wypelnienie"></div></div>
+  <!-- Jeden panel naraz. Całość rysuje `rysujPanel` w app.js — statyczny
+       szkielet byłby tu ściemą, bo panel serii, przerwa i koniec treningu
+       nie mają ze sobą wspólnego ani jednego pola. -->
+  <div id="panel"></div>
+</div>
+
+<!-- ── serie maksymalne ───────────────────────────────────────────── -->
+<div id="ekran-pomiary" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-pomiarow">←</button>
+    <div>
+      <h1>Serie maksymalne</h1>
+      <p class="drobne">Jedna seria do odmowy. Wpisz ciężar i ile powtórzeń wyszło.</p>
+    </div>
+  </header>
+  <div id="pomiary"></div>
+</div>
+
+<script src="/klient/app.js" type="module"></script>
+</body>
+</html>

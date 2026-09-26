@@ -1,0 +1,21 @@
+{
+  "name": "@craftmyplan/silnik",
+  "version": "0.1.0",
+  "description": "Jadro obliczeniowe planow treningowych — port MasterTemplate 5.17",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "test": "node --test 'testy/*.test.ts'",
+    "policz": "node narzedzia/policz.ts",
+    "dane": "python3 narzedzia/generuj-dane.py",
+    "sprawdz": "node narzedzia/sprawdz.ts"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

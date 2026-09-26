@@ -1,0 +1,566 @@
+/* Aplikacja klienta — jedna ręka, kciuk, sala z kiepskim światłem. */
+
+:root {
+  --tlo: #0F1117;
+  --karta: #171A22;
+  --karta-2: #1C1F29;
+  --tekst: #E9EBF2;
+  --tekst-slaby: #969DB1;
+  --tekst-blady: #6E7688;
+  --linia: #2A2F3B;
+  --akcent: #7B93FF;
+  --akcent-tlo: #1E2440;
+  --ok: #3FBE83;
+  --ok-tlo: #14291F;
+  --latwe: #D19A3E;
+  --trudne: #F2837B;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --tlo: #FAFAFC; --karta: #FFFFFF; --karta-2: #F1F3F8;
+    --tekst: #15171F; --tekst-slaby: #5C6274; --tekst-blady: #878DA0;
+    --linia: #DEE2EC; --akcent: #1F3FD8; --akcent-tlo: #E8ECFD;
+    --ok: #0E7C4A; --ok-tlo: #E8F4EE; --latwe: #9A6100; --trudne: #B3261E;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: var(--sans);
+  /* Jedna czcionka w całej aplikacji (26.09.2026). Pismo maszynowe przy
+     podpisach, liczbach i przyciskach dawało wygląd techniczny, trochę
+     przypadkowy. Cyfry o równej szerokości trzymają liczby w słupkach. */
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  line-height: 1.45;
+  padding: 0 1rem calc(2rem + env(safe-area-inset-bottom));
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+.ekran { padding-top: .5rem; }
+.ukryty { display: none !important; }
+h1 { font-size: 1.3rem; margin: 0; letter-spacing: -.01em; }
+.drobne { font-size: .82rem; color: var(--tekst-blady); margin: .2rem 0 0; }
+.srodek { text-align: center; }
+
+.gora { display: flex; align-items: center; gap: .8rem; padding: 1rem 0 .8rem; }
+.gora.sticky {
+  position: sticky; top: 0; z-index: 5; background: var(--tlo);
+  border-bottom: 1px solid var(--linia); margin-bottom: .8rem;
+  padding-top: calc(.8rem + env(safe-area-inset-top));
+}
+.wstecz {
+  border: none; background: var(--karta-2); color: var(--tekst);
+  font-size: 1.3rem; width: 2.6rem; height: 2.6rem; border-radius: 50%;
+  flex: none; cursor: pointer;
+}
+
+button { font: inherit; cursor: pointer; }
+.glowny {
+  background: var(--akcent); color: #fff; border: none;
+  border-radius: 10px; padding: .95rem 1.2rem; font-weight: 600; font-size: 1rem;
+}
+.poboczny {
+  background: var(--karta); color: var(--tekst); border: 1px solid var(--linia);
+  border-radius: 10px; padding: .85rem 1.2rem;
+}
+.szeroki { display: block; width: 100%; margin-top: 1.2rem; }
+
+/*
+ * Wcięcia systemowe (zegar, notch, pasek gestu) w aplikacji dodanej do ekranu
+ * głównego. Strona sięga tam pod sam brzeg ekranu — `viewport-fit=cover` —
+ * więc odstęp od zegara musi wziąć na siebie ten element, który stoi
+ * najwyżej. Ekrany z paskiem przyklejonym do góry robią to w `.gora.sticky`;
+ * zostają dwa miejsca, gdzie na górze stoi co innego.
+ */
+.offline {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--latwe); color: #1a1300;
+  text-align: center; font-size: .85rem; font-weight: 600;
+  padding: calc(.5rem + env(safe-area-inset-top)) .5rem .5rem;
+}
+
+/* Lista tygodni jako jedyna nie ma paska przyklejonego do góry — bez tego
+   tytuł planu stał na iPhonie pod zegarem. */
+#ekran-tygodnie .gora { padding-top: calc(1rem + env(safe-area-inset-top)); }
+
+/* Gdy nad listą stoi pasek „offline", to on odsuwa się od zegara. Nagłówek
+   pod nim nie powtarza tego odstępu drugi raz. */
+.offline:not(.ukryty) + #ekran-tygodnie .gora { padding-top: 1rem; }
+
+/* Ślad po ćwiczeniu, które stało tu przed podmianą — informacja, nie pole. */
+.wczesniej {
+  font-size: .82rem; color: var(--tekst-blady);
+  margin: .1rem 0 .5rem; line-height: 1.4;
+}
+.wczesniej .etykieta { font-size: .74rem; }
+.wczesniej .nazwa { color: var(--tekst); }
+
+/* Domknięcie cyklu — jedyny baner, który jest nagrodą, a nie zadaniem.
+   Stąd kolor „zrobione", a nie akcent, którym woła reszta komunikatów. */
+.baner.koniec { background: var(--ok-tlo); border-color: var(--ok); }
+
+.baner {
+  background: var(--akcent-tlo); border: 1px solid var(--akcent);
+  border-radius: 12px; padding: 1rem; margin-bottom: 1.2rem;
+}
+.baner p { margin: .4rem 0 .9rem; font-size: .88rem; color: var(--tekst-slaby); }
+/* Dwa przyciski obok siebie: „dodaj” i „nie teraz”. Na wąskim ekranie
+   zawijają się, zamiast wypychać baner poza szerokość. */
+.akcje-baneru { display: flex; gap: .6rem; flex-wrap: wrap; }
+.akcje-baneru button { flex: 1 1 auto; }
+
+/* ── tygodnie i dni ─────────────────────────────────────────────── */
+.tydzien { border-bottom: 1px solid var(--linia); }
+.tydzien[open] { padding-bottom: .6rem; }
+/* Nagłówek tygodnia to wiersz do dotknięcia: „Tydzień 2 z 6 ···· 1 z 3 ▸". */
+.tydzien-tytul {
+  display: flex; align-items: center; gap: .6rem; min-height: 3rem;
+  cursor: pointer; list-style: none; font-weight: 600; font-size: .95rem;
+}
+.tydzien-tytul::-webkit-details-marker { display: none; }
+.tydzien-tytul .tydzien-nazwa { flex: 1; }
+.tydzien-tytul .tydzien-stan { font-size: .82rem; font-weight: 500; color: var(--tekst-blady); }
+.tydzien-tytul .tydzien-stan.caly { color: var(--ok); }
+.tydzien-tytul::after {
+  content: "▸"; color: var(--tekst-blady); width: 1rem; text-align: center;
+  transition: transform .15s ease;
+}
+.tydzien[open] > .tydzien-tytul::after { transform: rotate(90deg); }
+.dzien-kafel {
+  display: flex; flex-direction: column; gap: .2rem; width: 100%;
+  background: var(--karta); border: 1px solid var(--linia); border-radius: 12px;
+  padding: .85rem 1rem; margin-bottom: .5rem; text-align: left; color: inherit;
+}
+.dzien-kafel .kafel-gora { display: flex; align-items: center; gap: .8rem; }
+.dzien-kafel:disabled { opacity: .5; }
+.dzien-kafel .nazwa { font-weight: 600; flex: 1; }
+.dzien-kafel .ile { font-size: .82rem; color: var(--tekst-blady); }
+.dzien-kafel .ptaszek { color: var(--ok); font-size: 1.2rem; line-height: 1; }
+.dzien-kafel .sklad {
+  font-size: .8rem; color: var(--tekst-slaby);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dzien-kafel.zrobiony { background: var(--karta-2); }
+.dzien-kafel.zrobiony .sklad { color: var(--tekst-blady); }
+/* Ten, do którego prowadzi „Następny trening" — żeby było go widać też na liście. */
+.dzien-kafel.nastepny { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }
+
+/* ── ćwiczenia ──────────────────────────────────────────────────── */
+.cwiczenie {
+  background: var(--karta); border: 1px solid var(--linia);
+  border-radius: 12px; padding: .9rem 1rem; margin-bottom: .7rem;
+}
+.cwiczenie.grupa { border-left: 3px solid var(--akcent); }
+.cwiczenie-gora { display: flex; align-items: baseline; gap: .55rem; }
+.cwiczenie .lp {
+  font-size: .78rem; color: var(--tekst-blady); flex: none;
+}
+.cwiczenie .nazwa { font-weight: 600; flex: 1; }
+.cwiczenie .film {
+  color: var(--akcent); text-decoration: none; font-size: .82rem; flex: none;
+}
+.zadanie {
+  display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
+  margin: .55rem 0 .1rem;
+}
+.zadanie .ciezar { font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; }
+.zadanie .schemat { color: var(--tekst-slaby); font-size: .92rem; }
+.zadanie .na-strone { color: var(--akcent); font-size: .78rem; }
+.zadanie .brak { color: var(--latwe); font-size: .92rem; font-weight: 600; }
+
+.oceny { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; margin-top: .75rem; }
+.ocena-przycisk {
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst-slaby);
+  border-radius: 9px; padding: .7rem .3rem; font-size: .86rem; font-weight: 600;
+}
+.ocena-przycisk.wybrana { color: #fff; border-color: transparent; }
+.ocena-przycisk.wybrana.ok { background: var(--ok); }
+.ocena-przycisk.wybrana.latwe { background: var(--latwe); color: #1a1300; }
+.ocena-przycisk.wybrana.trudne { background: var(--trudne); color: #2b0f0d; }
+
+/* ── oddech i bieg ──────────────────────────────────────────────── */
+.modul-tytul {
+  font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--tekst-blady); margin-bottom: .5rem;
+}
+.modul-poziom { font-weight: 600; font-size: 1.05rem; margin-bottom: .6rem; }
+.modul-blok { display: flex; gap: .6rem; padding: .3rem 0; font-size: .88rem; }
+.modul-blok .nazwa {
+  flex: 0 0 6.5rem; font-size: .72rem;
+  color: var(--tekst-blady);
+}
+.modul-blok .tresc { flex: 1; color: var(--tekst-slaby); }
+.modul-jednostka { padding: .45rem 0; border-top: 1px solid var(--linia); }
+.modul-jednostka:first-of-type { border-top: none; }
+.modul-jednostka .nazwa { display: block; font-size: .92rem; }
+.modul-jednostka .dane {
+  display: block; margin-top: .2rem;
+  font-size: .76rem; color: var(--tekst-blady);
+}
+.brama {
+  margin: .7rem 0 0; font-size: .8rem; color: var(--tekst-blady);
+  border-left: 2px solid var(--linia); padding-left: .6rem;
+}
+.modul-blok .tresc.kropki { letter-spacing: .15em; color: var(--linia); }
+.kropka.zrobiona { color: var(--ok); }
+
+/* ── co faktycznie poszło ───────────────────────────────────────── */
+.wykonanie { margin-top: .55rem; }
+.wykonanie-przelacz {
+  background: none; border: none; padding: .2rem 0;
+  color: var(--tekst-blady); font-size: .78rem;
+}
+/* Wiersz na serię, jeden pod drugim. */
+.wykonanie-pola { display: grid; gap: .35rem; margin-top: .45rem; }
+.wiersz-serii { display: flex; align-items: center; gap: .4rem; }
+.wiersz-serii .nr {
+  font-size: .75rem; color: var(--tekst-blady);
+  width: 1.3rem; flex: none;
+}
+.wykonanie-pola input {
+  font: inherit; text-align: center;
+  padding: .55rem .3rem; border-radius: 9px; width: 100%; min-width: 0;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.wykonanie-pola .razy {
+  font-size: .78rem; color: var(--tekst-blady);
+  white-space: nowrap;
+}
+
+/* ── TOP SET ────────────────────────────────────────────────────── */
+.topset {
+  background: var(--akcent-tlo); border: 1px solid var(--akcent);
+  border-radius: 12px; padding: .85rem 1rem; margin-bottom: .9rem;
+}
+.topset .etykieta {
+  font-size: .7rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--akcent); font-weight: 700;
+}
+.topset .wiersz { display: flex; align-items: baseline; gap: .6rem; margin-top: .3rem; }
+.topset .ciezar { font-size: 1.35rem; font-weight: 700; margin-left: auto; }
+
+/* ── serie maksymalne ───────────────────────────────────────────── */
+.pomiar {
+  background: var(--karta); border: 1px solid var(--linia);
+  border-radius: 12px; padding: .9rem 1rem; margin-bottom: .7rem;
+}
+.pomiar .nazwa { font-weight: 600; margin-bottom: .6rem; }
+.pomiar .pola { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; align-items: center; }
+.pomiar input {
+  font: inherit; text-align: center;
+  padding: .7rem .4rem; border-radius: 9px; width: 100%;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.pomiar .rm {
+  font-weight: 700; color: var(--akcent);
+  white-space: nowrap; font-size: .95rem;
+}
+/* Ćwiczenie bez serii maksymalnej — karta zostaje, pola znikają, powód
+   zostaje napisany. Klient widzi je w planie, więc musi je widzieć i tu. */
+.pomiar.bez-serii { opacity: .75; }
+.pomiar.bez-serii .nazwa { margin-bottom: .3rem; }
+.pomiar .powod { margin: 0; font-size: .85rem; line-height: 1.4; color: var(--tekst-blady); }
+.wskazowka-pomiarow {
+  margin: 0 0 .8rem; font-size: .85rem; line-height: 1.45; color: var(--tekst-blady);
+}
+.pomiar .etykiety {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem;
+  font-size: .7rem; color: var(--tekst-blady);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: .25rem;
+}
+
+/* Ekran bez planu: między cyklami albo przy nieaktualnym linku. */
+.komunikat-pelny {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .5rem;
+  padding: 2rem; text-align: center;
+}
+.komunikat-pelny h1 { font-size: 1.2rem; margin: 0; }
+.komunikat-pelny p { margin: 0; color: var(--tekst-slaby, #666); max-width: 22rem; }
+
+/* ── prowadzenie: seria po serii ────────────────────────────────── */
+/* Jeden panel naraz, wszystko duże. Klient patrzy na to z odległości
+   wyciągniętej ręki, w rękawiczkach albo z magnezją na palcach. */
+.prowadz { margin: 0 0 1rem; }
+
+.pasek { height: 4px; background: var(--linia); border-radius: 2px; overflow: hidden; }
+#pasek-wypelnienie {
+  height: 100%; width: 0; background: var(--akcent); border-radius: 2px;
+  transition: width .25s ease;
+}
+
+.panel-karta {
+  background: var(--karta); border: 1px solid var(--linia);
+  border-radius: 14px; padding: 1.1rem 1rem; margin-top: 1rem;
+}
+.panel-gora { display: flex; align-items: baseline; gap: .55rem; }
+.panel-gora .lp {
+  font-size: .78rem; color: var(--tekst-blady); flex: none;
+}
+.panel-gora .nazwa { font-weight: 600; font-size: 1.15rem; flex: 1; line-height: 1.25; }
+.panel-gora .film {
+  color: var(--akcent); text-decoration: none; font-size: .82rem; flex: none;
+}
+.seria-numer {
+  font-size: .8rem; color: var(--tekst-blady);
+  margin-top: .35rem; letter-spacing: .02em;
+}
+.panel-zadanie {
+  display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
+  margin: .9rem 0 .2rem;
+}
+.panel-zadanie .duzy { font-size: 2.1rem; font-weight: 700; letter-spacing: -.03em; }
+.panel-zadanie .obok { color: var(--tekst-slaby); font-size: .95rem; }
+
+.serie-wpisane { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .6rem; }
+.serie-wpisane .chip {
+  font-size: .75rem; color: var(--tekst-slaby);
+  background: var(--karta-2); border: 1px solid var(--linia);
+  border-radius: 20px; padding: .18rem .55rem;
+}
+/* Kafelek serii to przycisk do poprawki — pod palcem ma być czym trafić. */
+.serie-wpisane button.chip { cursor: pointer; min-height: 2rem; padding: .3rem .7rem; }
+.serie-wpisane button.chip:not(:disabled) { color: var(--tekst); border-color: var(--akcent); }
+.serie-wpisane button.chip.biezaca { color: var(--akcent); border-color: var(--akcent);
+  background: var(--akcent-tlo); opacity: 1; }
+
+.panel-pola { display: flex; align-items: center; gap: .4rem; margin-top: .9rem; }
+.panel-pola input {
+  font: inherit; font-size: 1.2rem; text-align: center;
+  padding: .7rem .3rem; border-radius: 10px; width: 100%; min-width: 0;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.panel-pola .razy {
+  font-size: .78rem; color: var(--tekst-blady); white-space: nowrap;
+}
+.pytanie { margin-top: 1rem; font-size: .88rem; color: var(--tekst-slaby); }
+
+.pod-panelem {
+  display: flex; justify-content: space-between; gap: .6rem; margin-top: .9rem;
+}
+.link {
+  background: none; border: none; padding: .3rem 0;
+  color: var(--tekst-blady); font-size: .8rem; text-decoration: underline;
+}
+
+.topset-panel { background: var(--akcent-tlo); border-color: var(--akcent); }
+.topset-panel .etykieta {
+  font-size: .7rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--akcent); font-weight: 700;
+  margin-bottom: .3rem;
+}
+
+/* Przerwa. Pierścień robi `conic-gradient` — obraca się bez obrazków,
+   bez SVG i bez jednej linii JavaScriptu poza ustawieniem procentu. */
+.przerwa { text-align: center; }
+.pierscien {
+  width: 11rem; height: 11rem; border-radius: 50%; margin: .5rem auto 1rem;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--akcent) var(--wypelnienie, 0%), var(--linia) 0);
+}
+.pierscien-srodek {
+  width: 9.4rem; height: 9.4rem; border-radius: 50%; background: var(--karta);
+  display: grid; place-items: center; align-content: center;
+}
+.pierscien .licznik {
+  font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em;
+}
+.pierscien .etykieta {
+  font-size: .7rem; letter-spacing: .18em;
+  color: var(--tekst-blady);
+}
+.przerwa .dalej { margin: 0 0 1rem; font-size: .92rem; color: var(--tekst-slaby); }
+.akcje-przerwy { display: flex; gap: .6rem; }
+.akcje-przerwy button { flex: 1; }
+
+.koniec-panel { text-align: center; }
+.koniec-panel .duzy-znak { font-size: 3rem; color: var(--ok); line-height: 1; }
+.koniec-panel h2 { font-size: 1.15rem; margin: .5rem 0 .2rem; }
+.koniec-panel .pod-panelem { justify-content: center; }
+
+/* ── dobieranie ciężaru według RPE ──────────────────────────────── */
+/* Dwie drogi na start — każda jako przycisk z tytułem i jednym zdaniem,
+   żeby wybór nie wymagał czytania czegokolwiek poza samymi przyciskami. */
+.drogi { display: grid; gap: .55rem; }
+.droga { display: block; text-align: left; width: 100%; padding: .8rem 1rem; }
+.droga-tytul { display: block; font-weight: 600; }
+.droga-opis {
+  display: block; font-size: .8rem; font-weight: 400; line-height: 1.35;
+  margin-top: .2rem; opacity: .85;
+}
+
+.zadanie .dobierz,
+.panel-zadanie .duzy.dobierz { color: var(--latwe); }
+.zadanie .dobierz { font-size: 1.1rem; font-weight: 700; }
+.panel-zadanie .duzy.dobierz { font-size: 1.5rem; }
+
+.dobor { margin-top: .45rem; }
+.dobor p, p.dobor { margin: 0; font-size: .85rem; line-height: 1.4; color: var(--tekst-slaby); }
+
+.kalibracja { margin: .45rem 0 0; font-size: .82rem; color: var(--ok); }
+
+details.rpe { margin-top: .6rem; font-size: .85rem; }
+details.rpe summary {
+  cursor: pointer; color: var(--akcent); font-weight: 600; list-style: none;
+}
+details.rpe summary::-webkit-details-marker { display: none; }
+details.rpe summary::before { content: "▸ "; }
+details.rpe[open] summary::before { content: "▾ "; }
+details.rpe p { margin: .5rem 0 0; line-height: 1.45; color: var(--tekst-slaby); }
+.rpe-tabela {
+  display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem;
+  margin-top: .5rem; color: var(--tekst-slaby);
+}
+.rpe-liczba { font-weight: 700; color: var(--tekst); }
+p.dobor.dobor-zapisane { color: var(--ok); }
+/* „Zrobione: 9×11 · 10×10" i obok „✎ edytuj" — zapis, nie formularz. */
+.wykonanie-naglowek { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+.wykonanie-opis { font-size: .8rem; color: var(--tekst-slaby); }
+.wykonanie-opis:empty { display: none; }
+/* Seria bez pary — czego brakuje, żeby policzyć ciężar. */
+.dobor-brakuje { margin: 0 0 .35rem; font-size: .85rem; font-weight: 600; color: var(--latwe); }
+/* „kg" i „powt." w pustym polu — wyraźnie blade, żeby nie udawały liczby. */
+.wykonanie-pola input::placeholder, .panel-pola input::placeholder {
+  color: var(--tekst-blady); opacity: .6;
+}
+
+/* ── gdzie jestem w treningu ────────────────────────────────────── */
+/* Mapa dnia nad panelem: kafelek na ćwiczenie. Zrobione — zielone z ptaszkiem,
+   zaczęte — z zieloną krawędzią, to, przy którym klient stoi — w akcencie. */
+.mapa-dnia { display: flex; flex-wrap: wrap; gap: .45rem .9rem; margin-top: .8rem; }
+/* Jedna litera = jedna superseria: kafelki ciasno obok siebie. */
+.grupa-mapy { display: flex; gap: .25rem; }
+.kafel-mapy {
+  font-size: .78rem; font-weight: 600;
+  padding: .35rem .6rem; border-radius: 8px; min-width: 2.6rem;
+  background: var(--karta); color: var(--tekst-slaby); border: 1px solid var(--linia);
+}
+/* Zaczęte: bez zieleni — zieleń znaczy „skończone". Stan niesie licznik 2/3. */
+.kafel-mapy.zaczete { color: var(--tekst); }
+.kafel-mapy .licznik-mapy { font-weight: 400; color: var(--tekst-blady); }
+.kafel-mapy.zrobione { background: var(--ok-tlo); border-color: var(--ok); color: var(--ok); }
+.kafel-mapy.tu { outline: 2px solid var(--akcent); outline-offset: 1px; color: var(--tekst); }
+
+.przeglad-zrobionej {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: .3rem .8rem; margin-top: .8rem; padding: .6rem .8rem; border-radius: 10px;
+  background: var(--ok-tlo); border: 1px solid var(--ok); font-size: .85rem;
+}
+.przeglad-zrobionej .link { color: var(--tekst); font-weight: 600; }
+
+/* Na liście dnia: bieżące ćwiczenie w akcencie, stan jako przycisk powrotu. */
+.cwiczenie.biezace, .topset.biezace { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }
+.stan-prowadzenia {
+  display: inline-block; margin-top: .4rem; padding: .25rem .6rem; border-radius: 8px;
+  font-size: .78rem; font-weight: 600;
+  background: var(--ok-tlo); color: var(--ok); border: 1px solid var(--ok);
+}
+.stan-prowadzenia.tu { background: var(--akcent-tlo); color: var(--akcent); border-color: var(--akcent); }
+.stan-prowadzenia.zaczete { background: var(--karta-2); color: var(--tekst-slaby); border-color: var(--linia); }
+/* Wejście w nietknięte ćwiczenie — widoczne, ale ciszej niż stan treningu. */
+.stan-prowadzenia.start { background: transparent; color: var(--akcent); border-color: var(--linia); cursor: pointer; }
+@media (pointer: coarse) { .stan-prowadzenia { padding: .5rem .8rem; } }
+
+/* ── zadanie serii: równe kolumny ───────────────────────────────── */
+/* Podpis nad liczbą, wszystkie liczby tą samą wielkością. Duży ciężar obok
+   drobnych powtórzeń czytał się jak ciężar z dopiskiem. */
+.zadanie-kolumny {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .5rem;
+  margin: .6rem 0 .1rem;
+}
+.kolumna { display: flex; flex-direction: column; min-width: 0; }
+.kolumna .podpis {
+  font-size: .64rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tekst-blady);
+}
+.kolumna .wartosc {
+  font-weight: 700; font-size: 1.35rem;
+  letter-spacing: -.02em; line-height: 1.2; white-space: nowrap;
+}
+.kolumna .wartosc small { font-size: .62em; font-weight: 600; color: var(--tekst-slaby); }
+.kolumna .dopisek { font-size: .72rem; color: var(--akcent); }
+/* Słowo zamiast liczby — „masa ciała", „dobierz" — mniejsze, żeby się mieściło. */
+.kolumna.slowo .wartosc { font-size: .95rem; white-space: normal; padding-top: .2rem; }
+.kolumna.dobierz .wartosc { color: var(--latwe); }
+/* W panelu te same kolumny, tylko większe — to jedyna rzecz na ekranie. */
+/* Kolumny w panelu po treści, nie po równo: przy trzech równych „77,5 kg"
+   wjeżdżało na powtórzenia („77,5 kg6", 26.09.2026). Na wąskim telefonie
+   liczby odrobinę maleją, zamiast na siebie wchodzić. */
+.panel-karta .zadanie-kolumny {
+  margin: 1rem 0 .3rem; grid-auto-columns: auto; justify-content: space-between; column-gap: 1rem;
+}
+.panel-karta .kolumna .wartosc { font-size: clamp(1.6rem, 8vw, 2rem); }
+.panel-karta .kolumna.slowo .wartosc { font-size: 1.15rem; }
+.panel-karta .kolumna .podpis { font-size: .7rem; }
+
+/* RPE drobno pod kolumnami — przetłumaczone na „ile w zapasie". */
+.rpe-linia { font-size: .78rem; color: var(--tekst-slaby); margin-top: .25rem; }
+.panel-karta .rpe-linia { font-size: .9rem; margin-top: .45rem; }
+/* Numer serii w panelu: „3 z 3" — duża trójka, drobne „z 3". */
+.kolumna-seria .wartosc { color: var(--akcent); }
+.serie-wpisane .etykieta-serii { font-size: .78rem; color: var(--tekst-blady); align-self: center; }
+
+/* Waga ciała: pole, „kg" i przycisk w jednym rzędzie. Dawniej pole pożyczało
+   styl od wierszy serii — i rozjechało się, gdy te stały się siatką. */
+.pole-wagi { display: flex; align-items: center; gap: .5rem; margin-top: .55rem; }
+.pole-wagi input {
+  flex: 1; min-width: 0; font: inherit; font-size: 1.1rem;
+  text-align: center; padding: .6rem .4rem; border-radius: 9px;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.pole-wagi .razy { font-size: .85rem; color: var(--tekst-blady); }
+.pole-wagi .glowny { padding: .65rem 1.1rem; }
+.potwierdzenie-wagi { margin: .45rem 0 0; font-size: .88rem; color: var(--ok); }
+.potwierdzenie-wagi.blad { color: var(--trudne); }
+
+/* ── tygodnie po cyklu: deload i maksy ─────────────────────────── */
+/* Przerywana linia odróżnia je od sześciu tygodni pracy — to nie jest
+   „jeszcze jeden tydzień tego samego", tylko coś innego. */
+.tydzien.po-cyklu { border-top: 1px dashed var(--linia); }
+.opis-tygodnia { margin: .1rem 0 .5rem; }
+
+/* „Ostatnio (T1): 60 kg × 8 · OK" — historia ćwiczenia jedną linijką. */
+.ostatnio { font-size: .8rem; color: var(--tekst-slaby); margin: .35rem 0 0; }
+
+/* ── rozgrzewka na początek dnia ───────────────────────────────── */
+.rozgrzewka {
+  background: var(--karta); border: 1px dashed var(--linia); border-radius: 14px;
+  padding: .7rem .9rem; margin-bottom: .8rem;
+}
+.rozgrzewka summary { font-weight: 600; cursor: pointer; min-height: 1.8rem; }
+.rozgrzewka-lista { margin: .4rem 0 .2rem 1.1rem; padding: 0; line-height: 1.5; }
+.rozgrzewka .film {
+  display: inline-block; margin-top: .3rem;
+  color: var(--akcent); text-decoration: none; font-size: .88rem;
+}
+
+/* Następny trening — pierwsza rzecz pod nagłówkiem listy tygodni. */
+.nastepny-trening { margin: 0 0 1rem; }
+
+/* Ocena przy serii i korekta ±5 % na następną (26.09.2026). */
+.ocena-w-panelu { margin-top: .9rem; }
+.ocena-w-panelu .podpowiedz-oceny { margin: .1rem 0 .4rem; }
+.korekta-serii { color: var(--akcent); font-size: .88rem; margin: .45rem 0 0; }
+.korekta-serii:empty { display: none; }
+
+/* ── iPad i szersze ekrany ─────────────────────────────────────── */
+/* Ten sam układ, tylko większy (26.09.2026). Dotąd na iPadzie stała wąska
+   kolumna telefonu na środku pustego ekranu, z drobnym tekstem. Wszystko
+   liczy się w `rem`, więc większa podstawa powiększa całość naraz. */
+@media (min-width: 700px) {
+  html { font-size: 18px; }
+  body { max-width: 42rem; padding-inline: 1.5rem; }
+  .panel-karta { padding: 1.4rem 1.5rem; }
+  .panel-karta .kolumna .wartosc { font-size: 2.6rem; }
+  .pierscien { width: 13rem; height: 13rem; }
+  .pierscien-srodek { width: 11.2rem; height: 11.2rem; }
+  .pierscien .licznik { font-size: 2.9rem; }
+}

@@ -1,0 +1,1391 @@
+{
+ "zrodlo": "zloty-518.xlsx",
+ "ustawienia": {
+  "tryb_akcesoriow": "licz z RPE",
+  "czesc_planu": "objętość",
+  "dni_treningowe": 2
+ },
+ "serie_maksymalne": [
+  {
+   "position_id": "D1-S01",
+   "nazwa": "Barbell bench press",
+   "ciezar": 100,
+   "powtorzenia": 5,
+   "oczekiwany_1rm": 113,
+   "ex_id": "EX-0011"
+  },
+  {
+   "position_id": "D1-S02",
+   "nazwa": "Barbell row",
+   "ciezar": 70,
+   "powtorzenia": 8,
+   "oczekiwany_1rm": 87,
+   "ex_id": "EX-0016"
+  },
+  {
+   "position_id": "D1-S03",
+   "nazwa": "Rope pushdown",
+   "ciezar": 30,
+   "powtorzenia": 12,
+   "oczekiwany_1rm": 42.6,
+   "ex_id": "EX-0170"
+  },
+  {
+   "position_id": "D1-S04",
+   "nazwa": "Allah",
+   "ciezar": 40,
+   "powtorzenia": 10,
+   "oczekiwany_1rm": 53,
+   "ex_id": "EX-0003"
+  },
+  {
+   "position_id": "D2-S01",
+   "nazwa": "Conventional deadlift",
+   "ciezar": 140,
+   "powtorzenia": 3,
+   "oczekiwany_1rm": 148.1,
+   "ex_id": null
+  },
+  {
+   "position_id": "D2-S02",
+   "nazwa": "Lat pulldown",
+   "ciezar": 60,
+   "powtorzenia": 10,
+   "oczekiwany_1rm": 79.5,
+   "ex_id": "EX-0128"
+  },
+  {
+   "position_id": "D2-S03",
+   "nazwa": "Arnold press",
+   "ciezar": 35,
+   "powtorzenia": 8,
+   "oczekiwany_1rm": 43.5,
+   "ex_id": "EX-0004"
+  },
+  {
+   "position_id": "D2-S04",
+   "nazwa": "Bayesian curl",
+   "ciezar": 25,
+   "powtorzenia": 12,
+   "oczekiwany_1rm": 35.5,
+   "ex_id": "EX-0019"
+  }
+ ],
+ "sloty": [
+  {
+   "position_id": "D1-S01",
+   "dzien": 1,
+   "wiersz": 7,
+   "lp": "A1.",
+   "nazwa": "Barbell bench press",
+   "ex_id": "EX-0011",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7,
+     "feedback": null,
+     "cwiczenie": "Barbell bench press",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 5,
+     "ocz_ciezar": 85,
+     "ocz_procent": 74.5,
+     "ocz_one_rm": 113,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 3,
+     "ocz_stres_c": 2.5,
+     "ocz_stres_p": 4
+    },
+    "T2": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7,
+     "feedback": null,
+     "cwiczenie": "Barbell bench press",
+     "one_rm_reczny": 113,
+     "ocz_powtorzenia": 6,
+     "ocz_ciezar": 80,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 113,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 3,
+     "ocz_stres_c": 2.5,
+     "ocz_stres_p": 4
+    },
+    "T3": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7,
+     "feedback": null,
+     "cwiczenie": "Barbell bench press",
+     "one_rm_reczny": 113,
+     "ocz_powtorzenia": 5,
+     "ocz_ciezar": 85,
+     "ocz_procent": 74.5,
+     "ocz_one_rm": 113,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 3,
+     "ocz_stres_c": 2.5,
+     "ocz_stres_p": 4
+    },
+    "T4": {
+     "powt_reczne": true,
+     "serie": 4,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Barbell bench press",
+     "one_rm_reczny": 113,
+     "ocz_powtorzenia": 5,
+     "ocz_ciezar": 87.5,
+     "ocz_procent": 77.5,
+     "ocz_one_rm": 113,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 2.8,
+     "ocz_stres_c": 2.4,
+     "ocz_stres_p": 3.6
+    },
+    "T5": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Barbell bench press",
+     "one_rm_reczny": 113,
+     "ocz_powtorzenia": 4,
+     "ocz_ciezar": 90,
+     "ocz_procent": 80.5,
+     "ocz_one_rm": 113,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 3.5,
+     "ocz_stres_c": 3.5,
+     "ocz_stres_p": 4
+    },
+    "T6": {
+     "powt_reczne": true,
+     "serie": 6,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Barbell bench press",
+     "one_rm_reczny": 113,
+     "ocz_powtorzenia": 3,
+     "ocz_ciezar": 95,
+     "ocz_procent": 83.5,
+     "ocz_one_rm": 113,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 4.2,
+     "ocz_stres_c": 4.2,
+     "ocz_stres_p": 4.2
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D1-S02",
+   "dzien": 1,
+   "wiersz": 8,
+   "lp": "B1.",
+   "nazwa": "Barbell row",
+   "ex_id": "EX-0016",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": "za łatwe",
+     "cwiczenie": "Barbell row",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 8,
+     "ocz_ciezar": 62.5,
+     "ocz_procent": 72.5,
+     "ocz_one_rm": 87,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.8,
+     "ocz_stres_c": 1.125,
+     "ocz_stres_p": 2.475
+    },
+    "T2": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": "za łatwe",
+     "cwiczenie": "Barbell row",
+     "one_rm_reczny": 87,
+     "ocz_powtorzenia": 9,
+     "ocz_ciezar": 62.5,
+     "ocz_procent": 69.5,
+     "ocz_one_rm": 87,
+     "ocz_mnoznik": 1.05,
+     "ocz_stres_t": 1.8,
+     "ocz_stres_c": 0.9,
+     "ocz_stres_p": 2.475
+    },
+    "T3": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Barbell row",
+     "one_rm_reczny": 87,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 65,
+     "ocz_procent": 67.5,
+     "ocz_one_rm": 87,
+     "ocz_mnoznik": 1.1,
+     "ocz_stres_t": 1.575,
+     "ocz_stres_c": 0.9,
+     "ocz_stres_p": 2.475
+    },
+    "T4": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Barbell row",
+     "one_rm_reczny": 87,
+     "ocz_powtorzenia": 8,
+     "ocz_ciezar": 72.5,
+     "ocz_procent": 76.5,
+     "ocz_one_rm": 87,
+     "ocz_mnoznik": 1.1,
+     "ocz_stres_t": 2.25,
+     "ocz_stres_c": 1.35,
+     "ocz_stres_p": 3.15
+    },
+    "T5": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Barbell row",
+     "one_rm_reczny": 87,
+     "ocz_powtorzenia": 9,
+     "ocz_ciezar": 70,
+     "ocz_procent": 73.5,
+     "ocz_one_rm": 87,
+     "ocz_mnoznik": 1.1,
+     "ocz_stres_t": 2.25,
+     "ocz_stres_c": 1.125,
+     "ocz_stres_p": 3.15
+    },
+    "T6": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Barbell row",
+     "one_rm_reczny": 87,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 67.5,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 87,
+     "ocz_mnoznik": 1.1,
+     "ocz_stres_t": 2.025,
+     "ocz_stres_c": 1.125,
+     "ocz_stres_p": 3.15
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D1-S03",
+   "dzien": 1,
+   "wiersz": 9,
+   "lp": "B2.",
+   "nazwa": "Rope pushdown",
+   "ex_id": "EX-0170",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Rope pushdown",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 29,
+     "ocz_procent": 67.5,
+     "ocz_one_rm": 42.6,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.525,
+     "ocz_stres_c": 0.3,
+     "ocz_stres_p": 0.825
+    },
+    "T2": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Rope pushdown",
+     "one_rm_reczny": 42.6,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 27,
+     "ocz_procent": 64.5,
+     "ocz_one_rm": 42.6,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.525,
+     "ocz_stres_c": 0.225,
+     "ocz_stres_p": 0.825
+    },
+    "T3": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Rope pushdown",
+     "one_rm_reczny": 42.6,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 27,
+     "ocz_procent": 62.5,
+     "ocz_one_rm": 42.6,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.525,
+     "ocz_stres_c": 0.225,
+     "ocz_stres_p": 0.75
+    },
+    "T4": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Rope pushdown",
+     "one_rm_reczny": 42.6,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 30,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 42.6,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.375,
+     "ocz_stres_p": 1.05
+    },
+    "T5": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Rope pushdown",
+     "one_rm_reczny": 42.6,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 29,
+     "ocz_procent": 68.5,
+     "ocz_one_rm": 42.6,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.3,
+     "ocz_stres_p": 1.05
+    },
+    "T6": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Rope pushdown",
+     "one_rm_reczny": 42.6,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 28,
+     "ocz_procent": 66.5,
+     "ocz_one_rm": 42.6,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.3,
+     "ocz_stres_p": 1.05
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D1-S04",
+   "dzien": 1,
+   "wiersz": 10,
+   "lp": "C1.",
+   "nazwa": "Allah",
+   "ex_id": "EX-0003",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 35,
+     "ocz_procent": 67.5,
+     "ocz_one_rm": 53,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 1.65
+    },
+    "T2": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": 53,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 35,
+     "ocz_procent": 64.5,
+     "ocz_one_rm": 53,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.45,
+     "ocz_stres_p": 1.65
+    },
+    "T3": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": 53,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 32.5,
+     "ocz_procent": 62.5,
+     "ocz_one_rm": 53,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.45,
+     "ocz_stres_p": 1.5
+    },
+    "T4": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": 53,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 37.5,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 53,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.75,
+     "ocz_stres_p": 2.1
+    },
+    "T5": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": 53,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 37.5,
+     "ocz_procent": 68.5,
+     "ocz_one_rm": 53,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 2.1
+    },
+    "T6": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Allah",
+     "one_rm_reczny": 53,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 35,
+     "ocz_procent": 66.5,
+     "ocz_one_rm": 53,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 2.1
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D2-S01",
+   "dzien": 2,
+   "wiersz": 23,
+   "lp": "A1.",
+   "nazwa": "Conventional deadlift",
+   "ex_id": null,
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": true,
+     "serie": 4,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Conventional deadlift",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 4,
+     "ocz_ciezar": 119,
+     "ocz_procent": 80.5,
+     "ocz_one_rm": 148.1,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0,
+     "ocz_stres_c": 0,
+     "ocz_stres_p": 0
+    },
+    "T2": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7,
+     "feedback": null,
+     "cwiczenie": "Conventional deadlift",
+     "one_rm_reczny": 148.1,
+     "ocz_powtorzenia": 6,
+     "ocz_ciezar": 106,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 148.1,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0,
+     "ocz_stres_c": 0,
+     "ocz_stres_p": 0
+    },
+    "T3": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7,
+     "feedback": null,
+     "cwiczenie": "Conventional deadlift",
+     "one_rm_reczny": 148.1,
+     "ocz_powtorzenia": 5,
+     "ocz_ciezar": 110.5,
+     "ocz_procent": 74.5,
+     "ocz_one_rm": 148.1,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0,
+     "ocz_stres_c": 0,
+     "ocz_stres_p": 0
+    },
+    "T4": {
+     "powt_reczne": true,
+     "serie": 4,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Conventional deadlift",
+     "one_rm_reczny": 148.1,
+     "ocz_powtorzenia": 5,
+     "ocz_ciezar": 115,
+     "ocz_procent": 77.5,
+     "ocz_one_rm": 148.1,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0,
+     "ocz_stres_c": 0,
+     "ocz_stres_p": 0
+    },
+    "T5": {
+     "powt_reczne": true,
+     "serie": 5,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Conventional deadlift",
+     "one_rm_reczny": 148.1,
+     "ocz_powtorzenia": 4,
+     "ocz_ciezar": 119,
+     "ocz_procent": 80.5,
+     "ocz_one_rm": 148.1,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0,
+     "ocz_stres_c": 0,
+     "ocz_stres_p": 0
+    },
+    "T6": {
+     "powt_reczne": true,
+     "serie": 6,
+     "rpe": 7.5,
+     "feedback": null,
+     "cwiczenie": "Conventional deadlift",
+     "one_rm_reczny": 148.1,
+     "ocz_powtorzenia": 3,
+     "ocz_ciezar": 123.5,
+     "ocz_procent": 83.5,
+     "ocz_one_rm": 148.1,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0,
+     "ocz_stres_c": 0,
+     "ocz_stres_p": 0
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D2-S02",
+   "dzien": 2,
+   "wiersz": 24,
+   "lp": "B1.",
+   "nazwa": "Lat pulldown",
+   "ex_id": "EX-0128",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": "za trudne",
+     "cwiczenie": "Lat pulldown",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 52.5,
+     "ocz_procent": 67.5,
+     "ocz_one_rm": 79.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 1.65
+    },
+    "T2": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Lat pulldown",
+     "one_rm_reczny": 79.5,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 47.5,
+     "ocz_procent": 64.5,
+     "ocz_one_rm": 79.5,
+     "ocz_mnoznik": 0.95,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.45,
+     "ocz_stres_p": 1.65
+    },
+    "T3": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Lat pulldown",
+     "one_rm_reczny": 79.5,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 47.5,
+     "ocz_procent": 62.5,
+     "ocz_one_rm": 79.5,
+     "ocz_mnoznik": 0.95,
+     "ocz_stres_t": 1.05,
+     "ocz_stres_c": 0.45,
+     "ocz_stres_p": 1.5
+    },
+    "T4": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Lat pulldown",
+     "one_rm_reczny": 79.5,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 55,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 79.5,
+     "ocz_mnoznik": 0.95,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.75,
+     "ocz_stres_p": 2.1
+    },
+    "T5": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Lat pulldown",
+     "one_rm_reczny": 79.5,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 52.5,
+     "ocz_procent": 68.5,
+     "ocz_one_rm": 79.5,
+     "ocz_mnoznik": 0.95,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 2.1
+    },
+    "T6": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Lat pulldown",
+     "one_rm_reczny": 79.5,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 50,
+     "ocz_procent": 66.5,
+     "ocz_one_rm": 79.5,
+     "ocz_mnoznik": 0.95,
+     "ocz_stres_t": 1.35,
+     "ocz_stres_c": 0.6,
+     "ocz_stres_p": 2.1
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D2-S03",
+   "dzien": 2,
+   "wiersz": 25,
+   "lp": "B2.",
+   "nazwa": "Arnold press",
+   "ex_id": "EX-0004",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Arnold press",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 8,
+     "ocz_ciezar": 32.5,
+     "ocz_procent": 72.5,
+     "ocz_one_rm": 43.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.8,
+     "ocz_stres_c": 1.125,
+     "ocz_stres_p": 2.475
+    },
+    "T2": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Arnold press",
+     "one_rm_reczny": 43.5,
+     "ocz_powtorzenia": 9,
+     "ocz_ciezar": 30,
+     "ocz_procent": 69.5,
+     "ocz_one_rm": 43.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.8,
+     "ocz_stres_c": 0.9,
+     "ocz_stres_p": 2.475
+    },
+    "T3": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Arnold press",
+     "one_rm_reczny": 43.5,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 30,
+     "ocz_procent": 67.5,
+     "ocz_one_rm": 43.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 1.575,
+     "ocz_stres_c": 0.9,
+     "ocz_stres_p": 2.475
+    },
+    "T4": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Arnold press",
+     "one_rm_reczny": 43.5,
+     "ocz_powtorzenia": 8,
+     "ocz_ciezar": 32.5,
+     "ocz_procent": 76.5,
+     "ocz_one_rm": 43.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 2.25,
+     "ocz_stres_c": 1.35,
+     "ocz_stres_p": 3.15
+    },
+    "T5": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Arnold press",
+     "one_rm_reczny": 43.5,
+     "ocz_powtorzenia": 9,
+     "ocz_ciezar": 32.5,
+     "ocz_procent": 73.5,
+     "ocz_one_rm": 43.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 2.25,
+     "ocz_stres_c": 1.125,
+     "ocz_stres_p": 3.15
+    },
+    "T6": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Arnold press",
+     "one_rm_reczny": 43.5,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 30,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 43.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 2.025,
+     "ocz_stres_c": 1.125,
+     "ocz_stres_p": 3.15
+    }
+   },
+   "1rm_nierozwiazany": false
+  },
+  {
+   "position_id": "D2-S04",
+   "dzien": 2,
+   "wiersz": 26,
+   "lp": "C1.",
+   "nazwa": "Bayesian curl",
+   "ex_id": "EX-0019",
+   "kategoria_szkieletu": null,
+   "tygodnie": {
+    "T1": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Bayesian curl",
+     "one_rm_reczny": null,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 25,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 35.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.375,
+     "ocz_stres_p": 1.05
+    },
+    "T2": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Bayesian curl",
+     "one_rm_reczny": 35.5,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 23,
+     "ocz_procent": 64.5,
+     "ocz_one_rm": 35.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.525,
+     "ocz_stres_c": 0.225,
+     "ocz_stres_p": 0.825
+    },
+    "T3": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 8,
+     "feedback": null,
+     "cwiczenie": "Bayesian curl",
+     "one_rm_reczny": 35.5,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 22,
+     "ocz_procent": 62.5,
+     "ocz_one_rm": 35.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.525,
+     "ocz_stres_c": 0.225,
+     "ocz_stres_p": 0.75
+    },
+    "T4": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Bayesian curl",
+     "one_rm_reczny": 35.5,
+     "ocz_powtorzenia": 10,
+     "ocz_ciezar": 25,
+     "ocz_procent": 71.5,
+     "ocz_one_rm": 35.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.375,
+     "ocz_stres_p": 1.05
+    },
+    "T5": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Bayesian curl",
+     "one_rm_reczny": 35.5,
+     "ocz_powtorzenia": 11,
+     "ocz_ciezar": 24,
+     "ocz_procent": 68.5,
+     "ocz_one_rm": 35.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.3,
+     "ocz_stres_p": 1.05
+    },
+    "T6": {
+     "powt_reczne": false,
+     "serie": 3,
+     "rpe": 9,
+     "feedback": null,
+     "cwiczenie": "Bayesian curl",
+     "one_rm_reczny": 35.5,
+     "ocz_powtorzenia": 12,
+     "ocz_ciezar": 24,
+     "ocz_procent": 66.5,
+     "ocz_one_rm": 35.5,
+     "ocz_mnoznik": 1,
+     "ocz_stres_t": 0.675,
+     "ocz_stres_c": 0.3,
+     "ocz_stres_p": 1.05
+    }
+   },
+   "1rm_nierozwiazany": false
+  }
+ ],
+ "top_sety": [
+  {
+   "dzien": 1,
+   "wlaczony": true,
+   "rpe": 7,
+   "slot_position_id": "D1-S01"
+  },
+  {
+   "dzien": 2,
+   "wlaczony": true,
+   "rpe": 7,
+   "slot_position_id": "D2-S01"
+  },
+  {
+   "dzien": 3,
+   "wlaczony": true,
+   "rpe": 7,
+   "slot_position_id": "D3-S01"
+  },
+  {
+   "dzien": 4,
+   "wlaczony": true,
+   "rpe": 7,
+   "slot_position_id": "D4-S01"
+  },
+  {
+   "dzien": 5,
+   "wlaczony": true,
+   "rpe": 7,
+   "slot_position_id": "D5-S01"
+  }
+ ],
+ "podsumowania": {
+  "T1": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "109 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 14,
+     "ocz_powtorzenia": "100 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 5.325,
+     "ocz_centralny": 3.925,
+     "ocz_obwodowy": 7.3,
+     "ocz_serie": 11,
+     "ocz_powtorzenia": 79
+    },
+    "r": {
+     "ocz_calkowity": 3.525,
+     "ocz_centralny": 2.1,
+     "ocz_obwodowy": 5.175,
+     "ocz_serie": 9,
+     "ocz_powtorzenia": 84
+    },
+    "c": {
+     "ocz_calkowity": 1.05,
+     "ocz_centralny": 0.6,
+     "ocz_obwodowy": 1.65,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 30
+    }
+   },
+   "ocz_razem": 9.9,
+   "ocz_serie_razem": 23,
+   "ocz_powtorzenia_razem": 193
+  },
+  "T2": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "123 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "123 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 5.325,
+     "ocz_centralny": 3.625,
+     "ocz_obwodowy": 7.3,
+     "ocz_serie": 11,
+     "ocz_powtorzenia": 90
+    },
+    "r": {
+     "ocz_calkowity": 3.375,
+     "ocz_centralny": 1.575,
+     "ocz_obwodowy": 4.95,
+     "ocz_serie": 9,
+     "ocz_powtorzenia": 93
+    },
+    "c": {
+     "ocz_calkowity": 1.05,
+     "ocz_centralny": 0.45,
+     "ocz_obwodowy": 1.65,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 33
+    }
+   },
+   "ocz_razem": 9.75,
+   "ocz_serie_razem": 23,
+   "ocz_powtorzenia_razem": 216
+  },
+  "T3": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "127 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "127 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 5.1,
+     "ocz_centralny": 3.625,
+     "ocz_obwodowy": 7.225,
+     "ocz_serie": 11,
+     "ocz_powtorzenia": 91
+    },
+    "r": {
+     "ocz_calkowity": 3.15,
+     "ocz_centralny": 1.575,
+     "ocz_obwodowy": 4.725,
+     "ocz_serie": 9,
+     "ocz_powtorzenia": 102
+    },
+    "c": {
+     "ocz_calkowity": 1.05,
+     "ocz_centralny": 0.45,
+     "ocz_obwodowy": 1.5,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 36
+    }
+   },
+   "ocz_razem": 9.3,
+   "ocz_serie_razem": 23,
+   "ocz_powtorzenia_razem": 229
+  },
+  "T4": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 14,
+     "ocz_powtorzenia": "104 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 14,
+     "ocz_powtorzenia": "104 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 5.725,
+     "ocz_centralny": 4.125,
+     "ocz_obwodowy": 7.8,
+     "ocz_serie": 10,
+     "ocz_powtorzenia": 74
+    },
+    "r": {
+     "ocz_calkowity": 4.275,
+     "ocz_centralny": 2.475,
+     "ocz_obwodowy": 6.3,
+     "ocz_serie": 9,
+     "ocz_powtorzenia": 84
+    },
+    "c": {
+     "ocz_calkowity": 1.35,
+     "ocz_centralny": 0.75,
+     "ocz_obwodowy": 2.1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 30
+    }
+   },
+   "ocz_razem": 11.35,
+   "ocz_serie_razem": 22,
+   "ocz_powtorzenia_razem": 188
+  },
+  "T5": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "113 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 15,
+     "ocz_powtorzenia": "113 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 6.425,
+     "ocz_centralny": 4.925,
+     "ocz_obwodowy": 8.2,
+     "ocz_serie": 11,
+     "ocz_powtorzenia": 80
+    },
+    "r": {
+     "ocz_calkowity": 4.275,
+     "ocz_centralny": 2.025,
+     "ocz_obwodowy": 6.3,
+     "ocz_serie": 9,
+     "ocz_powtorzenia": 93
+    },
+    "c": {
+     "ocz_calkowity": 1.35,
+     "ocz_centralny": 0.6,
+     "ocz_obwodowy": 2.1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 33
+    }
+   },
+   "ocz_razem": 12.05,
+   "ocz_serie_razem": 23,
+   "ocz_powtorzenia_razem": 206
+  },
+  "T6": {
+   "dni": [
+    {
+     "dzien": 1,
+     "ocz_serie": 16,
+     "ocz_powtorzenia": "120 powt."
+    },
+    {
+     "dzien": 2,
+     "ocz_serie": 16,
+     "ocz_powtorzenia": "120 powt."
+    },
+    {
+     "dzien": 3,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 4,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    },
+    {
+     "dzien": 5,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": "0 powt."
+    }
+   ],
+   "wzorce": {
+    "s": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "d": {
+     "ocz_calkowity": 0,
+     "ocz_centralny": 0,
+     "ocz_obwodowy": 0,
+     "ocz_serie": 0,
+     "ocz_powtorzenia": 0
+    },
+    "b": {
+     "ocz_calkowity": 6.9,
+     "ocz_centralny": 5.625,
+     "ocz_obwodowy": 8.4,
+     "ocz_serie": 12,
+     "ocz_powtorzenia": 84
+    },
+    "r": {
+     "ocz_calkowity": 4.05,
+     "ocz_centralny": 2.025,
+     "ocz_obwodowy": 6.3,
+     "ocz_serie": 9,
+     "ocz_powtorzenia": 102
+    },
+    "c": {
+     "ocz_calkowity": 1.35,
+     "ocz_centralny": 0.6,
+     "ocz_obwodowy": 2.1,
+     "ocz_serie": 3,
+     "ocz_powtorzenia": 36
+    }
+   },
+   "ocz_razem": 12.3,
+   "ocz_serie_razem": 24,
+   "ocz_powtorzenia_razem": 222
+  }
+ },
+ "diagnostyka": {
+  "komorek_bez_wartosci": 0
+ }
+}
