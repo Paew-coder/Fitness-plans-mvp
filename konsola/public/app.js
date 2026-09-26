@@ -1301,12 +1301,14 @@ function rysujDni() {
     tabela.append(glowa);
 
     const cialo = el("tbody");
-    for (const slot of sloty) {
+    // Puste sloty po ostatnim wypełnionym chowamy — zapas ma nie zaśmiecać
+    // widoku. Pozycja z kategorią to jednak część szkieletu, nie zapas: po
+    // szablonie cały dzień jest pusty i dotąd widać było samo A1, a w środku
+    // dnia puste C2 i D1 wyglądały na pominięte (26.09.2026).
+    const ostatniZnaczacy = sloty.map((s) => !!(s.cwiczenieId || s.kategoriaSzkieletu)).lastIndexOf(true);
+    for (const [indeks, slot] of sloty.entries()) {
       const pusty = !slot.cwiczenieId;
-      // Puste sloty po ostatnim wypełnionym chowamy — zapas ma nie zaśmiecać widoku.
-      const indeks = sloty.indexOf(slot);
-      const ostatniWypelniony = sloty.map((s) => !!s.cwiczenieId).lastIndexOf(true);
-      if (pusty && indeks > ostatniWypelniony + 1) continue;
+      if (pusty && indeks > ostatniZnaczacy + 1) continue;
 
       cialo.append(rysujSlot(slot, pusty));
     }
@@ -2621,28 +2623,35 @@ async function pokazLinkKlienta(klientId) {
 $("#link-klienta").onclick = () => pokazLinkKlienta(obraz.zapisany.klientId);
 
 /**
- * Szablony z Base44 — układ dni, numeracja, kategorie, TOP SET, a przy
- * czterech także ćwiczenia z zapisanych planów trenera (25.09.2026).
- * Serie, powtórzenia i RPE dalej liczy „Część planu" — szablon ustawia ją
- * tylko na start.
+ * Szablony z Base44 — układ dni, numeracja, kategorie i TOP SET, pod nazwami
+ * z ekranu Base44 i w jego rodzinach (26.09.2026). Ćwiczeń nie wstawiają:
+ * dobór z zapisanych planów w Base44 trener odrzucił. Serie, powtórzenia
+ * i RPE dalej liczy „Część planu" — szablon ustawia ją tylko na start.
  */
 const CZESC_NA_EKRANIE = { "objętość": "objętość", "intensywność": "intensywność", "hipertrofia": "hipertrofia" };
 function wypelnijListeSzablonow(szablony) {
   const lista = $("#szablon-planu");
   lista.replaceChildren(el("option", "", "— wybierz —"));
   lista.firstChild.value = "";
+  const grupy = new Map();
   for (const sz of szablony) {
-    const o = el("option", "", `${sz.nazwa}${sz.zCwiczeniami ? " · z ćwiczeniami" : ""}`);
+    if (!grupy.has(sz.rodzina)) {
+      const g = el("optgroup");
+      g.label = sz.rodzina;
+      grupy.set(sz.rodzina, g);
+      lista.append(g);
+    }
+    const o = el("option", "", sz.nazwa);
     o.value = sz.id;
     o.title = `${sz.opis} · na start: ${CZESC_NA_EKRANIE[sz.czesc] ?? sz.czesc}`;
-    lista.append(o);
+    grupy.get(sz.rodzina).append(o);
   }
   lista.onchange = async () => {
     const sz = szablony.find((x) => x.id === lista.value);
     if (!sz) return;
     const maCwiczenia = obraz.zapisany.plan.sloty.some((x) => x.cwiczenieId);
-    if (maCwiczenia && !confirm(`„${sz.nazwa}" rozpisze plan od nowa: dni, kategorie`
-      + `${sz.zCwiczeniami ? " i ćwiczenia" : ""}. Obecny dobór ćwiczeń zniknie. Wstawić?`)) {
+    if (maCwiczenia && !confirm(`„${sz.nazwa}" rozpisze plan od nowa: dni i kategorie. `
+      + "Obecny dobór ćwiczeń zniknie. Wstawić?")) {
       lista.value = "";
       return;
     }
@@ -2654,9 +2663,7 @@ function wypelnijListeSzablonow(szablony) {
       rysujPlan();
       const puste = obraz.zapisany.plan.sloty.filter((x) => x.kategoriaSzkieletu && !x.cwiczenieId).length;
       $("#szablon-info").textContent = `wstawiono „${sz.nazwa}" · część: ${CZESC_NA_EKRANIE[sz.czesc]}`
-        + (puste ? ` · ${puste} ${odmiana(puste, ["pozycja czeka", "pozycje czekają", "pozycji czeka"])} na ćwiczenie`
-          + (sz.bezOdpowiednika.length ? ` (m.in. ${sz.bezOdpowiednika.join(", ")} — brak w BAZIE)` : "")
-          : "");
+        + (puste ? ` · ${puste} ${odmiana(puste, ["pozycja czeka", "pozycje czekają", "pozycji czeka"])} na ćwiczenie` : "");
     } catch (err) {
       alert(err.message);
     }

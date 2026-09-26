@@ -1180,21 +1180,48 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await s.locator("#koniec-cyklu").innerText()) === "koniec: nd 15.11 · 7 tyg. · T4 od pn 19.10",
     await s.locator("#koniec-cyklu").innerText());
 
-  // Szablon z Base44 (25.09.2026): „FBW 3 dni" z doborem ćwiczeń z planu
-  // trenera. Plan ma już przysiad, więc konsola pyta — i to pytanie przyjmujemy.
+  // Szablon z Base44: nazwy i rodziny jak na ekranie Base44, sam układ bez
+  // ćwiczeń (26.09.2026 — „nazwy się nie zgadzają", „nie wiem, skąd akurat
+  // takie ćwiczenia"). Plan ma już przysiad, więc konsola pyta — i to
+  // pytanie przyjmujemy.
+  const grupySzablonow = await s.locator("#szablon-planu optgroup").evaluateAll((gs: any[]) =>
+    gs.map((g) => g.label));
+  const opcjeSzablonow = await s.locator("#szablon-planu option").allTextContents();
+  sprawdz("lista szablonów w rodzinach z Base44, bez „z ćwiczeniami”",
+    JSON.stringify(grupySzablonow) === JSON.stringify(["Klasyczny", "Rozbudowany", "Hipertroficzny",
+      "Kontynuacje (cz. 2)"])
+    && opcjeSzablonow.includes("Klasyczny – 3 dni") && opcjeSzablonow.includes("Rozbudowany – 3 dni")
+    && !opcjeSzablonow.some((o) => o.includes("ćwiczeniami") || o.startsWith("FBW")),
+    `${grupySzablonow.join(" | ")} · ${opcjeSzablonow.slice(1, 4).join(" | ")}`);
   const pytanPrzedSzablonem = pytania.length;
   await s.selectOption("#szablon-planu", "fbw_3dni_6w");
   await s.waitForTimeout(1200);
   const poSzablonie = await api(`/api/plany/${PLAN_NIEGOTOWY}`);
   const dzien1 = poSzablonie.zapisany.plan.sloty.filter((x: any) => x.dzien === 1);
-  sprawdz("szablon „FBW 3 dni” rozpisuje plan i pyta, zanim nadpisze dobór",
+  sprawdz("szablon „Klasyczny – 3 dni” rozpisuje układ bez ćwiczeń i pyta, zanim nadpisze dobór",
     pytania.length === pytanPrzedSzablonem + 1
-    && dzien1[0].cwiczenieId === "EX-0011" && dzien1[4].kategoriaSzkieletu === "Tricep"
-    && !dzien1[4].cwiczenieId
-    && (await s.locator("#szablon-info").innerText()).includes("brak w BAZIE"),
+    && poSzablonie.zapisany.plan.sloty.every((x: any) => !x.cwiczenieId)
+    && dzien1.slice(0, 7).every((x: any) => x.kategoriaSzkieletu)
+    && dzien1[4].kategoriaSzkieletu === "Tricep" && dzien1[5].kategoriaSzkieletu === "Core"
+    && (await s.locator("#szablon-info").innerText()) ===
+      "wstawiono „Klasyczny – 3 dni\" · część: objętość · 21 pozycji czeka na ćwiczenie",
     `${await s.locator("#szablon-info").innerText()}`);
-  sprawdz("tabela pokazuje wyciskanie w A1 dnia I od razu",
-    await s.locator("table.sloty").first().locator('select option[value="EX-0011"]:checked').count() === 1);
+  // Cały szkielet dnia na ekranie: siedem pozycji z kategorią i jeden zapas.
+  // Dotąd przy pustym dniu tabela pokazywała samo A1.
+  const tabelaD1 = s.locator("table.sloty").first();
+  const kategorieD1 = await tabelaD1.locator("td.szkielet select").evaluateAll((ss: any[]) =>
+    ss.map((x) => x.value));
+  sprawdz("tabela pokazuje cały układ dnia I z kategoriami, choć ćwiczeń jeszcze nie ma",
+    await tabelaD1.locator("tbody tr").count() === 8
+    && JSON.stringify(kategorieD1.slice(0, 7)) === JSON.stringify(["Upper push horizontal", "Lower push",
+      "Lower pull", "Upper pull horizontal", "Tricep", "Core", "Upper push vertical"]),
+    `${await tabelaD1.locator("tbody tr").count()} wierszy · ${kategorieD1.join(", ")}`);
+  // Trener wybiera ćwiczenie w pozycji z szablonu — lista jest przefiltrowana
+  // kategorią pozycji.
+  await tabelaD1.locator("td.cwiczenie select").first().selectOption("EX-0011");
+  await s.waitForTimeout(1000);
+  sprawdz("ćwiczenie wybrane w pozycji z szablonu trafia do planu",
+    (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].cwiczenieId === "EX-0011");
 
   // Rozgrzewka dnia (25.09.2026): pusta to sam przycisk, wpisana idzie do planu.
   await s.locator("#dni .dzien").first().getByRole("button", { name: "+ rozgrzewka" }).click();

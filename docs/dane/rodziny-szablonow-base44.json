@@ -1,0 +1,194 @@
+{
+ "opis": "Nazwy szablonów, pod którymi trener widzi je na ekranie „Wybierz szablon” w aplikacji Base44 'CraftMyPlan' (id 6a005660818ba6a6c28f8b7d), i ich podział na rodziny. Wyciągnięte 26.09.2026 z publicznego pakietu https://craftmyplan.base44.app/assets/index-DBrIfjxZ.js (mapa id → nazwa i lista rodzin z opisami). Nazwy „FBW … – … główne ćwiczenia” z szablony-base44.json to nazwy wewnętrzne, trener ich nie zna.",
+ "uwaga": "Base44 wymienia 24 warianty, ale układ i progresję ma zapisane tylko dla 14 (zdefiniowane: true). Pozostałe kontynuacje „(cz. 2)” stoją na liście bez treści.",
+ "nazwy": {
+  "fbw_1dzien_6w": "Klasyczny – 1 dzień",
+  "fbw_2dni_6w": "Klasyczny – 2 dni",
+  "fbw_3dni_6w": "Klasyczny – 3 dni",
+  "fbw_4dni_6w": "Klasyczny – 4 dni",
+  "fbw_1dzien_6cwiczen_6w": "Rozbudowany – 1 dzień",
+  "fbw_2dni_6cwiczen_6w": "Rozbudowany – 2 dni",
+  "fbw_6cwiczen_6w": "Rozbudowany – 3 dni",
+  "fbw_4dni_6cwiczen_6w": "Rozbudowany – 4 dni",
+  "hyper_1dzien_6w": "Hipertroficzny – 1 dzień",
+  "hyper_2dni_6w": "Hipertroficzny – 2 dni",
+  "hyper_3dni_6w": "Hipertroficzny – 3 dni",
+  "hyper_4dni_6w": "Hipertroficzny – 4 dni",
+  "fbw_1dzien_6w_v2": "Klasyczny – 1 dzień (cz. 2)",
+  "fbw_2dni_6w_v2": "Klasyczny – 2 dni (cz. 2)",
+  "fbw_3dni_6w_v2": "Klasyczny – 3 dni (cz. 2)",
+  "fbw_4dni_6w_v2": "Klasyczny – 4 dni (cz. 2)",
+  "fbw_1dzien_6cwiczen_6w_v2": "Rozbudowany – 1 dzień (cz. 2)",
+  "fbw_2dni_6cwiczen_6w_v2": "Rozbudowany – 2 dni (cz. 2)",
+  "fbw_3dni_6cwiczen_6w_v2": "Rozbudowany – 3 dni (cz. 2)",
+  "fbw_4dni_6cwiczen_6w_v2": "Rozbudowany – 4 dni (cz. 2)",
+  "hyper_1dzien_6w_v2": "Hipertroficzny – 1 dzień (cz. 2)",
+  "hyper_2dni_6w_v2": "Hipertroficzny – 2 dni (cz. 2)",
+  "hyper_3dni_6w_v2": "Hipertroficzny – 3 dni (cz. 2)",
+  "hyper_4dni_6w_v2": "Hipertroficzny – 4 dni (cz. 2)"
+ },
+ "rodziny": [
+  {
+   "klucz": "klasyczny",
+   "nazwa": "Klasyczny",
+   "opis": "Zrównoważone proporcje siły i masy. Główne ćwiczenia złożone z progresją RPE.",
+   "warianty": [
+    {
+     "dni": 1,
+     "id": "fbw_1dzien_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 2,
+     "id": "fbw_2dni_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 3,
+     "id": "fbw_3dni_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 4,
+     "id": "fbw_4dni_6w",
+     "zdefiniowany": true
+    }
+   ]
+  },
+  {
+   "klucz": "rozbudowany",
+   "nazwa": "Rozbudowany",
+   "opis": "Wyższy nacisk na siłę. Więcej ćwiczeń złożonych, wyższe RPE, cięższe sesje.",
+   "warianty": [
+    {
+     "dni": 1,
+     "id": "fbw_1dzien_6cwiczen_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 2,
+     "id": "fbw_2dni_6cwiczen_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 3,
+     "id": "fbw_6cwiczen_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 4,
+     "id": "fbw_4dni_6cwiczen_6w",
+     "zdefiniowany": true
+    }
+   ]
+  },
+  {
+   "klucz": "hipertroficzny",
+   "nazwa": "Hipertroficzny",
+   "opis": "Skupiony na masie mięśniowej. Wyższy zakres powtórzeń (12–15), więcej serii per partia.",
+   "warianty": [
+    {
+     "dni": 1,
+     "id": "hyper_1dzien_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 2,
+     "id": "hyper_2dni_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 3,
+     "id": "hyper_3dni_6w",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 4,
+     "id": "hyper_4dni_6w",
+     "zdefiniowany": true
+    }
+   ]
+  },
+  {
+   "klucz": "klasyczny_v2",
+   "nazwa": "Klasyczny",
+   "opis": "Kontynuacja bloku Klasycznego. Wyższe RPE, przesunięty zakres powtórzeń.",
+   "warianty": [
+    {
+     "dni": 1,
+     "id": "fbw_1dzien_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 2,
+     "id": "fbw_2dni_6w_v2",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 3,
+     "id": "fbw_3dni_6w_v2",
+     "zdefiniowany": true
+    },
+    {
+     "dni": 4,
+     "id": "fbw_4dni_6w_v2",
+     "zdefiniowany": false
+    }
+   ]
+  },
+  {
+   "klucz": "rozbudowany_v2",
+   "nazwa": "Rozbudowany",
+   "opis": "Kontynuacja bloku Rozbudowanego. Intensywniejsza progresja, wyższe obciążenia.",
+   "warianty": [
+    {
+     "dni": 1,
+     "id": "fbw_1dzien_6cwiczen_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 2,
+     "id": "fbw_2dni_6cwiczen_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 3,
+     "id": "fbw_3dni_6cwiczen_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 4,
+     "id": "fbw_4dni_6cwiczen_6w_v2",
+     "zdefiniowany": false
+    }
+   ]
+  },
+  {
+   "klucz": "hipertroficzny_v2",
+   "nazwa": "Hipertroficzny",
+   "opis": "Kontynuacja bloku Hipertroficznego. Wyższe RPE (do 10), zakres 14–16 powtórzeń.",
+   "warianty": [
+    {
+     "dni": 1,
+     "id": "hyper_1dzien_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 2,
+     "id": "hyper_2dni_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 3,
+     "id": "hyper_3dni_6w_v2",
+     "zdefiniowany": false
+    },
+    {
+     "dni": 4,
+     "id": "hyper_4dni_6w_v2",
+     "zdefiniowany": false
+    }
+   ]
+  }
+ ]
+}

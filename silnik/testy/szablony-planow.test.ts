@@ -9,7 +9,6 @@ import assert from "node:assert/strict";
 import { SZABLONY_BASE44 } from "../src/dane/szablony.ts";
 import { zastosujSzablon } from "../src/szablony-planow.ts";
 import { przeliczPlan, type Plan } from "../src/plan.ts";
-import { katalog } from "../src/katalog.ts";
 
 const LP = ["A1.", "B1.", "B2.", "C1.", "C2.", "D1.", "D2.", "E1.", "E2.", "", "", ""];
 function pustyPlan(): Plan {
@@ -34,33 +33,40 @@ describe("dane szablonów", () => {
       ["hipertrofia", "intensywność", "objętość"]);
   });
 
-  test("każde ćwiczenie istnieje w BAZIE i pasuje do kategorii swojej pozycji", () => {
+  // Trener zna je z ekranu Base44 jako „Klasyczny – 3 dni", nie jako
+  // wewnętrzne „FBW 3 dni – 3 główne ćwiczenia" (26.09.2026).
+  test("nazwy i rodziny jak na ekranie Base44, w jego kolejności", () => {
+    assert.deepEqual([...new Set(SZABLONY_BASE44.map((s) => s.rodzina))],
+      ["Klasyczny", "Rozbudowany", "Hipertroficzny", "Kontynuacje (cz. 2)"]);
+    assert.deepEqual(SZABLONY_BASE44.filter((s) => s.rodzina === "Rozbudowany").map((s) => s.nazwa),
+      ["Rozbudowany – 1 dzień", "Rozbudowany – 2 dni", "Rozbudowany – 3 dni", "Rozbudowany – 4 dni"]);
+    assert.equal(szablon("fbw_6cwiczen_6w").nazwa, "Rozbudowany – 3 dni");
+    assert.equal(szablon("fbw_2dni_6w_v2").nazwa, "Klasyczny – 2 dni (cz. 2)");
     for (const s of SZABLONY_BASE44) {
-      for (const slot of s.dni.flat()) {
-        if (!slot.cwiczenieId) continue;
-        const c = katalog.poId(slot.cwiczenieId);
-        assert.ok(c, `${s.id}: ${slot.cwiczenieId}`);
-        assert.equal(c!.kategoria, slot.kategoria, `${s.id} ${slot.lp} ${c!.nazwa}`);
-      }
+      const dni = Number(s.nazwa.match(/– (\d)/)![1]);
+      assert.equal(s.dni.length, dni, `${s.nazwa}: liczba dni w nazwie`);
     }
   });
 
-  test("trzy nazwy bez odpowiednika zostają puste, z kategorią", () => {
-    const bez = new Set(SZABLONY_BASE44.flatMap((s) => s.dni.flat())
-      .filter((x) => x.bezOdpowiednika).map((x) => x.bezOdpowiednika));
-    assert.deepEqual([...bez].sort(), ["Close-Grip Bench Press", "Machine Shoulder Press", "Plank"]);
+  test("szablon nie niesie ćwiczeń — tylko układ", () => {
+    for (const s of SZABLONY_BASE44) {
+      for (const slot of s.dni.flat()) {
+        assert.deepEqual(Object.keys(slot).filter((k) => !["lp", "kategoria", "topSet"].includes(k)), [],
+          `${s.id} ${slot.lp}`);
+      }
+    }
   });
 });
 
 describe("wstawienie szablonu do planu", () => {
-  test("FBW 3 dni: trzy dni z układem, ćwiczenia z planu trenera, TOP SET przy A1", () => {
+  test("Klasyczny – 3 dni: trzy dni z układem i kategoriami, bez ćwiczeń, TOP SET przy A1", () => {
     const p = zastosujSzablon(pustyPlan(), szablon("fbw_3dni_6w"));
     const d1 = p.sloty.filter((s) => s.dzien === 1);
     assert.deepEqual(d1.slice(0, 7).map((s) => s.lp), ["A1.", "B1.", "B2.", "C1.", "C2.", "D1.", "D2."]);
     assert.deepEqual(d1.slice(7).map((s) => s.lp), ["", "", "", "", ""], "zapas bez numeru");
-    assert.equal(d1[0]!.cwiczenieId, "EX-0011");
-    assert.equal(d1[4]!.cwiczenieId, null, "Close-Grip Bench Press — do wyboru trenera");
-    assert.equal(d1[4]!.kategoriaSzkieletu, "Tricep");
+    assert.ok(p.sloty.every((s) => s.cwiczenieId === null), "ćwiczenia wybiera trener");
+    assert.deepEqual(d1.slice(0, 7).map((s) => s.kategoriaSzkieletu), ["Upper push horizontal",
+      "Lower push", "Lower pull", "Upper pull horizontal", "Tricep", "Core", "Upper push vertical"]);
     assert.deepEqual(p.topSety!.slice(0, 3).map((t) => [t.wlaczony, t.slotPositionId]),
       [[true, "D1-S01"], [true, "D2-S01"], [true, "D3-S01"]]);
     assert.ok(p.sloty.filter((s) => s.dzien >= 4).every((s) => !s.cwiczenieId));

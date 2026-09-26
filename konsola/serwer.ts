@@ -1190,17 +1190,16 @@ const serwer = createServer(async (req, res) => {
     }
 
     // ── szablony planów z Base44 ─────────────────────────────────────
-    // Lista do wyboru w konsoli: nazwa, liczba dni, część planu, na starcie
-    // i to, czy szablon niesie dobór ćwiczeń, a jeśli tak — czego w BAZIE brak.
+    // Lista do wyboru w konsoli: nazwa z ekranu Base44, rodzina (grupa na
+    // liście), liczba dni i część planu na starcie.
     if (sciezka === "/api/szablony" && req.method === "GET") {
       return json(res, SZABLONY_BASE44.map((s) => ({
         id: s.id,
         nazwa: s.nazwa,
+        rodzina: s.rodzina,
         opis: s.opis,
         czesc: s.czesc,
         dni: s.dni.length,
-        zCwiczeniami: s.zCwiczeniami,
-        bezOdpowiednika: [...new Set(s.dni.flat().map((x) => x.bezOdpowiednika).filter(Boolean))],
       })));
     }
 
@@ -1456,8 +1455,8 @@ const serwer = createServer(async (req, res) => {
       }
 
       /*
-       * Szablon z Base44 rozpisuje plan od nowa: dni, numerację, kategorie,
-       * TOP SET i — przy czterech szablonach — ćwiczenia. Plan, w którym
+       * Szablon z Base44 rozpisuje plan od nowa: dni, numerację, kategorie
+       * i TOP SET; ćwiczenia wybiera trener. Plan, w którym
        * klient już coś wpisał, jest historią: szablon przepisałby jego wpisy
        * pod inne pozycje. Wtedy odmowa i rada: nowa wersja planu.
        */
