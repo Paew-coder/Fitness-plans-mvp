@@ -58,6 +58,10 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (slot.tygodnie != null && !jestObiektem(slot.tygodnie)) {
       return `${gdzie}: tygodnie muszą być obiektem`;
     }
+    // Bój główny z decyzji trenera („G"); pusto = reguła z silnika.
+    if (slot.bojGlowny != null && typeof slot.bojGlowny !== "boolean") {
+      return `${gdzie}: bój główny musi być prawdą albo fałszem`;
+    }
     // Tryb liczenia ciężaru dla tego jednego ćwiczenia; pusto = jak w planie.
     if (slot.trybCiezaru != null && !TRYBY_AKCESORIOW.includes(slot.trybCiezaru as never)) {
       return `${gdzie}: tryb ciężaru musi być jednym z: ${TRYBY_AKCESORIOW.join(", ")}`;

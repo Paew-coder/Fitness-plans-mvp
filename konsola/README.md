@@ -25,6 +25,10 @@ czterech także ćwiczenia z Twoich zapisanych planów. Liczby dalej liczy
 **Rozgrzewka dnia** — *+ rozgrzewka* przy dniu: tekst wiersz po wierszu i link
 do filmu. Ta sama w każdym tygodniu; klient widzi ją na początku dnia.
 
+**Bój główny przyciskiem „G"** — przy ćwiczeniu: podświetlone, gdy liczy się jak
+bój (progresja bloku, ciężar z RPE co tydzień). Kliknięcie zmienia rolę w obie
+strony, np. front squat na B1 jako bój, przysiad na A1 jako akcesorium.
+
 **Trzy części planu** — *objętość (cz.1)*, *intensywność (cz.2)* i *hipertrofia
 (12/14)*: bój 4 × 12–14 bez TOP SETU, akcesoria od 12 albo 14 powtórzeń.
 

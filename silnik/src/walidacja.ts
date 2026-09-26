@@ -42,8 +42,11 @@ export function sprawdzPlan(
    * Bojem głównym jest ćwiczenie z coeff 1,0 — w BAZIE ma je dokładnie
    * dziewiętnaście pozycji złożonych.
    */
+  // Trener, który przy slocie sam rozstrzygnął „bój / akcesorium" (przycisk
+  // „G"), wie, co robi — ostrzeżenie byłoby tylko szumem.
+  const zdecydowane = new Set(plan.sloty.filter((s) => s.bojGlowny !== undefined).map((s) => s.positionId));
   const pozycjaANieZlozona = zCwiczeniem
-    .filter((s) => pozycjaBoju(s.lp) && s.cwiczenie!.coeff !== 1)
+    .filter((s) => pozycjaBoju(s.lp) && s.cwiczenie!.coeff !== 1 && !zdecydowane.has(s.positionId))
     .map((s) => `${s.positionId} ${s.cwiczenie!.nazwa}`);
   dodaj("POZYCJA_A_BEZ_BOJU", "ostrzezenie",
     "Na pierwszym miejscu dnia stoi ćwiczenie, które nie jest złożone — "

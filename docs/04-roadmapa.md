@@ -536,6 +536,12 @@ Trener przy „SLDL balance" (progresja `ręczne ustawienie`): „skoro są odg�
 * Ciężaru nie podnosimy samoczynnie: SLDL balance i Dead bug mają w BAZIE skok 0 kg. Oceny klienta zmieniają przy tej progresji powtórzenia (±1 na ocenę), jak dotąd.
 * Wpisy sprzed tej zmiany nie mają zapisanego wyboru — wystarczy raz wpisać ciężar (klient przy serii albo trener w konsoli).
 
+**27. Bój główny z decyzji trenera — przycisk „G" — 26.09.2026.**
+
+Trener: front squat w planie Marka X „liczy się jak ćwiczenie akcesoryjne — chciałbym, żeby liczył się jak ćwiczenie główne". Front squat ma coeff 1,0, ale stał na B1, a reguła (22.09) mówi: bój główny to pozycja A **i** ćwiczenie złożone. Reguła zostaje — bez niej każdy przysiad z B1 w szablonach dostałby 6 × 6 — a trener dostał przy każdym ćwiczeniu przycisk **„G"**: podświetlony, gdy ćwiczenie liczy się jak bój; kliknięcie przestawia rolę w obie strony (`SlotPlanu.bojGlowny`, pusto = reguła). Zmiana roli czyści serie, powtórzenia i RPE tego ćwiczenia, żeby weszła progresja nowej roli; oceny i ręczne ciężary zostają. Kontrola „akcesorium na pozycji A" milknie, gdy trener rozstrzygnął sam.
+
+Przy okazji dwie poprawki: „progresja 5.18" i kopiowanie tygodnia gubiły ciężar wybrany przez klienta (punkt 26), a eksport do arkusza rozpoznawał bój po samej literze A — funkcją z importu, która po cichu pomijała `coeff`.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.
