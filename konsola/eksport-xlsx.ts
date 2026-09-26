@@ -100,7 +100,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Ciężar wpisany ręcznie zastępuje w arkuszu formułę — dokładnie tak,
         // jak robił to trener, wpisując liczbę do komórki. Bez tego klient
         // zobaczyłby w arkuszu ciężar policzony, a w konsoli stoi inny.
-        ciezar_reczny: p.ciezarOverride ?? null,
+        // Przy „ręcznym ustawieniu" także ciężar przeniesiony z wcześniejszego
+        // tygodnia albo wybrany przez klienta — plik ma pokazać to, co konsola.
+        ciezar_reczny: p.ciezarOverride
+          ?? (obliczony?.ciezarZrodlo && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
         // klienta pokazywałby ćwiczenie i ciężar sprzed podmiany.

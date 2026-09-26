@@ -1368,8 +1368,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await s.locator("#panel").innerText()).includes("Dead bug izo + OH")
     && (await s.locator("#panel .kolumna-seria").innerText()).includes("1"),
     (await s.locator("#panel .kolumna-seria").innerText()).replace(/\n/g, " "));
-  sprawdz("w panelu też „dobierz”, a pole kg ma ciężar z listy",
-    (await s.locator("#panel .kolumna-ciezar").innerText()).includes("dobierz")
+  // Po wpisie na liście ciężar klienta staje się ciężarem tego ćwiczenia —
+  // w panelu już nie „dobierz", tylko 2 kg (trener, 26.09.2026).
+  sprawdz("w panelu stoi ciężar wybrany na liście, a pole kg go podpowiada",
+    (await s.locator("#panel .kolumna-ciezar").innerText()).includes("2")
+    && !(await s.locator("#panel .kolumna-ciezar").innerText()).includes("dobierz")
     && await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue() === "2",
     `${(await s.locator("#panel .kolumna-ciezar").innerText()).replace(/\n/g, " ")} · `
     + `kg: ${await s.locator('#panel .panel-pola input[placeholder="kg"]').inputValue()}`);
@@ -1394,6 +1397,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && (await rozgrzewkaListy.locator("li").allInnerTexts()).join(" | ") === "5 min rower | 2 × 10 dead bug",
     (await rozgrzewkaListy.innerText().catch(() => "brak")).replace(/\n/g, " | "));
   const deadBugT2 = s.locator('#cwiczenia [data-position="D1-S03"]');
+  // „Jak klient dobierze ciężar w T1, to zostaje do końca planu" (26.09.2026).
+  sprawdz("w T2 ciężar z T1 zostaje — „2 kg, jak w T1”, bez „dobierz”",
+    (await deadBugT2.locator(".kolumna-ciezar").innerText()).replace(/\s+/g, " ").trim()
+      .toLocaleLowerCase("pl") === "ciężar 2 kg jak w t1",
+    (await deadBugT2.locator(".kolumna-ciezar").innerText()).replace(/\n/g, " "));
   sprawdz("w T2 na liście stoi, co było w T1",
     (await deadBugT2.locator(".ostatnio").innerText().catch(() => "")) === "Ostatnio (T1): 2 kg × 10",
     await deadBugT2.locator(".ostatnio").innerText().catch(() => "brak linijki"));

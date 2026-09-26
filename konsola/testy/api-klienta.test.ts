@@ -342,6 +342,18 @@ describe("ciężar ustawiany ręcznie, którego trener nie wpisał", () => {
       false, "ręczny ciężar nie udaje 1RM");
   });
 
+  test("wybrany ciężar zostaje na kolejne tygodnie — „jak w T1”", async () => {
+    // Trener, 26.09.2026: „jak klient dobierze sobie ciężar w T1, to zostaje
+    // on do końca planu". Dotąd w T2 znów stało „dobierz".
+    const { dane } = await api(`/api/klient/${tokenReczny}`);
+    const t2 = dane.tygodnie[1].dni[0].cwiczenia[2];
+    const t6 = dane.tygodnie[5].dni[0].cwiczenia[2];
+    assert.deepEqual([t2.ciezar, t2.ciezarZTygodnia, t2.ciezarWybieraKlient], [2, 1, false]);
+    assert.equal(t6.ciezar, 2);
+    const plan = (await api(`/api/plany/${planReczny}`)).dane.zapisany.plan;
+    assert.deepEqual(plan.sloty[2].tygodnie[1].ciezarKlienta, { kg: 2, cwiczenieId: "EX-0049" });
+  });
+
   test("postęp przy ręcznym ciężarze to kilogramy, bez udawanego 1RM", async () => {
     await api(`/api/klient/${tokenReczny}/odczucie`, "POST",
       { positionId: "D1-S03", tydzien: 2, serie: [{ ciezar: 4, powtorzenia: 11 }] });
