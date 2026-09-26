@@ -542,6 +542,17 @@ Trener: front squat w planie Marka X „liczy się jak ćwiczenie akcesoryjne �
 
 Przy okazji dwie poprawki: „progresja 5.18" i kopiowanie tygodnia gubiły ciężar wybrany przez klienta (punkt 26), a eksport do arkusza rozpoznawał bój po samej literze A — funkcją z importu, która po cichu pomijała `coeff`.
 
+**28. Ocena przy każdej serii i lżejsza następna seria — 26.09.2026.**
+
+Trener: „ktoś pierwszą zrobił normalnie, ale w drugiej stwierdził, że jest za ciężkie — wtedy aplikacja powinna mu już na 3 serii pokazać ułatwioną wersję. Z drugiej strony nie chciałbym, żeby ktoś pomyślał, że w każdej serii musi kliknąć OK".
+
+* W panelu prowadzenia każda seria poza ostatnią ma **`Za trudne` / `Za łatwe`** bez `OK`, z dopiskiem „Jeśli jest OK — nic nie klikaj". Ostatnia seria ma pełną ocenę jak dotąd.
+* Ocena przy serii zmienia **następną serię tego treningu**: ciężar faktycznie wpisany ±5 %, zaokrąglony do skoku ćwiczenia (`skokKg` z BAZY, w widoku klienta od tej zmiany). Gdy zaokrąglenie wróciłoby do tej samej liczby, schodzi o jeden skok. Nad polami następnej serii stoi zdanie, skąd ta liczba. To podpowiedź w polu — klient zmienia ją jak każdą inną; silnik niczego tu nie liczy od nowa.
+* Ta sama ocena idzie do trenera i do następnych tygodni bez zmian (jedna na ćwiczenie w tygodniu, ostatnia wygrywa) i przy ostatniej serii stoi zaznaczona.
+* Korekta trzyma się miejsca w treningu (`prowadzenie.korekty`), więc przeżywa przerwę i zamknięcie aplikacji; ręcznie wpisany ciężar w następnej serii ją wyłącza.
+
+Przy okazji błąd: dotknięcie oceny przy ostatniej serii przerysowywało panel i czyściło wpisane, jeszcze niezapisane liczby.
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.

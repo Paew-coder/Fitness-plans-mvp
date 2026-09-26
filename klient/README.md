@@ -202,6 +202,19 @@ dalej liczy się z najcięższej serii — ostatnia byłaby zwykle najsłabsza, 
 zmęczona. Najcięższą wybiera serwer, nie telefon. Serie wpisane w prowadzeniu
 widać też na liście dnia i odwrotnie — to te same dane.
 
+**Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii poza
+ostatnią stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
+`Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"*. Nie ma
+tu `OK`, bo klient pomyślałby, że musi go dotykać po każdej serii. Dotknięcie
+dopasowuje **następną serię**: ciężar faktycznie zrobiony w tej serii ±5 %,
+zaokrąglony do skoku ćwiczenia z BAZY (57,5 kg „za trudne" → 55 kg). Nad polami
+następnej serii stoi, skąd ta liczba; kto wpisze swoją, ma swoją. Ta sama ocena
+idzie do trenera i do następnych tygodni jak dotąd (jedna na ćwiczenie w tygodniu,
+ostatnie dotknięcie wygrywa) i przy ostatniej serii stoi już zaznaczona — tam
+jest pełne `Za trudne / OK / Za łatwe`. Ocena nie przerysowuje panelu, więc
+wpisane liczby zostają w polach (do 26.09 dotknięcie oceny przy ostatniej serii
+je czyściło).
+
 Lista dnia nie znika — `Cały dzień na liście` przenosi do niej w każdej chwili
 i pokazuje to samo, tylko naraz.
 

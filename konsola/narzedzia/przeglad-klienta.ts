@@ -830,12 +830,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     JSON.stringify(poDrugiej.serieWykonane));
   await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
   await s.waitForSelector("#panel .panel-pola");
-  // Ocena przychodzi po ostatniej serii — i panel mówi o tym wcześniej,
-  // bo trener szukał jej na pierwszej serii i nie znalazł (25.09.2026).
-  sprawdz("przed ostatnią serią panel mówi, kiedy będzie ocena",
-    (await panel.locator(".podpowiedz-oceny").innerText().catch(() => ""))
-      === "Ocena ćwiczenia — po ostatniej serii (6 z 6).",
-    await panel.locator(".podpowiedz-oceny").innerText().catch(() => "brak"));
+  // Ocena przy każdej serii (26.09.2026): przed ostatnią tylko „za trudne /
+  // za łatwe", bez „OK", i zdanie, że nic nie trzeba klikać.
+  sprawdz("przed ostatnią serią ocena bez „OK” i bez obowiązku klikania",
+    (await panel.locator(".ocena-w-panelu .ocena-przycisk").allInnerTexts()).join(" | ")
+      === "Za trudne | Za łatwe"
+    && (await panel.locator(".podpowiedz-oceny").innerText()).startsWith("Jeśli jest OK — nic nie klikaj"),
+    (await panel.locator(".ocena-w-panelu").innerText().catch(() => "brak")).replace(/\n/g, " | "));
   sprawdz("kafelki serii mają podpis",
     (await panel.locator(".serie-wpisane").innerText()).startsWith("Poprzednie serie:"),
     (await panel.locator(".serie-wpisane").innerText()).replace(/\n/g, " "));
@@ -1517,6 +1518,61 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     nowyCykl.zapisany.plan.serieMaksymalne.some((x: any) =>
       x.cwiczenieId === "EX-0010" && x.ciezar === 130 && x.powtorzenia === 1),
     JSON.stringify(nowyCykl.zapisany.plan.serieMaksymalne));
+
+  // ── 27. ocena przy serii i lżejsza następna seria ─────────────────
+  //
+  // Trener, 26.09.2026: „ktoś pierwszą serię zrobił normalnie, ale w drugiej
+  // stwierdził, że jest za ciężko — aplikacja powinna mu już na trzeciej
+  // pokazać ułatwioną wersję". Przy okazji: kliknięcie oceny nie może
+  // kasować liczb, które klient już wpisał w tej serii.
+  const OCENA = "ocena-przy-serii";
+  await api("/api/plany", "POST", { klient: OCENA, wersja: 1 });
+  const idOceny = (await api("/api/plany")).find((p: any) => p.klient === OCENA).id;
+  const planOceny = (await api(`/api/plany/${idOceny}`)).zapisany.plan;
+  planOceny.sloty[0].cwiczenieId = "EX-0011";   // A1. wyciskanie — bój, 6 serii
+  planOceny.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
+  await api(`/api/plany/${idOceny}`, "PUT", { plan: planOceny, dataStartu: null, status: "wysłany" });
+  const sciezkaOceny = (await api(`/api/plany/${idOceny}/link`, "POST")).sciezka;
+  await s.goto(`${adres}${sciezkaOceny}`, { waitUntil: "networkidle" });
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  await s.click("#prowadz");
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  const dalejPoSerii = async () => {
+    await panel.getByRole("button", { name: /Zakończ serię|Zapisz poprawkę/ }).click();
+    await s.waitForTimeout(150);
+    if (await s.locator("#licznik").count() > 0) {
+      await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+    }
+    await s.waitForSelector("#panel .panel-pola");
+  };
+  await dalejPoSerii();                                     // seria 1 — normalnie
+  const poleKg = panel.locator('.panel-pola input[placeholder="kg"]');
+  await poleKg.fill("70");                                  // seria 2 — 70 kg…
+  await panel.locator(".ocena-w-panelu").getByRole("button", { name: "Za trudne" }).click();
+  await s.waitForTimeout(300);
+  sprawdz("„za trudne” przy serii 2 zapowiada lżejszą trzecią i nie kasuje wpisanych liczb",
+    await poleKg.inputValue() === "70"
+    && (await panel.locator(".ocena-w-panelu .korekta-serii").innerText())
+      === "Następna seria: 67,5 kg (lżej o 5%).",
+    `pole: ${await poleKg.inputValue()} · ${await panel.locator(".ocena-w-panelu .korekta-serii").innerText()}`);
+  await dalejPoSerii();                                     // …i koniec serii 2
+  sprawdz("seria 3 dostaje 67,5 kg i zdanie, skąd ta liczba",
+    await poleKg.inputValue() === "67.5"
+    && (await panel.locator(".korekta-serii").first().innerText())
+      === "Lżej o 5% po Twojej ocenie „za trudne”: 67,5 kg.",
+    `pole: ${await poleKg.inputValue()} · ${await panel.locator(".korekta-serii").first().innerText()}`);
+  await s.waitForTimeout(500);
+  const wpisOceny = (await api(`/api/plany/${idOceny}`)).zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback;
+  sprawdz("ta sama ocena ćwiczenia idzie do trenera i do kolejnych tygodni",
+    wpisOceny === "za trudne", String(wpisOceny));
+  for (let i = 3; i <= 5; i++) await dalejPoSerii();       // seria 3, 4, 5
+  sprawdz("przy ostatniej serii pełne pytanie z „OK”, a „za trudne” stoi zaznaczone",
+    (await panel.locator(".ocena-w-panelu .ocena-przycisk").allInnerTexts()).join(" | ")
+      === "Za trudne | OK | Za łatwe"
+    && ((await panel.locator(".ocena-w-panelu .ocena-przycisk", { hasText: "Za trudne" })
+      .getAttribute("class")) ?? "").includes("wybrana"),
+    (await panel.locator(".ocena-w-panelu").innerText()).replace(/\n/g, " | "));
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

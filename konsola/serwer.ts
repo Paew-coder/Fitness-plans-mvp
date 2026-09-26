@@ -929,6 +929,9 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             nazwa: s.cwiczenie!.nazwa,
             film: s.cwiczenie!.film ?? null,
             jednostronne: s.cwiczenie!.jednostronne ?? false,
+            // Skok ciężaru z BAZY — telefon zaokrągla do niego korektę ±5 %
+            // w trakcie treningu (ocena przy serii, 26.09.2026).
+            skokKg: s.cwiczenie!.skokKg,
             // Ile odpocząć po serii. Liczy silnik z `coeff`, bo to jedyne
             // miejsce, w którym ta wiedza już jest — patrz `przerwa.ts`.
             przerwaSekundy: przerwaSekund(s.cwiczenie!.coeff),
