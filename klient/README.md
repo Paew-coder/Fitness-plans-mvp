@@ -231,6 +231,12 @@ ma **▶ Zacznij to ćwiczenie** — prosto do jego pierwszej serii w panelu,
 w dowolnej kolejności (także TOP SET). Przycisk nad listą mówi,
 dokąd wraca: *▶ Wróć do treningu — C1. Incline dumbbell curl · seria 3 z 3*.
 
+## Ciężar ustawiany ręcznie zostaje na kolejne tygodnie
+
+Przy ćwiczeniach z progresją „ręczne ustawienie" (np. SLDL balance) ciężar, który
+klient raz wpisze przy serii — albo trener w konsoli — przechodzi na kolejne
+tygodnie: *„2 kg · jak w T1"*. Nowy wpis zastępuje go od swojego tygodnia.
+
 ## Następny trening jednym dotknięciem
 
 Na górze listy tygodni stoi przycisk *„▶ Następny trening: tydzień 3 · Dzień I"*

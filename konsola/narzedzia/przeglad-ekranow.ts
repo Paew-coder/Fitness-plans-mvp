@@ -724,6 +724,21 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     slotPoRecznym?.ciezar === 12.5 && slotPoRecznym?.ciezarNadpisany === true,
     `${slotPoRecznym?.ciezar} · nadpisany: ${slotPoRecznym?.ciezarNadpisany}`);
 
+  // I zostaje na kolejne tygodnie (26.09.2026): w T2 to samo 12,5 kg, a pod
+  // polem napisane, skąd się wzięło — pole zostaje puste, żeby T2 dało się
+  // ustawić osobno.
+  await s.locator("#taby-tygodni button", { hasText: "T2" }).click();
+  await s.waitForTimeout(400);
+  const poleT2 = s.locator("#dni tr").filter({ hasText: "SLDL balance" }).first().locator("td.ciezar");
+  sprawdz("ręczny ciężar z T1 przechodzi na T2 z podpisem, skąd jest",
+    (await poleT2.locator("input").getAttribute("placeholder")) === "12,5"
+    && (await poleT2.locator("input").inputValue()) === ""
+    && (await poleT2.locator(".zrodlo-ciezaru").innerText()) === "z T1 · Twój wpis",
+    `${await poleT2.locator("input").getAttribute("placeholder")} · `
+    + `${await poleT2.locator(".zrodlo-ciezaru").innerText().catch(() => "brak podpisu")}`);
+  await s.locator("#taby-tygodni button", { hasText: "T1" }).click();
+  await s.waitForTimeout(300);
+
   const wierszSerii = s.locator(".serie-max-wiersz").filter({ hasText: "SLDL balance" }).first();
   sprawdz("panel serii maksymalnych nie prosi o liczby, których nie użyje",
     (await wierszSerii.locator("input").count()) === 0

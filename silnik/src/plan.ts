@@ -62,6 +62,12 @@ export type ParametryTygodnia = {
   oneRMReczny?: number;
   /** Jawne nadpisanie ciężaru — widoczne i cofalne, inaczej niż zerwany link w arkuszu. */
   ciezarOverride?: number;
+  /**
+   * Ciężar, który klient sam wybrał przy ćwiczeniu z progresją „ręczne
+   * ustawienie" — zapisuje go serwer z wpisanych serii (najcięższa). Razem
+   * z ćwiczeniem, żeby po podmianie w slocie nie przeszedł na inne.
+   */
+  ciezarKlienta?: { kg: number; cwiczenieId: string };
   /** Odczucie klienta po wykonaniu (kolumna H). */
   feedback?: Feedback;
 };
@@ -154,6 +160,11 @@ export type SlotWyliczony = {
   mnoznik: number;
   ciezar: WynikCiezaru;
   ciezarNadpisany: boolean;
+  /**
+   * Skąd ciężar przy „ręcznym ustawieniu", gdy nie wpisał go trener w tym
+   * tygodniu: z wyboru klienta albo przeniesiony z wcześniejszego tygodnia.
+   */
+  ciezarZrodlo?: { tydzien: number; kto: "trener" | "klient" };
   stres: Stres;
 };
 
@@ -295,6 +306,18 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       ? wyliczone.get(bazowy)?.sloty.find((s) => s.positionId === slot.positionId)
       : undefined;
 
+    /*
+     * „Ręczne ustawienie": ciężar nie bierze się z 1RM, więc bez wpisu trenera
+     * w tym tygodniu był tylko napis — i klient dobierał go co tydzień od
+     * nowa. Trener, 26.09.2026: „jak klient dobierze sobie ciężar w T1, to
+     * zostaje on do końca planu". Szukamy wstecz od tego tygodnia: wybór
+     * klienta albo wpis trenera, pierwszy znaleziony wygrywa; w tym samym
+     * tygodniu klient przed trenerem, bo jego ciężar już się odbył. Tylko
+     * przy tym samym ćwiczeniu — po podmianie cudze kilogramy nie przechodzą.
+     */
+    const przeniesiony = cwiczenie.progresja === "ręczne ustawienie"
+      ? ciezarRecznyZWczesniej(slot, tydzien, cwiczenie.id, p) : undefined;
+
     const policzony = obliczCiezar({
       tydzien: tydzien as Tydzien,
       jestBojemGlownym: bojGlowny,
@@ -323,8 +346,10 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       procent1RM: procent1RM(powtorzenia, rpe),
       oneRM,
       mnoznik,
-      ciezar: p.ciezarOverride ?? policzony,
+      ciezar: p.ciezarOverride ?? przeniesiony?.kg ?? policzony,
       ciezarNadpisany: p.ciezarOverride !== undefined,
+      ...(p.ciezarOverride === undefined && przeniesiony
+        ? { ciezarZrodlo: { tydzien: przeniesiony.tydzien, kto: przeniesiony.kto } } : {}),
       stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
     };
   };
@@ -434,6 +459,28 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
   }
 
   return { nazwa: plan.nazwa, dniTreningowe: dni, tygodnie, tygodnieDodatkowe, ocenaObjetosci };
+}
+
+/**
+ * Ręczny ciężar przeniesiony z wcześniejszego tygodnia (albo wybór klienta
+ * z tego samego). `undefined`, gdy nikt jeszcze niczego nie wpisał.
+ */
+function ciezarRecznyZWczesniej(
+  slot: SlotPlanu, tydzien: TydzienCyklu, cwiczenieId: string, p: ParametryTygodnia,
+): { kg: number; tydzien: number; kto: "trener" | "klient" } | undefined {
+  const tegoCwiczenia = (x: ParametryTygodnia) =>
+    x.ciezarKlienta && x.ciezarKlienta.cwiczenieId === cwiczenieId && x.ciezarKlienta.kg > 0
+      ? x.ciezarKlienta.kg : undefined;
+  const swoj = tegoCwiczenia(p);
+  if (swoj !== undefined) return { kg: swoj, tydzien, kto: "klient" };
+  for (let w = tydzien - 1; w >= 1; w--) {
+    const pw = parametry(slot, w as TydzienCyklu);
+    if ((pw.cwiczenieIdOverride ?? slot.cwiczenieId) !== cwiczenieId) break;
+    const klient = tegoCwiczenia(pw);
+    if (klient !== undefined) return { kg: klient, tydzien: w, kto: "klient" };
+    if (pw.ciezarOverride !== undefined) return { kg: pw.ciezarOverride, tydzien: w, kto: "trener" };
+  }
+  return undefined;
 }
 
 function bilansSlotow(sloty: readonly SlotWyliczony[]): BilansTygodnia {

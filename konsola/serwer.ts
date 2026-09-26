@@ -966,6 +966,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             ciezarWybieraKlient: t.rodzaj !== "maksy"
               && s.cwiczenie!.progresja === "ręczne ustawienie"
               && typeof s.ciezar !== "number",
+            // Ręczny ciężar przeniesiony z wcześniejszego tygodnia — telefon
+            // dopisuje „jak w T1", żeby było wiadomo, skąd ta liczba.
+            ciezarZTygodnia: s.ciezarZrodlo && s.ciezarZrodlo.tydzien < t.tydzien
+              ? numerTygodniaNaEkranie(zapisany.plan, s.ciezarZrodlo.tydzien) : null,
             // Próba maksymalna: jedno powtórzenie na RPE 10. Ciężar w planie to
             // obecne 1RM — punkt odniesienia, nie polecenie; wynik wpisuje klient.
             maks: t.rodzaj === "maksy",
@@ -1865,6 +1869,22 @@ const serwer = createServer(async (req, res) => {
           wpis.serie = wpis.ciezarWykonany || wpis.powtorzeniaWykonane
             ? [{ ciezar: wpis.ciezarWykonany ?? null, powtorzenia: wpis.powtorzeniaWykonane ?? null }]
             : undefined;
+        }
+
+        // Ciężar wybrany przez klienta przy „ręcznym ustawieniu" idzie do planu:
+        // silnik niesie go na kolejne tygodnie (trener, 26.09.2026: „zostaje
+        // do końca planu"). Najcięższa seria, razem z ćwiczeniem — po podmianie
+        // w slocie cudze kilogramy nie przechodzą.
+        const cwTygodnia = wTygodniu?.cwiczenie;
+        if (("serie" in cialoZadania || "ciezarWykonany" in cialoZadania)
+            && cwTygodnia?.progresja === "ręczne ustawienie" && tydzien !== TYDZIEN_MAKSOW) {
+          slot.tygodnie ??= {};
+          slot.tygodnie[tydzien as 1] ??= {};
+          if (wpis.ciezarWykonany) {
+            slot.tygodnie[tydzien as 1]!.ciezarKlienta = { kg: wpis.ciezarWykonany, cwiczenieId: cwTygodnia.id };
+          } else {
+            delete slot.tygodnie[tydzien as 1]!.ciezarKlienta;
+          }
         }
 
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);

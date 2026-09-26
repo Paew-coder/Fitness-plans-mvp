@@ -619,7 +619,7 @@ export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): Zapis
         ...slot,
         tygodnie: Object.fromEntries(
           Object.entries(slot.tygodnie ?? {}).map(([tydzien, parametry]) => {
-            const { feedback, ciezarOverride, ...reszta } = parametry ?? {};
+            const { feedback, ciezarOverride, ciezarKlienta, ...reszta } = parametry ?? {};
             return [tydzien, reszta];
           }),
         ),

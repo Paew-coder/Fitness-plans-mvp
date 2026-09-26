@@ -661,7 +661,7 @@ function doborCiezaru(c) {
  */
 const wlasnyCiezarDoWpisania = (c) => c.ciezarWybieraKlient && !seriaWpisana(c);
 const wskazowkaWlasnegoCiezaru = () => el("p", "dobor dobor-wlasny",
-  "Ciężar dobierasz sam — wpisz, z jakim robisz serie. Trener zobaczy go w planie.");
+  "Ciężar dobierasz sam — wpisz, z jakim robisz serie. Zostanie na kolejne tygodnie.");
 
 /** Skąd się wziął ciężar — w tym treningu, w którym go policzyliśmy. */
 const notkaKalibracji = (k) => el("p", "kalibracja",
@@ -882,6 +882,7 @@ function rysujTrening() {
  */
 function kolumnyZadania({
   seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne, podpisCiezaru = "Ciężar",
+  dopisekCiezaru = null,
 }) {
   const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
@@ -895,7 +896,9 @@ function kolumnyZadania({
     siatka.append(k);
   };
   if (seria != null) kolumna("kolumna-seria", "Seria", String(seria), `z ${zSerii}`);
-  if (typeof ciezar === "number") kolumna("kolumna-ciezar", podpisCiezaru, liczba(ciezar), "kg");
+  if (typeof ciezar === "number") {
+    kolumna("kolumna-ciezar", podpisCiezaru, liczba(ciezar), "kg", dopisekCiezaru);
+  }
   else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "dobierz");
   else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"));
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
@@ -983,6 +986,8 @@ function kartaCwiczenia(c, stan = null) {
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
+    // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
+    dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
   }));
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);
@@ -1642,6 +1647,8 @@ function panelSerii(k, kroki, d) {
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
+    // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
+    dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
   }));
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);
