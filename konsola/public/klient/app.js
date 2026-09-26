@@ -255,7 +255,9 @@ history.replaceState({ ekran: EKRAN_GLOWNY }, "");
 /** `pomiary: false` zostawia pola serii maksymalnych w spokoju — patrz `zapisz` niżej. */
 function rysuj({ pomiary = true } = {}) {
   if (!widok) return;
-  $("#tytul").textContent = `${widok.klient} ${widok.wersja}.0`;
+  // Samo imię klienta. „Marek X 1.0" — numer wersji był dla trenera,
+  // klientowi nic nie mówił; cykl stoi w podtytule (26.09.2026).
+  $("#tytul").textContent = widok.klient;
 
   // Bez ćwiczeń, przy których nie ma czego mierzyć (masa ciała, czas…).
   // Liczone razem z nimi nie schodziły nigdy do zera — i baner o brakujących
@@ -269,7 +271,7 @@ function rysuj({ pomiary = true } = {}) {
   if (!$("#rpe-baner").firstChild) $("#rpe-baner").append(objasnienieRPE());
   const zrobione = widok.tygodnie.flatMap((t) => t.dni).filter((d) => d.ukonczony).length;
   const wszystkie = widok.tygodnie.flatMap((t) => t.dni).length;
-  $("#podtytul").textContent = `${zrobione} z ${wszystkie} treningów za Tobą`;
+  $("#podtytul").textContent = `Cykl ${widok.wersja} · ${zrobione} z ${wszystkie} treningów za Tobą`;
 
   // Domknięcie cyklu. Ostatni trening kończył się dotąd tak samo jak każdy
   // inny — lista samych ptaszków i cisza. To jest ta chwila, w której klient
@@ -759,6 +761,9 @@ function pierwszyNiezrobiony() {
   return null;
 }
 
+/** Tygodnie rozwinięte albo zwinięte ręką klienta — wygrywają z domyślnym. */
+const rozwinieteTygodnie = new Map();
+
 function rysujTygodnie() {
   const kontener = $("#tygodnie");
   kontener.replaceChildren();
@@ -781,20 +786,45 @@ function rysujTygodnie() {
     };
   }
 
+  // Rozwinięty jest tydzień następnego treningu, reszta zwinięta do jednej
+  // linijki (26.09.2026). Osiemnaście jednakowych kafelków „Dzień I · 7 ćwiczeń"
+  // trzeba było przewijać, żeby znaleźć, gdzie się jest. Po całym cyklu —
+  // ostatni tydzień.
+  const biezacyTydzien = cel?.tydzien ?? widok.tygodnie.at(-1)?.tydzien;
   for (const t of widok.tygodnie) {
-    const blok = el("div", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`);
-    blok.append(el("div", "tydzien-tytul",
-      `Tydzień ${numerTygodnia(t)} z ${widok.tygodnie.length}${dopisekTygodnia(t.rodzaj)}`));
+    const blok = el("details", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`);
+    blok.open = rozwinieteTygodnie.get(t.tydzien) ?? t.tydzien === biezacyTydzien;
+    const zrobioneDni = t.dni.filter((d) => d.ukonczony).length;
+    const naglowek = el("summary", "tydzien-tytul");
+    naglowek.append(
+      el("span", "tydzien-nazwa",
+        `Tydzień ${numerTygodnia(t)} z ${widok.tygodnie.length}${dopisekTygodnia(t.rodzaj)}`),
+      el("span", `tydzien-stan${zrobioneDni === t.dni.length ? " caly" : ""}`,
+        `${zrobioneDni === t.dni.length ? "✓ " : ""}${zrobioneDni} z ${t.dni.length}`),
+    );
+    // Klik, a nie zdarzenie „toggle": to drugie strzela też przy ustawieniu
+    // `open` wyżej i zapamiętałoby domyślny stan jako wybór klienta — tydzień 1
+    // zostałby rozwinięty na zawsze.
+    naglowek.addEventListener("click", () => rozwinieteTygodnie.set(t.tydzien, !blok.open));
+    blok.append(naglowek);
     if (t.rodzaj) blok.append(el("p", "drobne opis-tygodnia", OPIS_TYGODNIA[t.rodzaj] ?? ""));
 
     for (const d of t.dni) {
-      const kafel = el("button", `dzien-kafel ${d.ukonczony ? "zrobiony" : ""}`);
+      const nastepny = cel && cel.tydzien === t.tydzien && cel.dzien === d.dzien;
+      const kafel = el("button",
+        `dzien-kafel${d.ukonczony ? " zrobiony" : ""}${nastepny ? " nastepny" : ""}`);
       const n = d.cwiczenia.length;
-      kafel.append(el("span", "nazwa", nazwaDnia(t, d)));
-      kafel.append(el("span", "ile", t.rodzaj === "maksy"
+      const gora = el("span", "kafel-gora");
+      gora.append(el("span", "nazwa", nazwaDnia(t, d)));
+      gora.append(el("span", "ile", t.rodzaj === "maksy"
         ? `${n} ${odmiana(n, ["bój", "boje", "bojów"])}`
         : `${n} ${odmiana(n, ["ćwiczenie", "ćwiczenia", "ćwiczeń"])}`));
-      if (d.ukonczony) kafel.append(el("span", "ptaszek", "✓"));
+      if (d.ukonczony) gora.append(el("span", "ptaszek", "✓"));
+      kafel.append(gora);
+      // Co to za dzień — pierwsze ćwiczenia jedną linijką. „Dzień II" nic nie
+      // mówi, „Barbell back squat · Barbell row…" od razu.
+      const sklad = d.cwiczenia.map((c) => c.nazwa).filter(Boolean).join(" · ");
+      if (sklad) kafel.append(el("span", "sklad", sklad));
       kafel.onclick = () => {
         biezacy = { tydzien: t.tydzien, dzien: d.dzien };
         otworz("#ekran-trening");
