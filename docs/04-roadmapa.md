@@ -526,6 +526,16 @@ Trener: „dodaj szkielety z planów z Base44 do wykorzystania w konsoli trenera
 
 Trener: „rozgrzewkę też dajmy jako opcjonalne miejsce, żeby wrzucić komuś przed planem (widoczne np. na początku dnia 1 / dnia 2 itd.)". Przy każdym dniu w konsoli jest *+ rozgrzewka*: tekst wiersz po wierszu i link do filmu (tylko http(s) — trafia wprost do `href` u klienta, serwer sprawdza). Ta sama w każdym tygodniu, w deloadzie też; w dniu maksów nie, bo tam każdy bój ma własną instrukcję rozgrzewki. Klient widzi kartę na początku dnia — rozwiniętą, dopóki nic nie zrobił — i w pierwszym panelu prowadzenia. Nie wchodzi do stresu ani objętości.
 
+**26. Ręczny ciężar zostaje do końca planu — 26.09.2026.**
+
+Trener przy „SLDL balance" (progresja `ręczne ustawienie`): „skoro są odgórnie ustalone powtórzenia i serie, to jak klient dobierze sobie ciężar w T1, to zostaje on do końca planu". Dotąd bez wpisu trenera w danym tygodniu stało „dobierz" i klient wybierał ciężar co tydzień od nowa.
+
+* Serwer zapisuje przy wpisie serii ciężar wybrany przez klienta (`ciezarKlienta`, najcięższa seria, razem z ćwiczeniem) w parametrach tego tygodnia.
+* Silnik szuka wstecz: wybór klienta albo wpis trenera z najbliższego wcześniejszego tygodnia; w tym samym tygodniu klient przed trenerem (jego ciężar już się odbył). Wpis trenera w danym tygodniu wygrywa zawsze. Tylko przy tym samym ćwiczeniu — podmiana przerywa przenoszenie. Działa też w deloadzie.
+* Klient widzi „2 kg · jak w T1", konsola pod pustym polem „z T1 · wybór klienta" albo „z T1 · Twój wpis". Eksport wpisuje ten ciężar do arkusza. Nowa wersja planu zaczyna czysto.
+* Ciężaru nie podnosimy samoczynnie: SLDL balance i Dead bug mają w BAZIE skok 0 kg. Oceny klienta zmieniają przy tej progresji powtórzenia (±1 na ocenę), jak dotąd.
+* Wpisy sprzed tej zmiany nie mają zapisanego wyboru — wystarczy raz wpisać ciężar (klient przy serii albo trener w konsoli).
+
 ## Co jest zrobione tym dokumentem
 
 - Silnik 5.17 rozłożony na funkcje z sygnaturami i wzorami — `02-silnik-obliczeniowy.md`.

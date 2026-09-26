@@ -66,6 +66,12 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
       if (!jestObiektem(parametry)) {
         return `${gdzie}, tydzień ${tydzien}: parametry muszą być obiektem`;
       }
+      // Ciężar wybrany przez klienta — silnik niesie go na kolejne tygodnie.
+      const k = parametry.ciezarKlienta;
+      if (k != null && (!jestObiektem(k) || !jestLiczba(k.kg) || k.kg <= 0
+          || typeof k.cwiczenieId !== "string")) {
+        return `${gdzie}, tydzień ${tydzien}: ciężar wybrany przez klienta jest uszkodzony`;
+      }
     }
   }
 

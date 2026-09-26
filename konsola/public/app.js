@@ -632,12 +632,16 @@ function przejmijOdKlienta(mojPlan, swiezyPlan) {
   for (const slot of mojPlan.sloty) {
     const swiezy = swiezeSloty.get(slot.positionId);
     if (!swiezy) continue;
-    for (const t of ["1", "2", "3", "4", "5", "6"]) {
-      const ocena = swiezy.tygodnie?.[t]?.feedback;
-      if (ocena === undefined) continue;
-      slot.tygodnie ??= {};
-      slot.tygodnie[t] ??= {};
-      slot.tygodnie[t].feedback = ocena;
+    // Z T7 i T8 też, i razem z ciężarem, który klient sam wybrał przy
+    // „ręcznym ustawieniu" — to też jest jego zapis, nie trenera.
+    for (const t of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
+      for (const pole of ["feedback", "ciezarKlienta"]) {
+        const wartosc = swiezy.tygodnie?.[t]?.[pole];
+        if (wartosc === undefined) continue;
+        slot.tygodnie ??= {};
+        slot.tygodnie[t] ??= {};
+        slot.tygodnie[t][pole] = wartosc;
+      }
     }
   }
   mojPlan.serieMaksymalne = swiezyPlan.serieMaksymalne;
@@ -1885,7 +1889,7 @@ function komorkaCiezaru(parametry, wyliczony) {
   // i ucinał się do „— bra". Teraz stoi pod polem, w całości.
   const komunikat = typeof ciezar === "string" && ciezar.startsWith("—") ? ciezar.slice(2) : null;
   input.placeholder = recznie
-    ? "ręcznie"
+    ? (typeof ciezar === "number" ? liczba(ciezar) : "ręcznie")
     : (typeof ciezar === "number" ? liczba(ciezar) : komunikat ? "kg" : String(ciezar ?? "—"));
   input.title = parametry.ciezarOverride !== undefined
     ? "Ciężar wpisany ręcznie. Wyczyść pole, żeby wrócić do liczonego."
@@ -1901,6 +1905,13 @@ function komorkaCiezaru(parametry, wyliczony) {
   komorka.append(input);
   if (komunikat && parametry.ciezarOverride === undefined) {
     komorka.append(el("div", "komunikat-ciezaru", komunikat));
+  }
+  // Ręczny ciężar bez wpisu w tym tygodniu: skąd się wziął (26.09.2026).
+  const zrodlo = wyliczony?.ciezarZrodlo;
+  if (zrodlo && parametry.ciezarOverride === undefined) {
+    const kto = zrodlo.kto === "klient" ? "wybór klienta" : "Twój wpis";
+    komorka.append(el("div", "komunikat-ciezaru zrodlo-ciezaru",
+      zrodlo.tydzien === tydzien ? kto : `z T${zrodlo.tydzien} · ${kto}`));
   }
 
   if (parametry.ciezarOverride !== undefined) {
