@@ -554,9 +554,21 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     `${(moduly.match(/bieg · tydzień/g) ?? []).length} tygodni`);
   sprawdz("tydzień czwarty jest oznaczony jako lżejszy",
     moduly.includes("(lżejszy)"));
-  sprawdz("przy podanym wieku widać zakres tętna",
-    /\d+–\d+ ud\/min/.test(moduly),
-    moduly.split("\n").find((l) => l.includes("ud/min"))?.slice(0, 60) ?? "brak");
+  sprawdz("przy podanym wieku widać tętno — orientacyjnie",
+    /tętno orientacyjnie \d+–\d+/.test(moduly),
+    moduly.split("\n").find((l) => l.includes("tętno"))?.slice(0, 60) ?? "brak");
+  // Od 27.09.2026: stały zestaw (spokojny, progowy, długie…), rozpiska na
+  // tempie i czasie; oddech z techniką przy każdym kroku (trener: „nie
+  // wiadomo, o co chodzi").
+  sprawdz("bieg rozpisany na tempie i czasie, z nazwami jednostek",
+    moduly.includes("bieg progowy") && moduly.includes("długie wybieganie")
+    && /\d:\d\d \/km/.test(moduly) && moduly.includes("w tempie progowym"),
+    moduly.split("\n").filter((l) => l.includes("/km")).slice(0, 2).join(" | "));
+  sprawdz("oddech: przy każdym kroku, jak go zrobić, i kiedy przerwać",
+    moduly.includes("breathe light:") && moduly.includes("bezdech w marszu:")
+    && moduly.includes("kadencja 4–6:") && moduly.includes("przerwij, gdy")
+    && moduly.includes("jak zmierzyć twot") && moduly.includes("twój wynik twot: 28 s"),
+    moduly.split("\n").find((l) => l.includes("breathe light"))?.slice(0, 70) ?? "brak");
 
   // Wiek i zmierzone HR max to pola, których trener bardzo często nie ma.
   // Bez żadnego z nich tętna nie da się policzyć — i na telefonie wyświetlało

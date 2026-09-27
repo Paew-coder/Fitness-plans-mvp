@@ -5,6 +5,11 @@
  * LibreOffice: dwa komplety wejść (3 i 5 jednostek biegowych, TWOT 22 i 8),
  * z których arkusz policzył wszystko sam. Silnik ma trafić w to co do sekundy
  * tempa i co do pół kilometra dystansu.
+ *
+ * Od 27.09.2026 zestaw jednostek biegowych jest inny niż w arkuszu (decyzja
+ * trenera: spokojny, progowy, długie, interwały, przebieżki). Wzory zostały te
+ * same, więc jednostki porównujemy po rodzaju, nie po miejscu na liście;
+ * „bieg ciągły" z arkusza w zestawie już nie występuje.
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -57,16 +62,22 @@ describe("zgodność z arkuszem — ODDECH i BIEG", () => {
       );
 
       const plan = planBiegowy(dane);
+      // Rodzaj jednostki z opisu arkusza → rodzaj w dzisiejszym zestawie.
+      const rodzaj = (opis: string) => opis.startsWith("Bieg spokojny") ? "spokojny"
+        : opis.startsWith("Długie wybieganie") ? "dlugie"
+          : opis.startsWith("Interwał progowy") ? "progowy" : null;
       let sprawdzonych = 0;
       for (const oczekiwana of p.jednostki) {
-        const j = plan[oczekiwana.tydzien - 1]!.jednostki[oczekiwana.nr - 1]!;
-        const gdzie = `T${oczekiwana.tydzien} J${oczekiwana.nr}`;
-        assert.equal(j.opis, oczekiwana.opis, `${gdzie} opis`);
+        const r = rodzaj(oczekiwana.opis);
+        if (!r) continue;   // „bieg ciągły" — poza zestawem od 27.09.2026
+        const j = plan[oczekiwana.tydzien - 1]!.jednostki.find((x) => x.klucz === r)!;
+        const gdzie = `T${oczekiwana.tydzien} ${r}`;
+        assert.ok(j, `${gdzie} — brak w zestawie`);
         assert.equal(j.minutRazem, oczekiwana.minutRazem, `${gdzie} czas`);
         assert.equal(j.dystansKm, oczekiwana.dystansKm, `${gdzie} dystans`);
         assert.equal(j.tempoTekst, oczekiwana.tempo, `${gdzie} tempo`);
         assert.equal(`${j.strefa!.odUd}–${j.strefa!.doUd}`, oczekiwana.tetno, `${gdzie} tętno`);
-        sprawdzonych += 5;
+        sprawdzonych += 4;
       }
       t.diagnostic(`zgodnych: ${sprawdzonych + p.strefy.length + p.tempa.length + 2}`);
     });
@@ -163,9 +174,57 @@ describe("BIEG — zachowania spoza złotego zestawu", () => {
       wiek: 35, dystansTestowy: 5, czasTestowy: 25, jednostekWTygodniu: 3,
     };
     const t1 = planBiegowy(dane)[0]!;
-    assert.equal(minutWTygodniu(t1), 100);      // 30 + 30 + 40
-    assert.equal(kilometrowWTygodniu(t1), 16.5); // 5 + 5 + 6,5
+    assert.equal(minutWTygodniu(t1), 118);       // 30 + 43 (4 × 4 min, trucht, 20 min) + 45
+    assert.equal(kilometrowWTygodniu(t1), 19.5); // 5 + 7,5 + 7
     const bezTestu = planBiegowy({ wiek: 35, jednostekWTygodniu: 3 })[0]!;
     assert.equal(kilometrowWTygodniu(bezTestu), null);
+  });
+});
+
+/*
+ * Stały zestaw jednostek — trener, 27.09.2026: „popraw nazwy treningów
+ * biegowych, bo mamy tylko spokojny i ciągły — może jakiś progowy /
+ * interwały". Przy N biegach w tygodniu pierwsze N z listy.
+ */
+describe("BIEG — zestaw jednostek od 27.09.2026", () => {
+  const dane = (n: number): DaneBiegowe => ({ wiek: 35, dystansTestowy: 5, czasTestowy: 25, jednostekWTygodniu: n });
+
+  test("1 spokojny · 2 + progowy · 3 + długie · 4 + interwały · 5 + przebieżki", () => {
+    const zestawy = [1, 2, 3, 4, 5].map((n) => planBiegowy(dane(n))[0]!.jednostki.map((j) => j.klucz).join(" "));
+    assert.deepEqual(zestawy, [
+      "spokojny",
+      "spokojny progowy",
+      "spokojny progowy dlugie",
+      "spokojny progowy dlugie interwaly",
+      "spokojny progowy dlugie interwaly przebiezki",
+    ]);
+  });
+
+  test("bieg progowy: odcinki 4 min w tempie progowym, 2 min truchtu, rozgrzewka i schłodzenie", () => {
+    const j = planBiegowy(dane(3))[0]!.jednostki[1]!;
+    assert.equal(j.typ, "Bieg progowy");
+    assert.equal(j.tempoTekst, "05:15");
+    assert.equal(j.tempoSpokojneTekst, "06:15");
+    assert.deepEqual(j.kroki, ["10 min rozgrzewki — spokojnie", "4 × 4 min w tempie progowym",
+      "po każdym odcinku 2 min truchtu", "10 min schłodzenia — spokojnie"]);
+    assert.equal(j.minutRazem, 43);
+  });
+
+  test("interwały: odcinki 3 min w tempie interwałowym, 2 min truchtu", () => {
+    const j = planBiegowy(dane(4))[0]!.jednostki[3]!;
+    assert.equal(j.typ, "Interwały");
+    assert.equal(j.tempoTekst, "04:49");
+    assert.equal(j.powtorzen, 5);
+    assert.equal(j.odcinekMin, 3);
+    assert.equal(j.kroki[1], "5 × 3 min w tempie interwałowym");
+    assert.equal(j.minutRazem, 15 + 20 + 10);
+  });
+
+  test("spokojny z przebieżkami: 6 × 20 s na koniec, czas z doliczonymi przebieżkami", () => {
+    const j = planBiegowy(dane(5))[0]!.jednostki[4]!;
+    assert.equal(j.typ, "Bieg spokojny z przebieżkami");
+    assert.ok(j.kroki[1]!.includes("6 × 20 s przebieżki"));
+    assert.equal(j.minutRazem, 25 + 8);
+    assert.equal(j.powtorzen, null);
   });
 });

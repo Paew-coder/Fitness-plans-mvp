@@ -56,5 +56,56 @@
    "brama": "Pełny zakres. Przerwij przy zawrotach głowy, bólu w klatce, mrowieniu lub narastającym lęku.",
    "procent_twot": 0.65
   }
- ]
+ ],
+ "instrukcje": {
+  "zrodlo": "ODDECH!A2, A17:A44 (MasterTemplate 5.18) — teksty trenera z arkusza, bez zmian poza jednym zdaniem w RETEST (wynik wpisuje trener w konsoli, nie klient).",
+  "wstep": "Protokół oddechowy prowadzony równolegle do planu siłowego.",
+  "technika": {
+   "A": [
+    {
+     "nazwa": "Breathe Light",
+     "tekst": "siedź prosto, rozluźnij barki i szczękę. Oddychaj cicho nosem i subtelnie zmniejsz objętość oddechu — bez wstrzymywania. Głód powietrza ma być tolerowalny."
+    }
+   ],
+   "B": [
+    {
+     "nazwa": "Bezdech w marszu",
+     "tekst": "wydech, zatkaj nos, idź spokojnym krokiem przez zaplanowany czas. Puść nos i wróć do oddechu nosowego. Jeśli po 2–3 oddechach nie wracasz do spokoju, zatrzymanie było za długie."
+    },
+    {
+     "nazwa": "Przerwa",
+     "tekst": "minimum 60 s między powtórzeniami."
+    }
+   ],
+   "C": [
+    {
+     "nazwa": "Kadencja 4–6",
+     "tekst": "wdech na 4, wydech na 6, przez nos, bez napięcia."
+    }
+   ]
+  },
+  "pomiar": [
+   "Odpocznij 10 minut. Najlepiej rano, przed kawą i wysiłkiem.",
+   "Usiądź. Zwykły, niepogłębiony wdech i wydech przez nos.",
+   "Po wydechu zatkaj nos i uruchom stoper.",
+   "Zatrzymaj pomiar przy pierwszej wyraźnej potrzebie wdechu. Nie walcz o wynik.",
+   "Puść nos i spokojnie zaczerpnij powietrza nosem. Jeśli musisz nasilić oddychanie, test trwał za długo."
+  ],
+  "co_mowi": [
+   "Opisuje pośrednio wrażliwość na CO₂ i skłonność do zadyszki.",
+   "Nie mierzy saturacji, pojemności płuc ani wydolności tlenowej.",
+   "Powtarzalność wyniku jest umiarkowana — patrz na trend z kilku pomiarów, nie na pojedynczy odczyt.",
+   "Dowody na przełożenie na wyniki sportowe są ograniczone. Traktuj to jako dodatek, nie miernik formy."
+  ],
+  "retest": [
+   "Mierz TWOT rano w pierwszym dniu tygodnia 1, 3 i 5 oraz na koniec cyklu.",
+   "Nowy wynik przekaż trenerowi — dawka przeliczy się sama.",
+   "Dobra odpowiedź to wzrost o 3–5 s na 2 tygodnie.",
+   "Brak zmiany przez 4 tygodnie: wróć do samego oddechu nosowego w ciągu dnia zamiast dokładać bezdechy."
+  ],
+  "przerwij": [
+   "Zawroty głowy, ból w klatce, mrowienie, narastający lęk, oddech tracący płynność.",
+   "Nigdy w wodzie ani w jej pobliżu. Nigdy za kierownicą."
+  ]
+ }
 }

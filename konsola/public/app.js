@@ -840,7 +840,10 @@ function rysujModuly() {
     wyBieg.append(el("p", "poziom-modulu",
       `HR max ${m.bieg.hrMax} ud/min${m.bieg.tempoTestowe ? ` · test ${m.bieg.tempoTestowe} min/km` : ""}`));
   }
-  for (const t of m.bieg.tempa) {
+  // Tylko tempa, których używa zestaw jednostek — „tempowe (ciągłe)" od
+  // 27.09.2026 nie ma swojej jednostki i wisiałoby tu bez sensu.
+  const uzyteTempa = new Set(m.bieg.tygodnie.flatMap((t) => t.jednostki.map((j) => j.tempo)));
+  for (const t of m.bieg.tempa.filter((x) => uzyteTempa.has(x.klucz))) {
     const w = el("div", "wiersz-modulu");
     w.append(el("span", "etykieta", t.nazwa), el("span", "tresc mono", `${t.tekst} min/km`));
     wyBieg.append(w);
@@ -848,21 +851,20 @@ function rysujModuly() {
 
   const tabela = el("table", "sloty bieg");
   const glowa = el("tr");
-  for (const n of ["", "typ", "czas", "dystans", "tempo", "tętno"]) glowa.append(el("th", "", n));
+  for (const n of ["", "jednostka", "czas", "dystans", "tempo", "tętno ≈"]) glowa.append(el("th", "", n));
   const glowica = el("thead");
   glowica.append(glowa);
   tabela.append(glowica);
   const cialo = el("tbody");
-  // W tabeli krótka nazwa; pełny opis siedzi w tooltipie, bo w wąskiej kolumnie
-  // „Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki" zawija się na pięć linii.
-  const krotko = { 1: "spokojny", 2: "spokojny", 3: "ciągły", 4: "długie wybieganie", 5: "interwał" };
+  // W tabeli krótka nazwa; pełny opis siedzi w tooltipie, bo w wąskiej
+  // kolumnie cały przebieg zawijałby się na pięć linii.
   for (const t of m.bieg.tygodnie) {
     for (const [i, j] of t.jednostki.entries()) {
       const w = el("tr", t.tydzien === 4 ? "odciazenie" : "");
       w.append(el("td", "mono", i === 0 ? `T${t.tydzien}` : ""));
       const typ = el("td", "", j.powtorzen
-        ? `${krotko[j.nr]} ${j.powtorzen}×4′`
-        : krotko[j.nr] ?? j.typ);
+        ? `${j.etykieta} ${j.powtorzen}×${j.odcinekMin}′`
+        : j.etykieta ?? j.typ);
       typ.title = j.opis;
       w.append(typ);
       w.append(el("td", "mono", `${j.minutRazem} min`));

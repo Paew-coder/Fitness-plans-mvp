@@ -12,7 +12,24 @@
  */
 
 import { zaokraglijJakArkusz } from "./pomocnicze.ts";
-import { PROGI_TWOT } from "./dane/oddech.ts";
+import { PROGI_TWOT, OBJASNIENIA_ODDECHU } from "./dane/oddech.ts";
+
+/**
+ * Instrukcje trenera z arkusza (zakładka ODDECH) — technika każdego bloku,
+ * jak zmierzyć TWOT, kiedy powtórzyć test i kiedy przerwać. Do 27.09.2026
+ * klient widział samą dawkę („5 min Breathe Light, głód powietrza 3/10")
+ * i trener usłyszał, że „za bardzo nie wiadomo, o co chodzi".
+ */
+export type ObjasnieniaOddechu = {
+  wstep: string;
+  technika: Record<"A" | "B" | "C", { nazwa: string; tekst: string }[]>;
+  pomiar: string[];
+  coMowi: string[];
+  retest: string[];
+  przerwij: string[];
+};
+
+export { OBJASNIENIA_ODDECHU };
 
 export type ProgTWOT = {
   /** Dolna granica przedziału TWOT w sekundach. */

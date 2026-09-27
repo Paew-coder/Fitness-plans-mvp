@@ -247,10 +247,22 @@ cel, staż, sprzęt i liczbę dni, dostajesz układ dni z konkretnymi ćwiczenia
 z BAZY, z uzasadnieniem przy każdej pozycji. *Odczytaj analizę* — model czyta
 policzone liczby i mówi, co z nich wynika. Szczegóły niżej: [Asystent](#asystent-co-robi-a-czego-nie).
 
-**Oddech i bieg.** Dwa kalkulatory z zakładek ODDECH i BIEG, te same liczby.
-Wpisujesz wynik testu TWOT — wychodzi dawka oddechowa. Wpisujesz wiek i bieg
-testowy — wychodzi sześć tygodni jednostek z czasem, tempem i tętnem. Klient
-widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
+**Oddech i bieg.** Dwa kalkulatory z zakładek ODDECH i BIEG. Wpisujesz wynik
+testu TWOT — wychodzi dawka oddechowa; klient widzi ją z objaśnieniem techniki
+każdego kroku (teksty z arkusza). Wpisujesz wiek i bieg testowy — wychodzi sześć
+tygodni jednostek z czasem i tempem; tętno tylko orientacyjnie. Od 27.09.2026
+zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
+
+| | jednostka | przebieg |
+|---|---|---|
+| 1 | Bieg spokojny | 30 min spokojnie |
+| 2 | Bieg progowy | 10 min rozgrzewki · odcinki 4 min w tempie progowym, 2 min truchtu · 10 min schłodzenia |
+| 3 | Długie wybieganie | 45 min spokojnie |
+| 4 | Interwały | 10 min rozgrzewki · odcinki 3 min w tempie interwałowym, 2 min truchtu · 10 min schłodzenia |
+| 5 | Bieg spokojny z przebieżkami | 30 min spokojnie + 6 × 20 s przebieżki |
+
+Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
+jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
 ## Dlaczego wybór z listy, a nie wpisywanie
 

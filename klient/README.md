@@ -146,8 +146,19 @@ się z tego, co klient sam wpisał przy ćwiczeniach — jedyne dodatkowe pole t
 waga, jeden wpis na dzień.
 
 **Oddech i bieg** — osobny ekran, gdy trener wypełni te moduły w konsoli.
-Dawka oddechowa z testu TWOT i sześć tygodni jednostek biegowych: czas, tempo,
-tętno, szacowany dystans.
+
+*Trening oddechowy* (od 27.09.2026 z objaśnieniami): ile razy w tygodniu, poziom
+i wynik TWOT, potem trzy kroki — rozgrzewka, praca, wyciszenie — a przy każdym
+dawka i **jak to zrobić** (Breathe Light, bezdech w marszu, kadencja 4–6):
+teksty trenera z zakładki ODDECH arkusza. Pod spodem ramka *Przerwij, gdy…*
+i zwinięte *Jak zmierzyć TWOT?* oraz *Kiedy powtórzyć test?*. Wcześniej klient
+widział samą dawkę w skrótach i nie było wiadomo, o co chodzi.
+
+*Bieg* — sześć tygodni, rozwinięty ten, w którym klient jest w planie. Każda
+jednostka: nazwa i czas, duże **tempo na kilometr**, przebieg krok po kroku
+(rozgrzewka, odcinki, trucht, schłodzenie), a drobno szacowany dystans i
+**tętno orientacyjnie**. Zestaw przy N biegach w tygodniu: spokojny · progowy ·
+długie wybieganie · interwały · spokojny z przebieżkami (pierwsze N).
 
 ## Dwie drogi na start
 

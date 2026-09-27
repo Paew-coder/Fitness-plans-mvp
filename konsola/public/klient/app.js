@@ -520,45 +520,123 @@ function rysujModuly() {
   kontener.replaceChildren();
   if (!jest) return;
 
-  if (dawka) {
-    const karta = el("div", "cwiczenie");
-    karta.append(el("div", "modul-tytul", "Oddech"));
-    if (dawka.zatrzymane) {
-      karta.append(el("p", "brama", dawka.brama));
-    } else {
-      karta.append(el("div", "modul-poziom", `${dawka.poziom} · ${dawka.czestotliwosc}`));
-      for (const [nazwa, tresc] of [
-        ["A — rozgrzewka", dawka.blokA], ["B — praca", dawka.blokB], ["C — wyciszenie", dawka.blokC],
-      ]) {
-        const w = el("div", "modul-blok");
-        w.append(el("span", "nazwa", nazwa), el("span", "tresc", tresc));
-        karta.append(w);
-      }
-      karta.append(el("p", "brama", dawka.brama));
-    }
-    kontener.append(karta);
-  }
+  if (dawka) kontener.append(kartaOddechu(dawka, m.oddech));
 
+  if (tygodnie.length > 0) {
+    // Zasady z arkusza (BIEG) jednym akapitem — raz, nad tygodniami.
+    kontener.append(el("p", "modul-wstep",
+      "Biegnij czas, nie kilometry — dystans to szacunek. Tempo jest celem, tętno podajemy "
+      + "tylko orientacyjnie. Jeśli na biegu spokojnym nie da się mówić pełnym zdaniem, zwolnij "
+      + "niezależnie od zegarka. Tydzień 4 jest celowo lżejszy."));
+  }
+  // Rozwinięty tydzień, w którym klient jest w planie siłowym; reszta zwinięta.
+  const biezacy = Math.min(pierwszyNiezrobiony()?.tydzien ?? 1, 6);
   for (const t of tygodnie) {
-    const karta = el("div", "cwiczenie");
-    karta.append(el("div", "modul-tytul",
-      `Bieg · tydzień ${t.tydzien}${t.tydzien === 4 ? " (lżejszy)" : ""}`));
-    for (const j of t.jednostki) {
-      const w = el("div", "modul-jednostka");
-      w.append(el("span", "nazwa", j.opis));
-      const dane = [`${j.minutRazem} min`];
-      if (j.tempoTekst) dane.push(`${j.tempoTekst} min/km`);
-      // Bez wieku i bez zmierzonego HR max tętna nie da się policzyć —
-      // a to zwykłe niedopełnione pole, nie awaria. Silnik oddaje wtedy
-      // , więc sam obiekt nie wystarcza za warunek. Pytamy
-      // o liczbę, bo to ona ma się tu pokazać.
-      if (j.strefa?.odUd != null) dane.push(`${j.strefa.odUd}–${j.strefa.doUd} ud/min`);
-      if (j.dystansKm !== null) dane.push(`≈ ${liczba(j.dystansKm)} km`);
-      w.append(el("span", "dane", dane.join("  ·  ")));
-      karta.append(w);
-    }
+    const karta = el("details", "cwiczenie modul-bieg");
+    karta.open = t.tydzien === biezacy;
+    const naglowek = el("summary", "modul-tytul");
+    naglowek.append(el("span", "", `Bieg · tydzień ${t.tydzien}${t.tydzien === 4 ? " (lżejszy)" : ""}`),
+      el("span", "modul-ile", `${t.jednostki.length} ${odmiana(t.jednostki.length, ["bieg", "biegi", "biegów"])}`
+        + ` · ${t.jednostki.reduce((a, j) => a + j.minutRazem, 0)} min`));
+    karta.append(naglowek);
+    for (const j of t.jednostki) karta.append(jednostkaBiegu(j));
     kontener.append(karta);
   }
+}
+
+/** „05:15" → „5:15". */
+const tempoKrotko = (t) => (t || "").replace(/^0/, "");
+
+/**
+ * Jedna jednostka biegowa — od 27.09.2026 rozpisana na tempie i czasie
+ * (trener): nazwa i czas, duże tempo części głównej, przebieg krok po kroku,
+ * a drobno szacowany dystans i tętno „orientacyjnie".
+ */
+function jednostkaBiegu(j) {
+  const w = el("div", "jednostka-biegu");
+  const gora = el("div", "jb-gora");
+  gora.append(el("span", "nazwa", j.typ), el("span", "czas", `${j.minutRazem} min`));
+  w.append(gora);
+  if (j.tempoTekst) {
+    const tempo = el("div", "jb-tempo");
+    tempo.append(el("span", "duze", tempoKrotko(j.tempoTekst)), el("span", "jednostka", " /km"));
+    if (j.powtorzen) tempo.append(el("span", "dopisek", " na odcinkach"));
+    w.append(tempo);
+  }
+  if (j.kroki?.length > 1) {
+    const lista = el("ol", "jb-kroki");
+    for (const k of j.kroki) lista.append(el("li", "", k));
+    w.append(lista);
+  }
+  const drobne = [];
+  if (j.powtorzen && j.tempoSpokojneTekst) {
+    drobne.push(`rozgrzewka, trucht i schłodzenie: ${tempoKrotko(j.tempoSpokojneTekst)} /km`);
+  }
+  if (j.dystansKm !== null) drobne.push(`≈ ${liczba(j.dystansKm)} km`);
+  // Bez wieku i bez zmierzonego HR max tętna nie da się policzyć — to zwykłe
+  // niedopełnione pole, nie awaria. Pytamy o liczbę, bo to ona ma się pokazać.
+  if (j.strefa?.odUd != null) drobne.push(`tętno orientacyjnie ${j.strefa.odUd}–${j.strefa.doUd}`);
+  if (drobne.length) w.append(el("div", "jb-drobne", drobne.join(" · ")));
+  return w;
+}
+
+/**
+ * Trening oddechowy — dawka z testu TWOT i przy każdym kroku to, JAK go
+ * zrobić: teksty trenera z arkusza (zakładka ODDECH). Do 27.09.2026 klient
+ * widział samą dawkę w skrótach („Breathe Light, głód powietrza 3/10") i nie
+ * było wiadomo, o co chodzi.
+ */
+function kartaOddechu(dawka, oddech) {
+  const o = oddech.objasnienia ?? {};
+  const karta = el("div", "cwiczenie modul-oddech");
+  karta.append(el("div", "modul-tytul", "Trening oddechowy"));
+  if (dawka.zatrzymane) {
+    karta.append(el("p", "brama", dawka.brama));
+    return karta;
+  }
+  if (o.wstep) karta.append(el("p", "modul-wstep", o.wstep));
+  karta.append(el("div", "modul-poziom", dawka.czestotliwosc.replace("×/tydz", "× w tygodniu")));
+  const twot = oddech.wejscie?.twot;
+  karta.append(el("div", "drobne",
+    `Poziom: ${dawka.poziom}${twot != null ? ` · Twój wynik TWOT: ${liczba(twot)} s` : ""}`));
+
+  const kroki = el("ol", "kroki-oddechu");
+  for (const [litera, nazwa, tresc] of [
+    ["A", "Rozgrzewka", dawka.blokA], ["B", "Praca", dawka.blokB], ["C", "Wyciszenie", dawka.blokC],
+  ]) {
+    const k = el("li", "krok-oddechu");
+    k.append(el("div", "krok-nazwa", nazwa), el("div", "krok-dawka", tresc));
+    // Technika tylko tam, gdzie jest co robić — „bez bezdechów" jej nie ma.
+    if (!/^bez /.test(tresc)) {
+      for (const t of o.technika?.[litera] ?? []) {
+        const p = el("p", "krok-jak");
+        p.append(el("strong", "", `${t.nazwa}: `), document.createTextNode(t.tekst));
+        k.append(p);
+      }
+    }
+    kroki.append(k);
+  }
+  karta.append(kroki);
+  karta.append(el("p", "brama", dawka.brama));
+
+  if (o.przerwij?.length) {
+    const stop = el("div", "oddech-stop");
+    stop.append(el("strong", "", "Przerwij, gdy: "), document.createTextNode(o.przerwij.join(" ")));
+    karta.append(stop);
+  }
+  for (const [tytul, punkty] of [
+    ["Jak zmierzyć TWOT?", [...(o.pomiar ?? []), ...(o.coMowi ?? [])]],
+    ["Kiedy powtórzyć test?", o.retest ?? []],
+  ]) {
+    if (!punkty.length) continue;
+    const d = el("details", "rpe");
+    d.append(el("summary", "", tytul));
+    const lista = el("ul", "punkty");
+    for (const p of punkty) lista.append(el("li", "", p));
+    d.append(lista);
+    karta.append(d);
+  }
+  return karta;
 }
 
 // ── dobieranie ciężaru według RPE ──────────────────────────────────
