@@ -585,6 +585,15 @@ Trener: „skoro mamy przełącznik na intensywność, co jest 2 częścią plan
 * **Liczby hipertrofii** (trener, 27.09): cz. 1 — bój 4 × 12 → 13 → 14, akcesoria złożone 10–12, izolacje 12–14 (do 27.09 było 12/14, czyli 12–14 i 14–15); cz. 2 — bój 4 × 10 → 11 → 12, akcesoria 8–10 i 10–12. RPE jak dotąd: 8 w pierwszym bloku, 9 w drugim; bez TOP SETU. Plany zapisane jako „hipertrofia” liczą się od razu nowymi zakresami.
 * Eksport do arkusza wpisuje przy obu częściach hipertrofii powtórzenia wprost — arkusz 5.18 zna tylko dwie części siłowe.
 
+**32. Bój siłowy w planie hipertroficznym — przycisk „S” — 27.09.2026.**
+
+Trener: „dodaj taką opcję, żeby móc zrobić standardowo ćwiczenie główne razem z TOP SETEM w hipertrofii”.
+
+* Przy boju głównym w planie hipertroficznym jest przycisk **„S”** (`SlotPlanu.bojSilowy`). Taki bój liczy się jak w części siłowej tego samego etapu: hipertrofia cz. 1 → *objętość* (6×6 @6,5 … 6×3 @7,5), cz. 2 → *intensywność* (6×4 @7 … 6×2 @8), a jego TOP SET dostaje RPE części siłowej (od T2: 6 → 8 albo 7 → 9). Akcesoria zostają hipertroficzne.
+* Włączenie „S” stawia przy tym ćwiczeniu TOP SET dnia, wyłączenie go zdejmuje; liczby boju czyszczą się jak przy „G”, żeby weszła właściwa progresja. Zdjęcie roli boju („G”) zdejmuje też „S”.
+* Poza hipertrofią znacznik nic nie zmienia (`czescBoju` w `szablon-boju.ts`). Testy silnika sprawdzają obie części i to, że bez znacznika reguły się nie zmieniły (na wyłączonej regule są czerwone); przegląd konsoli klika „S” tam i z powrotem.
+* Przy okazji: zmiana *Części planu* przerysowuje tabelę od razu — przycisk „S” pojawia się i znika bez przeładowania.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

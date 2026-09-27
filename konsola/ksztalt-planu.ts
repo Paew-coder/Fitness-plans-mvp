@@ -62,6 +62,10 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (slot.bojGlowny != null && typeof slot.bojGlowny !== "boolean") {
       return `${gdzie}: bój główny musi być prawdą albo fałszem`;
     }
+    // Bój siłowy w hipertrofii („S"); pusto = jak cały plan.
+    if (slot.bojSilowy != null && typeof slot.bojSilowy !== "boolean") {
+      return `${gdzie}: bój siłowy musi być prawdą albo fałszem`;
+    }
     // Tryb liczenia ciężaru dla tego jednego ćwiczenia; pusto = jak w planie.
     if (slot.trybCiezaru != null && !TRYBY_AKCESORIOW.includes(slot.trybCiezaru as never)) {
       return `${gdzie}: tryb ciężaru musi być jednym z: ${TRYBY_AKCESORIOW.join(", ")}`;

@@ -1173,6 +1173,33 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     poHipertrofii.zapisany.plan.czescPlanu === "hipertrofia"
     && bojT1.serie === 4 && bojT1.powtorzenia === 12 && bojT1.rpe === 8,
     `${poHipertrofii.zapisany.plan.czescPlanu} · ${bojT1.serie}×${bojT1.powtorzenia} @${bojT1.rpe}`);
+  // Bój siłowy w hipertrofii (27.09.2026): „S" przy boju — progresja i TOP SET
+  // jak w części siłowej, akcesoria dalej hipertroficzne.
+  // Przyciski przy ćwiczeniu są w tygodniach pracy — wcześniejsza kontrola
+  // zostawiła na ekranie deload.
+  await s.locator("#taby-tygodni button", { hasText: /^T1$/ }).click();
+  const przyciskS = s.locator("table.sloty").first().locator("tbody tr").first()
+    .locator("td.lp button", { hasText: /^S$/ });
+  await przyciskS.click();
+  await s.waitForTimeout(1200);
+  const poS = await api(`/api/plany/${PLAN_NIEGOTOWY}`);
+  const topD1 = poS.zapisany.plan.topSety.find((t: any) => t.dzien === 1);
+  const bojS = poS.wynik.tygodnie[0].sloty[0];
+  const topT2 = poS.wynik.tygodnie[1].topSety.find((t: any) => t.dzien === 1);
+  sprawdz("„S” w hipertrofii: bój jak w objętości (6 × 6 @6,5) i TOP SET od T2 na RPE 6",
+    poS.zapisany.plan.sloty[0].bojSilowy === true
+    && bojS.serie === 6 && bojS.powtorzenia === 6 && bojS.rpe === 6.5
+    && topD1?.wlaczony && topD1.slotPositionId === poS.zapisany.plan.sloty[0].positionId
+    && topT2?.rpe === 6,
+    `${bojS.serie}×${bojS.powtorzenia} @${bojS.rpe} · TOP SET T2 RPE ${topT2?.rpe}`);
+  await przyciskS.click();
+  await s.waitForTimeout(1200);
+  const bezS = await api(`/api/plany/${PLAN_NIEGOTOWY}`);
+  sprawdz("drugie „S” wraca do hipertrofii i zdejmuje TOP SET",
+    !bezS.zapisany.plan.sloty[0].bojSilowy
+    && bezS.wynik.tygodnie[0].sloty[0].powtorzenia === 12
+    && !bezS.zapisany.plan.topSety.find((t: any) => t.dzien === 1)?.wlaczony);
+
   // Hipertrofia cz. 2 (27.09.2026): kontynuacja tego samego szablonu,
   // bój 4 × 10 na RPE 8.
   await s.selectOption("#czesc-planu", "hipertrofia 2");
