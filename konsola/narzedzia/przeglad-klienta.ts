@@ -1701,6 +1701,70 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       .getAttribute("class")) ?? "").includes("wybrana"),
     (await panel.locator(".ocena-w-panelu").innerText()).replace(/\n/g, " | "));
 
+  // ── 28. lista dnia: kolejne serie proponują się same ──────────────
+  //
+  // Trener, 27.09.2026: „jeżeli ktoś chciałby ćwiczyć w takim widoku, to po
+  // wpisaniu pierwszej serii reszta powinna mu się sama uzupełnić". Uzupełnia
+  // się propozycja — przerywana, blada — a zapisuje dopiero po ✓, po
+  // poprawce albo po „Pozostałe serie tak samo".
+  const LISTA = "propozycje-na-liscie";
+  await api("/api/plany", "POST", { klient: LISTA, wersja: 1 });
+  const idListy = (await api("/api/plany")).find((p: any) => p.klient === LISTA).id;
+  const planListy = (await api(`/api/plany/${idListy}`)).zapisany.plan;
+  planListy.sloty[0].cwiczenieId = "EX-0011";   // A1. wyciskanie — bój, 6 serii
+  planListy.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
+  await api(`/api/plany/${idListy}`, "PUT", { plan: planListy, dataStartu: null, status: "wysłany" });
+  const sciezkaListy = (await api(`/api/plany/${idListy}/link`, "POST")).sciezka;
+  const serieNaSerwerze = async () => (await api(`/api/klient/${sciezkaListy.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[0].serieWykonane ?? [];
+  await s.goto(`${adres}${sciezkaListy}`, { waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const kartaListy = s.locator('#cwiczenia [data-position="D1-S01"]');
+  await kartaListy.getByRole("button", { name: /zapisz, co poszło/ }).click();
+  const wierszeListy = kartaListy.locator(".wiersz-serii");
+  sprawdz("przed pierwszą serią pola puste, bez propozycji",
+    await kartaListy.locator(".wiersz-serii.proponowana").count() === 0
+    && await wierszeListy.nth(1).locator("input").first().inputValue() === "");
+
+  await wierszeListy.nth(0).locator("input").nth(0).fill("70");
+  await wierszeListy.nth(0).locator("input").nth(1).fill("6");
+  await wierszeListy.nth(0).locator("input").nth(1).blur();
+  await s.waitForTimeout(900);
+  const proponowane = await kartaListy.locator(".wiersz-serii.proponowana").count();
+  sprawdz("po pierwszej serii reszta proponuje się sama, ale się nie zapisuje",
+    proponowane === 5
+    && await wierszeListy.nth(1).locator("input").nth(0).inputValue() === "70"
+    && await wierszeListy.nth(1).locator("input").nth(1).inputValue() === "6"
+    && (await serieNaSerwerze()).length === 1,
+    `propozycji: ${proponowane} · na serwerze: ${(await serieNaSerwerze()).length}`);
+
+  await wierszeListy.nth(1).locator(".potwierdz-serie").click();
+  await s.waitForTimeout(900);
+  sprawdz("✓ zapisuje serię tak, jak stoi",
+    JSON.stringify(await serieNaSerwerze()) === JSON.stringify([
+      { ciezar: 70, powtorzenia: 6 }, { ciezar: 70, powtorzenia: 6 }])
+    && !(await wierszeListy.nth(1).getAttribute("class"))!.includes("proponowana"),
+    JSON.stringify(await serieNaSerwerze()));
+
+  // Poprawka w propozycji zapisuje cały wiersz, a dalsze idą za nią.
+  await wierszeListy.nth(2).locator("input").nth(0).fill("67.5");
+  await wierszeListy.nth(2).locator("input").nth(0).blur();
+  await s.waitForTimeout(900);
+  sprawdz("poprawka w propozycji zapisuje wiersz, dalsze proponują nowy ciężar",
+    JSON.stringify((await serieNaSerwerze())[2]) === JSON.stringify({ ciezar: 67.5, powtorzenia: 6 })
+    && await wierszeListy.nth(3).locator("input").nth(0).inputValue() === "67.5",
+    `${JSON.stringify((await serieNaSerwerze())[2])} · dalej: ${await wierszeListy.nth(3).locator("input").nth(0).inputValue()}`);
+
+  await kartaListy.getByRole("button", { name: /Pozostałe serie tak samo/ }).click();
+  await s.waitForTimeout(900);
+  const poWszystkich = await serieNaSerwerze();
+  sprawdz("„Pozostałe serie tak samo” zapisuje resztę jednym dotknięciem",
+    poWszystkich.length === 6 && poWszystkich[5].ciezar === 67.5 && poWszystkich[5].powtorzenia === 6
+    && await kartaListy.locator(".wiersz-serii.proponowana").count() === 0,
+    JSON.stringify(poWszystkich));
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

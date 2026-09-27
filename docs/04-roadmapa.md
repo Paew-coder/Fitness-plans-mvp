@@ -625,6 +625,14 @@ Trener: „zakresy tętna są tylko poglądowe, a rozpiska dotyczy głównie tem
 * **Halfkneeling wood chopper** (EX-0095) dopisany do ćwiczeń jednostronnych — serie i powtórzenia na stronę, klient widzi „na stronę”. Jednostronnych jest 31.
 * Zmiany w `docs/dane/baza-cwiczen.json` i `jednostronne.json`, generowane do katalogu silnika; testy pilnują wszystkich trzech.
 
+**37. Lista dnia: kolejne serie proponują się same — 27.09.2026.**
+
+Trener (zrzut z listy dnia, Deadlift po serii kalibrującej): „jeżeli ktoś chciałby ćwiczyć w takim widoku, to po wpisaniu pierwszej serii reszta powinna mu się sama uzupełnić".
+
+* Po pierwszej pełnej serii kolejne wiersze dostają liczby poprzedniej serii jako **propozycję** — przerywana ramka, blade liczby, przycisk ✓ — tak jak panel prowadzenia podsuwa poprzednią serię.
+* Zapis dopiero po ✓, po poprawce liczby (zapisuje się cały wiersz, jak stoi) albo po „✓ Pozostałe serie tak samo”. Wcześniejsza uwaga z testów (podpowiedzi nie do odróżnienia od wpisanych serii) zostaje uszanowana: propozycja wygląda inaczej niż zapis, a „Zrobione: …” liczy tylko zatwierdzone serie. Przed pierwszą serią pola dalej są puste.
+* Przegląd klienta (sekcja 28): pola puste przed pierwszą serią, 5 propozycji po pierwszej i żadna na serwerze, ✓ zapisuje jedną, poprawka zapisuje wiersz i przestawia dalsze propozycje, „Pozostałe serie tak samo” zapisuje resztę.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
