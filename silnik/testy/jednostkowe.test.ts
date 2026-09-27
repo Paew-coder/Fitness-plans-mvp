@@ -378,14 +378,25 @@ describe("katalog BAZY 5.17", () => {
     assert.equal(katalog.poNazwie("barbell bench press")?.id, "EX-0011");
   });
 
+  // Trener, 27.09.2026: „Reverse Nordic każe mi dobrać ciężar, a to ćwiczenie
+  // jest bez ciężarowe — glute crusher to samo". W BAZIE stało „kg".
+  test("Reverse Nordic i Glute crusher to ćwiczenia na masie ciała", () => {
+    for (const id of ["EX-0169", "EX-0092"]) {
+      assert.equal(katalog.poId(id)?.progresja, "masa ciała", id);
+      assert.equal(katalog.poId(id)?.skokKg, 0, id);
+    }
+  });
+
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(katalog.wKategorii("Tricep").length, 9);
     assert.equal(katalog.wKategorii(null).length, 165);
   });
 
   test("oznaczenie ćwiczeń jednostronnych", () => {
-    // 19 z jawnym markerem w nazwie + 11 wzorców potwierdzonych przez trenera
-    assert.equal(katalog.jednostronne().length, 30);
+    // 19 z jawnym markerem w nazwie + 12 wzorców potwierdzonych przez trenera
+    // (27.09.2026 doszedł Halfkneeling wood chopper — „robione na każdą stronę")
+    assert.equal(katalog.jednostronne().length, 31);
+    assert.equal(katalog.poId("EX-0095")?.jednostronne, true, "wood chopper na stronę");
     assert.equal(katalog.kandydaciJednostronne().length, 0, "wszystkie rozstrzygnięte");
     assert.equal(katalog.poNazwie("lateral raise s/a")?.jednostronne, true);
     assert.equal(katalog.poNazwie("split squat")?.jednostronne, true);
