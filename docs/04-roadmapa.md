@@ -633,6 +633,15 @@ Trener (zrzut z listy dnia, Deadlift po serii kalibrującej): „jeżeli ktoś c
 * Zapis dopiero po ✓, po poprawce liczby (zapisuje się cały wiersz, jak stoi) albo po „✓ Pozostałe serie tak samo”. Wcześniejsza uwaga z testów (podpowiedzi nie do odróżnienia od wpisanych serii) zostaje uszanowana: propozycja wygląda inaczej niż zapis, a „Zrobione: …” liczy tylko zatwierdzone serie. Przed pierwszą serią pola dalej są puste.
 * Przegląd klienta (sekcja 28): pola puste przed pierwszą serią, 5 propozycji po pierwszej i żadna na serwerze, ✓ zapisuje jedną, poprawka zapisuje wiersz i przestawia dalsze propozycje, „Pozostałe serie tak samo” zapisuje resztę.
 
+**38. Panel prowadzenia bez „OK” — 27.09.2026.**
+
+Trener: „w 3 serii nie musimy dodawać tego OK — brak kliknięcia czegokolwiek oznacza ćwiczenie jako OK”, a potem: „możemy zostawić to OK w widoku całego planu, a nie w panelach — w panelach tylko nie ma ono sensu”.
+
+* **Panel:** przy każdej serii, także ostatniej, tylko „Za trudne” i „Za łatwe” (na pół szerokości) i dopisek „Jeśli jest OK — nic nie klikaj” (przy ostatniej „Jeśli było OK — nic nie klikaj. Ocena zmienia ciężar w kolejnych tygodniach.”). Pytanie zawsze „Za ciężko albo za lekko?”.
+* **Lista dnia:** bez zmian — „Za trudne / OK / Za łatwe”.
+* Ćwiczenie bez oceny zapisuje się przy końcu treningu jako OK, jak dotąd. Licznik nad treningiem: „X z N ćwiczeń zaczętych” (wpisana seria albo ocena) zamiast „ocenionych”.
+* Przegląd klienta: panel przy ostatniej serii bez „OK” z dopiskiem, lista z „OK” pośrodku.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
