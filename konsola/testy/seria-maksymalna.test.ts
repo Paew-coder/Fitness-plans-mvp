@@ -46,9 +46,12 @@ describe("kiedy seria maksymalna ma sens", () => {
     }
   });
 
-  test("dotyczy 25 ćwiczeń ze 165 — nie jest to margines", () => {
+  test("dotyczy 27 ćwiczeń ze 165 — nie jest to margines", () => {
     const bez = katalog.wszystkie.filter((c) => !seriaMaksymalnaMaSens(c.progresja));
-    assert.equal(bez.length, 25);
+    // 27.09.2026: +2 — Reverse Nordic i Glute crusher przeszły na masę ciała.
+    assert.equal(bez.length, 27);
+    assert.ok(bez.some((c) => c.nazwa === "Reverse Nordic"));
+    assert.ok(bez.some((c) => c.nazwa === "Glute crusher"));
     // Dokładnie te dwa, na których trener się potknął.
     assert.ok(bez.some((c) => c.nazwa === "SLDL balance"));
     assert.ok(bez.some((c) => c.nazwa === "Dead bug izo + OH"));
