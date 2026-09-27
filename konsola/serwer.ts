@@ -42,7 +42,7 @@ import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
 import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
-import { PRZECIWWSKAZANIA, dawkaOddechowa } from "../silnik/src/oddech.ts";
+import { PRZECIWWSKAZANIA, dawkaOddechowa, OBJASNIENIA_ODDECHU } from "../silnik/src/oddech.ts";
 import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
@@ -672,6 +672,9 @@ function moduly(zapisany: magazyn.ZapisanyPlan) {
       // rozjechałaby się z tą, według której moduł faktycznie się zatrzymuje —
       // a to jest pole, przy którym rozjazd znaczy zdrowie klienta.
       przeciwwskazaniaLista: PRZECIWWSKAZANIA,
+      // Technika bloków, pomiar TWOT, retest, kiedy przerwać — teksty trenera
+      // z arkusza, żeby klient wiedział, co ma robić (27.09.2026).
+      objasnienia: OBJASNIENIA_ODDECHU,
     },
     bieg: {
       wejscie: b ?? {},

@@ -15,19 +15,19 @@ export const STREFY_TETNA: readonly StrefaTetna[] = [
 
 /** Cztery tempa jako offset w min/km od tempa testowego (BIEG!B25:B28). */
 export const TEMPA: readonly TempoBiegowe[] = [
-  { klucz: "spokojne", nazwa: "Bieg spokojny (Z2)", offset: 1.25 },
-  { klucz: "ciagle", nazwa: "Bieg ciągły (Z3)", offset: 0.6667 },
-  { klucz: "progowe", nazwa: "Tempo progowe (Z4)", offset: 0.25 },
-  { klucz: "interwal", nazwa: "Interwał (Z5)", offset: -0.1667 },
+  { klucz: "spokojne", nazwa: "Spokojne", offset: 1.25 },
+  { klucz: "ciagle", nazwa: "Tempowe (ciągłe)", offset: 0.6667 },
+  { klucz: "progowe", nazwa: "Progowe", offset: 0.25 },
+  { klucz: "interwal", nazwa: "Interwałowe", offset: -0.1667 },
 ];
 
-/** Piec typow jednostek (BIEG!B32:O36 i kolejne bloki tygodni). */
+/** Piec typow jednostek — staly zestaw trenera (27.09.2026); wzory minut z BIEG!B32:O61. */
 export const WZORY_JEDNOSTEK: readonly WzorJednostki[] = [
-  { nr: 1, typ: "Bieg spokojny — ciągły", bazaMin: 30, tempo: "spokojne", strefa: 1, etykieta: "spokojny (Z2)", dodatkoweMin: 0 },
-  { nr: 2, typ: "Bieg spokojny — ciągły", bazaMin: 30, tempo: "spokojne", strefa: 1, etykieta: "spokojny (Z2)", dodatkoweMin: 0 },
-  { nr: 3, typ: "Bieg ciągły", bazaMin: 20, tempo: "ciagle", strefa: 2, etykieta: "ciągły (Z3)", dodatkoweMin: 20 },
-  { nr: 4, typ: "Długie wybieganie — ciągły", bazaMin: 45, tempo: "spokojne", strefa: 1, etykieta: "długie wybieganie (Z2)", dodatkoweMin: 0 },
-  { nr: 5, typ: "Interwał progowy", bazaMin: 16, tempo: "progowe", strefa: 3, etykieta: "interwał progowy (Z4)", dodatkoweMin: 20 },
+  { nr: 1, klucz: "spokojny", typ: "Bieg spokojny", bazaMin: 30, tempo: "spokojne", strefa: 1, etykieta: "spokojny", dodatkoweMin: 0 },
+  { nr: 2, klucz: "progowy", typ: "Bieg progowy", bazaMin: 16, tempo: "progowe", strefa: 3, etykieta: "progowy", dodatkoweMin: 20, odcinekMin: 4, przerwaMin: 2 },
+  { nr: 3, klucz: "dlugie", typ: "Długie wybieganie", bazaMin: 45, tempo: "spokojne", strefa: 1, etykieta: "długie", dodatkoweMin: 0 },
+  { nr: 4, klucz: "interwaly", typ: "Interwały", bazaMin: 15, tempo: "interwal", strefa: 4, etykieta: "interwały", dodatkoweMin: 20, odcinekMin: 3, przerwaMin: 2 },
+  { nr: 5, klucz: "przebiezki", typ: "Bieg spokojny z przebieżkami", bazaMin: 30, tempo: "spokojne", strefa: 1, etykieta: "przebieżki", dodatkoweMin: 8, przebiezki: 6 },
 ];
 
 /** Mnoznik objetosci na tydzien; T4 celowo lzejszy. */

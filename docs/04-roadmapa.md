@@ -610,6 +610,15 @@ Trener przy szablonie Rozbudowanym: „A1 barbell bench press robię TOP SET i p
 * **Eksport:** arkusz ma jeden wiersz TOP SETU na dzień — idzie pierwszy w kolejności tabeli.
 * Testy silnika (dwa TOP SETY, kolejność, podsumowanie), API klienta i eksportu; przegląd konsoli (drugi „T” dokłada, kolejny zdejmuje tylko swój) i przegląd klienta (dwa TOP SETY przed swoimi ćwiczeniami, w prowadzeniu z przerwą 3 i 2 min).
 
+**35. Bieg na tempie i czasie, nowy zestaw jednostek; oddech z objaśnieniami — 27.09.2026.**
+
+Trener: „zakresy tętna są tylko poglądowe, a rozpiska dotyczy głównie tempa na kilometr i czasu. Popraw nazwy treningów biegowych, bo mamy tylko spokojny i ciągły — może jakiś progowy / interwały? Co do treningu oddechowego — pokazuje się tak, że za bardzo nie wiadomo, o co chodzi”.
+
+* **Zestaw jednostek** (trener wybrał „stały zestaw”): przy N biegach w tygodniu pierwsze N z listy — spokojny · progowy (dawny „interwał progowy” z arkusza: odcinki 4 min, 2 min truchtu, 20 min rozgrzewki i schłodzenia) · długie wybieganie · interwały (nowe: odcinki 3 min w tempie interwałowym, 2 min truchtu) · spokojny z przebieżkami (nowe: 6 × 20 s). W arkuszu przy 2–3 biegach były tylko spokojne i „ciągły”, progowy dopiero przy piątym, a tempa interwałowego nie używała żadna jednostka. „Bieg ciągły” wypadł z zestawu. Wzory minut, mnożniki tygodni i liczby biegów, tempa i strefy — bez zmian; złoty test porównuje teraz jednostki z arkuszem po rodzaju (spokojny, długie, progowy), nie po miejscu na liście. Stary układ zostaje w `bieg-parametry.json` (`jednostki_z_arkusza`).
+* **Rozpiska na tempie i czasie:** silnik oddaje przy jednostce nazwę, przebieg krok po kroku (`kroki`) i tempo spokojne rozgrzewki; telefon pokazuje duże tempo na kilometr i czas, a dystans i **tętno orientacyjnie** drobno. Tygodnie biegu zwijane, rozwinięty bieżący. Konsola: krótkie nazwy (progowy 4×4′, interwały 5×3′), kolumna „tętno ≈”, lista temp tylko używanych.
+* **Oddech:** klient widzi przy każdym kroku dawki, jak go zrobić — teksty trenera z zakładki ODDECH arkusza (Breathe Light, bezdech w marszu, przerwa, kadencja 4–6), ramkę „Przerwij, gdy…”, zwinięte „Jak zmierzyć TWOT?” i „Kiedy powtórzyć test?”, swój wynik TWOT i poziom. Teksty w `oddech-progi.json` (`instrukcje`), generowane do `OBJASNIENIA_ODDECHU`; jedno zdanie retestu zmienione („Nowy wynik przekaż trenerowi” — w konsoli wpisuje go trener).
+* Testy silnika: zestaw przy 1–5 biegach, bieg progowy, interwały, przebieżki; przegląd klienta: nazwy, tempo /km, tętno orientacyjnie, technika oddechu.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
