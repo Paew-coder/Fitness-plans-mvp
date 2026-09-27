@@ -195,3 +195,19 @@ describe("eksport — hipertrofia", () => {
     assert.ok(dane.top_sety.every((t) => Object.values(t.rpe_tygodni).every((r) => r === null)));
   });
 });
+
+// Kilka TOP SETÓW w dniu (27.09.2026) — arkusz ma na dzień jeden wiersz.
+describe("eksport — dwa TOP SETY w jednym dniu", () => {
+  test("do arkusza idzie jeden na dzień: pierwszy w kolejności tabeli", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.topSety = [
+      ...(zapisany.plan.topSety ?? []).filter((t) => t.dzien !== 1),
+      { dzien: 1, wlaczony: true, slotPositionId: "D1-S02", rpeTygodni: { 2: 9 } },
+      { dzien: 1, wlaczony: true, slotPositionId: "D1-S01" },
+    ];
+    const dane = daneDoArkusza(zapisany);
+    const dzien1 = dane.top_sety.filter((t) => t.dzien === 1);
+    assert.equal(dzien1.length, 1);
+    assert.equal(dzien1[0]!.rpe_tygodni.T2, 6, "RPE TOP SETU przy A1, nie 9 z B1");
+  });
+});

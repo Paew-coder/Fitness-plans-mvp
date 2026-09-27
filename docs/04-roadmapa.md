@@ -227,7 +227,7 @@ Zrobione: [`arkusz/`](../arkusz/README.md) produkuje 5.18. Przy okazji wyszły d
 
 **6. TOP SET stawia trener — przy dowolnym ćwiczeniu.** *(20.09.2026)*
 
-Aplikacja nie rozstrzyga, gdzie TOP SET może być. W konsoli każdy wypełniony wiersz ma przycisk „T": kliknięcie stawia TOP SET przy tym ćwiczeniu, kolejne — zdejmuje. W dniu jest jeden, jak jeden wiersz TOP SET w arkuszu, więc kliknięcie gdzie indziej przenosi go, zamiast dokładać drugi. W nowym planie nie ma go wcale.
+Aplikacja nie rozstrzyga, gdzie TOP SET może być. W konsoli każdy wypełniony wiersz ma przycisk „T": kliknięcie stawia TOP SET przy tym ćwiczeniu, kolejne — zdejmuje. W dniu jest jeden, jak jeden wiersz TOP SET w arkuszu, więc kliknięcie gdzie indziej przenosi go, zamiast dokładać drugi. *(Zmienione 27.09.2026 — punkt 34: TOP SETÓW w dniu może być kilka.)* W nowym planie nie ma go wcale.
 
 Osobno od tego zapisana jest **wiedza trenera**, słowami z 20.09.2026: *„zazwyczaj top set będzie tylko do ćwiczeń barbell bench press, low bar squat, high bar squat, deadlift, sumo deadlift — w innych przypadkach się nie zdarza niezależnie od coeff"*. Lista siedzi w [`silnik/src/top-set.ts`](../silnik/src/top-set.ts) i **niczego nie blokuje** — służy podpowiedzi w konsoli i rozpisywaniu planów, gdy będzie automatyczne.
 
@@ -599,6 +599,16 @@ Trener: „dodaj taką opcję, żeby móc zrobić standardowo ćwiczenie główn
 * Przycisk „progresja 5.18” nazywa się **„wpisz progresję”** (trener: nazwa starego arkusza „dziwnie tam wygląda”); podpowiedź i pytanie przed nadpisaniem mówią, z której części planu biorą się liczby.
 * Pułapka: po „wpisz progresję” liczby boju stoją w polach na stałe i wygrywają z częścią planu — zmiana cz. 1 → cz. 2 zostawiała bój z liczbami cz. 1. Teraz zmiana „Części planu” przy boju z wpisanymi liczbami pyta, czy przepisać je nową częścią. „Tak” przepisuje **tylko boje główne** (`zastosujProgresje(..., { tylkoBoje: true })`, tryb `progresja-bojow`); ręczne poprawki przy akcesoriach zostają. „Nie” zostawia wpisane liczby.
 * Przegląd konsoli sprawdza obie odpowiedzi; test silnika — że akcesorium z ręczną poprawką zostaje nietknięte.
+
+**34. Kilka TOP SETÓW w jednym dniu — 27.09.2026.**
+
+Trener przy szablonie Rozbudowanym: „A1 barbell bench press robię TOP SET i później robocze, a następnie B1 low bar squat i tam też na początek TOP SET i później robocze".
+
+* **Silnik:** `plan.topSety` może mieć kilka włączonych wpisów w dniu, każdy przy swoim ćwiczeniu (`slotPositionId`). `TopSetWyliczony` niesie `positionId`, TOP SETY idą w kolejności tabeli, dwa wpisy przy jednym ćwiczeniu liczą się raz, a każdy TOP SET to +1 seria w podsumowaniu dnia.
+* **Konsola:** „T” przełącza TOP SET przy tym jednym ćwiczeniu — kliknięcie w innym wierszu dokłada drugi, zamiast go przenosić. Nad tabelą pasek na każdy TOP SET (z numerem ćwiczenia), każdy z własnym RPE tygodnia i „✕”.
+* **Telefon:** TOP SET stoi tuż przed swoim ćwiczeniem — na liście dnia (karta „TOP SET · A1”), w prowadzeniu (przed pierwszą rundą swojej grupy) i na mapie dnia (kafelek „TS” w grupie ćwiczenia). Przerwa po nim liczy się z jego ćwiczenia. Widok klienta ma `topSety`; `topSet` (pierwszy) zostaje dla telefonów ze starą wersją aplikacji w pamięci.
+* **Eksport:** arkusz ma jeden wiersz TOP SETU na dzień — idzie pierwszy w kolejności tabeli.
+* Testy silnika (dwa TOP SETY, kolejność, podsumowanie), API klienta i eksportu; przegląd konsoli (drugi „T” dokłada, kolejny zdejmuje tylko swój) i przegląd klienta (dwa TOP SETY przed swoimi ćwiczeniami, w prowadzeniu z przerwą 3 i 2 min).
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
