@@ -69,7 +69,7 @@ lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
        "// Zrodlo: docs/dane/oddech-progi.json (MasterTemplate 5.17, TABELE!A66:I70)",
        "// Regeneracja: python3 silnik/narzedzia/generuj-dane.py",
        "",
-       'import type { ProgTWOT } from "../oddech.ts";',
+       'import type { ObjasnieniaOddechu, ProgTWOT } from "../oddech.ts";',
        "",
        "/** Piec progow TWOT -> dawka oddechowa. */",
        "export const PROGI_TWOT: readonly ProgTWOT[] = ["]
@@ -84,6 +84,14 @@ for p in o["poziomy"]:
     lin.append(f'    brama: {json.dumps(p["brama"], ensure_ascii=False)},')
     lin.append("  },")
 lin += ["];", ""]
+# Instrukcje trenera z zakladki ODDECH (A17:A44) — technika blokow, pomiar TWOT,
+# retest, kiedy przerwac. Klient widzi je przy dawce (27.09.2026).
+ins = o["instrukcje"]
+lin += ["/** Instrukcje z zakladki ODDECH (A2, A17:A44) — dla klienta, przy dawce. */",
+        "export const OBJASNIENIA_ODDECHU: ObjasnieniaOddechu = " + json.dumps({
+            "wstep": ins["wstep"], "technika": ins["technika"], "pomiar": ins["pomiar"],
+            "coMowi": ins["co_mowi"], "retest": ins["retest"], "przerwij": ins["przerwij"],
+        }, ensure_ascii=False, indent=2) + ";", ""]
 (out / "oddech.ts").write_text("\n".join(lin), encoding="utf-8")
 
 # ── BIEG ──────────────────────────────────────────────────────────────
@@ -106,13 +114,14 @@ for t_ in g["tempa"]:
                f'nazwa: {json.dumps(t_["nazwa"], ensure_ascii=False)}, '
                f'offset: {t_["offset_min_km"]} }},')
 lin += ["];", "",
-        "/** Piec typow jednostek (BIEG!B32:O36 i kolejne bloki tygodni). */",
+        "/** Piec typow jednostek — staly zestaw trenera (27.09.2026); wzory minut z BIEG!B32:O61. */",
         "export const WZORY_JEDNOSTEK: readonly WzorJednostki[] = ["]
 for j in g["jednostki"]:
-    lin.append(f'  {{ nr: {j["nr"]}, typ: {json.dumps(j["typ"], ensure_ascii=False)}, '
+    extra = "".join(f', {k}: {j[k]}' for k in ("odcinekMin", "przerwaMin", "przebiezki") if k in j)
+    lin.append(f'  {{ nr: {j["nr"]}, klucz: {json.dumps(j["klucz"])}, typ: {json.dumps(j["typ"], ensure_ascii=False)}, '
                f'bazaMin: {j["bazaMin"]}, tempo: {json.dumps(j["tempo"], ensure_ascii=False)}, '
                f'strefa: {j["strefa"]}, etykieta: {json.dumps(j["etykieta"], ensure_ascii=False)}, '
-               f'dodatkoweMin: {j["dodatkoweMin"]} }},')
+               f'dodatkoweMin: {j["dodatkoweMin"]}{extra} }},')
 lin += ["];", "",
         "/** Mnoznik objetosci na tydzien; T4 celowo lzejszy. */",
         f'export const MNOZNIK_TYGODNIA: readonly number[] = {json.dumps(g["mnoznik_tygodnia"])};',

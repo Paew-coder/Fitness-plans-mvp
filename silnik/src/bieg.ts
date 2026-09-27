@@ -3,12 +3,18 @@
  *
  * Pięć pól na wejściu (wiek, HR max, dystans i czas biegu testowego, liczba
  * jednostek w tygodniu) i wychodzi z tego sześć tygodni po maksymalnie pięć
- * jednostek, z czasem, tempem, tętnem i szacowanym dystansem.
+ * jednostek, z czasem, tempem, szacowanym dystansem i — orientacyjnie — tętnem.
  *
  * Zasada arkusza, którą warto powtórzyć na głos: **czas jest zadaniem, tempo
  * celem, dystans szacunkiem.** Biegacz ma przebiec minuty, nie kilometry.
  *
- * Źródło: `BIEG!B13:B28` i bloki jednostek `BIEG!B32:O61`.
+ * Od 27.09.2026 (trener) rozpiska stoi na tempie i czasie, a tętno jest tylko
+ * poglądowe. Zestaw jednostek jest stały: przy N biegach w tygodniu pierwsze
+ * N z listy — spokojny, progowy, długie wybieganie, interwały, spokojny
+ * z przebieżkami. Wcześniej, jak w arkuszu, przy 2–3 biegach były tylko
+ * spokojne i ciągły, progowy dopiero przy piątym, a interwałów wcale.
+ *
+ * Źródło wzorów: `BIEG!B13:B28` i bloki jednostek `BIEG!B32:O61`.
  */
 
 import { mround, zaokraglij, zaokraglijJakArkusz } from "./pomocnicze.ts";
@@ -21,8 +27,12 @@ export type KluczTempa = "spokojne" | "ciagle" | "progowe" | "interwal";
 
 export type StrefaTetna = { nazwa: string; od: number; do: number };
 export type TempoBiegowe = { klucz: KluczTempa; nazwa: string; offset: number };
+export type RodzajJednostki = "spokojny" | "progowy" | "dlugie" | "interwaly" | "przebiezki";
+
 export type WzorJednostki = {
   nr: number;
+  klucz: RodzajJednostki;
+  /** Nazwa dla klienta: „Bieg progowy", „Interwały"… */
   typ: string;
   /** Minuty pracy przed przemnożeniem przez mnożniki. */
   bazaMin: number;
@@ -30,18 +40,26 @@ export type WzorJednostki = {
   /** Numer strefy tętna (1–5) wskazywany przez arkusz. */
   strefa: number;
   etykieta: string;
-  /** Rozgrzewka i schłodzenie doliczane do czasu, biegnięte tempem spokojnym. */
+  /** Rozgrzewka i schłodzenie (albo przebieżki) doliczane do czasu, tempem spokojnym. */
   dodatkoweMin: number;
+  /** Długość jednego odcinka — tylko przy biegu progowym i interwałach. */
+  odcinekMin?: number;
+  /** Trucht po każdym odcinku. */
+  przerwaMin?: number;
+  /** Liczba przebieżek po 20 s na końcu biegu spokojnego. */
+  przebiezki?: number;
 };
 
 export { STREFY_TETNA, TEMPA, WZORY_JEDNOSTEK, MNOZNIK_TYGODNIA, MNOZNIK_LICZBY_JEDNOSTEK };
 
 /** Minimalna długość jednostki po wszystkich mnożnikach (MAX(10; …) w arkuszu). */
 export const MIN_MINUT = 10;
-/** Powtórzenie interwału progowego trwa tyle minut. */
+/** Odcinek biegu progowego — tyle minut (wzór może mieć własny: `odcinekMin`). */
 export const MINUT_NA_POWTORZENIE = 4;
-/** Przerwa po każdym powtórzeniu interwału. */
+/** Przerwa po odcinku (wzór może mieć własną: `przerwaMin`). */
 export const MINUT_PRZERWY = 2;
+/** Przebieżka — tyle sekund, szybko i luźno. */
+export const SEKUND_PRZEBIEZKI = 20;
 
 export type DaneBiegowe = {
   wiek?: number | null;
@@ -113,8 +131,13 @@ export function tempaTreningowe(dane: DaneBiegowe): TempoWyliczone[] {
 
 export type Jednostka = {
   nr: number;
+  klucz: RodzajJednostki;
+  /** Nazwa dla klienta: „Bieg progowy". */
   typ: string;
+  /** Całość jednym zdaniem — do dymków i tabel. */
   opis: string;
+  /** Przebieg jednostki krok po kroku: rozgrzewka, odcinki, trucht, schłodzenie. */
+  kroki: string[];
   etykieta: string;
   /** Minuty pracy właściwej. */
   minutPracy: number;
@@ -127,10 +150,16 @@ export type Jednostka = {
   /** Szacowany dystans w kilometrach; `null` bez biegu testowego. */
   dystansKm: number | null;
   tempo: KluczTempa;
+  /** Tempo części głównej, `mm:ss` na kilometr. */
   tempoTekst: string | null;
+  /** Tempo rozgrzewki, truchtu i schłodzenia — spokojne. */
+  tempoSpokojneTekst: string | null;
+  /** Tylko orientacyjnie — rozpiska stoi na tempie i czasie. */
   strefa: StrefaWyliczona | null;
-  /** Liczba powtórzeń 4-minutowych; tylko dla interwału progowego. */
+  /** Liczba odcinków; tylko przy biegu progowym i interwałach. */
   powtorzen: number | null;
+  /** Długość odcinka w minutach, gdy są odcinki. */
+  odcinekMin: number | null;
 };
 
 export type TydzienBiegowy = { tydzien: number; jednostki: Jednostka[] };
@@ -167,10 +196,10 @@ export function planBiegowy(dane: DaneBiegowe): TydzienBiegowy[] {
     const tydzien = i + 1;
     const jednostki = WZORY_JEDNOSTEK.slice(0, ile).map((w): Jednostka => {
       const minutPracy = minutyPracy(w.bazaMin, tydzien, ile);
-      const powtorzen = w.tempo === "progowe"
-        ? zaokraglijJakArkusz(minutPracy / MINUT_NA_POWTORZENIE)
-        : null;
-      const minutPrzerw = powtorzen === null ? 0 : powtorzen * MINUT_PRZERWY;
+      const odcinek = w.odcinekMin ?? null;
+      const przerwa = w.przerwaMin ?? MINUT_PRZERWY;
+      const powtorzen = odcinek ? zaokraglijJakArkusz(minutPracy / odcinek) : null;
+      const minutPrzerw = powtorzen === null ? 0 : powtorzen * przerwa;
       const tempo = tempoPo(w.tempo);
 
       // Praca leci swoim tempem, rozgrzewka i przerwy zawsze spokojnym.
@@ -181,16 +210,35 @@ export function planBiegowy(dane: DaneBiegowe): TydzienBiegowy[] {
         )
         : null;
 
-      const opis = w.tempo === "progowe"
-        ? `${w.typ} — ${powtorzen} × ${MINUT_NA_POWTORZENIE} min, przerwa ${MINUT_PRZERWY} min truchtu`
-        : w.dodatkoweMin > 0
-          ? `${w.typ} — ${minutPracy} min w tempie ciągłym + ${w.dodatkoweMin} min rozgrzewki i schłodzenia`
-          : w.typ;
+      const polowa = w.dodatkoweMin / 2;
+      const nazwaTempa = w.tempo === "interwal" ? "interwałowym" : "progowym";
+      const kroki = powtorzen !== null
+        ? [
+          `${polowa} min rozgrzewki — spokojnie`,
+          `${powtorzen} × ${odcinek} min w tempie ${nazwaTempa}`,
+          `po każdym odcinku ${przerwa} min truchtu`,
+          `${polowa} min schłodzenia — spokojnie`,
+        ]
+        : w.przebiezki
+          ? [
+            `${minutPracy} min spokojnie`,
+            `na koniec ${w.przebiezki} × ${SEKUND_PRZEBIEZKI} s przebieżki — szybko, ale luźno, bez sprintu`,
+            "między przebieżkami 1 min marszu albo truchtu",
+          ]
+          : [`${minutPracy} min spokojnie${w.klucz === "dlugie" ? ", równym tempem" : ""}`];
+      const opis = powtorzen !== null
+        ? `${w.typ} — ${powtorzen} × ${odcinek} min, przerwa ${przerwa} min truchtu, `
+          + `+ ${w.dodatkoweMin} min rozgrzewki i schłodzenia`
+        : w.przebiezki
+          ? `${w.typ} — ${minutPracy} min + ${w.przebiezki} × ${SEKUND_PRZEBIEZKI} s`
+          : `${w.typ} — ${minutPracy} min`;
 
       return {
         nr: w.nr,
+        klucz: w.klucz,
         typ: w.typ,
         opis,
+        kroki,
         etykieta: w.etykieta,
         minutPracy,
         minutDodatkowych: w.dodatkoweMin,
@@ -199,8 +247,10 @@ export function planBiegowy(dane: DaneBiegowe): TydzienBiegowy[] {
         dystansKm,
         tempo: w.tempo,
         tempoTekst: tempo?.tekst ?? null,
+        tempoSpokojneTekst: spokojne?.tekst ?? null,
         strefa: strefy[w.strefa - 1] ?? null,
         powtorzen,
+        odcinekMin: odcinek,
       };
     });
     return { tydzien, jednostki };
