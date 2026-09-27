@@ -81,7 +81,9 @@ Link wygląda tak: `http://…/k/Zvy1GXQUGwM4wLdCqXC-Xh0Jno1V5Zed`
 
 **Wybór treningu** — sześć tygodni, dni w każdym, odhaczone oznaczone ptaszkiem.
 
-**Trening** — TOP SET, potem ćwiczenia po kolei, każde z linkiem do filmu i z zadaniem
+**Trening** — ćwiczenia po kolei, a TOP SET tuż przed ćwiczeniem, do którego należy
+(A1: TOP SET i robocze, B1: TOP SET i robocze — w dniu może być ich kilka; tak samo
+w prowadzeniu i na mapie dnia, gdzie ma kafelek „TS"). Każde ćwiczenie z linkiem do filmu i z zadaniem
 w równych kolumnach: `CIĘŻAR · SERIE · POWT.`, podpis nad liczbą, wszystkie liczby
 tej samej wielkości. Pod nimi drobno samo *„RPE 8"* (dopisek „2 w zapasie"
 był i zniknął — trener uznał go za zbędny). W panelu prowadzenia pierwsza kolumna

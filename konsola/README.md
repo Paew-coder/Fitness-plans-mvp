@@ -193,9 +193,11 @@ maksymalnych. Ćwiczenia można zostawić te same — wyższy 1RM sam podniesie
 ciężary — albo podmienić; kontrola planu i tak ostrzeże, co było w poprzednim
 cyklu.
 
-**TOP SET** dodajesz przyciskiem **`T`** przy dowolnym wierszu; w dniu jest jeden,
-więc kliknięcie w innym wierszu przenosi go. RPE rośnie samo przez cykl, tak jak
-w Twoich arkuszach:
+**TOP SET** dodajesz przyciskiem **`T`** przy dowolnym wierszu, a drugie kliknięcie
+go zdejmuje. W dniu może być ich kilka — np. przed A1 i przed B1 w Rozbudowanym;
+każdy ma nad tabelą własny pasek z RPE i ciężarem. Do arkusza (eksport) idzie
+pierwszy w dniu, bo arkusz ma na dzień jeden wiersz TOP SETU. RPE rośnie samo
+przez cykl, tak jak w Twoich arkuszach:
 
 | Część planu | T1 | T2 | T3 | T4 | T5 | T6 |
 |---|---|---|---|---|---|---|

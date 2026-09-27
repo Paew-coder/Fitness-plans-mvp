@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { katalog } from "../silnik/src/katalog.ts";
-import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE } from "../silnik/src/plan.ts";
+import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE, type Plan, type TopSet } from "../silnik/src/plan.ts";
 import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
 import { jestHipertrofia } from "../silnik/src/typy.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
@@ -52,6 +52,21 @@ function bezpiecznaNazwa(tekst: string): string {
  * Pythona i bez LibreOffice — a jest co sprawdzać: to tutaj rozstrzyga się,
  * czy klient dostanie te same liczby, które trener widział na ekranie.
  */
+/**
+ * Jeden TOP SET na dzień dla arkusza: pierwszy włączony w kolejności tabeli,
+ * a bez włączonego — wpis dnia taki, jaki jest (wyłączony).
+ */
+function topSetyDoArkusza(plan: Plan): TopSet[] {
+  const kolejnosc = new Map(plan.sloty.map((s, i) => [s.positionId, i]));
+  const dni = [...new Set((plan.topSety ?? []).map((t) => t.dzien))].sort((a, b) => a - b);
+  return dni.map((dzien) => {
+    const wDniu = (plan.topSety ?? []).filter((t) => t.dzien === dzien);
+    const wlaczone = wDniu.filter((t) => t.wlaczony)
+      .sort((a, b) => (kolejnosc.get(a.slotPositionId) ?? 999) - (kolejnosc.get(b.slotPositionId) ?? 999));
+    return wlaczone[0] ?? wDniu[0]!;
+  });
+}
+
 export function daneDoArkusza(zapisany: ZapisanyPlan) {
   const { plan } = zapisany;
 
@@ -192,12 +207,15 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
      * w poprawionym arkuszu „w tym tygodniu TOP SETU nie ma", czyli dokładnie
      * to, co silnik mówi o T1.
      */
-    top_sety: (plan.topSety ?? []).map((t) => ({
+    // Arkusz ma jeden wiersz TOP SETU na dzień, a konsola od 27.09.2026
+    // pozwala na kilka. Do arkusza idzie pierwszy w kolejności tabeli —
+    // pozostałych plik nie ma gdzie zapisać (klient i tak ćwiczy z aplikacji).
+    top_sety: topSetyDoArkusza(plan).map((t) => ({
       dzien: t.dzien,
       wlaczony: t.wlaczony,
       rpe_tygodni: Object.fromEntries(TYGODNIE.map((w) => [
         `T${w}`,
-        wynik.tygodnie[w - 1]?.topSety.find((x) => x.dzien === t.dzien)?.rpe ?? null,
+        wynik.tygodnie[w - 1]?.topSety.find((x) => x.positionId === t.slotPositionId)?.rpe ?? null,
       ])),
     })),
   };

@@ -59,7 +59,7 @@ export function zastosujSzablon(plan: Plan, szablon: SzablonPlanu): Plan {
   for (const dzien of dni) {
     const wzor = szablon.dni[dzien - 1];
     const wDniu = plan.sloty.filter((s) => s.dzien === dzien);
-    let top: string | null = null;
+    const topy: string[] = [];
     wDniu.forEach((slot, i) => {
       const z = wzor?.[i];
       sloty.push({
@@ -70,13 +70,14 @@ export function zastosujSzablon(plan: Plan, szablon: SzablonPlanu): Plan {
         kategoriaSzkieletu: z?.kategoria ?? null,
         tygodnie: {},
       });
-      if (z?.topSet && !top) top = slot.positionId;
+      if (z?.topSet) topy.push(slot.positionId);
     });
-    topSety.push({
-      dzien,
-      wlaczony: top !== null,
-      slotPositionId: top ?? wDniu[0]?.positionId ?? `D${dzien}-S01`,
-    });
+    // TOP SET przy każdej oznaczonej pozycji (od 27.09.2026 może ich być kilka
+    // w dniu); dzień bez TOP SETU dostaje wyłączony wpis, jak w pustym planie.
+    if (topy.length === 0) {
+      topSety.push({ dzien, wlaczony: false, slotPositionId: wDniu[0]?.positionId ?? `D${dzien}-S01` });
+    }
+    for (const id of topy) topSety.push({ dzien, wlaczony: true, slotPositionId: id });
   }
 
   const { cwiczeniaMaksow: _poprzednie, ...reszta } = plan;

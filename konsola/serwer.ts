@@ -916,6 +916,12 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
         ukonczony: ukonczone.some((u) => u.dzien === dzien && u.tydzien === t.tydzien),
         // Dzień maksów ma własną instrukcję rozgrzewki przy każdym boju.
         rozgrzewka: t.rodzaj === "maksy" ? null : rozgrzewka(dzien),
+        // TOP SETY dnia — od 27.09.2026 może ich być kilka, każdy przy swoim
+        // ćwiczeniu (`positionId`); telefon stawia każdy przed seriami tego
+        // ćwiczenia. `topSet` (pierwszy) zostaje dla telefonów ze starą wersją
+        // aplikacji w pamięci, dopóki nie pobiorą nowej.
+        topSety: t.topSety.filter((x) => x.dzien === dzien)
+          .map((ts) => ({ ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) })),
         topSet: (() => {
           const ts = t.topSety.find((x) => x.dzien === dzien);
           return ts ? { ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) } : null;
