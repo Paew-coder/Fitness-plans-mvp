@@ -619,6 +619,12 @@ Trener: „zakresy tętna są tylko poglądowe, a rozpiska dotyczy głównie tem
 * **Oddech:** klient widzi przy każdym kroku dawki, jak go zrobić — teksty trenera z zakładki ODDECH arkusza (Breathe Light, bezdech w marszu, przerwa, kadencja 4–6), ramkę „Przerwij, gdy…”, zwinięte „Jak zmierzyć TWOT?” i „Kiedy powtórzyć test?”, swój wynik TWOT i poziom. Teksty w `oddech-progi.json` (`instrukcje`), generowane do `OBJASNIENIA_ODDECHU`; jedno zdanie retestu zmienione („Nowy wynik przekaż trenerowi” — w konsoli wpisuje go trener).
 * Testy silnika: zestaw przy 1–5 biegach, bieg progowy, interwały, przebieżki; przegląd klienta: nazwy, tempo /km, tętno orientacyjnie, technika oddechu.
 
+**36. Poprawki w BAZIE z testu trenera — 27.09.2026.**
+
+* **Reverse Nordic** (EX-0169) i **Glute crusher** (EX-0092): progresja `kg` → `masa ciała` („każe mi dobrać ciężar, a to ćwiczenie jest bez ciężarowe”). Bez pola ciężaru i bez serii maksymalnej; oceny klienta zmieniają powtórzenia (±1), jak przy innych ćwiczeniach na masie ciała. Ćwiczeń bez serii maksymalnej jest teraz 27 ze 165.
+* **Halfkneeling wood chopper** (EX-0095) dopisany do ćwiczeń jednostronnych — serie i powtórzenia na stronę, klient widzi „na stronę”. Jednostronnych jest 31.
+* Zmiany w `docs/dane/baza-cwiczen.json` i `jednostronne.json`, generowane do katalogu silnika; testy pilnują wszystkich trzech.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
