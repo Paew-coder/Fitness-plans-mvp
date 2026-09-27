@@ -27,21 +27,22 @@ function pustyPlan(): Plan {
 const szablon = (id: string) => SZABLONY_BASE44.find((s) => s.id === id)!;
 
 describe("dane szablonów", () => {
-  test("czternaście szablonów: klasyczne, rozbudowane, hipertroficzne, kontynuacje", () => {
-    assert.equal(SZABLONY_BASE44.length, 14);
-    assert.deepEqual([...new Set(SZABLONY_BASE44.map((s) => s.czesc))].sort(),
-      ["hipertrofia", "intensywność", "objętość"]);
+  // Kontynuacji „(cz. 2)" nie ma osobno (27.09.2026) — drugą część ustawia
+  // przełącznik „Część planu" przy tym samym szablonie.
+  test("dwanaście szablonów: klasyczne, rozbudowane, hipertroficzne — wszystkie jako cz. 1", () => {
+    assert.equal(SZABLONY_BASE44.length, 12);
+    assert.deepEqual([...new Set(SZABLONY_BASE44.map((s) => s.czesc))].sort(), ["hipertrofia", "objętość"]);
+    assert.ok(SZABLONY_BASE44.every((s) => !s.nazwa.includes("cz. 2")));
   });
 
   // Trener zna je z ekranu Base44 jako „Klasyczny – 3 dni", nie jako
   // wewnętrzne „FBW 3 dni – 3 główne ćwiczenia" (26.09.2026).
   test("nazwy i rodziny jak na ekranie Base44, w jego kolejności", () => {
     assert.deepEqual([...new Set(SZABLONY_BASE44.map((s) => s.rodzina))],
-      ["Klasyczny", "Rozbudowany", "Hipertroficzny", "Kontynuacje (cz. 2)"]);
+      ["Klasyczny", "Rozbudowany", "Hipertroficzny"]);
     assert.deepEqual(SZABLONY_BASE44.filter((s) => s.rodzina === "Rozbudowany").map((s) => s.nazwa),
       ["Rozbudowany – 1 dzień", "Rozbudowany – 2 dni", "Rozbudowany – 3 dni", "Rozbudowany – 4 dni"]);
     assert.equal(szablon("fbw_6cwiczen_6w").nazwa, "Rozbudowany – 3 dni");
-    assert.equal(szablon("fbw_2dni_6w_v2").nazwa, "Klasyczny – 2 dni (cz. 2)");
     for (const s of SZABLONY_BASE44) {
       const dni = Number(s.nazwa.match(/– (\d)/)![1]);
       assert.equal(s.dni.length, dni, `${s.nazwa}: liczba dni w nazwie`);
@@ -86,8 +87,14 @@ describe("wstawienie szablonu do planu", () => {
     assert.ok(p.topSety!.every((t) => !t.wlaczony));
   });
 
-  test("kontynuacja „(część 2)” zaczyna od intensywności", () => {
-    assert.equal(zastosujSzablon(pustyPlan(), szablon("fbw_3dni_6w_v2")).czescPlanu, "intensywność");
+  // Każdy szablon ma swoją cz. 2 przez przełącznik: siłowe → intensywność,
+  // hipertroficzne → hipertrofia 2. Plan musi się dać policzyć w obu.
+  test("każdy szablon liczy się też jako cz. 2", () => {
+    for (const s of SZABLONY_BASE44) {
+      const p = zastosujSzablon(pustyPlan(), s);
+      const cz2 = p.czescPlanu === "hipertrofia" ? "hipertrofia 2" : "intensywność";
+      assert.equal(przeliczPlan({ ...p, czescPlanu: cz2 }).tygodnie.length, 6, `${s.id} → ${cz2}`);
+    }
   });
 
   test("plan z szablonu da się od razu policzyć", () => {

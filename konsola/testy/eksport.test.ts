@@ -176,13 +176,22 @@ describe("eksport — deload i maksy, gdy są w planie", () => {
 });
 
 describe("eksport — hipertrofia", () => {
-  test("akcesoria dostają powtórzenia wprost — arkusz liczyłby 8/10, nie 12/14", () => {
+  test("akcesoria dostają powtórzenia wprost — arkusz liczyłby 8/10, nie 10–12", () => {
     const zapisany = planDomyslny();
     zapisany.plan.czescPlanu = "hipertrofia";
     const dane = daneDoArkusza(zapisany);
-    assert.deepEqual([1, 2, 3].map((t) => pole(dane, "D1-S02", t).powtorzenia_reczne), [12, 13, 14]);
+    assert.deepEqual([1, 2, 3].map((t) => pole(dane, "D1-S02", t).powtorzenia_reczne), [10, 11, 12]);
     assert.deepEqual([1, 4].map((t) => pole(dane, "D1-S01", t).powtorzenia_reczne), [12, 12]);
     assert.ok(dane.top_sety.every((t) => Object.values(t.rpe_tygodni).every((r) => r === null)),
       "hipertrofia bez TOP SETU");
+  });
+
+  test("cz. 2 też idzie wprost: bój 4 × 10, akcesorium 8 → 10", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.czescPlanu = "hipertrofia 2";
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual([1, 2, 3].map((t) => pole(dane, "D1-S02", t).powtorzenia_reczne), [8, 9, 10]);
+    assert.deepEqual([1, 3].map((t) => pole(dane, "D1-S01", t).powtorzenia_reczne), [10, 12]);
+    assert.ok(dane.top_sety.every((t) => Object.values(t.rpe_tygodni).every((r) => r === null)));
   });
 });

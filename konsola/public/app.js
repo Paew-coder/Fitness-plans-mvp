@@ -2628,7 +2628,10 @@ $("#link-klienta").onclick = () => pokazLinkKlienta(obraz.zapisany.klientId);
  * dobór z zapisanych planów w Base44 trener odrzucił. Serie, powtórzenia
  * i RPE dalej liczy „Część planu" — szablon ustawia ją tylko na start.
  */
-const CZESC_NA_EKRANIE = { "objętość": "objętość", "intensywność": "intensywność", "hipertrofia": "hipertrofia" };
+const CZESC_NA_EKRANIE = {
+  "objętość": "objętość (cz.1)", "intensywność": "intensywność (cz.2)",
+  "hipertrofia": "hipertrofia (cz.1)", "hipertrofia 2": "hipertrofia (cz.2)",
+};
 function wypelnijListeSzablonow(szablony) {
   const lista = $("#szablon-planu");
   lista.replaceChildren(el("option", "", "— wybierz —"));

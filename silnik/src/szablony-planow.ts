@@ -1,9 +1,11 @@
 /**
  * Szablony planów z aplikacji trenera w Base44 — do wykorzystania w konsoli.
  *
- * Czternaście szkieletów — Klasyczny, Rozbudowany i Hipertroficzny po 1–4 dni
- * oraz dwie kontynuacje „(cz. 2)" — wyciągniętych 21.09.2026 i dodanych do
- * konsoli 25.09.2026, pod nazwami z ekranu Base44 od 26.09.2026. Szablon
+ * Dwanaście szkieletów — Klasyczny, Rozbudowany i Hipertroficzny po 1–4 dni —
+ * wyciągniętych 21.09.2026 i dodanych do konsoli 25.09.2026, pod nazwami
+ * z ekranu Base44 od 26.09.2026. Kontynuacji „(cz. 2)" nie ma osobno od
+ * 27.09.2026: w Base44 miały ten sam układ co część 1, a drugą część ustawia
+ * przełącznik „Część planu" (intensywność albo hipertrofia cz. 2). Szablon
  * rozpisuje **układ**: dni, numerację (A1, B1/B2…), kategorię każdej pozycji
  * i miejsce TOP SETU. **Ćwiczeń nie wybiera** — do 26.09 cztery szablony
  * niosły dobór z zapisanych planów w Base44, którego trener nie rozpoznał,
@@ -12,8 +14,8 @@
  * Czego szablon **nie** przenosi: liczb z Base44 tydzień po tygodniu. Serie,
  * powtórzenia i RPE liczy dalej silnik z „części planu" — tej samej, którą
  * trener ustala dla każdego planu. Szablon ustawia ją tylko na start:
- * klasyczne i rozbudowane → objętość, kontynuacje „(część 2)" → intensywność,
- * hipertroficzne → hipertrofia. Liczby z Base44 zgadzają się z tym prawie
+ * klasyczne i rozbudowane → objętość, hipertroficzne → hipertrofia (cz. 1).
+ * Liczby z Base44 zgadzają się z tym prawie
  * wszędzie („Klasyczny 2 dni" to dokładnie nasza objętość), a tam, gdzie się
  * różnią, rozstrzygnął już trener: obowiązują jego arkusze.
  *
@@ -30,9 +32,9 @@ export type SlotSzablonu = {
 
 export type SzablonPlanu = {
   id: string;
-  /** Tak jak na ekranie Base44: „Klasyczny – 3 dni", „Klasyczny – 2 dni (cz. 2)". */
+  /** Tak jak na ekranie Base44: „Klasyczny – 3 dni", „Hipertroficzny – 1 dzień". */
   nazwa: string;
-  /** Grupa na liście w konsoli: Klasyczny, Rozbudowany, Hipertroficzny, Kontynuacje (cz. 2). */
+  /** Grupa na liście w konsoli: Klasyczny, Rozbudowany, Hipertroficzny. */
   rodzina: string;
   opis: string;
   czesc: CzescPlanu;

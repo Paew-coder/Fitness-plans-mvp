@@ -80,12 +80,18 @@ export const TRYBY_AKCESORIOW = ["trzymaj z bloku", "licz z RPE"] as const;
 export type TrybAkcesoriow = (typeof TRYBY_AKCESORIOW)[number];
 
 /**
- * Części planu. „hipertrofia" doszła 25.09.2026 (zaplanowana 21.09): akcesoria
- * 12/14 powtórzeń, bój główny 4 × 12–14 bez TOP SETU — jak szablony
- * „Hipertroficzny" z aplikacji trenera w Base44.
+ * Części planu — przełącznik „Część planu" w konsoli. Siła: „objętość" (cz. 1)
+ * i „intensywność" (cz. 2). Hipertrofia: „hipertrofia" (cz. 1, od 25.09.2026)
+ * i „hipertrofia 2" (cz. 2, od 27.09.2026). Kontynuacja to ten sam szablon
+ * z drugą częścią — tak jak „(cz. 2)" w Base44, gdzie układ się nie zmieniał.
  */
-export const CZESCI_PLANU = ["objętość", "intensywność", "hipertrofia"] as const;
+export const CZESCI_PLANU = ["objętość", "intensywność", "hipertrofia", "hipertrofia 2"] as const;
 export type CzescPlanu = (typeof CZESCI_PLANU)[number];
+
+/** Obie części hipertroficzne — bez TOP SETU, z własnymi zakresami powtórzeń. */
+export function jestHipertrofia(czesc: CzescPlanu): boolean {
+  return czesc === "hipertrofia" || czesc === "hipertrofia 2";
+}
 
 /** Komunikaty, które arkusz wyświetla w kolumnie CIĘŻAR zamiast liczby. */
 export type KomunikatCiezaru = "— brak 1RM" | "— ustaw ręcznie";

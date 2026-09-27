@@ -138,9 +138,7 @@ KATEGORIE = {k.lower(): k for k in (
     "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep")}
 
 def czesc_szablonu(tid):
-    if tid.startswith("hyper"): return "hipertrofia"
-    if tid.endswith("_v2"):     return "intensywność"
-    return "objętość"
+    return "hipertrofia" if tid.startswith("hyper") else "objętość"
 
 lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
        "// Zrodlo: docs/dane/szablony-base44.json + rodziny-szablonow-base44.json (Base44)",
@@ -151,9 +149,11 @@ lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
        f"/** {len(sz['szablony'])} szablonow z aplikacji trenera w Base44, w kolejnosci z jej ekranu. */",
        "export const SZABLONY_BASE44: readonly SzablonPlanu[] = ["]
 wypisane = []
+# Kontynuacji „(cz. 2)" na liscie nie ma (trener, 27.09.2026): to ten sam
+# uklad co czesc 1, a druga czesc ustawia przelacznik „Czesc planu".
 for r in rz["rodziny"]:
-    kontynuacja = r["klucz"].endswith("_v2")
-    rodzina = "Kontynuacje (cz. 2)" if kontynuacja else r["nazwa"]
+    if r["klucz"].endswith("_v2"): continue
+    rodzina = r["nazwa"]
     for w in r["warianty"]:
         tid = w["id"]
         s = po_id.get(tid)
@@ -176,7 +176,7 @@ for r in rz["rodziny"]:
         lin.append("    dni: [\n    " + ",\n    ".join(dni) + ",\n    ],")
         lin.append("  },")
         wypisane.append(tid)
-assert sorted(wypisane) == sorted(po_id), "szablon bez nazwy z Base44"
+assert sorted(wypisane) == sorted(t for t in po_id if not t.endswith("_v2")), "szablon bez nazwy z Base44"
 lin += ["];", ""]
 (out / "szablony.ts").write_text("\n".join(lin), encoding="utf-8")
 print("szablony.ts wygenerowane;", len(wypisane), "szablonow")
