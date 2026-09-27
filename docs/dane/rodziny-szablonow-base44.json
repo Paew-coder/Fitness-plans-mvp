@@ -1,6 +1,6 @@
 {
  "opis": "Nazwy szablonów, pod którymi trener widzi je na ekranie „Wybierz szablon” w aplikacji Base44 'CraftMyPlan' (id 6a005660818ba6a6c28f8b7d), i ich podział na rodziny. Wyciągnięte 26.09.2026 z publicznego pakietu https://craftmyplan.base44.app/assets/index-DBrIfjxZ.js (mapa id → nazwa i lista rodzin z opisami). Nazwy „FBW … – … główne ćwiczenia” z szablony-base44.json to nazwy wewnętrzne, trener ich nie zna.",
- "uwaga": "Base44 wymienia 24 warianty, ale układ i progresję ma zapisane tylko dla 14 (zdefiniowane: true). Pozostałe kontynuacje „(cz. 2)” stoją na liście bez treści.",
+ "uwaga": "Kod Base44 wymienia w mapie nazw 24 warianty, ale szablonów (układ i progresja) jest 14 — zdefiniowany: true. Trener potwierdził 27.09.2026: kontynuacji „(cz. 2)” były w Base44 tylko dwie (Klasyczny – 2 dni i 3 dni); pozostałe nazwy to martwe wpisy w kodzie, nigdy niewidoczne dla trenera.",
  "nazwy": {
   "fbw_1dzien_6w": "Klasyczny – 1 dzień",
   "fbw_2dni_6w": "Klasyczny – 2 dni",
