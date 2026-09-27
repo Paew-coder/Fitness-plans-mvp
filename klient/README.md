@@ -127,6 +127,15 @@ jak dwie zapisane serie. Niepełna seria przy ćwiczeniu, w którym klient dobie
 ciężar, dostaje zdanie, czego brakuje („Dopisz powtórzenia — bez nich nie
 policzę ciężaru"). Niewpisana seria w środku pokazuje się jako „—".
 
+**Kolejne serie na liście proponują się same** (27.09.2026, trener: „po wpisaniu
+pierwszej serii reszta powinna się sama uzupełnić"). Po pierwszej pełnej serii
+następne wiersze stoją z liczbami poprzedniej — ale jako propozycja: przerywana
+ramka, blade liczby i przycisk **✓**. Zapisuje się dopiero po ✓ (jedno dotknięcie
+na serię), po poprawieniu liczby (wtedy cały wiersz, tak jak stoi) albo po
+**„✓ Pozostałe serie tak samo"** — dla tych, którzy wpisują po treningu. Dzięki
+temu dalej zapisuje się dokładnie to, co klient zatwierdził, a „Zrobione: …" liczy
+tylko zatwierdzone serie.
+
 **Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
 i powtórzenia, 1RM liczy się od razu.
 
