@@ -1560,6 +1560,12 @@ const serwer = createServer(async (req, res) => {
             ...zapisany, plan: zastosujProgresje(zapisany.plan),
           })));
         }
+        // Po zmianie „Części planu" — tylko boje główne (27.09.2026).
+        if (tryb === "progresja-bojow") {
+          return json(res, obrazPlanu(magazyn.zapisz({
+            ...zapisany, plan: zastosujProgresje(zapisany.plan, undefined, { tylkoBoje: true }),
+          })));
+        }
         if (tryb === "kopiuj") {
           const tydzien = Number(zrodlo);
           if (!(tydzien >= 1 && tydzien <= 6)) return blad(res, "Podaj tydzień od 1 do 6");
@@ -1575,7 +1581,7 @@ const serwer = createServer(async (req, res) => {
             ...zapisany, plan: skopiujTydzien(zapisany.plan, tydzien as 1, slot),
           })));
         }
-        return blad(res, "Nieznany tryb — „progresja” albo „kopiuj”.");
+        return blad(res, "Nieznany tryb — „progresja”, „progresja-bojow” albo „kopiuj”.");
       }
 
       if (akcja === "/moduly" && req.method === "PUT") {

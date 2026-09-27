@@ -209,6 +209,28 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     && bojA1["6"].serie === 6 && bojA1["6"].powtorzenia === 3,
     `T1 ${bojA1?.["1"]?.serie}×${bojA1?.["1"]?.powtorzenia}@${bojA1?.["1"]?.rpe} · T6 ${bojA1?.["6"]?.serie}×${bojA1?.["6"]?.powtorzenia}@${bojA1?.["6"]?.rpe}`);
 
+  // Zmiana „Części planu" po „wpisz progresję" (27.09.2026): liczby boju
+  // stoją w polach na stałe, więc konsola pyta, czy przepisać je nową częścią.
+  const bojT = async () => {
+    const t = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.lp?.startsWith("A"))?.tygodnie;
+    return [1, 6].map((w) => `${t?.[w]?.serie}×${t?.[w]?.powtorzenia}@${t?.[w]?.rpe}`).join(" · ");
+  };
+  const pytanPrzedCzescia = pytania.length;
+  await s.selectOption("#czesc-planu", "intensywność");
+  await s.waitForTimeout(1500);
+  sprawdz("zmiana części planu pyta o wpisane liczby boju, a „tak” przepisuje je nową częścią",
+    pytania.slice(pytanPrzedCzescia).some((p) => p.includes("nowa część planu ich nie zmieni"))
+    && await bojT() === "6×4@7 · 6×2@8", await bojT());
+  odrzucaj = true;
+  await s.selectOption("#czesc-planu", "objętość");
+  await s.waitForTimeout(1500);
+  odrzucaj = false;
+  sprawdz("„nie” zostawia wpisane liczby, choć część planu się zmienia",
+    (await zBazy()).zapisany.plan.czescPlanu === "objętość" && await bojT() === "6×4@7 · 6×2@8", await bojT());
+  await s.click("#progresja-szablonu");
+  await s.waitForTimeout(1000);
+  sprawdz("„wpisz progresję” wraca do liczb objętości", await bojT() === "6×6@6.5 · 6×3@7.5", await bojT());
+
   // I z powrotem to, co tu stało — dalsze sekcje liczą na ten sam plan.
   await wiersz(0).locator("td.cwiczenie select").selectOption({ label: "Barbell row" });
   await zapisano();

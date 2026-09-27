@@ -1112,8 +1112,43 @@ $("#tryb-akcesoriow").onchange = (e) => {
   obraz.zapisany.plan.trybAkcesoriow = e.target.value;
   zapiszPozniej();
 };
+/**
+ * Czy któryś bój główny ma w tygodniach pracy wpisane liczby — z „wpisz
+ * progresję" albo ręcznie. Takie liczby wygrywają z częścią planu, więc jej
+ * zmiana by ich nie ruszyła.
+ */
+function bojeZWpisanymiLiczbami() {
+  return obraz.zapisany.plan.sloty.some((s) => s.cwiczenieId && bojGlowny(s)
+    && [1, 2, 3, 4, 5, 6].some((t) => {
+      const p = s.tygodnie?.[t];
+      return p && (p.serie != null || p.powtorzenia != null || p.rpe != null);
+    }));
+}
+
 $("#czesc-planu").onchange = (e) => {
   obraz.zapisany.plan.czescPlanu = e.target.value;
+  /*
+   * Pułapka, którą trener nazwał sam (27.09.2026): po „wpisz progresję"
+   * liczby boju stoją w polach na stałe, więc zmiana części planu ich nie
+   * zmieniała — cz. 2 z liczbami cz. 1. Pytamy; akcesoriów to nie dotyczy,
+   * ich serie i RPE są w każdej części takie same, a powtórzenia liczą się
+   * same z coeff.
+   */
+  if (bojeZWpisanymiLiczbami() && confirm(
+    "Bój główny ma wpisane liczby (z „wpisz progresję” albo ręcznie) i nowa część planu ich nie zmieni.\n\n"
+    + `Przepisać serie, powtórzenia i RPE boju głównego progresją „${CZESC_NA_EKRANIE[e.target.value] ?? e.target.value}” `
+    + "we wszystkich sześciu tygodniach?\n\nOK — przepisz. Anuluj — zostaw wpisane.")) {
+    poZapisie = async () => {
+      try {
+        obraz = await api(`/api/plany/${obraz.zapisany.id}/tygodnie`, {
+          method: "POST", body: { tryb: "progresja-bojow" },
+        });
+        rysujPlan();
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+  }
   zapiszPozniej();
   // Przycisk „S" (bój siłowy) jest tylko w hipertrofii — tabela musi go
   // pokazać albo schować od razu, nie dopiero przy następnym przerysowaniu.

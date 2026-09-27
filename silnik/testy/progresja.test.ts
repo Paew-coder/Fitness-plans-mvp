@@ -314,3 +314,28 @@ describe("kopiowanie tygodnia na jedno ćwiczenie", () => {
     assert.equal(slot(wynik, "D1-S01").tygodnie![2]!.feedback, "za łatwe");
   });
 });
+
+/*
+ * Po zmianie „Części planu" konsola pyta, czy przepisać liczby boju
+ * (27.09.2026). Przepisuje wtedy wyłącznie boje — ręczne poprawki przy
+ * akcesoriach zostają.
+ */
+describe("progresja tylko boju głównego", () => {
+  test("bój dostaje liczby nowej części, akcesorium zostaje z ręczną poprawką", () => {
+    const LP = ["A1.", "B1."];
+    const plan = {
+      nazwa: "x", trybAkcesoriow: "trzymaj z bloku" as const, czescPlanu: "objętość" as const,
+      serieMaksymalne: [], topSety: [],
+      sloty: LP.map((lp, i) => ({ positionId: `D1-S0${i + 1}`, dzien: 1, lp,
+        cwiczenieId: ["EX-0010", "EX-0016"][i]!, kategoriaSzkieletu: null, tygodnie: {} as any })),
+    };
+    const wpisana = zastosujProgresje(plan as any);
+    wpisana.sloty[1]!.tygodnie[2]!.rpe = 7;              // ręczna poprawka przy akcesorium
+    const cz2 = zastosujProgresje({ ...wpisana, czescPlanu: "intensywność" }, undefined, { tylkoBoje: true });
+    assert.deepEqual([1, 6].map((t) => {
+      const p = cz2.sloty[0]!.tygodnie[t as 1]!;
+      return [p.serie, p.powtorzenia, p.rpe];
+    }), [[6, 4, 7], [6, 2, 8]], "bój z kolumny intensywności");
+    assert.equal(cz2.sloty[1]!.tygodnie[2]!.rpe, 7, "akcesorium nietknięte");
+  });
+});
