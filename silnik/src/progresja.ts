@@ -19,7 +19,7 @@ import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
 import type { Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { progresjaSlotu } from "./szablon-boju.ts";
+import { czescBoju, progresjaSlotu } from "./szablon-boju.ts";
 
 export {
   PROGRESJA_BOJU, SERIE_AKCESORIUM, RPE_AKCESORIUM,
@@ -60,7 +60,7 @@ export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
         tygodnie[t] = {
-          ...progresjaSlotu(slot.lp, t, coeff, plan.czescPlanu, slot.bojGlowny),
+          ...progresjaSlotu(slot.lp, t, coeff, czescBoju(plan.czescPlanu, slot.bojSilowy), slot.bojGlowny),
           ...wlasneTygodnia(tygodnie[t]),
         };
       }

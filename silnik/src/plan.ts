@@ -13,7 +13,7 @@ import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
-import { bojGlownySlotu, progresjaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, czescBoju, progresjaSlotu } from "./szablon-boju.ts";
 import { rpeTopSetu, zwyczajowyTopSet } from "./top-set.ts";
 import {
   bilansTygodnia,
@@ -94,6 +94,12 @@ export type SlotPlanu = {
    * i ćwiczenie złożone (`jestBojemGlownym`). Patrz `bojGlownySlotu`.
    */
   bojGlowny?: boolean;
+  /**
+   * Bój siłowy w planie hipertroficznym (27.09.2026): progresja i TOP SET
+   * jak w części siłowej tego samego etapu. Pusto = jak cały plan. Patrz
+   * `czescBoju`.
+   */
+  bojSilowy?: boolean;
 };
 
 export type TopSet = {
@@ -286,7 +292,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // Deload nie ma własnego szablonu: serie i powtórzenia jak w T6, RPE niżej.
     const szablon = wzor
       ? { serie: wzor.serie, powtorzenia: wzor.powtorzenia, rpe: rpeDeloadu(wzor.rpe) }
-      : progresjaSlotu(slot.lp, tydzien as Tydzien, cwiczenie.coeff, plan.czescPlanu, slot.bojGlowny);
+      : progresjaSlotu(slot.lp, tydzien as Tydzien, cwiczenie.coeff,
+        czescBoju(plan.czescPlanu, slot.bojSilowy), slot.bojGlowny);
 
     const serie = p.serie ?? szablon.serie!;
     const efektywne = serieEfektywne(
@@ -392,7 +399,11 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
          * że TOP SETU w tym tygodniu nie ma — tak szablon opisuje T1 i tak
          * jest w obu arkuszach trenera.
          */
-        const rpe = t.rpeTygodni?.[tydzien] ?? rpeTopSetu(plan.czescPlanu, tydzien);
+        // Bój siłowy w hipertrofii niesie RPE TOP SETU części siłowej.
+        const slotZrodla = plan.sloty.find((s) => s.positionId === t.slotPositionId);
+        const silowy = !!slotZrodla?.bojSilowy && !!zrodlo?.cwiczenie
+          && bojGlownySlotu(slotZrodla, zrodlo.cwiczenie.coeff);
+        const rpe = t.rpeTygodni?.[tydzien] ?? rpeTopSetu(czescBoju(plan.czescPlanu, silowy), tydzien);
         const cwiczenie = rpe === null ? null : (zrodlo?.cwiczenie ?? null);
         return {
           dzien: t.dzien,

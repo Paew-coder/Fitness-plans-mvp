@@ -37,6 +37,12 @@ oraz *hipertrofia (cz.1)* i *hipertrofia (cz.2)*, obie bez TOP SETU:
 | hipertrofia cz.1 | 4 × 12 → 13 → 14, RPE 8, potem 9 | 10–12 | 12–14 |
 | hipertrofia cz.2 | 4 × 10 → 11 → 12, RPE 8, potem 9 | 8–10 | 10–12 |
 
+**Bój siłowy w hipertrofii — przycisk „S"** przy boju głównym (tylko w planie
+hipertroficznym): ten bój liczy się jak w części siłowej — przy cz.1 jak
+*objętość*, przy cz.2 jak *intensywność* — razem z TOP SETEM, który włącza się
+przy nim sam. Akcesoria zostają hipertroficzne. Drugie kliknięcie wraca do
+hipertrofii i zdejmuje TOP SET.
+
 **Po cyklu: deload i maksy** — przełączniki *+ deload* i *+ maksy* dokładają
 tydzień 7 (serie i powtórzenia z T6, RPE o 1 niżej, bez TOP SETU) i tydzień 8
 (1 × 1 @ RPE 10, wszystkie boje jednego dnia). W zakładce maksów zaznaczasz

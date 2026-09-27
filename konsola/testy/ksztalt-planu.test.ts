@@ -56,6 +56,8 @@ describe("kształt planu", () => {
     // wskazanie przychodzi z przeglądarki przy każdym zapisie.
     ["tryb ciężaru slotu spoza listy", () => ({ ...planPoprawny(),
       sloty: [{ positionId: "D1-S01", dzien: 1, trybCiezaru: "licz z głowy" }] })],
+    ["bój siłowy jako tekst", () => ({ ...planPoprawny(),
+      sloty: [{ positionId: "D1-S01", dzien: 1, bojSilowy: "tak" }] })],
     ["TOP SETY jako tekst", () => ({ ...planPoprawny(), topSety: "jeden" })],
     ["TOP SET bez dnia", () => ({ ...planPoprawny(),
       topSety: [{ wlaczony: true, rpe: 8, slotPositionId: "D1-S01" }] })],

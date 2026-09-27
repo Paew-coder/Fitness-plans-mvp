@@ -1115,6 +1115,9 @@ $("#tryb-akcesoriow").onchange = (e) => {
 $("#czesc-planu").onchange = (e) => {
   obraz.zapisany.plan.czescPlanu = e.target.value;
   zapiszPozniej();
+  // Przycisk „S" (bój siłowy) jest tylko w hipertrofii — tabela musi go
+  // pokazać albo schować od razu, nie dopiero przy następnym przerysowaniu.
+  rysujDni();
 };
 $("#data-startu").onchange = (e) => {
   obraz.zapisany.dataStartu = e.target.value || null;
@@ -1175,6 +1178,7 @@ function legendaPlanu() {
     ["»", "skopiuj parametry tego tygodnia na pozostałe"],
     ["T", "dodaj lub zdejmij TOP SET"],
     ["G", "bój główny — podświetlone, gdy ćwiczenie liczy się jak bój; klik zmienia rolę"],
+    ["S", "bój siłowy w hipertrofii — progresja i TOP SET jak w części siłowej"],
     ["R", "licz ciężar akcesorium z RPE"],
     ["TS", "przy numerze: ćwiczenie ma TOP SET"],
     ["RPE", "przy numerze: ciężar liczony z RPE"],
@@ -1463,11 +1467,37 @@ function przelaczBojGlowny(slot) {
   const nowy = !bojGlowny(slot);
   if (nowy === bojGlownyZReguly(slot)) delete slot.bojGlowny;
   else slot.bojGlowny = nowy;
+  // Akcesorium nie bywa bojem siłowym — znacznik odchodzi razem z rolą.
+  if (!nowy) delete slot.bojSilowy;
   for (const p of Object.values(slot.tygodnie ?? {})) {
     delete p.serie; delete p.powtorzenia; delete p.rpe;
   }
   zapiszPozniej();
   rysujDni();
+}
+
+/** Plan w części hipertroficznej (cz. 1 albo cz. 2). */
+function planHipertroficzny() {
+  return ["hipertrofia", "hipertrofia 2"].includes(obraz.zapisany.plan.czescPlanu);
+}
+
+/**
+ * „S" — bój siłowy w planie hipertroficznym (trener, 27.09.2026: „żeby móc
+ * zrobić standardowo ćwiczenie główne razem z TOP SETEM w hipertrofii").
+ * Bój liczy się wtedy jak w części siłowej — cz. 1 jak objętość, cz. 2 jak
+ * intensywność — a akcesoria zostają hipertroficzne. Włączenie stawia przy
+ * nim TOP SET dnia, wyłączenie go zdejmuje; liczby boju czyszczą się jak
+ * przy „G", żeby weszła właściwa progresja.
+ */
+function przelaczBojSilowy(slot) {
+  const nowy = !slot.bojSilowy;
+  if (nowy) slot.bojSilowy = true;
+  else delete slot.bojSilowy;
+  for (const p of Object.values(slot.tygodnie ?? {})) {
+    delete p.serie; delete p.powtorzenia; delete p.rpe;
+  }
+  if (nowy !== jestTopSetem(slot)) przelaczTopSet(slot);
+  else { zapiszPozniej(); rysujDni(); }
 }
 
 /** TOP SET dnia, do którego należy ten slot — albo `undefined`. */
@@ -1594,6 +1624,14 @@ function rysujSlot(slot, pusty) {
         : "Licz jak bój główny: progresja bloku, ciężar z RPE co tydzień";
       g.onclick = () => przelaczBojGlowny(slot);
       strzalki.append(g);
+    }
+    if (bojGlowny(slot) && planHipertroficzny() && !poCyklu) {
+      const silowy = el("button", `mikro ${slot.bojSilowy ? "wlaczony" : ""}`, "S");
+      silowy.title = slot.bojSilowy
+        ? "Bój siłowy — kliknij, żeby liczyć go hipertroficznie jak resztę planu"
+        : "Bój siłowy: progresja i TOP SET jak w części siłowej (cz.1 jak objętość, cz.2 jak intensywność)";
+      silowy.onclick = () => przelaczBojSilowy(slot);
+      strzalki.append(silowy);
     }
     if (!bojGlowny(slot) && !poCyklu) {
       const przelaczTryb = el("button", `mikro ${slot.trybCiezaru === "licz z RPE" ? "wlaczony" : ""}`, "R");
