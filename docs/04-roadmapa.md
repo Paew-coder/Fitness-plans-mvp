@@ -594,6 +594,12 @@ Trener: „dodaj taką opcję, żeby móc zrobić standardowo ćwiczenie główn
 * Poza hipertrofią znacznik nic nie zmienia (`czescBoju` w `szablon-boju.ts`). Testy silnika sprawdzają obie części i to, że bez znacznika reguły się nie zmieniły (na wyłączonej regule są czerwone); przegląd konsoli klika „S” tam i z powrotem.
 * Przy okazji: zmiana *Części planu* przerysowuje tabelę od razu — przycisk „S” pojawia się i znika bez przeładowania.
 
+**33. „Wpisz progresję” i pytanie przy zmianie części planu — 27.09.2026.**
+
+* Przycisk „progresja 5.18” nazywa się **„wpisz progresję”** (trener: nazwa starego arkusza „dziwnie tam wygląda”); podpowiedź i pytanie przed nadpisaniem mówią, z której części planu biorą się liczby.
+* Pułapka: po „wpisz progresję” liczby boju stoją w polach na stałe i wygrywają z częścią planu — zmiana cz. 1 → cz. 2 zostawiała bój z liczbami cz. 1. Teraz zmiana „Części planu” przy boju z wpisanymi liczbami pyta, czy przepisać je nową częścią. „Tak” przepisuje **tylko boje główne** (`zastosujProgresje(..., { tylkoBoje: true })`, tryb `progresja-bojow`); ręczne poprawki przy akcesoriach zostają. „Nie” zostawia wpisane liczby.
+* Przegląd konsoli sprawdza obie odpowiedzi; test silnika — że akcesorium z ręczną poprawką zostaje nietknięte.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

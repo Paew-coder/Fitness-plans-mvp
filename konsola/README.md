@@ -172,7 +172,7 @@ przechodzi, jeśli cel jeszcze go nie ma) i *usuń*. Zmiana nazwy na nazwę
 istniejącego klienta jest odrzucana z podpowiedzią, żeby nie powstały dwie
 kartoteki o tej samej nazwie.
 
-**Wypełnianie sześciu tygodni.** *Wpisz progresję* (do 27.09 „progresja 5.18”) wpisuje do wszystkich tygodni
+**Wypełnianie sześciu tygodni.** Nie jest potrzebne: puste pola liczą się same i pokazują wynik na szaro. *Wpisz progresję* (do 27.09 „progresja 5.18”) wpisuje te liczby na stałe do wszystkich tygodni
 blok z Twojego szablonu, a **która** to progresja, zależy od przełącznika
 *Część planu*:
 
