@@ -794,13 +794,16 @@ function wskazowkaMaksu(c) {
  */
 function pokazPostepTreningu(d) {
   const t = tydzienWidoku(biezacy.tydzien);
-  const ocenione = d.cwiczenia.filter((c) => c.feedback).length;
   const wpisane = d.cwiczenia.filter((c) => seriaWpisana(c)).length;
+  // Bez „ocenionych": w panelu „OK" się nie klika (brak oceny = OK), więc
+  // licznik ocen nic by nie mówił. Liczy ćwiczenia, w których coś się już
+  // działo — wpisana seria albo ocena.
+  const zaczete = d.cwiczenia.filter((c) => seriaWpisana(c) || c.feedback).length;
   $("#trening-postep").textContent = d.ukonczony
     ? "Trening zakończony"
     : t?.rodzaj === "maksy"
       ? `${wpisane} z ${d.cwiczenia.length} wyników wpisanych`
-      : `${ocenione} z ${d.cwiczenia.length} ocenionych`;
+      : `${zaczete} z ${d.cwiczenia.length} ćwiczeń zaczętych`;
 }
 
 /**
@@ -1127,6 +1130,9 @@ function kartaCwiczenia(c, stan = null) {
   if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
 
+  // Na liście „OK" zostaje (trener, 27.09.2026) — tu widać cały dzień naraz
+  // i można nim odhaczyć ćwiczenie. Bez oceny przy końcu treningu serwer
+  // i tak zapisuje OK.
   const oceny = el("div", "oceny");
   for (const [wartosc, etykieta, klasa] of [
     ["za trudne", "Za trudne", "trudne"],
@@ -1274,11 +1280,13 @@ function poKorekcie(kg, kierunek, skok) {
 function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
   const blok = el("div", "ocena-w-panelu");
   const ostatnia = k.ostatniaSeria;
-  blok.append(el("div", "pytanie", ostatnia ? "Jak było to ćwiczenie?" : "Za ciężko albo za lekko?"));
-  if (!ostatnia) {
-    blok.append(el("p", "drobne podpowiedz-oceny",
-      "Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię."));
-  }
+  // W panelu te same dwa przyciski przy każdej serii, także przy ostatniej —
+  // bez „OK" (trener, 27.09.2026: „w panelach nie ma ono sensu", brak
+  // kliknięcia i tak oznacza OK). Na liście „OK" zostaje.
+  blok.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
+  blok.append(el("p", "drobne podpowiedz-oceny", ostatnia
+    ? "Jeśli było OK — nic nie klikaj. Ocena zmienia ciężar w kolejnych tygodniach."
+    : "Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię."));
   const oceny = el("div", "oceny");
   const notka = el("p", "korekta-serii");
   const przyciski = [];
@@ -1293,8 +1301,7 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
         + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} o 5%).`
       : "";
   };
-  const warianty = [["za trudne", "Za trudne", "trudne"],
-    ...(ostatnia ? [["OK", "OK", "ok"]] : []), ["za łatwe", "Za łatwe", "latwe"]];
+  const warianty = [["za trudne", "Za trudne", "trudne"], ["za łatwe", "Za łatwe", "latwe"]];
   for (const [wartosc, etykieta, klasa] of warianty) {
     const b = el("button", "ocena-przycisk", etykieta);
     b.onclick = () => {
