@@ -600,3 +600,19 @@ details.modul-bieg[open] > .jednostka-biegu:first-of-type { margin-top: .5rem; }
   background: color-mix(in srgb, var(--trudne) 12%, transparent); border: 1px solid var(--trudne);
 }
 ul.punkty { margin: .4rem 0 0 1.1rem; padding: 0; line-height: 1.5; color: var(--tekst-slaby); }
+
+/* Propozycja kolejnej serii na liście (27.09.2026): blada, przerywana,
+   zapisuje się dopiero po ✓ albo po poprawieniu liczby. */
+.wiersz-serii.proponowana input {
+  color: var(--tekst-blady); border-style: dashed; font-style: italic;
+}
+.potwierdz-serie {
+  flex: none; width: 2.5rem; height: 2.4rem; border-radius: 9px;
+  border: 1px solid var(--akcent); background: var(--akcent-tlo); color: var(--akcent);
+  font-weight: 700; font-size: 1rem;
+}
+.propozycje-stopka {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .8rem;
+  margin-top: .3rem; font-size: .8rem; line-height: 1.4; color: var(--tekst-blady);
+}
+.propozycje-stopka .wszystkie-tak-samo { color: var(--akcent); font-weight: 600; text-decoration: none; }

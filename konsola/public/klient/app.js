@@ -1449,13 +1449,49 @@ function polaWykonania(c) {
   /*
    * Wiersz na każdą serię z planu — przy 3 seriach trzy wiersze.
    *
-   * Bez szarych liczb w polach. Były tu podpowiedzi (poprzednia seria albo
-   * plan) i zgłoszone z testów wyszło, że na ekranie nie da się ich odróżnić
-   * od wpisanych: jedna niepełna seria („18 kg" bez powtórzeń) i pusty wiersz
-   * z podpowiedziami 18 × 8 wyglądały jak dwie zapisane serie. Tu puste pole
-   * jest puste, a zapisuje się dokładnie to, co w nim stoi. Wygodne liczby
-   * z góry zostały tam, gdzie się je zatwierdza przyciskiem — w prowadzeniu.
+   * Przed pierwszą wpisaną serią pola są puste. Były tu kiedyś szare
+   * podpowiedzi (poprzednia seria albo plan) i zgłoszone z testów wyszło, że
+   * nie da się ich odróżnić od wpisanych: niepełna seria („18 kg" bez
+   * powtórzeń) i pusty wiersz z podpowiedziami 18 × 8 wyglądały jak dwie
+   * zapisane serie.
+   *
+   * Po pierwszej pełnej serii kolejne wiersze wypełniają się same (trener,
+   * 27.09.2026: „po wpisaniu pierwszej serii reszta powinna się sama
+   * uzupełnić") — ale jako **propozycja**: przerywana ramka, blade liczby
+   * i przycisk ✓. Zapisuje się dopiero po ✓ albo po poprawieniu liczby, więc
+   * dalej zapisuje się dokładnie to, co klient zatwierdził, a nie to, co mu
+   * się podsunęło. „✓ Pozostałe tak samo" zatwierdza wszystkie naraz — dla
+   * tych, którzy wpisują po treningu.
    */
+  const propozycja = (i) => {
+    if (c.maks || !pustaSeria(serie[i])) return null;
+    for (let j = i - 1; j >= 0; j--) {
+      const s = serie[j];
+      if (s?.powtorzenia && (bezCiezaru || s.ciezar)) {
+        return { ciezar: bezCiezaru ? null : s.ciezar, powtorzenia: s.powtorzenia };
+      }
+    }
+    return null;
+  };
+  const wiersze = [];
+  const stopka = el("div", "propozycje-stopka ukryty");
+  const odswiezPropozycje = () => {
+    wiersze.forEach((r, i) => {
+      const p = propozycja(i);
+      r.w.classList.toggle("proponowana", Boolean(p));
+      r.potwierdz.classList.toggle("ukryty", !p);
+      // Pod palcem niczego nie podmieniamy — klient może właśnie pisać.
+      if (document.activeElement === r.wCiezar || document.activeElement === r.wPowt) return;
+      if (p) {
+        r.wCiezar.value = p.ciezar ?? "";
+        r.wPowt.value = p.powtorzenia ?? "";
+      } else if (pustaSeria(serie[i])) {
+        r.wCiezar.value = "";
+        r.wPowt.value = "";
+      }
+    });
+    stopka.classList.toggle("ukryty", !wiersze.some((_, i) => propozycja(i)));
+  };
   const wiersz = (i) => {
     const w = el("div", "wiersz-serii");
     w.append(el("span", "nr", `${i + 1}.`));
@@ -1474,21 +1510,50 @@ function polaWykonania(c) {
       // Kto pisze, ten chce dalej pisać — karta odświeżona po zapisie zostaje
       // rozwinięta, zamiast chować wiersze spod palca.
       otwarteWykonania.add(c.positionId);
+      // Poprawka w wierszu z propozycją zapisuje cały wiersz — tak, jak stoi.
       serie[i] = {
         ciezar: bezCiezaru ? null : Number(String(wCiezar.value).replace(",", ".")) || null,
         powtorzenia: Number(wPowt.value) || null,
       };
       zapisz();
+      odswiezPropozycje();
     };
     wCiezar.onchange = zmien;
     wPowt.onchange = zmien;
     if (!bezCiezaru) w.append(wCiezar, el("span", "razy", "kg ×"));
     w.append(wPowt, el("span", "razy", "powt."));
+    const potwierdz = el("button", "potwierdz-serie ukryty", "✓");
+    potwierdz.title = "Zrobione tak, jak stoi";
+    potwierdz.setAttribute("aria-label", `Seria ${i + 1} zrobiona tak, jak stoi`);
+    potwierdz.onclick = () => {
+      const p = propozycja(i);
+      if (!p) return;
+      otwarteWykonania.add(c.positionId);
+      serie[i] = p;
+      zapisz();
+      odswiezPropozycje();
+    };
+    w.append(potwierdz);
+    wiersze.push({ w, wCiezar, wPowt, potwierdz });
     return w;
   };
 
   const wierszy = Math.max(planowane, serie.length);
   for (let i = 0; i < wierszy; i++) pola.append(wiersz(i));
+  const wszystkie = el("button", "link wszystkie-tak-samo", "✓ Pozostałe serie tak samo");
+  wszystkie.onclick = () => {
+    otwarteWykonania.add(c.positionId);
+    for (let i = 0; i < wiersze.length; i++) {
+      const p = propozycja(i);
+      if (p) serie[i] = p;
+    }
+    zapisz();
+    odswiezPropozycje();
+  };
+  stopka.append(el("span", "", "Blade liczby to propozycja z poprzedniej serii — po serii dotknij ✓ albo popraw."),
+    wszystkie);
+  pola.append(stopka);
+  odswiezPropozycje();
 
   const naglowek = el("div", "wykonanie-naglowek");
   naglowek.append(opisEl, przelacz);
