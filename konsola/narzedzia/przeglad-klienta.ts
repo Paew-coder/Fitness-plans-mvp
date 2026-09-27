@@ -136,6 +136,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const karty = s.locator("#cwiczenia .cwiczenie");
   sprawdz("trening pokazuje ćwiczenia z planu", await karty.count() === 3,
     `${await karty.count()} ćwiczenia`);
+  // Na liście „OK” zostaje (27.09.2026) — znika tylko z panelu.
+  sprawdz("na liście ocena z „OK” pośrodku",
+    (await karty.first().locator(".oceny .ocena-przycisk").allInnerTexts()).join(" | ")
+      === "Za trudne | OK | Za łatwe",
+    (await karty.first().locator(".oceny").innerText()).replace(/\n/g, " | "));
 
   // ── 3. ciężar na ekranie to ciężar policzony ──────────────────────
   // Umowa całej aplikacji: klient widzi dokładnie tę liczbę, którą policzył
@@ -1694,9 +1699,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       && await panel.locator(".korekta-serii:not(:empty)").count() === 0,
     `pole: ${await poleKg.inputValue()} · ${duza4} · ${dopisek4}`);
   for (let i = 4; i <= 5; i++) await dalejPoSerii();       // seria 4, 5
-  sprawdz("przy ostatniej serii pełne pytanie z „OK”, a „za trudne” stoi zaznaczone",
+  // Od 27.09.2026 w panelu bez „OK” także przy ostatniej serii — brak oceny znaczy OK.
+  sprawdz("przy ostatniej serii też bez „OK”, a „za trudne” stoi zaznaczone",
     (await panel.locator(".ocena-w-panelu .ocena-przycisk").allInnerTexts()).join(" | ")
-      === "Za trudne | OK | Za łatwe"
+      === "Za trudne | Za łatwe"
+    && (await panel.locator(".ocena-w-panelu").innerText()).includes("Jeśli było OK — nic nie klikaj")
     && ((await panel.locator(".ocena-w-panelu .ocena-przycisk", { hasText: "Za trudne" })
       .getAttribute("class")) ?? "").includes("wybrana"),
     (await panel.locator(".ocena-w-panelu").innerText()).replace(/\n/g, " | "));

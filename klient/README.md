@@ -258,17 +258,24 @@ dalej liczy się z najcięższej serii — ostatnia byłaby zwykle najsłabsza, 
 zmęczona. Najcięższą wybiera serwer, nie telefon. Serie wpisane w prowadzeniu
 widać też na liście dnia i odwrotnie — to te same dane.
 
-**Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii poza
-ostatnią stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
-`Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"*. Nie ma
-tu `OK`, bo klient pomyślałby, że musi go dotykać po każdej serii. Dotknięcie
+**Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii — także
+ostatniej — stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
+`Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"* (przy
+ostatniej: *„Jeśli było OK — nic nie klikaj. Ocena zmienia ciężar w kolejnych
+tygodniach."*). W panelu nie ma `OK`: klient pomyślałby, że musi go dotykać, a
+ćwiczenie bez oceny i tak zapisuje się przy końcu treningu jako OK. Do 27.09
+przy ostatniej serii stało pełne `Za trudne / OK / Za łatwe` — trener: „w
+panelach nie ma ono sensu". Na liście dnia `OK` zostaje: tam widać cały dzień
+naraz i można nim odhaczyć ćwiczenie. Dotknięcie
 dopasowuje **następną serię**: ciężar faktycznie zrobiony w tej serii ±5 %,
 zaokrąglony do skoku ćwiczenia z BAZY (57,5 kg „za trudne" → 55 kg). Duża
 liczba „Ciężar" pokazuje wtedy 55 z dopiskiem „w planie 57,5", nad polami stoi,
 skąd ta liczba; kto wpisze swoją, ma swoją. Ta sama ocena
 idzie do trenera i do następnych tygodni jak dotąd (jedna na ćwiczenie w tygodniu,
-ostatnie dotknięcie wygrywa) i przy ostatniej serii stoi już zaznaczona — tam
-jest pełne `Za trudne / OK / Za łatwe`. Ocena nie przerysowuje panelu, więc
+ostatnie dotknięcie wygrywa) i przy ostatniej serii stoi już zaznaczona; drugie
+dotknięcie zdejmuje ocenę. Licznik nad treningiem pokazuje *„X z N ćwiczeń
+zaczętych"* (wpisana seria albo ocena) — dawne „ocenionych" nie dochodziło do N,
+skoro OK się nie klika. Ocena nie przerysowuje panelu, więc
 wpisane liczby zostają w polach (do 26.09 dotknięcie oceny przy ostatniej serii
 je czyściło).
 

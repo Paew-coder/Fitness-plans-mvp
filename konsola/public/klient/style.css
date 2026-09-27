@@ -548,6 +548,8 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 /* Ocena przy serii i korekta ±5 % na następną (26.09.2026). */
 .ocena-w-panelu { margin-top: .9rem; }
 .ocena-w-panelu .podpowiedz-oceny { margin: .1rem 0 .4rem; }
+/* W panelu tylko „Za trudne” i „Za łatwe” — każdy na pół szerokości. */
+.ocena-w-panelu .oceny { grid-template-columns: repeat(2, 1fr); }
 .korekta-serii { color: var(--akcent); font-size: .88rem; margin: .45rem 0 0; }
 .korekta-serii:empty { display: none; }
 
