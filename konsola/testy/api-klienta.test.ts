@@ -1054,3 +1054,28 @@ describe("rozgrzewka na początek dnia", () => {
     assert.equal(kod, 400);
   });
 });
+
+describe("kilka TOP SETÓW w dniu na telefonie", () => {
+  test("widok dnia niesie każdy TOP SET z jego ćwiczeniem, w kolejności tabeli", async () => {
+    await api("/api/plany", "POST", { klient: "Dwa Topsety", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Dwa Topsety").id;
+    const { dane: obraz } = await api(`/api/plany/${id}`);
+    const plan = obraz.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0011";
+    plan.sloty[1].cwiczenieId = "EX-0010";
+    plan.sloty[1].bojGlowny = true;
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
+      { cwiczenieId: "EX-0010", ciezar: 140, powtorzenia: 1 }];
+    plan.topSety = [{ dzien: 1, wlaczony: true, slotPositionId: plan.sloty[1].positionId },
+      { dzien: 1, wlaczony: true, slotPositionId: plan.sloty[0].positionId }];
+    await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany",
+      zmieniony: obraz.zapisany.zmieniony });
+    const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    const widok = (await api(`/api/klient/${token}`)).dane;
+    const dzien = widok.tygodnie[1].dni[0];
+    assert.deepEqual(dzien.topSety.map((t: any) => [t.positionId, t.cwiczenie.id, t.rpe]),
+      [[plan.sloty[0].positionId, "EX-0011", 6], [plan.sloty[1].positionId, "EX-0010", 6]]);
+    assert.equal(dzien.topSety[1].przerwaSekundy, 180);
+    assert.equal(dzien.topSet.positionId, plan.sloty[0].positionId, "pierwszy — dla starej aplikacji");
+  });
+});

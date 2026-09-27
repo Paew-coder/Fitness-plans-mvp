@@ -1278,10 +1278,17 @@ function rysujDni() {
      * przy dowolnym wierszu, a tutaj zostaje to, czym pasek ma być: nazwa,
      * RPE i ciężar.
      */
-    const top = (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
+    // Pasek na każdy TOP SET dnia, w kolejności tabeli — od 27.09.2026 może
+    // ich być kilka (A1 i B1 w Rozbudowanym). Dwa wpisy przy jednym ćwiczeniu
+    // liczą się raz, tak samo jak w silniku.
+    const kolejnosc = new Map(sloty.map((s, i) => [s.positionId, i]));
+    const topyDnia = (obraz.zapisany.plan.topSety ?? [])
+      .filter((t, i, wszystkie) => t.dzien === dzien && t.wlaczony
+        && wszystkie.findIndex((x) => x.wlaczony && x.slotPositionId === t.slotPositionId) === i)
+      .sort((a, b) => (kolejnosc.get(a.slotPositionId) ?? 999) - (kolejnosc.get(b.slotPositionId) ?? 999));
     // W deloadzie TOP SETU nie ma — pasek z polem RPE sugerowałby, że jest.
-    if (top?.wlaczony && maCwiczenia && tydzien <= 6) {
-      const wyliczony = wyliczonyTydzien.topSety.find((t) => t.dzien === dzien);
+    for (const top of (maCwiczenia && tydzien <= 6 ? topyDnia : [])) {
+      const wyliczony = wyliczonyTydzien.topSety.find((t) => t.positionId === top.slotPositionId);
       // Nazwa wprost z planu, nie z wyniku — po kliknięciu „T" ma być widać
       // od razu, a wynik z serwera dojdzie chwilę później razem z ciężarem.
       const zrodlo = slotPlanu(top.slotPositionId);
@@ -1314,10 +1321,11 @@ function rysujDni() {
         rysujDni();
       };
       const usun = el("button", "mikro", "✕");
-      usun.title = "Usuń TOP SET z tego dnia";
+      usun.title = "Usuń ten TOP SET";
       usun.onclick = () => { top.wlaczony = false; zapiszPozniej(); rysujDni(); };
+      pasek.dataset.topset = top.slotPositionId;
       pasek.append(el("span", "etykieta", "TOP SET"),
-        el("span", "", nazwa),
+        el("span", "", `${(zrodlo?.lp || "").replace(/\.$/, "")} ${nazwa}`.trim()),
         el("span", "", "RPE"), rpe,
         el("span", "wynik", typeof wyliczony?.ciezar === "number"
           ? `${liczba(wyliczony.ciezar)} kg`
@@ -1535,15 +1543,19 @@ function przelaczBojSilowy(slot) {
   else { zapiszPozniej(); rysujDni(); }
 }
 
-/** TOP SET dnia, do którego należy ten slot — albo `undefined`. */
-function topSetDnia(dzien) {
-  return (obraz.zapisany.plan.topSety ?? []).find((t) => t.dzien === dzien);
+/**
+ * Wpis TOP SETU przy tym ćwiczeniu — najpierw włączony. Od 27.09.2026 każde
+ * ćwiczenie ma własny wpis; stare plany i import arkusza mają po jednym na
+ * dzień, z `slotPositionId` wskazującym ćwiczenie.
+ */
+function topSetSlotu(slot) {
+  const przy = (obraz.zapisany.plan.topSety ?? []).filter((t) => t.slotPositionId === slot.positionId);
+  return przy.find((t) => t.wlaczony) ?? przy[0];
 }
 
 /** Czy TOP SET stoi właśnie przy tym ćwiczeniu. */
 function jestTopSetem(slot) {
-  const top = topSetDnia(slot.dzien);
-  return !!top && top.wlaczony && top.slotPositionId === slot.positionId;
+  return !!topSetSlotu(slot)?.wlaczony;
 }
 
 /**
@@ -1556,21 +1568,16 @@ function zwyczajowyTopSet(slot) {
 }
 
 /**
- * Dodaje TOP SET przy tym ćwiczeniu, przenosi go tutaj albo usuwa —
- * zależnie od tego, gdzie stoi teraz.
+ * Dodaje TOP SET przy tym ćwiczeniu albo go zdejmuje. Inne TOP SETY dnia
+ * zostają — do 27.09.2026 w dniu był jeden i kliknięcie przenosiło go tutaj,
+ * ale trener chce w Rozbudowanym TOP SET przed A1 i przed B1.
  */
 function przelaczTopSet(slot) {
   const plan = obraz.zapisany.plan;
   if (!Array.isArray(plan.topSety)) plan.topSety = [];
-  let top = topSetDnia(slot.dzien);
-  if (!top) {
-    // Plan z importu arkusza nie musi mieć wpisu na ten dzień.
-    top = { dzien: slot.dzien, wlaczony: false, rpe: 7, slotPositionId: slot.positionId };
-    plan.topSety.push(top);
-  }
-  const juzTutaj = top.wlaczony && top.slotPositionId === slot.positionId;
-  top.wlaczony = !juzTutaj;
-  top.slotPositionId = slot.positionId;
+  const top = topSetSlotu(slot);
+  if (top) top.wlaczony = !top.wlaczony;
+  else plan.topSety.push({ dzien: slot.dzien, wlaczony: true, slotPositionId: slot.positionId });
   zapiszPozniej();
   rysujDni();
 }
@@ -1629,8 +1636,9 @@ function rysujSlot(slot, pusty) {
      * w każdym wypełnionym wierszu i przełącza: nie ma → jest tutaj,
      * jest tutaj → nie ma.
      *
-     * W dniu jest jeden TOP SET, jak w arkuszu — kliknięcie w innym wierszu
-     * przenosi go, zamiast dokładać drugi.
+     * Od 27.09.2026 TOP SETÓW w dniu może być kilka — kliknięcie w innym
+     * wierszu dokłada drugi (A1 i B1 w Rozbudowanym), zamiast go przenosić.
+     * Do arkusza idzie pierwszy, bo arkusz ma na dzień jeden wiersz.
      */
     const dodajTop = el("button", `mikro ${jestTopSetem(slot) ? "wlaczony" : ""}`, "T");
     dodajTop.title = jestTopSetem(slot)

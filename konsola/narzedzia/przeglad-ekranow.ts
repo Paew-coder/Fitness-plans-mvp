@@ -554,7 +554,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await przyciskTopSetu(1).click();
   await zapisano();
   const poDodaniu = await zBazy();
-  const top1 = poDodaniu.zapisany.plan.topSety.find((t: any) => t.dzien === 1);
+  const top1 = poDodaniu.zapisany.plan.topSety.find((t: any) => t.dzien === 1 && t.wlaczony);
   sprawdz("TOP SET siada przy wskazanym ćwiczeniu, nie przy pierwszym wierszu",
     top1?.wlaczony === true && top1?.slotPositionId === "D1-S02",
     `${top1?.slotPositionId} · włączony: ${top1?.wlaczony}`);
@@ -588,15 +588,29 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await s.locator(".topset").first().innerText()).includes("Barbell back squat"),
     (await s.locator(".topset").first().innerText()).replace(/\n/g, " "));
 
-  // Kliknięcie w innym wierszu ma TOP SET PRZENIEŚĆ — w dniu jest jeden,
-  // tak jak jeden wiersz TOP SET w arkuszu.
+  // Kliknięcie w innym wierszu DOKŁADA drugi TOP SET (27.09.2026: trener
+  // chce w Rozbudowanym TOP SET przed A1 i przed B1). Dawniej przenosiło.
   await wiersz(0).hover();
   await przyciskTopSetu(0).click();
   await zapisano();
-  const poPrzeniesieniu = await topSetDnia1();
-  sprawdz("kliknięcie w innym wierszu przenosi TOP SET, nie dokłada drugiego",
-    poPrzeniesieniu.length === 1 && poPrzeniesieniu[0].slotPositionId === "D1-S01",
-    poPrzeniesieniu.map((t: any) => t.slotPositionId).join(", "));
+  const poDrugim = await zBazy();
+  const wlaczoneD1 = poDrugim.zapisany.plan.topSety
+    .filter((t: any) => t.dzien === 1 && t.wlaczony).map((t: any) => t.slotPositionId).sort();
+  sprawdz("kliknięcie w innym wierszu dokłada drugi TOP SET, pierwszy zostaje",
+    JSON.stringify(wlaczoneD1) === JSON.stringify(["D1-S01", "D1-S02"])
+    && poDrugim.wynik.tygodnie[1].topSety.filter((x: any) => x.dzien === 1)
+      .map((x: any) => x.positionId).join(",") === "D1-S01,D1-S02"
+    && await s.locator(".topset").count() === 2,
+    `${wlaczoneD1.join(", ")} · pasków: ${await s.locator(".topset").count()}`);
+  // Drugie kliknięcie przy przysiadzie zdejmuje tylko jego TOP SET.
+  await wiersz(1).hover();
+  await przyciskTopSetu(1).click();
+  await zapisano();
+  const poZdjeciu = (await topSetDnia1()).filter((t: any) => t.wlaczony);
+  sprawdz("drugie „T” zdejmuje TOP SET tylko przy tym ćwiczeniu",
+    poZdjeciu.length === 1 && poZdjeciu[0].slotPositionId === "D1-S01"
+    && await s.locator(".topset").count() === 1,
+    poZdjeciu.map((t: any) => t.slotPositionId).join(", "));
 
   // Akcesorium też może mieć TOP SET — o tym decyduje trener, nie coeff.
   const topAkcesorium = topWTygodniu(await zBazy(), 2);
@@ -615,9 +629,11 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await rpeTopSetu().blur();
   await zapisano();
   const zRecznym = await zBazy();
+  const topWiersza1 = (o: any) => o.zapisany.plan.topSety
+    .find((t: any) => t.slotPositionId === "D1-S01" && t.wlaczony);
   sprawdz("RPE TOP SETU zapisuje się przy tym jednym tygodniu",
-    zRecznym.zapisany.plan.topSety.find((t: any) => t.dzien === 1)?.rpeTygodni?.["2"] === 9.5,
-    JSON.stringify(zRecznym.zapisany.plan.topSety.find((t: any) => t.dzien === 1)?.rpeTygodni));
+    topWiersza1(zRecznym)?.rpeTygodni?.["2"] === 9.5,
+    JSON.stringify(topWiersza1(zRecznym)?.rpeTygodni));
   sprawdz("i nie rusza pozostałych tygodni",
     rampa(zRecznym) === "— 9.5 7.5 8 8.5 9", rampa(zRecznym));
 
@@ -630,7 +646,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
 
   await s.locator(".topset button", { hasText: "✕" }).first().click();
   await zapisano();
-  sprawdz("TOP SET da się zdjąć", (await topSetDnia1())[0]?.wlaczony === false);
+  sprawdz("TOP SET da się zdjąć", (await topSetDnia1()).every((t: any) => !t.wlaczony));
   sprawdz("i pasek znika z ekranu", (await s.locator(".topset").count()) === 0);
   await s.locator("#taby-tygodni button", { hasText: /^T1$/ }).click();
   await s.waitForTimeout(400);

@@ -850,41 +850,25 @@ function rysujTrening() {
   // W dniu maksów ocen nie ma, a serwer niczego za klienta nie dopisuje.
   $("#notka-ok").classList.toggle("ukryty", t?.rodzaj === "maksy");
 
-  // TOP SET
-  const top = $("#topset");
-  top.replaceChildren();
-  if (d.topSet?.cwiczenie) {
-    top.classList.remove("ukryty");
-    top.append(el("div", "etykieta", "TOP SET"));
-    const wiersz = el("div", "wiersz");
-    wiersz.append(el("span", "", d.topSet.cwiczenie.nazwa));
-    wiersz.append(el("span", "ciezar", typeof d.topSet.ciezar === "number"
-      ? `${liczba(d.topSet.ciezar)} kg`
-      : d.topSet.ciezar === "— brak 1RM" ? "dobierz" : String(d.topSet.ciezar || "—")));
-    top.append(wiersz);
-    top.append(el("div", "drobne", `1 powtórzenie · RPE ${liczba(d.topSet.rpe)}`));
-    if (d.topSet.ciezar === "— brak 1RM") top.append(el("div", "drobne", jakDobrac(1, d.topSet.rpe)));
-    const stanTop = stanProwadzenia(d);
-    const tuTop = stanTop?.tu?.typ === "topset";
-    top.classList.toggle("biezace", tuTop);
-    if (tuTop || stanTop?.zrobione.has("topset")) {
-      top.append(przyciskStanu(tuTop ? "▶ Tu jesteś" : "✓ zrobione", tuTop,
-        (k) => k.typ === "topset"));
-    } else if (!d.ukonczony) {
-      const b = przyciskStanu("▶ Zacznij to ćwiczenie", false, (k) => k.typ === "topset");
-      b.classList.add("start");
-      top.append(b);
-    }
-  } else {
-    top.classList.add("ukryty");
-  }
+  // TOP SETY nie stoją już nad listą — każdy idzie przed swoim ćwiczeniem
+  // (niżej, w `kontener`), bo w dniu może ich być kilka (27.09.2026).
+  $("#topset").classList.add("ukryty");
 
   // ćwiczenia
   const stan = stanProwadzenia(d);
   const kontener = $("#cwiczenia");
   const opis = t?.rodzaj ? [el("p", "drobne opis-tygodnia", OPIS_TYGODNIA[t.rodzaj] ?? "")] : [];
   const rozgrzewka = d.rozgrzewka ? [kartaRozgrzewki(d.rozgrzewka, !cosZrobione(d))] : [];
-  kontener.replaceChildren(...opis, ...rozgrzewka, ...d.cwiczenia.map((c) => kartaCwiczenia(c, stan)));
+  const topy = topSetyDnia(d);
+  // TOP SET, którego ćwiczenia nie ma na liście (nie powinno się zdarzyć),
+  // staje na początku — tak jak dawniej stał każdy.
+  const bezCwiczenia = topy.filter((ts) => !d.cwiczenia.some((c) => c.positionId === ts.positionId));
+  kontener.replaceChildren(...opis, ...rozgrzewka,
+    ...bezCwiczenia.map((ts) => kartaTopSetu(ts, d, stan)),
+    ...d.cwiczenia.flatMap((c) => [
+      ...topy.filter((ts) => ts.positionId === c.positionId).map((ts) => kartaTopSetu(ts, d, stan)),
+      kartaCwiczenia(c, stan),
+    ]));
 
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
@@ -965,6 +949,45 @@ function przyciskStanu(tekst, tuJestes, pasuje) {
  * listę w środku treningu i ma od razu widzieć, gdzie jest: które ćwiczenia
  * ma za sobą, przy którym stoi i którą serię robi.
  */
+/**
+ * TOP SETY dnia z widoku. Od 27.09.2026 lista, każdy przy swoim ćwiczeniu.
+ * Widok zapisany w telefonie przed tą zmianą ma jeden `topSet` bez ćwiczenia
+ * — wtedy stoi on przed pierwszym ćwiczeniem dnia, jak dawniej.
+ */
+function topSetyDnia(d) {
+  const lista = d.topSety ?? (d.topSet ? [{ ...d.topSet,
+    positionId: d.topSet.positionId ?? d.cwiczenia[0]?.positionId }] : []);
+  return lista.filter((ts) => ts?.cwiczenie);
+}
+
+/** Karta TOP SETU na liście dnia — przed ćwiczeniem, do którego należy. */
+function kartaTopSetu(ts, d, stan) {
+  const karta = el("div", "topset");
+  karta.dataset.topset = ts.positionId;
+  const lp = d.cwiczenia.find((c) => c.positionId === ts.positionId)?.lp;
+  karta.append(el("div", "etykieta", lp ? `TOP SET · ${lp.replace(/\.$/, "")}` : "TOP SET"));
+  const wiersz = el("div", "wiersz");
+  wiersz.append(el("span", "", ts.cwiczenie.nazwa));
+  wiersz.append(el("span", "ciezar", typeof ts.ciezar === "number"
+    ? `${liczba(ts.ciezar)} kg`
+    : ts.ciezar === "— brak 1RM" ? "dobierz" : String(ts.ciezar || "—")));
+  karta.append(wiersz);
+  karta.append(el("div", "drobne", `1 powtórzenie · RPE ${liczba(ts.rpe)}`));
+  if (ts.ciezar === "— brak 1RM") karta.append(el("div", "drobne", jakDobrac(1, ts.rpe)));
+  const klucz = `topset-${ts.positionId}`;
+  const pasuje = (k) => k.typ === "topset" && k.slotTopSetu === ts.positionId;
+  const tu = stan?.tu?.klucz === klucz;
+  karta.classList.toggle("biezace", tu);
+  if (tu || stan?.zrobione.has(klucz)) {
+    karta.append(przyciskStanu(tu ? "▶ Tu jesteś" : "✓ zrobione", tu, pasuje));
+  } else if (!d.ukonczony) {
+    const b = przyciskStanu("▶ Zacznij to ćwiczenie", false, pasuje);
+    b.classList.add("start");
+    karta.append(b);
+  }
+  return karta;
+}
+
 function kartaCwiczenia(c, stan = null) {
   const tuJestes = stan?.tu?.positionId === c.positionId;
   const karta = el("div",
@@ -1442,16 +1465,23 @@ const czasTekst = (sek) => {
  */
 function krokiDnia(d) {
   const kroki = [];
-  if (d.topSet?.cwiczenie) {
-    kroki.push({
-      typ: "topset",
-      klucz: "topset",
-      rpe: d.topSet.rpe,
-      nazwa: d.topSet.cwiczenie.nazwa,
-      ciezar: d.topSet.ciezar,
-      przerwa: d.topSet.przerwaSekundy ?? PRZERWA_GDY_BRAK,
-      koniecRundy: true,
-    });
+  const topy = topSetyDnia(d);
+  const krokTopSetu = (ts) => ({
+    typ: "topset",
+    klucz: `topset-${ts.positionId}`,
+    // Nie `positionId` — ten klucz znaczy „seria tego ćwiczenia" i mapa dnia
+    // liczyłaby TOP SET do jego serii.
+    slotTopSetu: ts.positionId,
+    lp: d.cwiczenia.find((c) => c.positionId === ts.positionId)?.lp ?? "",
+    rpe: ts.rpe,
+    nazwa: ts.cwiczenie.nazwa,
+    ciezar: ts.ciezar,
+    przerwa: ts.przerwaSekundy ?? PRZERWA_GDY_BRAK,
+    koniecRundy: true,
+  });
+  // TOP SET, którego ćwiczenia nie ma na liście, idzie na początek dnia.
+  for (const ts of topy) {
+    if (!d.cwiczenia.some((c) => c.positionId === ts.positionId)) kroki.push(krokTopSetu(ts));
   }
 
   const grupy = [];
@@ -1462,6 +1492,11 @@ function krokiDnia(d) {
   }
 
   for (const g of grupy) {
+    // TOP SET przed pracą swojego ćwiczenia, nie na początku dnia: A1 — TOP
+    // SET i robocze, B1 — TOP SET i robocze (trener, 27.09.2026).
+    for (const c of g.cwiczenia) {
+      for (const ts of topy.filter((x) => x.positionId === c.positionId)) kroki.push(krokTopSetu(ts));
+    }
     const rundy = Math.max(...g.cwiczenia.map((c) => c.serie || 1));
     for (let r = 1; r <= rundy; r++) {
       const wRundzie = g.cwiczenia.filter((c) => (c.serie || 1) >= r);
@@ -1646,16 +1681,23 @@ function mapaDnia(d, kroki, zrobione) {
   const mapa = el("div", "mapa-dnia");
   const tu = kroki[prowadzenie.krok];
   const pozycje = [
-    ...(kroki.some((k) => k.typ === "topset")
-      ? [{ etykieta: "TOP", nazwa: "TOP SET", grupa: "TOP", pasuje: (k) => k.typ === "topset" }]
-      : []),
-    ...d.cwiczenia.map((c) => ({
-      etykieta: (c.lp || "").replace(/\.$/, "") || "•",
-      nazwa: c.nazwa,
+    // TOP SET bez ćwiczenia na liście — osobno, na początku.
+    ...kroki.filter((k) => k.typ === "topset" && !d.cwiczenia.some((c) => c.positionId === k.slotTopSetu))
+      .map((k) => ({ etykieta: "TS", lp: "TOP", nazwa: `TOP SET · ${k.nazwa}`, grupa: "TOP",
+        pasuje: (x) => x.klucz === k.klucz })),
+    ...d.cwiczenia.flatMap((c) => {
+      const lp = (c.lp || "").replace(/\.$/, "") || "•";
       // Ćwiczenie bez numeru nie należy do żadnej superserii — stoi osobno.
-      grupa: c.grupa || `bez-${c.positionId}`,
-      pasuje: (k) => k.positionId === c.positionId,
-    })),
+      const grupa = c.grupa || `bez-${c.positionId}`;
+      return [
+        // TOP SET tego ćwiczenia — kafelek „TS" tuż przed nim, w jego grupie.
+        ...(kroki.some((k) => k.typ === "topset" && k.slotTopSetu === c.positionId)
+          ? [{ etykieta: "TS", lp: `TS-${lp}`, nazwa: `TOP SET · ${c.nazwa}`, grupa,
+            pasuje: (k) => k.typ === "topset" && k.slotTopSetu === c.positionId }]
+          : []),
+        { etykieta: lp, lp, nazwa: c.nazwa, grupa, pasuje: (k) => k.positionId === c.positionId },
+      ];
+    }),
   ];
   // Kafelki jednej litery stoją ciasno obok siebie, między literami jest
   // odstęp — B1 B2 to jedna superseria i ma to być widać na pierwszy rzut oka.
@@ -1673,7 +1715,7 @@ function mapaDnia(d, kroki, zrobione) {
     const stan = ile === jego.length ? "zrobione" : ile > 0 ? "zaczete" : "";
     const b = el("button", `kafel-mapy ${stan} ${tu && poz.pasuje(tu) ? "tu" : ""}`,
       `${ile === jego.length ? "✓ " : ""}${poz.etykieta}`);
-    b.dataset.lp = poz.etykieta;
+    b.dataset.lp = poz.lp;
     // Zaczęte — licznik zamiast koloru. Zielona ramka przy „2 z 3" wyglądała
     // na pierwszy rzut oka jak ćwiczenie skończone (zgłoszone z testów).
     if (stan === "zaczete") b.append(el("span", "licznik-mapy", ` ${ile}/${jego.length}`));
@@ -1732,7 +1774,7 @@ function gloweczka(lp, nazwa, film) {
 function panelTopSetu(k, kroki) {
   const karta = el("div", "panel-karta topset-panel");
   karta.append(el("div", "etykieta", "TOP SET"));
-  karta.append(gloweczka("", k.nazwa, null));
+  karta.append(gloweczka(k.lp || "", k.nazwa, null));
   const bezCiezaru = k.ciezar === "— brak 1RM";
   karta.append(kolumnyZadania({
     ciezar: k.ciezar, dobierz: bezCiezaru, powtorzenia: 1, rpe: k.rpe,

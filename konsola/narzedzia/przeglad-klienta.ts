@@ -761,10 +761,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // RPE wpisane wprost w T1: szablon w pierwszym tygodniu TOP SETU nie
   // przewiduje (tak jest w arkuszach), a wpisana liczba ma to przebijać.
   // Klient otwiera właśnie T1, więc ta kontrola sprawdza obie rzeczy naraz.
-  golyPlan.topSety = golyPlan.topSety.map((t: any) => t.dzien === 1
-    ? { ...t, wlaczony: true, rpeTygodni: { 1: 8 },
-        slotPositionId: golyPlan.sloty[1].positionId }
-    : t);
+  //
+  // Od 27.09.2026 TOP SETÓW w dniu może być kilka — tu dwa: przy boju w A1
+  // i przy wiosłowaniu w B1, każdy z RPE wpisanym na T1.
+  golyPlan.topSety = [
+    ...golyPlan.topSety.filter((t: any) => t.dzien !== 1),
+    { dzien: 1, wlaczony: true, rpeTygodni: { 1: 7 }, slotPositionId: golyPlan.sloty[0].positionId },
+    { dzien: 1, wlaczony: true, rpeTygodni: { 1: 8 }, slotPositionId: golyPlan.sloty[1].positionId },
+  ];
   // Żadnej progresji, żadnego wpisanego pola — dokładnie tak, jak wyszedł
   // plan Tomka.
   await api(`/api/plany/${idGolego}`, "PUT",
@@ -781,10 +785,17 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     schematy.length > 0 && schematy.every((t) => t.trim() !== "1"),
     `serie: ${schematy.join(" | ") || "brak ćwiczeń"}`);
 
-  const pasekTopSetu = await s.locator("#topset").innerText().catch(() => "");
+  const pasekTopSetu = await s.locator('#cwiczenia .topset[data-topset="D1-S02"]').innerText()
+    .catch(() => "");
   sprawdz("TOP SET postawiony przy akcesorium dochodzi na telefon",
     pasekTopSetu.includes("Barbell row") && /RPE\s*8/.test(pasekTopSetu),
     pasekTopSetu.replace(/\n/g, " ") || "pusto");
+  // Każdy TOP SET stoi tuż przed swoim ćwiczeniem, nie nad całym dniem.
+  const kolejnoscKart = await s.locator("#cwiczenia > .topset, #cwiczenia > .cwiczenie").evaluateAll(
+    (k: HTMLElement[]) => k.map((e) => (e.dataset.topset ? `TS ${e.dataset.topset}` : e.dataset.position)));
+  sprawdz("dwa TOP SETY, każdy przed swoim ćwiczeniem",
+    kolejnoscKart.slice(0, 4).join(" · ") === "TS D1-S01 · D1-S01 · TS D1-S02 · D1-S02",
+    kolejnoscKart.join(" · "));
 
   const golyWidok = await api(`/api/klient/${golySciezka.replace("/k/", "")}`);
   const golyBoj = golyWidok.tygodnie[0].dni[0].cwiczenia[0];
@@ -814,17 +825,16 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   /** Numer serii z kolumny SERIA: „1 z 6". */
   const seriaNaPanelu = async () => (await panel.locator(".kolumna-seria .wartosc").innerText()
     .catch(() => "")).replace(/\s+/g, " ").trim();
-  sprawdz("prowadzenie zaczyna od TOP SETU",
+  sprawdz("prowadzenie zaczyna od TOP SETU boju w A1",
     (await panel.innerText()).includes("TOP SET")
-    && (await panel.innerText()).includes("Barbell row"),
+    && (await panel.innerText()).includes("Barbell back squat"),
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
 
-  // TOP SET stoi przy akcesorium (coeff 0,75) — przerwa ma trwać 2 minuty,
-  // nie trzy. To jest ta liczba, którą silnik wylicza z `coeff`.
+  // TOP SET przy boju (coeff 1,0) — przerwa jak po boju: trzy minuty.
   await panel.getByRole("button", { name: "Zrobione" }).click();
   await s.waitForSelector("#licznik");
   sprawdz("po serii wchodzi przerwa z odliczaniem",
-    wZakresie(await s.locator("#licznik").innerText(), 110, 120),
+    wZakresie(await s.locator("#licznik").innerText(), 170, 180),
     await s.locator("#licznik").innerText());
 
   // „+30 s” ma przedłużać, a nie zaczynać od nowa.
@@ -934,15 +944,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("„Wróć do” prowadzi z powrotem do serii 3",
     await seriaNaPanelu() === "3 z 6", await seriaNaPanelu());
 
-  // Reszta boju głównego — po niej wchodzi superseria B1/B2.
+  // Reszta boju głównego — po niej TOP SET wiosłowania, potem superseria B1/B2.
   for (let i = 3; i <= 6; i++) {
     await panel.getByRole("button", { name: "Zakończ serię" }).click();
     await s.waitForTimeout(150);
     if (await s.locator("#licznik").count() > 0) {
       await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
     }
-    await s.waitForSelector("#panel .panel-pola");
+    if (i < 6) await s.waitForSelector("#panel .panel-pola");
   }
+  // Drugi TOP SET dnia stoi przed pracą B1 (27.09.2026), a przy akcesorium
+  // (coeff 0,75) odpoczywa się dwie minuty, nie trzy.
+  await s.waitForSelector("#panel .topset-panel");
+  sprawdz("przed B1 wchodzi jego TOP SET",
+    (await panel.innerText()).includes("TOP SET") && (await panel.innerText()).includes("Barbell row"),
+    (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
+  await panel.getByRole("button", { name: "Zrobione" }).click();
+  await s.waitForSelector("#licznik");
+  sprawdz("TOP SET przy akcesorium odpoczywa jak akcesorium — 2 minuty",
+    wZakresie(await s.locator("#licznik").innerText(), 110, 120),
+    await s.locator("#licznik").innerText());
+  await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForSelector("#panel .panel-pola");
   sprawdz("po boju głównym wchodzi superseria",
     (await panel.innerText()).includes("superseria B"),
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
@@ -954,12 +977,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && await kafel("B1").getAttribute("class").then((k) => k?.includes("tu")),
     (await panel.locator(".kafel-mapy").allInnerTexts()).join(" "));
 
-  // Kafelki jednej superserii razem, między literami odstęp: TOP | A1 | B1 B2.
+  // Kafelki jednej superserii razem, między literami odstęp; TOP SET („TS")
+  // stoi w grupie swojego ćwiczenia: TS A1 | TS B1 B2.
   const grupyMapy = await panel.locator(".grupa-mapy").evaluateAll((grupy) =>
     grupy.map((g) => [...g.querySelectorAll<HTMLElement>(".kafel-mapy")]
       .map((k) => k.dataset.lp).join(" ")));
   sprawdz("mapa grupuje kafelki po literze superserii",
-    JSON.stringify(grupyMapy) === JSON.stringify(["TOP", "A1", "B1 B2"]),
+    JSON.stringify(grupyMapy) === JSON.stringify(["TS-A1 A1", "TS-B1 B1 B2"]),
     grupyMapy.join(" | "));
 
   // Wyjście na listę w środku treningu — ma być widać, gdzie się jest.
@@ -1518,7 +1542,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const przysiadT6 = (await widokPoCyklu()).tygodnie[5].dni[0].cwiczenia[0];
   // O 2 niżej, ale nie poniżej 6 — tam zaczyna się tabela RPE.
   sprawdz("deload: bez TOP SETU, RPE o 1 niżej niż w T6",
-    await s.locator("#topset").isHidden()
+    await s.locator("#cwiczenia .topset").count() === 0
     && (await s.locator("#cwiczenia .cwiczenie").first().locator(".rpe-linia").innerText())
       === `RPE ${Math.max(6, przysiadT6.rpe - 1)}`.replace(".", ","),
     `${await s.locator("#cwiczenia .cwiczenie").first().locator(".rpe-linia").innerText()} · T6 RPE ${przysiadT6.rpe}`);

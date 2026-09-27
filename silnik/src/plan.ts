@@ -102,6 +102,13 @@ export type SlotPlanu = {
   bojSilowy?: boolean;
 };
 
+/**
+ * TOP SET przy jednym ćwiczeniu. Od 27.09.2026 w dniu może ich być kilka —
+ * trener w szablonie Rozbudowanym: „A1 bench press robię TOP SET i robocze,
+ * a następnie B1 low bar squat i tam też na początek TOP SET i robocze".
+ * Wpis rozpoznaje ćwiczenie po `slotPositionId`; `dzien` zostaje, bo stare
+ * plany miały jeden wpis na dzień i tak też wychodzą z importu arkusza.
+ */
 export type TopSet = {
   dzien: number;
   wlaczony: boolean;
@@ -181,6 +188,8 @@ export type SlotWyliczony = {
 
 export type TopSetWyliczony = {
   dzien: number;
+  /** Ćwiczenie, przed którym TOP SET stoi — w dniu może ich być kilka. */
+  positionId: string;
   cwiczenie: Cwiczenie | null;
   /** `null` = w tym tygodniu TOP SETU nie ma. W szablonie tak jest w T1. */
   rpe: number | null;
@@ -373,8 +382,13 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
 
     const bilans = bilansSlotow(sloty);
 
-    const topSety: TopSetWyliczony[] = (plan.topSety ?? [])
-      .filter((t) => t.wlaczony)
+    // Kolejność jak w tabeli dnia; dwa wpisy przy tym samym ćwiczeniu to jeden
+    // TOP SET (zostaje pierwszy).
+    const kolejnosc = new Map(plan.sloty.map((s, i) => [s.positionId, i]));
+    const wlaczone = (plan.topSety ?? []).filter((t) => t.wlaczony);
+    const topSety: TopSetWyliczony[] = wlaczone
+      .filter((t, i) => wlaczone.findIndex((x) => x.slotPositionId === t.slotPositionId) === i)
+      .sort((a, b) => (kolejnosc.get(a.slotPositionId) ?? 999) - (kolejnosc.get(b.slotPositionId) ?? 999))
       .map((t) => {
         const zrodlo = sloty.find((s) => s.positionId === t.slotPositionId);
         /*
@@ -407,6 +421,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         const cwiczenie = rpe === null ? null : (zrodlo?.cwiczenie ?? null);
         return {
           dzien: t.dzien,
+          positionId: t.slotPositionId,
           cwiczenie,
           rpe,
           ciezar: cwiczenie
@@ -517,10 +532,11 @@ function podsumujDni(
   const numeryDni = [...new Set(sloty.map((s) => s.dzien))].sort((a, b) => a - b);
   return numeryDni.map((dzien) => {
     const wDniu = sloty.filter((s) => s.dzien === dzien && s.cwiczenie);
-    const topSetDnia = topSety.find((t) => t.dzien === dzien && t.cwiczenie);
+    // Każdy TOP SET to jedna seria więcej — w dniu może ich być kilka.
+    const topSetyDnia = topSety.filter((t) => t.dzien === dzien && t.cwiczenie).length;
     return {
       dzien,
-      serie: wDniu.reduce((a, s) => a + s.serieEfektywne, 0) + (topSetDnia ? 1 : 0),
+      serie: wDniu.reduce((a, s) => a + s.serieEfektywne, 0) + topSetyDnia,
       powtorzenia: wDniu.reduce((a, s) => a + s.serieEfektywne * s.powtorzenia, 0),
       stresCalkowity: Math.round(wDniu.reduce((a, s) => a + s.stres.calkowity, 0) * 1e4) / 1e4,
     };

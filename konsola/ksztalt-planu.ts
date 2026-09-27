@@ -24,7 +24,7 @@ import { TRYBY_AKCESORIOW, CZESCI_PLANU } from "../silnik/src/typy.ts";
 /** Szkielet to 5 dni po 12 pozycji; zapas na wypadek zmiany układu. */
 const MAX_SLOTOW = 100;
 const MAX_SERII = 300;
-const MAX_TOPSETOW = 20;
+const MAX_TOPSETOW = 60;   // od 27.09.2026 TOP SET może stać przy każdym ćwiczeniu dnia
 
 const jestObiektem = (w: unknown): w is Record<string, unknown> =>
   typeof w === "object" && w !== null && !Array.isArray(w);
