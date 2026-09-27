@@ -19,7 +19,7 @@ import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
 import type { Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { czescBoju, progresjaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, czescBoju, progresjaSlotu } from "./szablon-boju.ts";
 
 export {
   PROGRESJA_BOJU, SERIE_AKCESORIUM, RPE_AKCESORIUM,
@@ -48,7 +48,17 @@ function wlasneTygodnia(p: ParametryTygodnia | undefined): ParametryTygodnia {
   };
 }
 
-export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny): Plan {
+export function zastosujProgresje(
+  plan: Plan,
+  katalog: Katalog = katalogDomyslny,
+  /**
+   * `tylkoBoje` — przepisuje wyłącznie boje główne. Po zmianie „Części planu"
+   * (27.09.2026): wpisane liczby boju zostałyby ze starej części, a akcesoriów
+   * zmiana nie dotyczy — ich serie i RPE są w każdej części te same, a ręczne
+   * poprawki trenera przy nich mają zostać.
+   */
+  opcje: { tylkoBoje?: boolean } = {},
+): Plan {
   return {
     ...plan,
     sloty: plan.sloty.map((slot): SlotPlanu => {
@@ -57,6 +67,7 @@ export function zastosujProgresje(plan: Plan, katalog: Katalog = katalogDomyslny
       // Szablon boju należy się ćwiczeniu złożonemu, nie miejscu w tabeli —
       // dlatego progresja musi wiedzieć, co w tym slocie stoi.
       const coeff = katalog.poId(slot.cwiczenieId)?.coeff;
+      if (opcje.tylkoBoje && !bojGlownySlotu(slot, coeff)) return { ...slot };
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
         tygodnie[t] = {
