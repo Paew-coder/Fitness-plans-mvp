@@ -71,6 +71,16 @@ export const PROGRESJA_BOJU: Record<CzescPlanu, readonly ParametryBoju[]> = {
     { serie: 4, powtorzenia: 13, rpe: 9 },    // T5
     { serie: 4, powtorzenia: 14, rpe: 9 },    // T6
   ],
+  // Hipertrofia cz. 2 — trener, 27.09.2026: zakres o dwa niżej, to samo RPE.
+  // Base44 miał tę kontynuację tylko z nazwy (bez liczb).
+  "hipertrofia 2": [
+    { serie: 4, powtorzenia: 10, rpe: 8 },    // T1
+    { serie: 4, powtorzenia: 11, rpe: 8 },    // T2
+    { serie: 4, powtorzenia: 12, rpe: 8 },    // T3
+    { serie: 4, powtorzenia: 10, rpe: 9 },    // T4 — początek drugiego bloku
+    { serie: 4, powtorzenia: 11, rpe: 9 },    // T5
+    { serie: 4, powtorzenia: 12, rpe: 9 },    // T6
+  ],
 };
 
 /** Akcesoria mają w szablonie zawsze trzy serie. */

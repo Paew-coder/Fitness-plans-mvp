@@ -998,7 +998,7 @@ describe("szablony z Base44 w konsoli", () => {
   test("lista: nazwa z ekranu Base44, rodzina, liczba dni i część planu", async () => {
     const { kod, dane } = await api("/api/szablony");
     assert.equal(kod, 200);
-    assert.equal(dane.length, 14);
+    assert.equal(dane.length, 12);
     const fbw3 = dane.find((s: any) => s.id === "fbw_3dni_6w");
     assert.deepEqual([fbw3.nazwa, fbw3.rodzina, fbw3.dni, fbw3.czesc],
       ["Klasyczny – 3 dni", "Klasyczny", 3, "objętość"]);

@@ -1173,6 +1173,16 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     poHipertrofii.zapisany.plan.czescPlanu === "hipertrofia"
     && bojT1.serie === 4 && bojT1.powtorzenia === 12 && bojT1.rpe === 8,
     `${poHipertrofii.zapisany.plan.czescPlanu} · ${bojT1.serie}×${bojT1.powtorzenia} @${bojT1.rpe}`);
+  // Hipertrofia cz. 2 (27.09.2026): kontynuacja tego samego szablonu,
+  // bój 4 × 10 na RPE 8.
+  await s.selectOption("#czesc-planu", "hipertrofia 2");
+  await s.waitForTimeout(1200);
+  const poHipertrofii2 = await api(`/api/plany/${PLAN_NIEGOTOWY}`);
+  const boj2 = poHipertrofii2.wynik.tygodnie[0].sloty[0];
+  sprawdz("„hipertrofia (cz.2)” daje bój 4 × 10 na RPE 8",
+    poHipertrofii2.zapisany.plan.czescPlanu === "hipertrofia 2"
+    && boj2.serie === 4 && boj2.powtorzenia === 10 && boj2.rpe === 8,
+    `${poHipertrofii2.zapisany.plan.czescPlanu} · ${boj2.serie}×${boj2.powtorzenia} @${boj2.rpe}`);
   await s.selectOption("#czesc-planu", "objętość");
   await s.waitForTimeout(900);
 
@@ -1187,11 +1197,12 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const grupySzablonow = await s.locator("#szablon-planu optgroup").evaluateAll((gs: any[]) =>
     gs.map((g) => g.label));
   const opcjeSzablonow = await s.locator("#szablon-planu option").allTextContents();
-  sprawdz("lista szablonów w rodzinach z Base44, bez „z ćwiczeniami”",
-    JSON.stringify(grupySzablonow) === JSON.stringify(["Klasyczny", "Rozbudowany", "Hipertroficzny",
-      "Kontynuacje (cz. 2)"])
+  // Kontynuacji „(cz. 2)” na liście nie ma (27.09.2026) — ustawia je
+  // przełącznik „Część planu”.
+  sprawdz("lista szablonów w rodzinach z Base44, bez „z ćwiczeniami” i bez kontynuacji",
+    JSON.stringify(grupySzablonow) === JSON.stringify(["Klasyczny", "Rozbudowany", "Hipertroficzny"])
     && opcjeSzablonow.includes("Klasyczny – 3 dni") && opcjeSzablonow.includes("Rozbudowany – 3 dni")
-    && !opcjeSzablonow.some((o) => o.includes("ćwiczeniami") || o.startsWith("FBW")),
+    && !opcjeSzablonow.some((o) => o.includes("ćwiczeniami") || o.startsWith("FBW") || o.includes("cz. 2")),
     `${grupySzablonow.join(" | ")} · ${opcjeSzablonow.slice(1, 4).join(" | ")}`);
   const pytanPrzedSzablonem = pytania.length;
   await s.selectOption("#szablon-planu", "fbw_3dni_6w");
@@ -1204,7 +1215,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     && dzien1.slice(0, 7).every((x: any) => x.kategoriaSzkieletu)
     && dzien1[4].kategoriaSzkieletu === "Tricep" && dzien1[5].kategoriaSzkieletu === "Core"
     && (await s.locator("#szablon-info").innerText()) ===
-      "wstawiono „Klasyczny – 3 dni\" · część: objętość · 21 pozycji czeka na ćwiczenie",
+      "wstawiono „Klasyczny – 3 dni\" · część: objętość (cz.1) · 21 pozycji czeka na ćwiczenie",
     `${await s.locator("#szablon-info").innerText()}`);
   // Cały szkielet dnia na ekranie: siedem pozycji z kategorią i jeden zapas.
   // Dotąd przy pustym dniu tabela pokazywała samo A1.

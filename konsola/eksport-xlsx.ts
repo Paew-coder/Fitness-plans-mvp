@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { katalog } from "../silnik/src/katalog.ts";
 import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE } from "../silnik/src/plan.ts";
 import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
+import { jestHipertrofia } from "../silnik/src/typy.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
   from "./blad-pythona.ts";
@@ -66,9 +67,9 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
    */
   const wynik = przeliczPlan(plan);
   // Arkusz 5.18 zna dwie części planu. Przy hipertrofii jego automat
-  // powtórzeń akcesoriów liczyłby 8/10 zamiast 12/14 — więc wpisujemy
-  // powtórzenia wprost, tak jak przy boju głównym.
-  const bezAutomatuArkusza = plan.czescPlanu === "hipertrofia";
+  // powtórzeń akcesoriów liczyłby 8/10 albo 6/8 zamiast zakresów
+  // hipertroficznych — więc wpisujemy powtórzenia wprost, tak jak przy boju.
+  const bezAutomatuArkusza = jestHipertrofia(plan.czescPlanu);
   const policzony = (positionId: string, tydzien: number) =>
     wynik.tygodnie[tydzien - 1]?.sloty.find((s) => s.positionId === positionId);
 
