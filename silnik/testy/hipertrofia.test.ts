@@ -1,11 +1,11 @@
 /**
- * Trzecia część planu: hipertrofia (25.09.2026, zaplanowana 21.09).
+ * Hipertrofia jako część planu — cz. 1 od 25.09.2026, cz. 2 od 27.09.2026.
  *
- * Trener: „możemy zrobić osobną progresję 12/14". Wzór to szablony
- * „Hipertroficzny 1–4 dni" z jego aplikacji w Base44: bój główny
- * 4 × 12 → 13 → 14 na RPE 8, w drugim bloku to samo na RPE 9, bez TOP SETU;
- * akcesoria na 12/14 — trzecia kolumna obok 8/10 (objętość) i 6/8
- * (intensywność).
+ * Cz. 1 z szablonów „Hipertroficzny 1–4 dni" z aplikacji trenera w Base44:
+ * bój główny 4 × 12 → 13 → 14 na RPE 8, w drugim bloku to samo na RPE 9,
+ * bez TOP SETU. Cz. 2 — trener, 27.09: bój 4 × 10 → 11 → 12, to samo RPE.
+ * Akcesoria (trener, 27.09): cz. 1 złożone 10–12, izolacje 12–14; cz. 2
+ * złożone 8–10, izolacje 10–12. Do 27.09 cz. 1 miała 12/14.
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { przeliczPlan, TYGODNIE, type Plan } from "../src/plan.ts";
 import { powtorzeniaBazowe } from "../src/powtorzenia.ts";
 
-function plan(): Plan {
+function plan(czescPlanu: Plan["czescPlanu"] = "hipertrofia"): Plan {
   const LP = ["A1.", "B1.", "B2.", "C1.", "C2.", "D1.", "D2.", "E1.", "E2.", "", "", ""];
   const sloty = [];
   for (let poz = 1; poz <= 12; poz++) {
@@ -24,7 +24,7 @@ function plan(): Plan {
     });
   }
   return {
-    nazwa: "hipertrofia", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "hipertrofia",
+    nazwa: "hipertrofia", trybAkcesoriow: "trzymaj z bloku", czescPlanu,
     serieMaksymalne: [
       { cwiczenieId: "EX-0010", ciezar: 120, powtorzenia: 1 },
       { cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 1 },
@@ -44,12 +44,12 @@ describe("hipertrofia", () => {
       [[4, 12, 8], [4, 13, 8], [4, 14, 8], [4, 12, 9], [4, 13, 9], [4, 14, 9]]);
   });
 
-  test("akcesoria: 12/14 — cięższe od 12, lżejsze od 14, nie ponad tabelę", () => {
-    assert.equal(powtorzeniaBazowe(0.75, "hipertrofia"), 12);
-    assert.equal(powtorzeniaBazowe(1, "hipertrofia"), 12);
-    assert.equal(powtorzeniaBazowe(0.25, "hipertrofia"), 14);
-    assert.deepEqual(TYGODNIE.map((t) => tydzien(t, 1).powtorzenia), [12, 13, 14, 12, 13, 14]);
-    assert.deepEqual(TYGODNIE.map((t) => tydzien(t, 2).powtorzenia), [14, 15, 15, 14, 15, 15]);
+  test("akcesoria cz. 1: złożone 10–12, izolacje 12–14", () => {
+    assert.equal(powtorzeniaBazowe(0.75, "hipertrofia"), 10);
+    assert.equal(powtorzeniaBazowe(1, "hipertrofia"), 10);
+    assert.equal(powtorzeniaBazowe(0.25, "hipertrofia"), 12);
+    assert.deepEqual(TYGODNIE.map((t) => tydzien(t, 1).powtorzenia), [10, 11, 12, 10, 11, 12]);
+    assert.deepEqual(TYGODNIE.map((t) => tydzien(t, 2).powtorzenia), [12, 13, 14, 12, 13, 14]);
   });
 
   test("bez TOP SETU, choć trener postawił go w dniu", () => {
@@ -59,6 +59,18 @@ describe("hipertrofia", () => {
   test("ciężar liczy się z tabeli jak w pozostałych częściach", () => {
     for (const t of TYGODNIE) assert.equal(typeof tydzien(t, 0).ciezar, "number", `T${t}`);
     assert.ok((tydzien(1, 0).ciezar as number) < (tydzien(1, 0).oneRM * 0.8));
+  });
+
+  test("cz. 2: bój 4 × 10 → 11 → 12 (RPE 8, potem 9), akcesoria 8–10 / 10–12, bez TOP SETU", () => {
+    const w2 = przeliczPlan(plan("hipertrofia 2"));
+    const t2 = (t: number, i: number) => w2.tygodnie[t - 1]!.sloty[i]!;
+    assert.deepEqual(TYGODNIE.map((t) => [t2(t, 0).serie, t2(t, 0).powtorzenia, t2(t, 0).rpe]),
+      [[4, 10, 8], [4, 11, 8], [4, 12, 8], [4, 10, 9], [4, 11, 9], [4, 12, 9]]);
+    assert.equal(powtorzeniaBazowe(0.75, "hipertrofia 2"), 8);
+    assert.equal(powtorzeniaBazowe(0.25, "hipertrofia 2"), 10);
+    assert.deepEqual(TYGODNIE.map((t) => t2(t, 1).powtorzenia), [8, 9, 10, 8, 9, 10]);
+    assert.deepEqual(TYGODNIE.map((t) => t2(t, 2).powtorzenia), [10, 11, 12, 10, 11, 12]);
+    for (const t of w2.tygodnie) assert.equal(t.topSety[0]?.cwiczenie ?? null, null, `T${t.tydzien}`);
   });
 
   test("wpisane RPE TOP SETU dalej wygrywa z szablonem", () => {

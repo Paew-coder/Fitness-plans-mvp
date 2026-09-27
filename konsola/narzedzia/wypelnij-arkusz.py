@@ -38,6 +38,7 @@ CZESC_ARKUSZA = {
     # Arkusz nie zna hipertrofii. Serie, RPE i powtorzenia (takze akcesoriow)
     # przychodza wtedy wpisane wprost, wiec przelacznik niczego nie liczy.
     "hipertrofia": "część 1 (objętość)",
+    "hipertrofia 2": "część 1 (objętość)",
 }
 
 

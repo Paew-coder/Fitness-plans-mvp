@@ -576,6 +576,15 @@ Trener po pierwszym użyciu: „nazwy się nie zgadzają, są jakieś wersje »z
 
 Układ czternastu szablonów (pozycje, kategorie, TOP SET) jest identyczny jak przed zmianą — sprawdzone porównaniem starego i nowego pliku.
 
+**31. Kontynuacja to część planu, nie osobny szablon; hipertrofia cz. 2 — 27.09.2026.**
+
+Trener: „skoro mamy przełącznik na intensywność, co jest 2 częścią planu, to usuńmy z szablonów te wersje (cz. 2), bo to jest mylące — tylko upewnijmy się, że wszystkie szablony mają swój odpowiednik jako cz. 2".
+
+* **Lista szablonów** ma 12 pozycji: Klasyczny, Rozbudowany i Hipertroficzny po 1–4 dni. Dwie kontynuacje „(cz. 2)” zniknęły — w Base44 miały ten sam układ co część 1, a u nas drugą część ustawia *Część planu*.
+* **Hipertrofia cz. 2** — czwarta wartość `CzescPlanu` („hipertrofia 2”). Każdy szablon ma teraz drugą część: siłowe → *intensywność (cz.2)*, hipertroficzne → *hipertrofia (cz.2)*; test liczy każdy szablon w obu częściach.
+* **Liczby hipertrofii** (trener, 27.09): cz. 1 — bój 4 × 12 → 13 → 14, akcesoria złożone 10–12, izolacje 12–14 (do 27.09 było 12/14, czyli 12–14 i 14–15); cz. 2 — bój 4 × 10 → 11 → 12, akcesoria 8–10 i 10–12. RPE jak dotąd: 8 w pierwszym bloku, 9 w drugim; bez TOP SETU. Plany zapisane jako „hipertrofia” liczą się od razu nowymi zakresami.
+* Eksport do arkusza wpisuje przy obu częściach hipertrofii powtórzenia wprost — arkusz 5.18 zna tylko dwie części siłowe.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

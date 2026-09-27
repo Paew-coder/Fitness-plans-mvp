@@ -91,6 +91,7 @@ export const PROGRESJA_TOP_SETU: Record<CzescPlanu, readonly (number | null)[]> 
   // Hipertrofia TOP SETU nie ma wcale — tak jest we wszystkich czterech
   // szablonach „Hipertroficzny". Wpisane ręcznie RPE dalej wygrywa.
   "hipertrofia":  [null, null, null, null, null, null],
+  "hipertrofia 2": [null, null, null, null, null, null],
 };
 
 /** RPE TOP SETU z szablonu na ten tydzień; `null` = w tym tygodniu go nie ma. */

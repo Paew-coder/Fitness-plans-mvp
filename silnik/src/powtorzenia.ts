@@ -16,10 +16,12 @@ export function offsetTygodnia(tydzien: Tydzien): 0 | 1 | 2 {
  * powtórzenia i RPE ustawia trener wprost.
  */
 export function powtorzeniaBazowe(coeff: Coeff, czesc: CzescPlanu): number {
-  // Hipertrofia to trzecia kolumna obok 8/10 i 6/8: 12/14. Ćwiczenie złożone
-  // też idzie tu na 12 — w szablonach „Hipertroficzny" wyciskanie i przysiad
-  // stoją na 12–14, a nie na 6.
-  if (czesc === "hipertrofia") return coeff >= 0.75 ? 12 : 14;
+  // Hipertrofia — trener, 27.09.2026: cz. 1 złożone 10–12, izolacje 12–14;
+  // cz. 2 złożone 8–10, izolacje 10–12. Ćwiczenie złożone idzie tu razem
+  // z pomocniczymi (≥ 0,75), nie na 6 jak w części siłowej. Do 27.09
+  // hipertrofia miała jedną część: 12/14.
+  if (czesc === "hipertrofia") return coeff >= 0.75 ? 10 : 12;
+  if (czesc === "hipertrofia 2") return coeff >= 0.75 ? 8 : 10;
   if (coeff >= 1) return 6;
   if (coeff >= 0.75) return czesc === "objętość" ? 8 : 6;
   return czesc === "objętość" ? 10 : 8;

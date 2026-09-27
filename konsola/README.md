@@ -18,9 +18,9 @@ kategorią szkieletu. Serie, powtórzenia i RPE ustawiasz osobno dla każdego
 z sześciu tygodni.
 
 **Szablony z Base44** — lista *Szablon z Base44* przy planie wstawia jeden
-z 14 Twoich szablonów: dni, numerację, kategorie pozycji i TOP SET, a przy
-czterech także ćwiczenia z Twoich zapisanych planów. Liczby dalej liczy
-*Część planu*.
+z 12 Twoich szablonów (Klasyczny, Rozbudowany, Hipertroficzny – 1…4 dni):
+dni, numerację, kategorie pozycji i TOP SET. Ćwiczenia wybierasz sam. Liczby
+liczy *Część planu*; kontynuacja „(cz. 2)” to ten sam szablon z drugą częścią.
 
 **Rozgrzewka dnia** — *+ rozgrzewka* przy dniu: tekst wiersz po wierszu i link
 do filmu. Ta sama w każdym tygodniu; klient widzi ją na początku dnia.
@@ -29,8 +29,13 @@ do filmu. Ta sama w każdym tygodniu; klient widzi ją na początku dnia.
 bój (progresja bloku, ciężar z RPE co tydzień). Kliknięcie zmienia rolę w obie
 strony, np. front squat na B1 jako bój, przysiad na A1 jako akcesorium.
 
-**Trzy części planu** — *objętość (cz.1)*, *intensywność (cz.2)* i *hipertrofia
-(12/14)*: bój 4 × 12–14 bez TOP SETU, akcesoria od 12 albo 14 powtórzeń.
+**Cztery części planu** — siłowe *objętość (cz.1)* i *intensywność (cz.2)*
+oraz *hipertrofia (cz.1)* i *hipertrofia (cz.2)*, obie bez TOP SETU:
+
+| | bój główny | akcesoria złożone (coeff ≥ 0,75) | izolacje |
+|---|---|---|---|
+| hipertrofia cz.1 | 4 × 12 → 13 → 14, RPE 8, potem 9 | 10–12 | 12–14 |
+| hipertrofia cz.2 | 4 × 10 → 11 → 12, RPE 8, potem 9 | 8–10 | 10–12 |
 
 **Po cyklu: deload i maksy** — przełączniki *+ deload* i *+ maksy* dokładają
 tydzień 7 (serie i powtórzenia z T6, RPE o 1 niżej, bez TOP SETU) i tydzień 8
