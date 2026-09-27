@@ -2484,7 +2484,11 @@ $("#ai-analiza").onclick = async () => {
  */
 async function wypelnijTygodnie(tryb, positionId) {
   const opis = tryb === "progresja"
-    ? "Progresja z szablonu 5.18 nadpisze serie, powtórzenia i RPE we wszystkich sześciu tygodniach."
+    // Nazwa przycisku bez „5.18" (trener, 27.09.2026: „tak się nazywał mój
+    // ostatni arkusz, ale dziwnie to tam wygląda"). Liczby i tak bierze
+    // z „Części planu", więc pytanie mówi, z której.
+    ? `Progresja „${CZESC_NA_EKRANIE[obraz.zapisany.plan.czescPlanu] ?? obraz.zapisany.plan.czescPlanu}” `
+      + "nadpisze serie, powtórzenia i RPE we wszystkich sześciu tygodniach."
     : `Parametry tego ćwiczenia z tygodnia ${tydzien} nadpiszą pozostałe pięć tygodni.`;
   if (!confirm(`${opis}\n\nOceny klienta i ręcznie ustawione ciężary zostają. Na pewno?`)) return;
 
