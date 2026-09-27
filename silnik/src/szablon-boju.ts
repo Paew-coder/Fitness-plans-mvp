@@ -20,6 +20,7 @@
  */
 import type { ParametryTygodnia } from "./plan.ts";
 import type { Coeff, CzescPlanu, Tydzien } from "./typy.ts";
+import { jestHipertrofia } from "./typy.ts";
 
 export type ParametryBoju = { serie: number; powtorzenia: number; rpe: number };
 
@@ -144,6 +145,21 @@ export function bojGlownySlotu(
   slot: { lp: string; bojGlowny?: boolean }, coeff?: Coeff,
 ): boolean {
   return slot.bojGlowny ?? jestBojemGlownym(slot.lp, coeff);
+}
+
+/**
+ * Część planu, według której liczy się bój w tym slocie.
+ *
+ * Trener, 27.09.2026: w planie hipertroficznym chce móc zrobić „standardowo
+ * ćwiczenie główne razem z TOP SETEM". Bój oznaczony jako siłowy (przycisk
+ * „S", `SlotPlanu.bojSilowy`) liczy się wtedy jak w części siłowej tego
+ * samego etapu — hipertrofia cz. 1 → objętość, cz. 2 → intensywność — razem
+ * z RPE TOP SETU. Akcesoria zostają hipertroficzne. Poza hipertrofią
+ * znacznik nic nie zmienia.
+ */
+export function czescBoju(czesc: CzescPlanu, bojSilowy?: boolean): CzescPlanu {
+  if (!bojSilowy || !jestHipertrofia(czesc)) return czesc;
+  return czesc === "hipertrofia" ? "objętość" : "intensywność";
 }
 
 /**
