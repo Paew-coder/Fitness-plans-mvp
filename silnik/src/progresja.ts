@@ -40,11 +40,12 @@ export {
  * i kopiowanie tygodni tego nie ruszają — do 26.09 gubiły wybór klienta.
  */
 function wlasneTygodnia(p: ParametryTygodnia | undefined): ParametryTygodnia {
-  const { feedback, ciezarOverride, ciezarKlienta } = p ?? {};
+  const { feedback, ciezarOverride, ciezarKlienta, topSetKlienta } = p ?? {};
   return {
     ...(feedback !== undefined ? { feedback } : {}),
     ...(ciezarOverride !== undefined ? { ciezarOverride } : {}),
     ...(ciezarKlienta !== undefined ? { ciezarKlienta } : {}),
+    ...(topSetKlienta !== undefined ? { topSetKlienta } : {}),
   };
 }
 
@@ -101,7 +102,8 @@ export function skopiujTydzien(plan: Plan, zrodlo: Tydzien, positionId?: string)
       if (positionId !== undefined && slot.positionId !== positionId) return { ...slot };
 
       const wzorzec = slot.tygodnie?.[zrodlo] ?? {};
-      const { feedback: _f, ciezarOverride: _c, ciezarKlienta: _k, ...doSkopiowania } = wzorzec;
+      const { feedback: _f, ciezarOverride: _c, ciezarKlienta: _k, topSetKlienta: _t,
+        ...doSkopiowania } = wzorzec;
 
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {

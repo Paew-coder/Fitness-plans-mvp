@@ -80,6 +80,13 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
           || typeof k.cwiczenieId !== "string")) {
         return `${gdzie}, tydzień ${tydzien}: ciężar wybrany przez klienta jest uszkodzony`;
       }
+      // TOP SET z telefonu — ocena i ciężar, które czyta konsola.
+      const ts = parametry.topSetKlienta;
+      if (ts != null && (!jestObiektem(ts)
+          || (ts.feedback != null && ts.feedback !== "za trudne" && ts.feedback !== "za łatwe")
+          || (ts.kg != null && (!jestLiczba(ts.kg) || ts.kg <= 0)))) {
+        return `${gdzie}, tydzień ${tydzien}: TOP SET klienta jest uszkodzony`;
+      }
     }
   }
 

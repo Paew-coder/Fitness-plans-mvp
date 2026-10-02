@@ -86,4 +86,15 @@ describe("progresja i kopiowanie nie gubią wyboru klienta", () => {
     assert.equal(poKopii[2]!.ciezarKlienta, undefined, "wybór z T1 nie jest wyborem z T2");
     assert.equal(poKopii[3]!.ciezarKlienta?.kg, 62.5);
   });
+
+  test("TOP SET zapisany przez klienta zostaje w swoim tygodniu (02.10.2026)", () => {
+    const p = plan((x) => {
+      x.sloty[1]!.tygodnie = { 2: { serie: 4, topSetKlienta: { feedback: "za trudne", kg: 110 } } };
+    });
+    assert.deepEqual(zastosujProgresje(p).sloty[1]!.tygodnie![2]!.topSetKlienta,
+      { feedback: "za trudne", kg: 110 });
+    const poKopii = skopiujTydzien(p, 2, "D1-S02").sloty[1]!.tygodnie!;
+    assert.equal(poKopii[3]!.topSetKlienta, undefined, "TOP SET z T2 nie jest TOP SETEM z T3");
+    assert.deepEqual(poKopii[2]!.topSetKlienta, { feedback: "za trudne", kg: 110 });
+  });
 });
