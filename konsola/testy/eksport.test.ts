@@ -39,6 +39,18 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("mały ciężar przesunięty po ocenie (5 → 4 kg) idzie do arkusza wprost (02.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.serieMaksymalne = zapisany.plan.serieMaksymalne
+      .map((s) => (s.cwiczenieId === "EX-0016" ? { ...s, ciezar: 8 } : s));
+    zapisany.plan.sloty[1]!.tygodnie = { 1: { feedback: "za trudne" } };
+    const wynik = przeliczPlan(zapisany.plan);
+    const t2 = wynik.tygodnie[1]!.sloty[1]!;
+    assert.equal(t2.zmianaPoOcenie, true, `T2: ${t2.ciezar}`);
+    assert.equal(pole(daneDoArkusza(zapisany), "D1-S02", 2).ciezar_reczny, t2.ciezar,
+      "arkusz zaokrągliłby z powrotem — dostaje liczbę");
+  });
+
   test("pauzowane wyciskanie idzie z powtórzeniami z jego progresji (02.10.2026)", () => {
     const zapisany = planDomyslny();
     zapisany.plan.sloty[1]!.cwiczenieId = "EX-0022";   // B1. Bench press paused 3sec

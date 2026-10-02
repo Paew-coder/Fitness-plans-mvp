@@ -193,6 +193,8 @@ export type SlotWyliczony = {
   stres: Stres;
   /** Liczone progresją pauzowaną (`PROGRESJA_PAUZY`) — konsola to pokazuje. */
   pauza?: RodzajPauzy;
+  /** Mały ciężar przesunięty po ocenie o krok, którego arkusz nie robi (`widocznaZmiana`). */
+  zmianaPoOcenie?: true;
 };
 
 export type TopSetWyliczony = {
@@ -350,7 +352,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     const przeniesiony = cwiczenie.progresja === "ręczne ustawienie"
       ? ciezarRecznyZWczesniej(slot, tydzien, cwiczenie.id, p) : undefined;
 
-    const policzony = obliczCiezar({
+    const kontekst = {
       tydzien: tydzien as Tydzien,
       jestBojemGlownym: bojGlowny || pauza !== null,
       trybAkcesoriow: slot.trybCiezaru ?? plan.trybAkcesoriow,
@@ -364,7 +366,12 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       oneRMReczny: p.oneRMReczny ?? p6.oneRMReczny,
       ciezarBazowy: slotBazowy?.ciezar,
       mnoznikBazowy: slotBazowy?.mnoznik,
-    });
+    };
+    const policzony = obliczCiezar(kontekst);
+    // Ocena przesunęła mały ciężar o krok, którego arkusz by nie zrobił —
+    // eksport wpisze wtedy ciężar wprost (patrz `widocznaZmiana`).
+    const zmianaPoOcenie = typeof policzony === "number"
+      && policzony !== obliczCiezar({ ...kontekst, bezWidocznejZmiany: true });
 
     return {
       positionId: slot.positionId,
@@ -384,6 +391,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         ? { ciezarZrodlo: { tydzien: przeniesiony.tydzien, kto: przeniesiony.kto } } : {}),
       stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
       ...(pauza ? { pauza } : {}),
+      ...(zmianaPoOcenie && p.ciezarOverride === undefined && !przeniesiony ? { zmianaPoOcenie: true } : {}),
     };
   };
 

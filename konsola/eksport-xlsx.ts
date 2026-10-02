@@ -125,10 +125,11 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Przy „ręcznym ustawieniu" także ciężar przeniesiony z wcześniejszego
         // tygodnia albo wybrany przez klienta — plik ma pokazać to, co konsola.
         // Pauzowane (02.10.2026): arkusz liczyłby im ciężar jak akcesorium
-        // (trzymany z bloku), konsola — z RPE co tydzień. Liczba wprost.
+        // (trzymany z bloku), konsola — z RPE co tydzień. Mały ciężar po
+        // ocenie (5 → 4 kg) arkusz zaokrągliłby z powrotem. Liczba wprost.
         ciezar_reczny: p.ciezarOverride
-          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza) && typeof obliczony.ciezar === "number"
-            ? obliczony.ciezar : null),
+          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie)
+            && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
         // klienta pokazywałby ćwiczenie i ciężar sprzed podmiany.
