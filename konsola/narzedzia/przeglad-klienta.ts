@@ -162,7 +162,10 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     `ciężar ${await rozmiar(".kolumna-ciezar")} · powt. ${await rozmiar(".kolumna-powt")}`);
 
   // ── 4. ocena serii ────────────────────────────────────────────────
+  // W T1–T2 „za łatwe” najpierw pokazuje okienko (02.10.2026) — tu klient
+  // je potwierdza; samo okienko sprawdza sekcja 28.
   await karty.first().getByRole("button", { name: "Za łatwe" }).click();
+  await s.locator(".okienko").getByRole("button", { name: "Oznacz „za łatwe”" }).click();
   await s.waitForTimeout(600);
   sprawdz("ocena zapisuje się", cwiczenie(await widok(), 1).feedback === "za łatwe",
     String(cwiczenie(await widok(), 1).feedback));
@@ -640,6 +643,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   await s.locator("#cwiczenia .cwiczenie").first()
     .getByRole("button", { name: "Za łatwe" }).click();
+  await s.locator(".okienko").getByRole("button", { name: "Oznacz „za łatwe”" }).click();
   await s.waitForTimeout(400);
 
   await api(`/api/plany/${planTeraz}`, "PUT", {
@@ -1863,11 +1867,41 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && await wierszeListy.nth(3).locator("input").nth(0).inputValue() === "67.5",
     `${JSON.stringify((await serieNaSerwerze())[2])} · dalej: ${await wierszeListy.nth(3).locator("input").nth(0).inputValue()}`);
 
+  // Trener, 02.10.2026: ocena „za łatwe” po trzech seriach z sześciu poprawia
+  // też dalsze serie tego dnia, nie tylko kolejne tygodnie. W T1–T2 najpierw
+  // okienko, że plan dopiero się rozkręca — z wyborem, nie zakazem.
+  const ocenaListy = async () => (await api(`/api/klient/${sciezkaListy.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[0].feedback;
+  await kartaListy.locator(".oceny .ocena-przycisk", { hasText: "Za łatwe" }).click();
+  const okno = s.locator(".okienko");
+  await okno.waitFor({ timeout: 3000 }).catch(() => {});
+  const tekstOkna = await okno.innerText().catch(() => "");
+  sprawdz("„za łatwe” w T1 najpierw pokazuje okienko, że plan dopiero się rozkręca",
+    tekstOkna.includes("Plan dopiero się rozkręca") && tekstOkna.includes("RPE")
+      && tekstOkna.includes("Oznacz „za łatwe”") && tekstOkna.includes("Zostaw bez zmiany"),
+    tekstOkna.replace(/\n+/g, " | ").slice(0, 160) || "brak okienka");
+  await okno.getByRole("button", { name: "Zostaw bez zmiany" }).click();
+  await s.waitForTimeout(600);
+  sprawdz("„Zostaw bez zmiany” niczego nie zapisuje",
+    await okno.count() === 0 && !(await ocenaListy())
+      && await wierszeListy.nth(3).locator("input").nth(0).inputValue() === "67.5",
+    `ocena: ${await ocenaListy()} · propozycja: ${await wierszeListy.nth(3).locator("input").nth(0).inputValue()}`);
+  await kartaListy.locator(".oceny .ocena-przycisk", { hasText: "Za łatwe" }).click();
+  await okno.getByRole("button", { name: "Oznacz „za łatwe”" }).click();
+  await s.waitForTimeout(900);
+  const opisKorekty = await kartaListy.locator(".opis-propozycji").innerText();
+  sprawdz("po „za łatwe” dalsze serie dnia proponują się 5% ciężej",
+    await ocenaListy() === "za łatwe"
+      && await wierszeListy.nth(3).locator("input").nth(0).inputValue() === "70"
+      && await wierszeListy.nth(5).locator("input").nth(0).inputValue() === "70"
+      && opisKorekty.includes("ciężej o 5%"),
+    `ocena: ${await ocenaListy()} · seria 4: ${await wierszeListy.nth(3).locator("input").nth(0).inputValue()} · ${opisKorekty}`);
+
   await kartaListy.getByRole("button", { name: /Pozostałe serie tak samo/ }).click();
   await s.waitForTimeout(900);
   const poWszystkich = await serieNaSerwerze();
   sprawdz("„Pozostałe serie tak samo” zapisuje resztę jednym dotknięciem",
-    poWszystkich.length === 6 && poWszystkich[5].ciezar === 67.5 && poWszystkich[5].powtorzenia === 6
+    poWszystkich.length === 6 && poWszystkich[5].ciezar === 70 && poWszystkich[5].powtorzenia === 6
     && await kartaListy.locator(".wiersz-serii.proponowana").count() === 0,
     JSON.stringify(poWszystkich));
 
