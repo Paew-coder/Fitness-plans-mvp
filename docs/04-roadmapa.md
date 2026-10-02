@@ -677,6 +677,17 @@ Trener: „czy możemy dodać funkcję, że w konsoli po wybraniu szablonu albo 
 * `silnik/src/dobor-cwiczen.ts` (`dobierzCwiczenia`, `kandydaci`), `POST /api/plany/:id/dobierz` (zwraca obraz planu i `dobor`: ile wstawiono, gdzie nie było kandydata, ile pozycji z historią zostało), konsola: pole „Dobierz ćwiczenia” z przyciskami *do pustych* / *wszystko od nowa* i podsumowaniem.
 * Testy silnika (12 szablonów × 20 losowań: pozycje wypełnione z własnej kategorii, bez powtórek w dniu, bez „DO WERYFIKACJI”; reguła A/B/C–E; akcesoria bez powtórek; „od nowa” omija historię; najbliższy coeff), API (do pustych, drugi raz nic, od nowa omija pozycję z oceną klienta), przegląd konsoli (20 pozycji z ich kategorii, A1 trenera zostaje, „od nowa” pyta).
 
+**43. Progresja ćwiczeń pauzowanych; jaśniejsze zdanie pod rampą — 02.10.2026.**
+
+Trener (zrzut panelu B1 Bench press paused 3sec liczony 3×8 @8 jak akcesorium i zrzut swojej periodyzacji: Blok I/II po 5 tygodni + deload, max out w 13.): „ćwiczenia paused bench press i paused squat mają w tej periodyzacji swoją własną progresję — możemy ją zaimplementować?” oraz „»tych serii nie wpisujesz« popraw, żeby było jaśniej, że chodzi o te rozgrzewkowe”.
+
+* **Decyzje trenera:** cz.1 = Blok I, cz.2 = Blok II; T1–T5 jak w arkuszu, T6 jak T5 (deload T7 wychodzi z T6); pauzowany przysiad w cz.1 jak RAW squat z Bloku I; dodać „Barbell low bar squat paused 3sec” do BAZY (EX-0205: Lower push, 1,0, skok 2,5, kg, bez filmu); zawsze, na każdej pozycji; „G” robi zwykły bój.
+* **Silnik:** `PAUZOWANE` (EX-0022, EX-0205), `PROGRESJA_PAUZY`, `pauzaSlotu`, `parametrySzablonu` (jedno źródło dla planu i „wpisz progresję”); ciężar liczony jak bój (z RPE co tydzień); slot niesie `pauza`. „wpisz progresję” i przepisanie po zmianie części obejmują pauzowane. Ciężary z silnika zgadzają się z arkuszem trenera (85 · 87,5 · 90 · 92,5 kg przy 1RM 102).
+* **Konsola:** znacznik „P” przy Lp., „G” przy pauzowanym przełącza progresja pauzowana ↔ zwykły bój, „R” ukryte (ciężar i tak z RPE). `/api/cwiczenia` niesie `pauza`. **Eksport:** pauzowane jadą do arkusza z powtórzeniami i ciężarem wpisanymi wprost.
+* **Rampa:** „Tych serii nie wpisujesz” → „Serii rozgrzewkowych nie wpisujesz — wpisujesz dopiero serie robocze” (przed TOP SETEM: „— zapis zaczyna się od TOP SETU”), osobną linijką.
+* Plany z liczbami wpisanymi wcześniej „wpisz progresję” trzymają stare liczby akcesorium, dopóki trener nie kliknie „wpisz progresję” jeszcze raz.
+* Testy silnika (`pauzowane.test.ts`: obie części, oba ćwiczenia, A1/C1, „G”, hipertrofia i „S”, deload, wpisanie i przepisanie progresji), eksportu, liczników BAZY (166, bez filmu 28); przegląd konsoli („P” i 5×3 @7,5 na A1, „G” → 6×6 i z powrotem), przegląd klienta (nowe zdanie pod rampą).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

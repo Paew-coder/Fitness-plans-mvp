@@ -1120,7 +1120,8 @@ $("#tryb-akcesoriow").onchange = (e) => {
  * zmiana by ich nie ruszyła.
  */
 function bojeZWpisanymiLiczbami() {
-  return obraz.zapisany.plan.sloty.some((s) => s.cwiczenieId && bojGlowny(s)
+  // Pauzowane też — ich progresja zależy od części planu tak jak bój.
+  return obraz.zapisany.plan.sloty.some((s) => s.cwiczenieId && (bojGlowny(s) || liczonyPauza(s))
     && [1, 2, 3, 4, 5, 6].some((t) => {
       const p = s.tygodnie?.[t];
       return p && (p.serie != null || p.powtorzenia != null || p.rpe != null);
@@ -1137,8 +1138,8 @@ $("#czesc-planu").onchange = (e) => {
    * same z coeff.
    */
   if (bojeZWpisanymiLiczbami() && confirm(
-    "Bój główny ma wpisane liczby (z „wpisz progresję” albo ręcznie) i nowa część planu ich nie zmieni.\n\n"
-    + `Przepisać serie, powtórzenia i RPE boju głównego progresją „${CZESC_NA_EKRANIE[e.target.value] ?? e.target.value}” `
+    "Bój główny (albo ćwiczenie pauzowane) ma wpisane liczby (z „wpisz progresję” albo ręcznie) i nowa część planu ich nie zmieni.\n\n"
+    + `Przepisać serie, powtórzenia i RPE boju i pauzowanych progresją „${CZESC_NA_EKRANIE[e.target.value] ?? e.target.value}” `
     + "we wszystkich sześciu tygodniach?\n\nOK — przepisz. Anuluj — zostaw wpisane.")) {
     poZapisie = async () => {
       try {
@@ -1510,6 +1511,32 @@ function bojGlownyZReguly(slot) {
 }
 
 /**
+ * Pauzowane wyciskanie i przysiad — własna progresja z periodyzacji trenera
+ * (02.10.2026), na każdej pozycji. Ta sama reguła co w silniku (`pauzaSlotu`):
+ * nie, gdy trener ustawił „G”, i nie w hipertrofii bez „S”.
+ */
+const pauzowane = (slot) => Boolean(cwiczenia.find((x) => x.id === slot.cwiczenieId)?.pauza);
+function liczonyPauza(slot) {
+  if (!pauzowane(slot) || slot.bojGlowny !== undefined) return false;
+  return !planHipertroficzny() || Boolean(slot.bojSilowy);
+}
+
+/**
+ * „G” przy pauzowanym: zwykły bój ↔ progresja pauzowana. Bez trzeciego stanu
+ * („akcesorium”) — trener wybrał, że pauzowane liczy się swoją progresją
+ * zawsze, a „G” ma tylko robić z niego zwykły bój.
+ */
+function przelaczBojPauzy(slot) {
+  if (slot.bojGlowny === true) delete slot.bojGlowny;
+  else slot.bojGlowny = true;
+  for (const p of Object.values(slot.tygodnie ?? {})) {
+    delete p.serie; delete p.powtorzenia; delete p.rpe;
+  }
+  zapiszPozniej();
+  rysujDni();
+}
+
+/**
  * „G" — bój główny z decyzji trenera, w obie strony (26.09.2026: front squat
  * na B1 u Marka X miał liczyć się jak bój). Zmiana roli czyści serie,
  * powtórzenia i RPE tego ćwiczenia, żeby weszła progresja właściwa nowej
@@ -1670,7 +1697,14 @@ function rysujSlot(slot, pusty) {
      *
      * Bój główny i tak zawsze liczy z RPE, więc przy nim tego nie pokazujemy.
      */
-    if (!poCyklu) {
+    if (!poCyklu && pauzowane(slot) && !planHipertroficzny()) {
+      const g = el("button", `mikro ${slot.bojGlowny === true ? "wlaczony" : ""}`, "G");
+      g.title = slot.bojGlowny === true
+        ? "Liczone jak zwykły bój główny — kliknij, żeby wrócić do progresji pauzowanej"
+        : "Pauzowane: własna progresja (cz.1 Blok I, cz.2 Blok II). Kliknij, żeby liczyć jak zwykły bój";
+      g.onclick = () => przelaczBojPauzy(slot);
+      strzalki.append(g);
+    } else if (!poCyklu) {
       const g = el("button", `mikro ${bojGlowny(slot) ? "wlaczony" : ""}`, "G");
       g.title = bojGlowny(slot)
         ? "Liczone jak bój główny — kliknij, żeby liczyć jak akcesorium"
@@ -1686,7 +1720,8 @@ function rysujSlot(slot, pusty) {
       silowy.onclick = () => przelaczBojSilowy(slot);
       strzalki.append(silowy);
     }
-    if (!bojGlowny(slot) && !poCyklu) {
+    // Pauzowane i tak liczy ciężar z RPE co tydzień, jak bój.
+    if (!bojGlowny(slot) && !liczonyPauza(slot) && !poCyklu) {
       const przelaczTryb = el("button", `mikro ${slot.trybCiezaru === "licz z RPE" ? "wlaczony" : ""}`, "R");
       przelaczTryb.title = slot.trybCiezaru === "licz z RPE"
         ? "Wróć do trybu z planu (ciężar trzymany z bloku)"
@@ -1706,6 +1741,12 @@ function rysujSlot(slot, pusty) {
     // włączeniu, i to drobna. Znacznik przy Lp. mówi to wprost.
     const znacznik = el("span", "znacznik-topset", "TS");
     znacznik.title = "To ćwiczenie ma TOP SET";
+    numer.append(znacznik);
+  }
+  if (liczonyPauza(slot)) {
+    const znacznik = el("span", "znacznik-tryb znacznik-pauza", "P");
+    znacznik.title = "Pauzowane — własna progresja z Twojej periodyzacji: "
+      + "cz.1 jak Blok I, cz.2 jak Blok II, T6 jak T5. „G” zrobi z niego zwykły bój.";
     numer.append(znacznik);
   }
   if (slot.trybCiezaru === "licz z RPE") {

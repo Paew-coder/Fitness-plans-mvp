@@ -40,6 +40,21 @@ powtórzeń, RPE i ciężarów nie dotyka. Silnik: `dobor-cwiczen.ts`, serwer:
 **Rozgrzewka dnia** — *+ rozgrzewka* przy dniu: tekst wiersz po wierszu i link
 do filmu. Ta sama w każdym tygodniu; klient widzi ją na początku dnia.
 
+**Ćwiczenia pauzowane — własna progresja** (od 02.10.2026). *Bench press
+paused 3sec* i *Barbell low bar squat paused 3sec* (dodany do BAZY, film do
+dopisania) liczą się progresją z Twojej periodyzacji, na każdej pozycji:
+cz.1 = Blok I, cz.2 = Blok II, T1–T5 jak w arkuszu, T6 jak T5. Wyciskanie:
+cz.1 5×3 @7,5 · 5×3 @8 · 4×3 @8 · 5×3 @8,5 · 5×2 @8,5 (·T6 jak T5), cz.2 5×4 @8 ·
+5×4 @8 · 5×3 @8 · 5×4 @9 · 4×3 @8,5. Przysiad: cz.1 jak RAW squat z Bloku I
+(4×5 @7 · 4×5 @8 · 4×5 @8,5 · 4×4 @8,5 · 4×4 @9), cz.2 jak pause lowbar
+z Bloku II (4×5 @8 · 4×5 @8,5 · 4×4 @8,5 · 4×4 @9 · 4×5 @9). Ciężar z 1RM tego
+ćwiczenia i RPE, co tydzień — przy 1RM ≈ 102 kg wychodzi 85 · 87,5 · 90 ·
+92,5 kg, jak w Twoim arkuszu. Przy Lp. znacznik „P”; „G” przełącza na zwykły
+bój i z powrotem. W hipertrofii jak dotąd, chyba że „S”. Zmiana części planu
+pyta o przepisanie także ich liczb. Eksport wpisuje do arkusza powtórzenia
+i ciężary wprost (arkusz tej progresji nie zna). Silnik: `PROGRESJA_PAUZY`,
+`pauzaSlotu` w `szablon-boju.ts`.
+
 **Bój główny przyciskiem „G"** — przy ćwiczeniu: podświetlone, gdy liczy się jak
 bój (progresja bloku, ciężar z RPE co tydzień). Kliknięcie zmienia rolę w obie
 strony, np. front squat na B1 jako bój, przysiad na A1 jako akcesorium.

@@ -111,7 +111,9 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Bój główny zawsze ma powtórzenia wpisane wprost; akcesorium tylko
         // wtedy, gdy trener świadomie nadpisał automat — inaczej nadpisalibyśmy
         // formułę, która w arkuszu liczy je sama.
-        powtorzenia_reczne: bojGlowny || bezAutomatuArkusza
+        // Pauzowane (02.10.2026) też — arkusz nie zna ich progresji i policzyłby
+        // im powtórzenia automatem akcesorium (8 zamiast 3).
+        powtorzenia_reczne: bojGlowny || bezAutomatuArkusza || obliczony?.pauza
           ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
           : (p.powtorzenia ?? null),
         // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby
@@ -122,8 +124,11 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // zobaczyłby w arkuszu ciężar policzony, a w konsoli stoi inny.
         // Przy „ręcznym ustawieniu" także ciężar przeniesiony z wcześniejszego
         // tygodnia albo wybrany przez klienta — plik ma pokazać to, co konsola.
+        // Pauzowane (02.10.2026): arkusz liczyłby im ciężar jak akcesorium
+        // (trzymany z bloku), konsola — z RPE co tydzień. Liczba wprost.
         ciezar_reczny: p.ciezarOverride
-          ?? (obliczony?.ciezarZrodlo && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
+          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza) && typeof obliczony.ciezar === "number"
+            ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
         // klienta pokazywałby ćwiczenie i ciężar sprzed podmiany.

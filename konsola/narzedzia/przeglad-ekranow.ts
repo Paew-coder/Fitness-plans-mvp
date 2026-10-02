@@ -1343,6 +1343,31 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("„wszystko od nowa” najpierw pyta",
     pytania.length === pytanPrzedOdNowa + 1, `pytań: ${pytania.length - pytanPrzedOdNowa}`);
 
+  // Pauzowane wyciskanie (02.10.2026): własna progresja z periodyzacji trenera
+  // na każdej pozycji — także na A1 — a „G” robi z niego zwykły bój i z powrotem.
+  await tabelaD1.locator("td.cwiczenie select").first().selectOption("EX-0022");
+  await s.waitForTimeout(1500);
+  const wierszA1 = tabelaD1.locator("tbody tr").first();
+  const a1T1 = async () => (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).wynik.tygodnie[0].sloty[0];
+  const pauzaT1 = await a1T1();
+  sprawdz("pauzowane wyciskanie na A1: znacznik „P” i 5 × 3 @ 7,5 z Bloku I",
+    await wierszA1.locator(".znacznik-pauza").count() === 1
+      && pauzaT1.serie === 5 && pauzaT1.powtorzenia === 3 && pauzaT1.rpe === 7.5,
+    `${pauzaT1.cwiczenie?.nazwa} · ${pauzaT1.serie}×${pauzaT1.powtorzenia} @${pauzaT1.rpe}`);
+  await wierszA1.getByRole("button", { name: "G", exact: true }).click();
+  await s.waitForTimeout(1500);
+  const jakBoj = await a1T1();
+  sprawdz("„G” przy pauzowanym robi zwykły bój (6 × 6), znacznik „P” znika",
+    jakBoj.serie === 6 && jakBoj.powtorzenia === 6
+      && await wierszA1.locator(".znacznik-pauza").count() === 0
+      && (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].bojGlowny === true,
+    `${jakBoj.serie}×${jakBoj.powtorzenia} @${jakBoj.rpe}`);
+  await wierszA1.getByRole("button", { name: "G", exact: true }).click();
+  await s.waitForTimeout(1500);
+  sprawdz("drugie „G” wraca do progresji pauzowanej",
+    (await a1T1()).serie === 5
+      && (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].bojGlowny === undefined);
+
   // Rozgrzewka dnia (25.09.2026): pusta to sam przycisk, wpisana idzie do planu.
   await s.locator("#dni .dzien").first().getByRole("button", { name: "+ rozgrzewka" }).click();
   const edytor = s.locator("#dni .dzien").first().locator(".rozgrzewka-trenera");

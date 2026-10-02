@@ -39,6 +39,17 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("pauzowane wyciskanie idzie z powtórzeniami z jego progresji (02.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.sloty[1]!.cwiczenieId = "EX-0022";   // B1. Bench press paused 3sec
+    zapisany.plan.serieMaksymalne.push({ cwiczenieId: "EX-0022", ciezar: 102, powtorzenia: 1 });
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual([pole(dane, "D1-S02", 1).serie, pole(dane, "D1-S02", 1).powtorzenia_reczne,
+      pole(dane, "D1-S02", 1).rpe], [5, 3, 7.5], "arkusz nie zna progresji pauzowanej — dostaje liczby wprost");
+    assert.deepEqual([1, 2, 4, 5].map((t) => pole(dane, "D1-S02", t).ciezar_reczny), [85, 87.5, 90, 92.5],
+      "ciężar z RPE co tydzień, nie trzymany z bloku jak u akcesorium");
+  });
+
   test("serie i RPE lecą policzone, nawet gdy trener ich nie ruszył", () => {
     const zapisany = planDomyslny();
     const wynik = przeliczPlan(zapisany.plan);

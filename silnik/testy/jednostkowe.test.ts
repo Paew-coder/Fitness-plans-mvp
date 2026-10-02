@@ -364,11 +364,13 @@ describe("normy skalowane liczbą dni (Analiza!K, L)", () => {
 });
 
 describe("katalog BAZY 5.17", () => {
-  test("zawiera 164 ćwiczenia z arkusza i 1 dodane przez trenera", () => {
-    assert.equal(katalog.wszystkie.length, 165);
+  test("zawiera 164 ćwiczenia z arkusza i 2 dodane przez trenera", () => {
+    // Dodane: Sumo deadlift (EX-0204) i „Barbell low bar squat paused 3sec”
+    // (EX-0205, 02.10.2026 — progresja pauzowana).
+    assert.equal(katalog.wszystkie.length, 166);
     // Rozdzielone celowo: arkusz to arkusz, a to, co trener dołożył później,
     // ma być widać. Inaczej za pół roku nikt nie odróżni jednego od drugiego.
-    const zArkusza = katalog.wszystkie.filter((c) => c.id !== "EX-0204");
+    const zArkusza = katalog.wszystkie.filter((c) => c.id !== "EX-0204" && c.id !== "EX-0205");
     assert.equal(zArkusza.length, 164);
     assert.equal(katalog.poNazwie("sumo deadlift")?.coeff, 1);
   });
@@ -389,7 +391,7 @@ describe("katalog BAZY 5.17", () => {
 
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(katalog.wKategorii("Tricep").length, 9);
-    assert.equal(katalog.wKategorii(null).length, 165);
+    assert.equal(katalog.wKategorii(null).length, 166);
   });
 
   test("oznaczenie ćwiczeń jednostronnych", () => {
@@ -416,8 +418,9 @@ describe("katalog BAZY 5.17", () => {
     assert.equal(katalog.doWeryfikacji().length, 14);
     // Pełna lista czekających na decyzję to 14 + 2 oznaczone "UZUPEŁNIĆ".
     assert.equal(katalog.wymagajaceDecyzji().length, 16);
-    // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania.
-    assert.equal(katalog.bezFilmu().length, 27);
+    // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania,
+    // + pauzowany przysiad low bar (02.10.2026, film dopisze trener).
+    assert.equal(katalog.bezFilmu().length, 28);
   });
 });
 
