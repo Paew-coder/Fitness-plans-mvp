@@ -672,3 +672,17 @@ ul.punkty { margin: .4rem 0 0 1.1rem; padding: 0; line-height: 1.5; color: var(-
   margin-top: .3rem; font-size: .8rem; line-height: 1.4; color: var(--tekst-blady);
 }
 .propozycje-stopka .wszystkie-tak-samo { color: var(--akcent); font-weight: 600; text-decoration: none; }
+
+/* ── okienko z pytaniem (02.10.2026: „za łatwe” w T1–T2) ─────────── */
+.okienko-tlo {
+  position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, .55);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.okienko {
+  background: var(--karta); border: 1px solid var(--linia); border-radius: 14px;
+  padding: 1.2rem 1.2rem 1rem; width: 100%; max-width: 30rem;
+  max-height: calc(100vh - 2rem); overflow-y: auto;
+}
+.okienko h2 { margin: 0 0 .6rem; font-size: 1.1rem; }
+.okienko p { margin: 0 0 .6rem; font-size: .92rem; line-height: 1.45; color: var(--tekst-slaby); }
+.okienko .szeroki { margin-top: .6rem; }

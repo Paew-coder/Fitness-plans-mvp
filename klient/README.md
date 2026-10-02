@@ -293,6 +293,23 @@ dalej liczy się z najcięższej serii — ostatnia byłaby zwykle najsłabsza, 
 zmęczona. Najcięższą wybiera serwer, nie telefon. Serie wpisane w prowadzeniu
 widać też na liście dnia i odwrotnie — to te same dane.
 
+**„Za łatwe” w pierwszych tygodniach** (od 02.10.2026) — w T1 i T2, w panelu
+i na liście, najpierw okienko *„Plan dopiero się rozkręca"*: pierwsze tygodnie
+są celowo lżejsze, wysiłek rośnie do ostatniego tygodnia; w tym tygodniu celujemy
+w RPE X, czyli tyle powtórzeń w zapasie; „za łatwe” podniesie ciężar we
+wszystkich kolejnych tygodniach, a najtrudniejszy może okazać się za ciężki;
+*„Jeśli zapasu było wyraźnie więcej — śmiało, oznacz. To Twój plan."* Przyciski
+`Oznacz „za łatwe”` i `Zostaw bez zmiany` — informacja, nie zakaz (trener). Raz
+na ćwiczenie w tygodniu. „Za trudne” okienka nie ma.
+
+**Ocena na liście poprawia też dalsze serie dnia** (od 02.10.2026). Trener:
+„6 serii wyciskania, na 3 serii zaznaczy »za lekkie« — poprawia nie tylko
+kolejne tygodnie, ale już kolejne serie w tym dniu". W panelu działało to od
+26.09; teraz lista robi to samo: po ocenie przy wpisanych seriach propozycje
+dalszych idą ±5 % od ostatniej wpisanej (*„Blade liczby to propozycja: 70 kg —
+ciężej o 5% po Twojej ocenie"*). Wspólny zapis z panelem
+(`prowadzenie.korekty`), więc oba widoki mówią to samo.
+
 **Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii — także
 ostatniej — stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
 `Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"* (przy
