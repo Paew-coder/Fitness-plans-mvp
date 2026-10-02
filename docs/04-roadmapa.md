@@ -688,6 +688,14 @@ Trener (zrzut panelu B1 Bench press paused 3sec liczony 3×8 @8 jak akcesorium i
 * Plany z liczbami wpisanymi wcześniej „wpisz progresję” trzymają stare liczby akcesorium, dopóki trener nie kliknie „wpisz progresję” jeszcze raz.
 * Testy silnika (`pauzowane.test.ts`: obie części, oba ćwiczenia, A1/C1, „G”, hipertrofia i „S”, deload, wpisanie i przepisanie progresji), eksportu, liczników BAZY (166, bez filmu 28); przegląd konsoli („P” i 5×3 @7,5 na A1, „G” → 6×6 i z powrotem), przegląd klienta (nowe zdanie pod rampą).
 
+**44. Ocena w panelu należy do jednej serii — 02.10.2026.**
+
+Trener (zrzuty: Poliquin step up, „za trudne” przy serii 1 → seria 2 na 10 kg, ale przy serii 2 „Za trudne” dalej zaznaczone): „przeszło do następnej serii to oznaczenie »za trudne«, a powinno się zresetować na neutralne, gdyby ktoś chciał znowu oznaczyć »za trudne«, żeby ciężar zmniejszył się ponownie”.
+
+* Panel trzyma ocenę każdej serii osobno (`prowadzenie.ocenySerii`): przy następnej przyciski neutralne; ponowne „za trudne” obniża kolejną serię jeszcze raz (65 kg po 67,5). Dotąd zaznaczenie pochodziło z oceny ćwiczenia na tydzień, więc drugie dotknięcie zdejmowało ocenę zamiast obniżać ciężar.
+* Do trenera i do kolejnych tygodni idzie ocena z najpóźniejszej ocenionej serii; drugie dotknięcie zdejmuje ocenę tej serii (i jej korektę następnej). Przy ostatniej serii zdanie, która ocena zostaje dla kolejnych tygodni. Lista dnia bez zmian (jedna ocena na ćwiczenie, z „OK”).
+* Przegląd klienta (sekcja 27): przy serii 3 nic nie zaznaczone, ponowne „za trudne” → „Następna seria: 65 kg”, drugie dotknięcie zdejmuje, ocena tygodnia z serii 2 zostaje; przy ostatniej serii przyciski neutralne i zdanie o serii 2. Ze starą logiką trzy kontrole czerwone.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

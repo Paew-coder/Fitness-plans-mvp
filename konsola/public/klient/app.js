@@ -1363,10 +1363,11 @@ function poKorekcie(kg, kierunek, skok) {
  * „za trudne / za łatwe", bez „OK" i ze zdaniem, że nic nie trzeba klikać.
  * Od 27.09.2026 tak samo przy ostatniej („OK" zostało tylko na liście).
  *
- * To jest ta sama ocena ćwiczenia co zawsze — jedna na tydzień, liczy się
- * też do kolejnych tygodni. Kliknięta przy serii 2 stoi zaznaczona przy
- * ostatniej; drugie dotknięcie ją zdejmuje. „Za łatwe” w T1–T2 najpierw
- * pokazuje okienko (`czyNaPewnoLatwe`).
+ * Od 02.10.2026 ocena należy do jednej serii (`prowadzenie.ocenySerii`):
+ * przy następnej przyciski są neutralne, a ponowne „za trudne” obniża
+ * kolejną serię jeszcze raz. Do trenera i do kolejnych tygodni idzie ocena
+ * z najpóźniejszej ocenionej serii; drugie dotknięcie zdejmuje ocenę tej
+ * serii. „Za łatwe” w T1–T2 najpierw pokazuje okienko (`czyNaPewnoLatwe`).
  *
  * Bez przerysowania panelu: klient mógł już wpisać liczby tej serii,
  * a przerysowanie wracało do podpowiedzi i kasowało je (tak było przy
@@ -1375,19 +1376,33 @@ function poKorekcie(kg, kierunek, skok) {
 function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
   const blok = el("div", "ocena-w-panelu");
   const ostatnia = k.ostatniaSeria;
+  /*
+   * Ocena należy do TEJ serii (trener, 02.10.2026): „za trudne” przy serii 1
+   * zmniejsza serię 2, ale przy serii 2 przyciski wracają do neutralnych —
+   * żeby dało się znowu kliknąć „za trudne” i zejść jeszcze niżej. Dotąd
+   * stała zaznaczona i drugie dotknięcie ją zdejmowało zamiast obniżać.
+   * Do trenera i do kolejnych tygodni idzie ostatnia ocena z serii.
+   */
+  prowadzenie.ocenySerii ??= {};
+  const ocenySerii = (prowadzenie.ocenySerii[c.positionId] ??= {});
+  const wczesniejsza = Object.keys(ocenySerii).map(Number).filter((n) => n < k.seria)
+    .sort((a, b) => a - b).at(-1);
   // W panelu te same dwa przyciski przy każdej serii, także przy ostatniej —
   // bez „OK" (trener, 27.09.2026: „w panelach nie ma ono sensu", brak
   // kliknięcia i tak oznacza OK). Na liście „OK" zostaje.
   blok.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
-  blok.append(el("p", "drobne podpowiedz-oceny", ostatnia
-    ? "Jeśli było OK — nic nie klikaj. Ocena zmienia ciężar w kolejnych tygodniach."
-    : "Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię."));
+  blok.append(el("p", "drobne podpowiedz-oceny", !ostatnia
+    ? "Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię."
+    : wczesniejsza
+      ? `Ocena z serii ${wczesniejsza} („${ocenySerii[wczesniejsza]}”) zostaje dla kolejnych `
+        + "tygodni. Kliknij, tylko jeśli ostatnia seria była inna."
+      : "Jeśli było OK — nic nie klikaj. Ocena zmienia ciężar w kolejnych tygodniach."));
   const oceny = el("div", "oceny");
   const notka = el("p", "korekta-serii");
   const przyciski = [];
   const pokaz = () => {
     for (const [b, wartosc, klasa] of przyciski) {
-      b.className = `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`;
+      b.className = `ocena-przycisk ${ocenySerii[k.seria] === wartosc ? `wybrana ${klasa}` : ""}`;
     }
     const korekta = prowadzenie.korekty?.[c.positionId];
     const baza = Number(String(wCiezar.value).replace(",", ".")) || null;
@@ -1400,20 +1415,27 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
   for (const [wartosc, etykieta, klasa] of warianty) {
     const b = el("button", "ocena-przycisk", etykieta);
     b.onclick = async () => {
-      const nowa = c.feedback === wartosc ? null : wartosc;
+      const nowa = ocenySerii[k.seria] === wartosc ? null : wartosc;
       if (nowa === "za łatwe" && !(await czyNaPewnoLatwe(c, prowadzenie.tydzien))) return;
-      wyslij("/odczucie",
-        { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: nowa },
-        () => { c.feedback = nowa; }, { odswiez: false });
+      if (nowa) ocenySerii[k.seria] = nowa;
+      else delete ocenySerii[k.seria];
+      // Ocena tygodnia: z najpóźniejszej ocenionej serii; bez żadnej — brak.
+      const numery = Object.keys(ocenySerii).map(Number).sort((a, b) => a - b);
+      const tygodnia = numery.length ? ocenySerii[numery.at(-1)] : null;
+      if (tygodnia !== (c.feedback ?? null)) {
+        wyslij("/odczucie",
+          { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: tygodnia },
+          () => { c.feedback = tygodnia; }, { odswiez: false });
+      }
       if (!ostatnia) {
         prowadzenie.korekty ??= {};
-        if (nowa === "za trudne" || nowa === "za łatwe") {
+        if (nowa) {
           prowadzenie.korekty[c.positionId] = { od: k.seria + 1, kierunek: nowa === "za trudne" ? -1 : 1 };
-        } else {
+        } else if (prowadzenie.korekty[c.positionId]?.od === k.seria + 1) {
           delete prowadzenie.korekty[c.positionId];
         }
-        zapiszProwadzenie();
       }
+      zapiszProwadzenie();
       pokaz();
     };
     przyciski.push([b, wartosc, klasa]);
