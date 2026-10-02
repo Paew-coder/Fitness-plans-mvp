@@ -1,0 +1,314 @@
+{
+ "opis": "Teksty ekranow aplikacji Base44 CraftMyPlan, wyciagniete z opublikowanego pakietu JS 21.09.2026.",
+ "ekrany": {
+  "/": {
+   "komponent": "AJ",
+   "znakow": 3582,
+   "teksty": [
+    "Baza ćwiczeń",
+    "CraftMyPlan",
+    "Jak to działa",
+    "Mój dashboard",
+    "Panel główny",
+    "Spersonalizowany plan treningowy oparty na Twoich wynikach siłowych. Wybierz dni, wykonaj testy max i trenuj z precyzyjną progresją.",
+    "Zaloguj się",
+    "trening?"
+   ]
+  },
+  "/home": {
+   "komponent": "Q1e",
+   "znakow": 7055,
+   "teksty": [
+    "Anuluj",
+    "Baza ćwiczeń",
+    "CraftMyPlan",
+    "Gotowy na trening?",
+    "Jak to działa",
+    "Nowa nazwa...",
+    "Nowy plan treningowy",
+    "Otrzymaj plan",
+    "Panel główny",
+    "Stwórz plan 6-tygodniowy, wybierz ćwiczenia, wykonaj testy siłowe i obserwuj progresję.",
+    "Subskrypcje",
+    "Twoje plany",
+    "Usuń",
+    "Usuń plan?",
+    "Wpisz nową nazwę dla twojego planu treningowego.",
+    "Wybierz szablon",
+    "Wybierz szablon, przypisz ćwiczenia, wykonaj testy max i wygeneruj 6-tygodniowy blok z progresją.",
+    "Wybierz ćwiczenia",
+    "Wykonaj testy siłowe (Max Sets)",
+    "Zacznij plan",
+    "Zapisz",
+    "Zarządzaj biblioteką ćwiczeń — dodawaj kategorie, współczynniki i wideo.",
+    "Zmień nazwę planu"
+   ]
+  },
+  "/dashboard": {
+   "komponent": "u_e",
+   "znakow": 9024,
+   "teksty": [
+    "Anuluj",
+    "Baza ćwiczeń",
+    "Brak aktywnych planów",
+    "CraftMyPlan",
+    "Kalendarz treningów",
+    "Nazwa planu",
+    "Nowy plan treningowy",
+    "Panel główny",
+    "Podaj nową nazwę dla tego planu.",
+    "Start",
+    "Stwórz swój pierwszy 6-tygodniowy plan z progresją.",
+    "Twoje plany",
+    "Usuń",
+    "Usuń plan",
+    "Zacznij kolejny 6-tygodniowy cykl",
+    "Zapisz",
+    "Zarządzaj biblioteką ćwiczeń",
+    "Zmień nazwę planu"
+   ]
+  },
+  "/onboarding": {
+   "komponent": "JCe",
+   "znakow": 2523,
+   "teksty": [
+    "Możesz edytować te dane później w swoim profilu",
+    "TrainingApp"
+   ]
+  },
+  "/plan": {
+   "komponent": "DEe",
+   "znakow": 5205,
+   "teksty": [
+    "AUTO-FILL",
+    "KROKI",
+    "Kreator planu",
+    "⚡ Max Sets",
+    "⚡ Ćwicz. + Max",
+    "⚡ Ćwiczenia"
+   ]
+  },
+  "/template-select": {
+   "komponent": "zEe",
+   "znakow": 3140,
+   "teksty": [
+    "6 tygodni",
+    "Kontynuacje bloków",
+    "Krok 1 z 3 — struktura planu",
+    "Pracujemy nad kolejnymi planami — Upper/Lower, Push/Pull i innymi.",
+    "Szablony startowe",
+    "Ukończyłeś już 6-tygodniowy blok?",
+    "Więcej szablonów wkrótce",
+    "Wybierz kategorię i liczbę dni. Ćwiczenia, obciążenia i progresję skonfigurujesz w kolejnych krokach.",
+    "Wybierz szablon"
+   ]
+  },
+  "/schedule-setup": {
+   "komponent": "VEe",
+   "znakow": 10033,
+   "teksty": [
+    "Anuluj",
+    "Daj sobie kilka dni luzu",
+    "Dni treningowe:",
+    "Dom",
+    "Gdzie będziesz trenować?",
+    "Harmonogram",
+    "Koniec (6 tygodni)",
+    "Krok 2 z 4 — dni i data startu",
+    "Od kiedy chcesz zacząć?",
+    "Pierwsze 2 tygodnie treningów:",
+    "Siłownia",
+    "Start",
+    "To wpływa na dobór dostępnych ćwiczeń w planie.",
+    "Twój plan",
+    "W jakie dni chcesz trenować?",
+    "Zastąpić aktualny plan?",
+    "usunie obecny plan"
+   ]
+  },
+  "/exercise-library": {
+   "komponent": "TAe",
+   "znakow": 10652,
+   "teksty": [
+    "Anuluj",
+    "BW — bez ciężaru, na powtórzenia",
+    "Baza ćwiczeń",
+    "Baza ćwiczeń jest pusta. Dodaj pierwsze ćwiczenie!",
+    "Ciężar + powtórzenia (standardowe)",
+    "Czas bez ciężaru (np. plank)",
+    "Czas z ciężarem (np. izometryczny przysiad)",
+    "Czy na pewno chcesz usunąć to ćwiczenie? Tej operacji nie można cofnąć.",
+    "Dodaj lub zmień dane ćwiczenia w bazie.",
+    "Dostęp ograniczony",
+    "Jednostronne (×2 — osobno na każdą stronę)",
+    "Jednostronność",
+    "Kategoria",
+    "Link do nagrania (opcjonalnie)",
+    "Miejsce wykonania",
+    "Nazwa ćwiczenia",
+    "Obustronne",
+    "Tylko administratorzy mogą zarządzać bazą ćwiczeń.",
+    "Typ stresu (Part)",
+    "Typ ćwiczenia",
+    "Usuń",
+    "Usuń ćwiczenie?",
+    "Wróć do strony głównej",
+    "Współczynnik (coef)",
+    "Wybierz kategorię",
+    "Wybierz typ",
+    "Wybierz typ stresu",
+    "Zarządzaj swoją biblioteką ćwiczeń",
+    "b — Upper Push (klatka, barki, triceps)",
+    "c — Core",
+    "d — Lower Pull (nogi — martwy ciąg)",
+    "https://...",
+    "np. 1.00",
+    "np. Barbell Bench Press",
+    "r — Upper Pull (plecy, biceps)",
+    "s — Lower Push (nogi — squaty)",
+    "×2",
+    "🏋️ Tylko siłownia",
+    "🏠 Tylko dom",
+    "🏠🏋️ Dom i siłownia"
+   ]
+  },
+  "/workout-execution": {
+   "komponent": "DAe",
+   "znakow": 13964,
+   "teksty": [
+    "8–15",
+    "8–15 powtórzeń do pełnego wyczerpania (RPE 10)",
+    "Brak danych treningu",
+    "Brak wpisanego max setu — 1RM zostanie wyliczone po wpisaniu ciężaru podczas treningu.",
+    "CZAS",
+    "Ciężar (kg)",
+    "Ciężar wyliczony na podstawie Twojego Max Setu z tej sesji.",
+    "Historia / najlepsza seria",
+    "KG",
+    "PRZERWA",
+    "Pomiń przerwę",
+    "Powtórzenia (do upadku)",
+    "REPS",
+    "Seria",
+    "Szacowane 1RM",
+    "Ta seria to Twój Max Set.",
+    "Trening zakończony! 🎉",
+    "Wróć do dashboardu",
+    "Zakończ serię",
+    "np. 60",
+    "🔥 Rozgrzewka"
+   ]
+  },
+  "/plan-selector": {
+   "komponent": "qAe",
+   "znakow": 1142,
+   "teksty": [
+    "CraftMyPlan",
+    "Ostatni krok!",
+    "Pomiń na razie →",
+    "Wybierz plan, aby uzyskać dostęp do swojego spersonalizowanego planu treningowego."
+   ]
+  },
+  "/plan-view": {
+   "komponent": "WAe",
+   "znakow": 2311,
+   "teksty": [
+    "Nie znaleziono planu.",
+    "Plan 6-tygodniowy"
+   ]
+  }
+ },
+ "skladniki": {
+  "kalendarz-siatka": {
+   "komponent": "qI",
+   "znakow": 4389,
+   "teksty": [
+    "Brak danych harmonogramu dla tego planu.",
+    "Pominięty (kliknij, aby przenieść)",
+    "Trening",
+    "Ukończony",
+    "pominięty"
+   ]
+  },
+  "kalendarz-dzis": {
+   "komponent": "a_e",
+   "znakow": 3545,
+   "teksty": [
+    "Dziś brak treningu",
+    "Dziś masz trening!",
+    "Przejdź do treningu",
+    "Trening ukończony!"
+   ]
+  },
+  "kalendarz-okno-dnia": {
+   "komponent": "e_e",
+   "znakow": 9538,
+   "teksty": [
+    "Przygotowanie do treningu",
+    "Rozgrzewka",
+    "Trening z przeszłości — możesz przenieść go do przodu, żeby nie przepadł.",
+    "WU",
+    "Wróć do planowanej",
+    "Zamknij podgląd",
+    "Zmień datę treningu powyżej, aby go nie stracić.",
+    "plan",
+    "🔥 Rozgrzewka"
+   ]
+  },
+  "onboarding-FCe": {
+   "komponent": "FCe",
+   "znakow": 1413,
+   "teksty": [
+    "180",
+    "Dane osobowe",
+    "Imię",
+    "Kilka podstawowych informacji o Tobie",
+    "Np. Michał",
+    "Waga (kg)",
+    "Wiek (lata)",
+    "Wzrost (cm)"
+   ]
+  },
+  "onboarding-HCe": {
+   "komponent": "HCe",
+   "znakow": 1246,
+   "teksty": [
+    "Dostępny sprzęt",
+    "Gdzie i z czym trenujesz na co dzień?",
+    "Wkrótce"
+   ]
+  },
+  "onboarding-UCe": {
+   "komponent": "UCe",
+   "znakow": 2284,
+   "teksty": [
+    "A co z redukcją tkanki tłuszczowej?",
+    "Cel treningowy",
+    "Wybierz główny cel, któremu chcesz się poświęcić. Obie opcje rozwijają zarówno siłę, jak i masę — różnią się jedynie proporcjami."
+   ]
+  },
+  "onboarding-VCe": {
+   "komponent": "VCe",
+   "znakow": 912,
+   "teksty": [
+    "Oceń swoje doświadczenie treningowe",
+    "Poziom zaawansowania"
+   ]
+  },
+  "onboarding-XCe": {
+   "komponent": "XCe",
+   "znakow": 786,
+   "teksty": [
+    "Cel treningowy",
+    "Dostępny sprzęt",
+    "Imię",
+    "Poziom zaawansowania",
+    "Sprawdź swoje dane przed rozpoczęciem",
+    "Twój profil",
+    "Waga",
+    "Wiek",
+    "Wzrost"
+   ]
+  }
+ }
+}
