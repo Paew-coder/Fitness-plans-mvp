@@ -2769,6 +2769,53 @@ function wypelnijListeSzablonow(szablony) {
   };
 }
 
+/**
+ * Dobór ćwiczeń jednym kliknięciem (trener, 02.10.2026: „miałem już taką
+ * funkcję w Base44”). Reguła z Base44 w silniku (`dobor-cwiczen.ts`):
+ * w kategorii ze „Szkieletu” A dostaje bój (coeff 1,0, najpierw klasyczne),
+ * B — złożone (0,75), C–E — akcesoria (0,5 i mniej); nigdy dwa razy w dniu,
+ * akcesoria bez powtórek w planie, bez ćwiczeń „DO WERYFIKACJI”. To losowanie
+ * według reguły, nie AI — każde ćwiczenie da się potem zmienić ręcznie.
+ */
+async function dobierzCwiczenia(odNowa) {
+  const zKategoria = obraz.zapisany.plan.sloty.filter((s) => s.kategoriaSzkieletu);
+  if (zKategoria.length === 0) {
+    alert("Najpierw ustaw kategorie w kolumnie „Szkielet” albo wybierz szablon — "
+      + "ćwiczenia losuję w obrębie kategorii.");
+    return;
+  }
+  if (odNowa && zKategoria.some((s) => s.cwiczenieId) && !confirm(
+    "Wylosować ćwiczenia od nowa we wszystkich pozycjach z kategorią? Twoje "
+    + "dotychczasowe wybory zostaną zastąpione. Pozycje, przy których klient już "
+    + "coś zapisał, zostają bez zmian.")) return;
+  // Najpierw dokończony zapis trenera — inaczej spóźniony zapis nadpisałby losowanie.
+  const wykonaj = async () => {
+    try {
+      const { dobor, ...nowy } = await api(`/api/plany/${obraz.zapisany.id}/dobierz`, {
+        method: "POST", body: { odNowa },
+      });
+      obraz = nowy;
+      rysujPlan();
+      const czesci = [dobor.dobrane
+        ? `wstawiono ${dobor.dobrane} ${odmiana(dobor.dobrane, ["ćwiczenie", "ćwiczenia", "ćwiczeń"])}`
+        : "nie było pustych pozycji z kategorią"];
+      if (dobor.bezKandydata.length) {
+        czesci.push(`${dobor.bezKandydata.length} bez pasującego ćwiczenia w BAZIE`);
+      }
+      if (dobor.zablokowane) {
+        czesci.push(`${dobor.zablokowane} z wpisami klienta bez zmian`);
+      }
+      $("#dobor-info").textContent = `${czesci.join(" · ")} — każde zmienisz ręcznie`;
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+  if ($("#zapis").textContent === "zapisywanie…") poZapisie = wykonaj;
+  else await wykonaj();
+}
+$("#dobierz-puste").onclick = () => dobierzCwiczenia(false);
+$("#dobierz-od-nowa").onclick = () => dobierzCwiczenia(true);
+
 $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 
 // ── start ──────────────────────────────────────────────────────────
