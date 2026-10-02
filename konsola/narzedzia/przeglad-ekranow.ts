@@ -644,6 +644,30 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     topWTygodniu(await zBazy(), 2)?.rpe === 7,
     String(topWTygodniu(await zBazy(), 2)?.rpe));
 
+  // Klient ocenia TOP SET z telefonu (02.10.2026), a trener w tym czasie
+  // zmienia RPE — jego zapis nie może skasować wpisu klienta, a pasek ma go
+  // pokazać jako informację.
+  // Zapis trenera trafia wtedy na 409 i przejmuje wpis klienta — ten 409
+  // w konsoli przeglądarki jest oczekiwany, jak przy ocenie wyżej.
+  const bledyPrzedTopSetem = bledyPrzegladarki.length;
+  await api(`/api/klient/${linkKlienta.token}/topset`, "POST",
+    { positionId: "D1-S01", tydzien: 2, feedback: "za trudne", kg: 100 });
+  await rpeTopSetu().fill("8");
+  await rpeTopSetu().blur();
+  await zapisano();
+  await s.waitForTimeout(600);
+  const zKlientem = await zBazy();
+  const pasekZKlientem = await s.locator('.topset[data-topset="D1-S01"]').innerText();
+  sprawdz("ocena TOP SETU od klienta zostaje po zapisie trenera i stoi na pasku",
+    JSON.stringify(zKlientem.zapisany.plan.sloty[0].tygodnie?.["2"]?.topSetKlienta)
+      === JSON.stringify({ feedback: "za trudne", kg: 100 })
+      && pasekZKlientem.includes("klient: za trudne · zrobił 100,0 kg"),
+    pasekZKlientem.replace(/\n/g, " "));
+  bledyPrzegladarki.splice(bledyPrzedTopSetem);
+  await rpeTopSetu().fill("");
+  await rpeTopSetu().blur();
+  await zapisano();
+
   await s.locator(".topset button", { hasText: "✕" }).first().click();
   await zapisano();
   sprawdz("TOP SET da się zdjąć", (await topSetDnia1()).every((t: any) => !t.wlaczony));

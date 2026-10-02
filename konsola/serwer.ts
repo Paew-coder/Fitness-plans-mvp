@@ -35,6 +35,8 @@ import { PROGRESJE_BEZ_CIEZARU } from "../silnik/src/typy.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
+import { krokiRampy, potrzebaRampy } from "../silnik/src/rampa.ts";
+import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
@@ -901,6 +903,35 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       : null;
   };
 
+  /*
+   * Rozgrzewka rampą przed pierwszą ciężką serią ćwiczenia (trener,
+   * 02.10.2026) — do TOP SETU, a bez niego do pierwszej serii roboczej.
+   * Kiedy i jak liczyć, mówi silnik (`rampa.ts`); tu tylko kontekst dnia:
+   * pierwsze wystąpienie ćwiczenia, TOP SET przy nim, flagi trenera G i S.
+   * Tydzień maksów ma własną instrukcję rozgrzewki przy każdym boju.
+   */
+  const rampaDla = (
+    s: (typeof wynik.tygodnie)[number]["sloty"][number],
+    t: (typeof wynik.tygodnie)[number],
+  ) => {
+    const cw = s.cwiczenie;
+    if (t.rodzaj === "maksy" || !cw) return null;
+    const pierwsze = t.sloty.find((x) => x.dzien === s.dzien && x.cwiczenie?.id === cw.id);
+    if (pierwsze?.positionId !== s.positionId) return null;
+    const ts = t.topSety.find((x) => x.positionId === s.positionId && x.cwiczenie);
+    const slotPlanu = zapisany.plan.sloty.find((x) => x.positionId === s.positionId);
+    if (!potrzebaRampy({
+      progresja: cw.progresja,
+      coeff: cw.coeff,
+      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw.coeff),
+      bojSilowy: slotPlanu?.bojSilowy,
+      maTopSet: !!ts,
+    })) return null;
+    const cel = ts ? ts.ciezar : s.ciezar;
+    const ciezarCelu = typeof cel === "number" && cel > 0 ? cel : null;
+    return { przed: ts ? "topset" : "seria", cel: ciezarCelu, kroki: krokiRampy(ciezarCelu, cw.skokKg) };
+  };
+
   // Sześć tygodni pracy i te po cyklu, które trener włączył. Tydzień maksów
   // bez żadnego boju nie idzie do klienta — pusty kafelek niczego nie mówi.
   const dniPlanu = [...new Set(zapisany.plan.sloty.filter((s) => s.cwiczenieId).map((s) => s.dzien))]
@@ -923,8 +954,11 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
         // ćwiczeniu (`positionId`); telefon stawia każdy przed seriami tego
         // ćwiczenia. `topSet` (pierwszy) zostaje dla telefonów ze starą wersją
         // aplikacji w pamięci, dopóki nie pobiorą nowej.
+        // `klient` — co klient zapisał przy TOP SECIE (ocena, ciężar).
         topSety: t.topSety.filter((x) => x.dzien === dzien)
-          .map((ts) => ({ ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) })),
+          .map((ts) => ({ ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff),
+            klient: zapisany.plan.sloty.find((x) => x.positionId === ts.positionId)
+              ?.tygodnie?.[t.tydzien]?.topSetKlienta ?? null })),
         topSet: (() => {
           const ts = t.topSety.find((x) => x.dzien === dzien);
           return ts ? { ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) } : null;
@@ -989,6 +1023,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             // to się stało. Klient widzi wtedy, skąd wziął się jego ciężar.
             kalibracja: kalibracjaW(s.cwiczenie!.id, s.positionId, t.tydzien),
             ostatnio: ostatnio(s.cwiczenie!.id, s.positionId, t.tydzien),
+            rampa: rampaDla(s, t),
           })),
       })),
   }));
@@ -1925,6 +1960,45 @@ const serwer = createServer(async (req, res) => {
         if (skalibrowane) cel.plan.serieMaksymalne = skalibrowane;
 
         return json(res, naEkran(magazyn.zapisz({ ...cel, wykonania })));
+      }
+
+      /*
+       * TOP SET z telefonu: ocena („za trudne” / „za łatwe”, bez „OK”) i ciężar,
+       * jeśli klient zrobił inny niż w planie. Trener, 02.10.2026: tylko
+       * informacja dla niego — serie robocze się nie zmieniają, bo „top set
+       * mógłby być za ciężki, a robocze okej”. Klient koryguje je i tak oceną
+       * po pierwszej serii roboczej. Oba pola puste kasują wpis.
+       */
+      if (akcja === "/topset" && req.method === "POST") {
+        const cialoZadania = await cialo(req);
+        const { positionId } = cialoZadania;
+        const tydzien = wZakresie(cialoZadania.tydzien, GRANICE.tydzien);
+        if (tydzien === null) return blad(res, "Numer tygodnia musi być z zakresu 1–6");
+        const f = cialoZadania.feedback || null;
+        if (f !== null && f !== "za trudne" && f !== "za łatwe") {
+          return blad(res, "Ocena TOP SETU: „za trudne” albo „za łatwe”");
+        }
+        const kg = cialoZadania.kg == null || cialoZadania.kg === ""
+          ? 0 : wZakresie(cialoZadania.kg, GRANICE.ciezar, false);
+        if (kg === null) return blad(res, "Ciężar TOP SETU musi być z zakresu 0–1000 kg.");
+        const cel = doZapisu(cialoZadania);
+        if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        const slot = cel.plan.sloty.find((s) => s.positionId === positionId);
+        if (!slot?.cwiczenieId) return blad(res, "Nie ma takiego ćwiczenia");
+        const topSet = tydzienWyliczony(przeliczPlan(cel.plan), tydzien)
+          ?.topSety.find((t) => t.positionId === positionId && t.cwiczenie);
+        // Spóźniona kolejka po tym, jak trener zdjął TOP SET — nie ma do czego
+        // tego przypiąć, a powtarzanie nic nie zmieni.
+        if (!topSet) return blad(res, "Przy tym ćwiczeniu nie ma już TOP SETU");
+        slot.tygodnie ??= {};
+        slot.tygodnie[tydzien as 1] ??= {};
+        const tu = slot.tygodnie[tydzien as 1]!;
+        if (f || kg > 0) {
+          tu.topSetKlienta = { ...(f ? { feedback: f } : {}), ...(kg > 0 ? { kg } : {}) };
+        } else {
+          delete tu.topSetKlienta;
+        }
+        return json(res, naEkran(magazyn.zapisz(cel)));
       }
 
       if (akcja === "/dzien" && req.method === "POST") {

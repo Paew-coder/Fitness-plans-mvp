@@ -633,9 +633,9 @@ function przejmijOdKlienta(mojPlan, swiezyPlan) {
     const swiezy = swiezeSloty.get(slot.positionId);
     if (!swiezy) continue;
     // Z T7 i T8 też, i razem z ciężarem, który klient sam wybrał przy
-    // „ręcznym ustawieniu" — to też jest jego zapis, nie trenera.
+    // „ręcznym ustawieniu", i z jego TOP SETEM — to też jego zapis, nie trenera.
     for (const t of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
-      for (const pole of ["feedback", "ciezarKlienta"]) {
+      for (const pole of ["feedback", "ciezarKlienta", "topSetKlienta"]) {
         const wartosc = swiezy.tygodnie?.[t]?.[pole];
         if (wartosc === undefined) continue;
         slot.tygodnie ??= {};
@@ -1326,9 +1326,17 @@ function rysujDni() {
       usun.title = "Usuń ten TOP SET";
       usun.onclick = () => { top.wlaczony = false; zapiszPozniej(); rysujDni(); };
       pasek.dataset.topset = top.slotPositionId;
+      // Co klient zapisał przy TOP SECIE w tym tygodniu (02.10.2026) — sama
+      // informacja dla trenera; serie robocze od tego się nie zmieniają.
+      const odKlienta = zrodlo?.tygodnie?.[tydzien]?.topSetKlienta;
+      const klient = el("span", `topset-klient ${odKlienta?.feedback === "za trudne" ? "trudne"
+        : odKlienta?.feedback === "za łatwe" ? "latwe" : ""}`,
+        odKlienta ? `klient: ${[odKlienta.feedback,
+          odKlienta.kg ? `zrobił ${liczba(odKlienta.kg)} kg` : null].filter(Boolean).join(" · ")}` : "");
+      if (odKlienta) klient.title = "Ocena i ciężar TOP SETU wpisane przez klienta w tym tygodniu.";
       pasek.append(el("span", "etykieta", "TOP SET"),
         el("span", "", `${(zrodlo?.lp || "").replace(/\.$/, "")} ${nazwa}`.trim()),
-        el("span", "", "RPE"), rpe,
+        el("span", "", "RPE"), rpe, klient,
         el("span", "wynik", typeof wyliczony?.ciezar === "number"
           ? `${liczba(wyliczony.ciezar)} kg`
           : (wyliczony?.rpe == null ? `w T${tydzien} bez TOP SETU` : (wyliczony?.ciezar || "—"))),

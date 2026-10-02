@@ -1114,3 +1114,83 @@ describe("kilka TOP SETÓW w dniu na telefonie", () => {
     assert.equal(dzien.topSet.positionId, plan.sloty[0].positionId, "pierwszy — dla starej aplikacji");
   });
 });
+
+/**
+ * Trener, 02.10.2026: rozgrzewka rampą przed pierwszą ciężką serią ćwiczeń
+ * głównych i złożonych, a przy TOP SECIE ocena i inny ciężar — tylko jako
+ * informacja dla niego, bez ruszania serii roboczych.
+ */
+describe("rampa i TOP SET od klienta", () => {
+  let id = 0;
+  let token = "";
+  let plan: any;
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Rampa Topset", wersja: 1 });
+    id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Rampa Topset").id;
+    const { dane: obraz } = await api(`/api/plany/${id}`);
+    plan = obraz.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";   // przysiad — z TOP SETEM
+    plan.sloty[1].cwiczenieId = "EX-0053";   // martwy ciąg — złożone, bez TOP SETU
+    plan.sloty[2].cwiczenieId = "EX-0016";   // wiosłowanie — akcesorium
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0010", ciezar: 140, powtorzenia: 1 },
+      { cwiczenieId: "EX-0053", ciezar: 160, powtorzenia: 1 },
+      { cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 1 }];
+    plan.topSety = [{ dzien: 1, wlaczony: true, slotPositionId: plan.sloty[0].positionId }];
+    await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany",
+      zmieniony: obraz.zapisany.zmieniony });
+    token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+  });
+
+  test("rampa: do TOP SETU przy przysiadzie, do pierwszej serii przy martwym, brak przy akcesorium", async () => {
+    const dzien = (await api(`/api/klient/${token}`)).dane.tygodnie[1].dni[0];
+    const [przysiad, martwy, wioslo] = dzien.cwiczenia;
+    const topSet = dzien.topSety[0];
+    assert.equal(przysiad.rampa.przed, "topset");
+    assert.equal(przysiad.rampa.cel, topSet.ciezar, "rampa idzie do ciężaru TOP SETU");
+    assert.deepEqual(przysiad.rampa.kroki.map((k: any) => k.powtorzenia), ["8–10", "5", "3", "1"]);
+    assert.equal(przysiad.rampa.kroki[0].ciezar, null, "pierwszy krok — lekko");
+    assert.ok(przysiad.rampa.kroki.at(-1).ciezar < topSet.ciezar);
+    assert.equal(martwy.rampa.przed, "seria");
+    assert.equal(martwy.rampa.cel, martwy.ciezar, "bez TOP SETU — do pierwszej serii roboczej");
+    assert.equal(wioslo.rampa, null, "akcesorium bez rampy");
+  });
+
+  test("ocena i ciężar TOP SETU zapisują się dla trenera i nie ruszają serii roboczych", async () => {
+    const wynikPrzed = (await api(`/api/plany/${id}`)).dane.wynik;
+    const przed = wynikPrzed.tygodnie[1];
+    await api(`/api/klient/${token}/topset`, "POST",
+      { positionId: plan.sloty[0].positionId, tydzien: 2, feedback: "za trudne", kg: 115 });
+    const { dane } = await api(`/api/plany/${id}`);
+    assert.deepEqual(dane.zapisany.plan.sloty[0].tygodnie["2"].topSetKlienta,
+      { feedback: "za trudne", kg: 115 });
+    assert.equal(dane.zapisany.plan.sloty[0].tygodnie["2"].feedback, undefined,
+      "ocena TOP SETU to nie ocena ćwiczenia");
+    assert.deepEqual(dane.wynik.tygodnie[1].sloty.map((s: any) => s.ciezar),
+      przed.sloty.map((s: any) => s.ciezar), "serie robocze bez zmian");
+    assert.deepEqual(dane.wynik.tygodnie[2].topSety.map((t: any) => t.ciezar),
+      wynikPrzed.tygodnie[2].topSety.map((t: any) => t.ciezar), "TOP SET w T3 też bez zmian");
+    const widok = (await api(`/api/klient/${token}`)).dane;
+    assert.deepEqual(widok.tygodnie[1].dni[0].topSety[0].klient, { feedback: "za trudne", kg: 115 },
+      "telefon widzi, co zapisał");
+  });
+
+  test("„OK” przy TOP SECIE nie istnieje, a puste pola kasują wpis", async () => {
+    const z = await api(`/api/klient/${token}/topset`, "POST",
+      { positionId: plan.sloty[0].positionId, tydzien: 2, feedback: "OK" });
+    assert.equal(z.kod, 400);
+    await api(`/api/klient/${token}/topset`, "POST",
+      { positionId: plan.sloty[0].positionId, tydzien: 2, feedback: null, kg: null });
+    const { dane } = await api(`/api/plany/${id}`);
+    assert.equal(dane.zapisany.plan.sloty[0].tygodnie["2"].topSetKlienta, undefined);
+  });
+
+  test("bez TOP SETU przy ćwiczeniu nie ma czego zapisać", async () => {
+    const z = await api(`/api/klient/${token}/topset`, "POST",
+      { positionId: plan.sloty[1].positionId, tydzien: 2, feedback: "za łatwe" });
+    assert.equal(z.kod, 400);
+    const t1 = await api(`/api/klient/${token}/topset`, "POST",
+      { positionId: plan.sloty[0].positionId, tydzien: 1, feedback: "za łatwe" });
+    assert.equal(t1.kod, 400, "w T1 szablon TOP SETU nie przewiduje");
+  });
+});
