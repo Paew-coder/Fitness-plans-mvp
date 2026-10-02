@@ -1228,8 +1228,10 @@ function kartaCwiczenia(c, stan = null) {
   ]) {
     const b = el("button",
       `ocena-przycisk ${c.feedback === wartosc ? `wybrana ${klasa}` : ""}`, etykieta);
-    b.onclick = () => {
+    b.onclick = async () => {
       const nowa = c.feedback === wartosc ? null : wartosc;
+      if (nowa === "za łatwe" && !(await czyNaPewnoLatwe(c, biezacy.tydzien))) return;
+      korektaZListy(c, nowa);
       wyslij("/odczucie",
         { positionId: c.positionId, tydzien: biezacy.tydzien, feedback: nowa },
         () => { c.feedback = nowa; });
@@ -1354,11 +1356,12 @@ function poKorekcie(kg, kierunek, skok) {
  * pokazać ułatwioną wersję". I zaraz: „nie chciałbym, żeby ktoś pomyślał, że
  * w każdej serii musi kliknąć OK". Stąd przy seriach przed ostatnią tylko
  * „za trudne / za łatwe", bez „OK" i ze zdaniem, że nic nie trzeba klikać.
- * Przy ostatniej pełne pytanie, jak dotąd.
+ * Od 27.09.2026 tak samo przy ostatniej („OK" zostało tylko na liście).
  *
  * To jest ta sama ocena ćwiczenia co zawsze — jedna na tydzień, liczy się
  * też do kolejnych tygodni. Kliknięta przy serii 2 stoi zaznaczona przy
- * ostatniej; tam można ją zmienić na „OK".
+ * ostatniej; drugie dotknięcie ją zdejmuje. „Za łatwe” w T1–T2 najpierw
+ * pokazuje okienko (`czyNaPewnoLatwe`).
  *
  * Bez przerysowania panelu: klient mógł już wpisać liczby tej serii,
  * a przerysowanie wracało do podpowiedzi i kasowało je (tak było przy
@@ -1391,8 +1394,9 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
   const warianty = [["za trudne", "Za trudne", "trudne"], ["za łatwe", "Za łatwe", "latwe"]];
   for (const [wartosc, etykieta, klasa] of warianty) {
     const b = el("button", "ocena-przycisk", etykieta);
-    b.onclick = () => {
+    b.onclick = async () => {
       const nowa = c.feedback === wartosc ? null : wartosc;
+      if (nowa === "za łatwe" && !(await czyNaPewnoLatwe(c, prowadzenie.tydzien))) return;
       wyslij("/odczucie",
         { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: nowa },
         () => { c.feedback = nowa; }, { odswiez: false });
@@ -1415,6 +1419,93 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
   blok.append(oceny, notka);
   pokaz();
   return blok;
+}
+
+/**
+ * Okienko z pytaniem — własne, nie `confirm()`: systemowe na iPadzie ma
+ * nagłówek z adresem strony i nie mieści kilku akapitów. `true` po „tak”.
+ */
+function okienko({ tytul, akapity, tak, nie }) {
+  return new Promise((rozstrzygnij) => {
+    const tlo = el("div", "okienko-tlo");
+    const karta = el("div", "okienko");
+    karta.setAttribute("role", "dialog");
+    karta.setAttribute("aria-modal", "true");
+    karta.append(el("h2", "", tytul), ...akapity.map((t) => el("p", "", t)));
+    const zamknij = (wynik) => { tlo.remove(); rozstrzygnij(wynik); };
+    const bTak = el("button", "glowny szeroki", tak);
+    const bNie = el("button", "poboczny szeroki", nie);
+    bTak.onclick = () => zamknij(true);
+    bNie.onclick = () => zamknij(false);
+    tlo.onclick = (e) => { if (e.target === tlo) zamknij(false); };
+    karta.append(bTak, bNie);
+    tlo.append(karta);
+    document.body.append(tlo);
+    bNie.focus();
+  });
+}
+
+/**
+ * „Za łatwe” w pierwszych tygodniach — najpierw słowo wyjaśnienia.
+ *
+ * Trener, 02.10.2026: „pierwsze tygodnie nie powinny być skrajnie ciężkie,
+ * więc użytkownik musi się liczyć z tym, że ćwiczenie i tak progresuje
+ * trudnością do ostatniego tygodnia, a jak oznaczy od razu, że jest za lekkie,
+ * to na koniec może się okazać już za ciężkie. Mimo wszystko musi mieć
+ * możliwość zmiany — to tylko informacja”. Raz na ćwiczenie w tygodniu:
+ * kto potwierdził, nie słyszy tego drugi raz przy kolejnej serii.
+ */
+const TYGODNIE_ROZRUCHU = [1, 2];
+const uprzedzoneLatwe = new Set();
+
+async function czyNaPewnoLatwe(c, tydzien) {
+  if (c.maks || !TYGODNIE_ROZRUCHU.includes(tydzien) || tydzienWidoku(tydzien)?.rodzaj) return true;
+  const klucz = `${widok?.planId}:${tydzien}:${c.positionId}`;
+  if (uprzedzoneLatwe.has(klucz)) return true;
+  const zapas = wZapasie(c.rpe);
+  const ostatnia = Number(zapas.split("–").pop());
+  const slowo = zapas === "1" ? "powtórzenie" : ostatnia <= 4 ? "powtórzenia" : "powtórzeń";
+  const rpe = Number(c.rpe) > 0 && Number(c.rpe) < 10
+    ? `W tym tygodniu celujemy w RPE ${liczba(c.rpe)}, czyli ${zapas} ${slowo} `
+      + "w zapasie. Jeśli tyle mniej więcej Ci zostało, ćwiczenie jest "
+      + "dokładnie takie, jakie ma być."
+    : null;
+  const tak = await okienko({
+    tytul: "Plan dopiero się rozkręca",
+    akapity: [
+      "Pierwsze tygodnie są celowo lżejsze. Z każdym tygodniem ciężar i wysiłek "
+        + "rosną — aż do ostatniego, najbardziej wymagającego tygodnia.",
+      ...(rpe ? [rpe] : []),
+      "„Za łatwe” podniesie ciężar we wszystkich kolejnych tygodniach. Wtedy "
+        + "najtrudniejszy tydzień może okazać się za ciężki.",
+      "Jeśli zapasu było wyraźnie więcej — śmiało, oznacz. To Twój plan.",
+    ],
+    tak: "Oznacz „za łatwe”",
+    nie: "Zostaw bez zmiany",
+  });
+  if (tak) uprzedzoneLatwe.add(klucz);
+  return tak;
+}
+
+/**
+ * Ocena z listy dnia poprawia też dalsze serie tego dnia (trener, 02.10.2026:
+ * „6 serii wyciskania, na 3 serii zaznaczy »za lekkie« — poprawia nie tylko
+ * kolejne tygodnie, ale już kolejne serie w tym dniu”). Ten sam zapis co
+ * w panelu prowadzenia (`prowadzenie.korekty`), więc lista i panel mówią to
+ * samo: następna niewpisana seria ±5 % od ostatniej wpisanej, dalsze za nią.
+ */
+function korektaZListy(c, ocena) {
+  const d = dzienBiezacy();
+  if (!d || c.maks) return;
+  const wpisane = listaSerii(serieWykonane(c)).length;
+  wczytajProwadzenie(d);
+  prowadzenie.korekty ??= {};
+  if ((ocena === "za trudne" || ocena === "za łatwe") && wpisane > 0 && wpisane < (c.serie || 1)) {
+    prowadzenie.korekty[c.positionId] = { od: wpisane + 1, kierunek: ocena === "za trudne" ? -1 : 1 };
+  } else {
+    delete prowadzenie.korekty[c.positionId];
+  }
+  zapiszProwadzenie();
 }
 
 const pustaSeria = (s) => !s || (!s.ciezar && !s.powtorzenia);
@@ -1557,18 +1648,25 @@ function polaWykonania(c) {
    * się podsunęło. „✓ Pozostałe tak samo" zatwierdza wszystkie naraz — dla
    * tych, którzy wpisują po treningu.
    */
+  // Ocena „za trudne / za łatwe” po wpisanych seriach — propozycje dalszych
+  // idą ±5 % od ostatniej wpisanej (patrz `korektaZListy`).
+  const korekta = () => (biezacy ? prowadzenieTegoDnia(dzienBiezacy())?.korekty?.[c.positionId] : null);
   const propozycja = (i) => {
     if (c.maks || !pustaSeria(serie[i])) return null;
     for (let j = i - 1; j >= 0; j--) {
       const s = serie[j];
       if (s?.powtorzenia && (bezCiezaru || s.ciezar)) {
-        return { ciezar: bezCiezaru ? null : s.ciezar, powtorzenia: s.powtorzenia };
+        const k = korekta();
+        const ciezar = bezCiezaru ? null
+          : k?.od === j + 2 ? poKorekcie(s.ciezar, k.kierunek, c.skokKg) : s.ciezar;
+        return { ciezar, powtorzenia: s.powtorzenia };
       }
     }
     return null;
   };
   const wiersze = [];
   const stopka = el("div", "propozycje-stopka ukryty");
+  const opisPropozycji = el("span", "opis-propozycji");
   const odswiezPropozycje = () => {
     wiersze.forEach((r, i) => {
       const p = propozycja(i);
@@ -1585,6 +1683,14 @@ function polaWykonania(c) {
       }
     });
     stopka.classList.toggle("ukryty", !wiersze.some((_, i) => propozycja(i)));
+    // Skąd blade liczby — z poprzedniej serii albo po ocenie ±5 %.
+    const pierwsza = wiersze.findIndex((_, i) => propozycja(i));
+    const k = korekta();
+    const poOcenie = pierwsza >= 0 && !bezCiezaru && k?.od === pierwsza + 1;
+    opisPropozycji.textContent = poOcenie
+      ? `Blade liczby to propozycja: ${liczba(propozycja(pierwsza).ciezar)} kg — `
+        + `${k.kierunek < 0 ? "lżej" : "ciężej"} o 5% po Twojej ocenie. Po serii dotknij ✓ albo popraw.`
+      : "Blade liczby to propozycja z poprzedniej serii — po serii dotknij ✓ albo popraw.";
   };
   const wiersz = (i) => {
     const w = el("div", "wiersz-serii");
@@ -1644,8 +1750,7 @@ function polaWykonania(c) {
     zapisz();
     odswiezPropozycje();
   };
-  stopka.append(el("span", "", "Blade liczby to propozycja z poprzedniej serii — po serii dotknij ✓ albo popraw."),
-    wszystkie);
+  stopka.append(opisPropozycji, wszystkie);
   pola.append(stopka);
   odswiezPropozycje();
 
