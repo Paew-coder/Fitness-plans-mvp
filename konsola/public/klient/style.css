@@ -246,6 +246,38 @@ button { font: inherit; cursor: pointer; }
 }
 .topset .wiersz { display: flex; align-items: baseline; gap: .6rem; margin-top: .3rem; }
 .topset .ciezar { font-size: 1.35rem; font-weight: 700; margin-left: auto; }
+/* Ocena i inny ciężar TOP SETU (02.10.2026) — informacja dla trenera. */
+.topset .podpowiedz-oceny { margin: .7rem 0 0; }
+.topset .oceny { margin-top: .4rem; }
+.oceny-topsetu { grid-template-columns: repeat(2, 1fr); }
+.inny-ciezar {
+  display: flex; align-items: center; gap: .5rem; margin-top: .6rem;
+  font-size: .82rem; color: var(--tekst-slaby);
+}
+.inny-ciezar input {
+  font: inherit; width: 5.5rem; text-align: center; padding: .45rem .3rem;
+  border-radius: 8px; border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.pola-topsetu { display: flex; align-items: center; gap: .5rem; margin-top: .9rem; }
+.pola-topsetu input {
+  font: inherit; font-size: 1.2rem; text-align: center; flex: 0 1 9rem; min-width: 0;
+  padding: .7rem .3rem; border-radius: 10px;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.pola-topsetu span { font-size: .85rem; color: var(--tekst-blady); }
+
+/* ── rozgrzewka rampą (02.10.2026) ──────────────────────────────── */
+.rampa {
+  margin-top: .75rem; padding: .6rem .75rem; border-radius: 9px;
+  background: var(--karta-2); border-left: 3px solid var(--akcent);
+}
+.rampa-tytul {
+  font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--akcent); font-weight: 700;
+}
+.rampa-kroki { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin-top: .35rem; font-weight: 600; }
+.rampa-krok { white-space: nowrap; }
+.rampa .drobne { margin: .35rem 0 0; }
 
 /* ── serie maksymalne ───────────────────────────────────────────── */
 .pomiar {

@@ -83,7 +83,31 @@ Link wygląda tak: `http://…/k/Zvy1GXQUGwM4wLdCqXC-Xh0Jno1V5Zed`
 
 **Trening** — ćwiczenia po kolei, a TOP SET tuż przed ćwiczeniem, do którego należy
 (A1: TOP SET i robocze, B1: TOP SET i robocze — w dniu może być ich kilka; tak samo
-w prowadzeniu i na mapie dnia, gdzie ma kafelek „TS"). Każde ćwiczenie z linkiem do filmu i z zadaniem
+w prowadzeniu i na mapie dnia, gdzie ma kafelek „TS").
+
+**Rozgrzewka rampą** (od 02.10.2026) — przed pierwszą ciężką serią ćwiczenia
+głównego albo złożonego: przed TOP SETEM, a bez niego przed pierwszą serią
+roboczą. Ramka *„Rozgrzewka rampą: lekko × 8–10 · 65 kg × 5 · 90 kg × 3 ·
+110 kg × 1 — dalej TOP SET, 130 kg. Tych serii nie wpisujesz."* Ciężary liczy
+silnik (`rampa.ts`): 50 / 70 / 85 % ciężaru docelowego, zaokrąglone do skoku
+ćwiczenia; krok, który nie rośnie, odpada. Rampa stoi przy ćwiczeniu z TOP
+SETEM, przy boju głównym (G, S) i przy ćwiczeniu złożonym z BAZY (współczynnik
+1,0) — tylko z progresją w kilogramach i tylko przy pierwszym wystąpieniu
+ćwiczenia w dniu. Na liście znika, gdy ćwiczenie jest zaczęte; w panelu stoi
+przy TOP SECIE albo serii 1. Bez ciężaru docelowego (klient dobiera) — słowami.
+
+**TOP SET: ocena i inny ciężar** (od 02.10.2026). W panelu pole z ciężarem
+z planu (`130 kg × 1`) i *„Za ciężko albo za lekko?"* z `Za trudne` / `Za
+łatwe` — bez `OK`, z dopiskiem *„Jeśli było OK — nic nie klikaj. Ocena idzie
+do trenera, serii roboczych nie zmienia."* Na liście te same przyciski i pole
+*„Inny ciężar niż w planie?"*. Zapis (`/topset`) trafia do
+`slot.tygodnie[t].topSetKlienta` i konsola pokazuje go na pasku TOP SETU
+(*„klient: za trudne · zrobił 125,0 kg"*). **Tylko informacja dla trenera**
+(jego decyzja): serie robocze i kolejne tygodnie się nie zmieniają, bo „top
+set mógłby być za ciężki, a robocze okej" — robocze klient koryguje oceną po
+pierwszej serii roboczej.
+
+Każde ćwiczenie z linkiem do filmu i z zadaniem
 w równych kolumnach: `CIĘŻAR · SERIE · POWT.`, podpis nad liczbą, wszystkie liczby
 tej samej wielkości. Pod nimi drobno samo *„RPE 8"* (dopisek „2 w zapasie"
 był i zniknął — trener uznał go za zbędny). W panelu prowadzenia pierwsza kolumna

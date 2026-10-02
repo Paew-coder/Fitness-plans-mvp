@@ -68,6 +68,13 @@ export type ParametryTygodnia = {
    * z ćwiczeniem, żeby po podmianie w slocie nie przeszedł na inne.
    */
   ciezarKlienta?: { kg: number; cwiczenieId: string };
+  /**
+   * TOP SET z telefonu (trener, 02.10.2026): ocena bez „OK” i ciężar, jeśli
+   * klient zrobił inny niż w planie. **Tylko informacja dla trenera** —
+   * silnik tego nie czyta, serie robocze i kolejne tygodnie się nie zmieniają
+   * („top set mógłby być za ciężki, a robocze okej”).
+   */
+  topSetKlienta?: { feedback?: "za trudne" | "za łatwe"; kg?: number };
   /** Odczucie klienta po wykonaniu (kolumna H). */
   feedback?: Feedback;
 };

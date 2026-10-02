@@ -832,6 +832,26 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   const golyWidok = await api(`/api/klient/${golySciezka.replace("/k/", "")}`);
   const golyBoj = golyWidok.tygodnie[0].dni[0].cwiczenia[0];
+
+  // Rampa (trener, 02.10.2026): przed TOP SETEM przysiadu, z ciężarami
+  // z silnika, kończąca się poniżej TOP SETU. Na karcie samego przysiadu już
+  // nie — jego pierwsza ciężka seria to TOP SET. Dead bug na masie ciała bez rampy.
+  const tsPrzysiadu = golyWidok.tygodnie[0].dni[0].topSety[0];
+  const kartaTsPrzysiadu = s.locator('#cwiczenia .topset[data-topset="D1-S01"]');
+  const rampaListy = await kartaTsPrzysiadu.locator(".rampa").innerText().catch(() => "");
+  const krokiListy = await kartaTsPrzysiadu.locator(".rampa-krok").allInnerTexts();
+  const ostatniKrok = Number((krokiListy.at(-1) ?? "").replace(",", ".").replace(/[^\d.]/g, ""));
+  sprawdz("przed TOP SETEM przysiadu rampa z ciężarami, poniżej TOP SETU",
+    krokiListy[0] === "lekko × 8–10" && krokiListy.length >= 3
+      && ostatniKrok > 0 && ostatniKrok < tsPrzysiadu.ciezar && rampaListy.includes("Dalej TOP SET"),
+    `${krokiListy.join(" · ")} → TOP SET ${tsPrzysiadu.ciezar}`);
+  sprawdz("a nie na karcie samego przysiadu ani przy ćwiczeniu na masie ciała",
+    await s.locator('#cwiczenia .cwiczenie[data-position="D1-S01"] .rampa').count() === 0
+      && await s.locator('#cwiczenia .cwiczenie[data-position="D1-S03"] .rampa').count() === 0);
+  sprawdz("przy TOP SECIE ocena bez „OK” i pole na inny ciężar",
+    (await kartaTsPrzysiadu.locator(".ocena-przycisk").allInnerTexts()).join(" | ") === "Za trudne | Za łatwe"
+      && await kartaTsPrzysiadu.locator(".inny-ciezar input").count() === 1,
+    (await kartaTsPrzysiadu.locator(".oceny").innerText()).replace(/\n/g, " | "));
   sprawdz("bój główny dostaje liczby z szablonu 5.18",
     golyBoj.serie === 6 && golyBoj.powtorzenia === 6 && golyBoj.rpe === 6.5,
     `${golyBoj.serie} × ${golyBoj.powtorzenia} · RPE ${golyBoj.rpe}`);
@@ -863,8 +883,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && (await panel.innerText()).includes("Barbell back squat"),
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 70));
 
+  // Panel TOP SETU (02.10.2026): rampa przed nim, pole z ciężarem z planu,
+  // ocena bez „OK”. Ocena i inny ciężar idą do trenera i nic więcej.
+  sprawdz("panel TOP SETU: rampa, pole z ciężarem z planu, ocena bez „OK”",
+    await panel.locator(".rampa").count() === 1
+      && Number(await panel.locator(".pola-topsetu input").inputValue()) === tsPrzysiadu.ciezar
+      && (await panel.locator(".ocena-przycisk").allInnerTexts()).join(" | ") === "Za trudne | Za łatwe",
+    `pole ${await panel.locator(".pola-topsetu input").inputValue()} · `
+      + (await panel.locator(".ocena-w-panelu").innerText()).replace(/\n/g, " | "));
+  await panel.locator(".ocena-przycisk", { hasText: "Za trudne" }).click();
+  await panel.locator(".pola-topsetu input").fill(String(tsPrzysiadu.ciezar - 5));
+  const planGolyPrzed = (await api(`/api/plany/${idGolego}`)).wynik.tygodnie[0].sloty
+    .map((x: any) => x.ciezar);
   // TOP SET przy boju (coeff 1,0) — przerwa jak po boju: trzy minuty.
   await panel.getByRole("button", { name: "Zrobione" }).click();
+  await s.waitForTimeout(600);
+  const poTopSecie = await api(`/api/plany/${idGolego}`);
+  sprawdz("ocena i inny ciężar TOP SETU idą do trenera, serie robocze bez zmian",
+    JSON.stringify(poTopSecie.zapisany.plan.sloty[0].tygodnie?.["1"]?.topSetKlienta)
+      === JSON.stringify({ feedback: "za trudne", kg: tsPrzysiadu.ciezar - 5 })
+      && JSON.stringify(poTopSecie.wynik.tygodnie[0].sloty.map((x: any) => x.ciezar))
+        === JSON.stringify(planGolyPrzed),
+    JSON.stringify(poTopSecie.zapisany.plan.sloty[0].tygodnie?.["1"]?.topSetKlienta));
   await s.waitForSelector("#licznik");
   sprawdz("po serii wchodzi przerwa z odliczaniem",
     wZakresie(await s.locator("#licznik").innerText(), 170, 180),
@@ -1783,6 +1823,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.locator("#tygodnie .dzien-kafel").first().click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const kartaListy = s.locator('#cwiczenia [data-position="D1-S01"]');
+  // Bój bez TOP SETU: rampa idzie do pierwszej serii roboczej (02.10.2026).
+  const rampaBoju = await kartaListy.locator(".rampa").innerText().catch(() => "");
+  sprawdz("bój bez TOP SETU: rampa do pierwszej serii roboczej",
+    rampaBoju.includes("lekko × 8–10") && rampaBoju.includes("Dalej pierwsza seria robocza"),
+    rampaBoju.replace(/\n/g, " · ") || "brak rampy");
   await kartaListy.getByRole("button", { name: /zapisz, co poszło/ }).click();
   const wierszeListy = kartaListy.locator(".wiersz-serii");
   sprawdz("przed pierwszą serią pola puste, bez propozycji",

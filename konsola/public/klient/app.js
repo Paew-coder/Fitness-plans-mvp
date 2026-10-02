@@ -1041,6 +1041,69 @@ function topSetyDnia(d) {
   return lista.filter((ts) => ts?.cwiczenie);
 }
 
+/**
+ * Rozgrzewka rampą przed pierwszą ciężką serią (trener, 02.10.2026). Kroki
+ * i ciężary liczy silnik (`rampa.ts`): lekko × 8–10, 50 % × 5, 70 % × 3,
+ * 85 % × 1. Serie rampy się nie zapisują.
+ */
+function blokRampy(r) {
+  const blok = el("div", "rampa");
+  blok.append(el("div", "rampa-tytul", "Rozgrzewka rampą"));
+  const kroki = el("div", "rampa-kroki");
+  for (const k of r.kroki) {
+    kroki.append(el("span", "rampa-krok",
+      `${k.ciezar === null ? "lekko" : `${liczba(k.ciezar)} kg`} × ${k.powtorzenia}`));
+  }
+  blok.append(kroki);
+  const potem = r.przed === "topset" ? "TOP SET" : "pierwsza seria robocza";
+  blok.append(el("p", "drobne", r.cel === null
+    ? "Potem 2–3 serie z rosnącym ciężarem i coraz mniej powtórzeń, aż dojdziesz blisko "
+      + `ciężaru, który dobierzesz. Dalej ${potem}. Tych serii nie wpisujesz.`
+    : `Dalej ${potem} — ${liczba(r.cel)} kg. Tych serii nie wpisujesz.`));
+  return blok;
+}
+
+/** TOP SET dnia po `positionId` — ten obiekt, który jest teraz w widoku. */
+const topSetW = (d, positionId) => (d?.topSety ?? []).find((x) => x.positionId === positionId);
+
+/**
+ * Zapis TOP SETU od klienta: ocena („za trudne” / „za łatwe”, bez „OK”)
+ * i ciężar, jeśli był inny niż w planie. Trener, 02.10.2026: **tylko
+ * informacja dla niego** — serie robocze się od tego nie zmieniają.
+ */
+function zapiszTopSet(d, positionId, { feedback, kg }) {
+  const ts = topSetW(d, positionId);
+  const plan = typeof ts?.ciezar === "number" ? ts.ciezar : null;
+  const inny = kg > 0 && kg !== plan ? kg : null;
+  const klient = feedback || inny ? { ...(feedback ? { feedback } : {}), ...(inny ? { kg: inny } : {}) } : null;
+  if (JSON.stringify(klient) === JSON.stringify(ts?.klient ?? null)) return;
+  wyslij("/topset", { positionId, tydzien: biezacy.tydzien, feedback: feedback || null, kg: inny },
+    () => { const teraz = topSetW(dzienBiezacy(), positionId); if (teraz) teraz.klient = klient; },
+    { odswiez: false });
+}
+
+/**
+ * Ocena TOP SETU — dwa przyciski, drugie dotknięcie zdejmuje. `poZmianie`
+ * dostaje nową ocenę (albo `null`).
+ */
+function ocenyTopSetu(wybrana, poZmianie) {
+  const oceny = el("div", "oceny oceny-topsetu");
+  const przyciski = [];
+  for (const [wartosc, etykieta, klasa] of [["za trudne", "Za trudne", "trudne"], ["za łatwe", "Za łatwe", "latwe"]]) {
+    const b = el("button", "ocena-przycisk", etykieta);
+    b.type = "button";
+    b.onclick = () => {
+      wybrana = wybrana === wartosc ? null : wartosc;
+      for (const [x, w, k] of przyciski) x.className = `ocena-przycisk ${wybrana === w ? `wybrana ${k}` : ""}`;
+      poZmianie(wybrana);
+    };
+    przyciski.push([b, wartosc, klasa]);
+    oceny.append(b);
+  }
+  for (const [x, w, k] of przyciski) x.className = `ocena-przycisk ${wybrana === w ? `wybrana ${k}` : ""}`;
+  return oceny;
+}
+
 /** Karta TOP SETU na liście dnia — przed ćwiczeniem, do którego należy. */
 function kartaTopSetu(ts, d, stan) {
   const karta = el("div", "topset");
@@ -1056,6 +1119,26 @@ function kartaTopSetu(ts, d, stan) {
   karta.append(el("div", "drobne", `1 powtórzenie · RPE ${liczba(ts.rpe)}`));
   if (ts.ciezar === "— brak 1RM") karta.append(el("div", "drobne", jakDobrac(1, ts.rpe)));
   const klucz = `topset-${ts.positionId}`;
+  const rampa = d.cwiczenia.find((c) => c.positionId === ts.positionId)?.rampa;
+  if (rampa?.przed === "topset" && !d.ukonczony && !stan?.zrobione.has(klucz)) {
+    karta.append(blokRampy(rampa));
+  }
+  // Ocena i inny ciężar — informacja dla trenera (02.10.2026).
+  if (!d.ukonczony || ts.klient) {
+    karta.append(el("p", "drobne podpowiedz-oceny",
+      "Jeśli było OK — nic nie klikaj. Ocena idzie do trenera, serii roboczych nie zmienia."));
+    karta.append(ocenyTopSetu(ts.klient?.feedback ?? null, (f) =>
+      zapiszTopSet(d, ts.positionId, { feedback: f, kg: topSetW(d, ts.positionId)?.klient?.kg ?? 0 })));
+    const inny = el("label", "inny-ciezar");
+    const pole = el("input");
+    pole.type = "number"; pole.inputMode = "decimal"; pole.min = "0"; pole.step = "0.5";
+    pole.placeholder = "";
+    pole.value = ts.klient?.kg ?? "";
+    pole.onchange = () => zapiszTopSet(d, ts.positionId,
+      { feedback: topSetW(d, ts.positionId)?.klient?.feedback ?? null, kg: Number(pole.value) || 0 });
+    inny.append(el("span", "", "Inny ciężar niż w planie?"), pole, el("span", "", "kg"));
+    karta.append(inny);
+  }
   const pasuje = (k) => k.typ === "topset" && k.slotTopSetu === ts.positionId;
   const tu = stan?.tu?.klucz === klucz;
   karta.classList.toggle("biezace", tu);
@@ -1129,6 +1212,10 @@ function kartaCwiczenia(c, stan = null) {
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
+  // Rampa przed pierwszą serią roboczą — dopóki ćwiczenie nie jest zaczęte.
+  if (c.rampa?.przed === "seria" && ile === 0 && !seriaWpisana(c) && !dzienBiezacy()?.ukonczony) {
+    karta.append(blokRampy(c.rampa));
+  }
 
   // Na liście „OK" zostaje (trener, 27.09.2026) — tu widać cały dzień naraz
   // i można nim odhaczyć ćwiczenie. Bez oceny przy końcu treningu serwer
@@ -1930,13 +2017,42 @@ function panelTopSetu(k, kroki) {
     ciezar: k.ciezar, dobierz: bezCiezaru, powtorzenia: 1, rpe: k.rpe,
   }));
   if (bezCiezaru) karta.append(el("p", "dobor", jakDobrac(1, k.rpe)));
-  karta.append(el("p", "drobne",
-    "Jedno ciężkie powtórzenie przed pracą. Wyniku nie wpisujesz — "
-    + "to sprawdzian dnia, nie pomiar."));
+  const d = dzienBiezacy();
+  const rampa = d?.cwiczenia.find((c) => c.positionId === k.slotTopSetu)?.rampa;
+  if (rampa?.przed === "topset" && !prowadzenie.zrobione.includes(k.klucz)) karta.append(blokRampy(rampa));
+  karta.append(el("p", "drobne", "Jedno ciężkie powtórzenie przed pracą — sprawdzian dnia."));
+
+  /*
+   * Ciężar i ocena TOP SETU (trener, 02.10.2026). Pole stoi z ciężarem
+   * z planu — zmienia się tylko, gdy klient zrobił inny. Ocena bez „OK”,
+   * jak przy seriach. Jedno i drugie idzie do trenera jako informacja;
+   * serie robocze zostają, bo „top set mógłby być za ciężki, a robocze okej”.
+   */
+  const zapisany = topSetW(d, k.slotTopSetu)?.klient ?? null;
+  const pole = el("input");
+  pole.type = "number"; pole.inputMode = "decimal"; pole.min = "0"; pole.step = "0.5";
+  pole.placeholder = "kg";
+  pole.value = zapisany?.kg ?? (typeof k.ciezar === "number" ? k.ciezar : "");
+  const pola = el("div", "pola-topsetu");
+  pola.append(pole, el("span", "", "kg × 1"));
+  karta.append(pola);
+  let ocena = zapisany?.feedback ?? null;
+  const blokOceny = el("div", "ocena-w-panelu");
+  blokOceny.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
+  blokOceny.append(el("p", "drobne podpowiedz-oceny",
+    "Jeśli było OK — nic nie klikaj. Ocena idzie do trenera, serii roboczych nie zmienia."));
+  blokOceny.append(ocenyTopSetu(ocena, (f) => {
+    ocena = f;
+    zapiszTopSet(d, k.slotTopSetu, { feedback: f, kg: Number(pole.value) || 0 });
+  }));
+  karta.append(blokOceny);
 
   const zrobione = el("button", "glowny szeroki",
     prowadzenie.zrobione.includes(k.klucz) ? "Dalej" : "Zrobione");
-  zrobione.onclick = () => dalej(k, kroki);
+  zrobione.onclick = () => {
+    zapiszTopSet(d, k.slotTopSetu, { feedback: ocena, kg: Number(pole.value) || 0 });
+    dalej(k, kroki);
+  };
   karta.append(zrobione);
   karta.append(cofnij());
   return karta;
@@ -1991,6 +2107,10 @@ function panelSerii(k, kroki, d) {
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
+  // Rampa przed pierwszą serią roboczą (bez TOP SETU przy tym ćwiczeniu).
+  if (c.rampa?.przed === "seria" && k.seria === 1 && !prowadzenie.zrobione.includes(k.klucz)) {
+    karta.append(blokRampy(c.rampa));
+  }
 
   // Co już poszło w tym treningu przy tym ćwiczeniu.
   const wpisane = serieCwiczenia(c.positionId).filter(Boolean);
