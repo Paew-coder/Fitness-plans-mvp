@@ -88,7 +88,9 @@ w prowadzeniu i na mapie dnia, gdzie ma kafelek „TS").
 **Rozgrzewka rampą** (od 02.10.2026) — przed pierwszą ciężką serią ćwiczenia
 głównego albo złożonego: przed TOP SETEM, a bez niego przed pierwszą serią
 roboczą. Ramka *„Rozgrzewka rampą: lekko × 8–10 · 65 kg × 5 · 90 kg × 3 ·
-110 kg × 1 — dalej TOP SET, 130 kg. Tych serii nie wpisujesz."* Ciężary liczy
+110 kg × 1 — dalej TOP SET, 130 kg. Serii rozgrzewkowych nie wpisujesz — zapis
+zaczyna się od TOP SETU."* (do 02.10 było „Tych serii nie wpisujesz” — trener:
+nie wiadomo, o które serie chodzi). Ciężary liczy
 silnik (`rampa.ts`): 50 / 70 / 85 % ciężaru docelowego, zaokrąglone do skoku
 ćwiczenia; krok, który nie rośnie, odpada. Rampa stoi przy ćwiczeniu z TOP
 SETEM, przy boju głównym (G, S) i przy ćwiczeniu złożonym z BAZY (współczynnik

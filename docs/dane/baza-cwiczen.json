@@ -1,6 +1,6 @@
 {
  "opis": "BAZA z MasterTemplate 5.17, wiersze 3-202 (164 pozycje) + cwiczenia dodane przez trenera poza arkuszem (wiersz_baza: null).",
- "liczba": 165,
+ "liczba": 166,
  "cwiczenia": [
   {
    "id": "EX-0001",
@@ -170,6 +170,19 @@
    "uwagi": null,
    "scalone_id": null,
    "wiersz_baza": 15
+  },
+  {
+   "id": "EX-0205",
+   "nazwa": "Barbell low bar squat paused 3sec",
+   "kategoria": "Lower push",
+   "part": "s",
+   "coeff": 1.0,
+   "skok_kg": 2.5,
+   "progresja": "kg",
+   "film": null,
+   "uwagi": null,
+   "scalone_id": null,
+   "wiersz_baza": null
   },
   {
    "id": "EX-0014",

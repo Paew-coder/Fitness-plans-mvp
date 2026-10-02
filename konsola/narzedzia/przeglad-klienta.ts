@@ -847,7 +847,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const ostatniKrok = Number((krokiListy.at(-1) ?? "").replace(",", ".").replace(/[^\d.]/g, ""));
   sprawdz("przed TOP SETEM przysiadu rampa z ciężarami, poniżej TOP SETU",
     krokiListy[0] === "lekko × 8–10" && krokiListy.length >= 3
-      && ostatniKrok > 0 && ostatniKrok < tsPrzysiadu.ciezar && rampaListy.includes("Dalej TOP SET"),
+      && ostatniKrok > 0 && ostatniKrok < tsPrzysiadu.ciezar && rampaListy.includes("Dalej TOP SET")
+      // 02.10.2026: wprost, że chodzi o serie rozgrzewkowe („Tych serii…” było niejasne).
+      && rampaListy.includes("Serii rozgrzewkowych nie wpisujesz — zapis zaczyna się od TOP SETU"),
     `${krokiListy.join(" · ")} → TOP SET ${tsPrzysiadu.ciezar}`);
   sprawdz("a nie na karcie samego przysiadu ani przy ćwiczeniu na masie ciała",
     await s.locator('#cwiczenia .cwiczenie[data-position="D1-S01"] .rampa').count() === 0
@@ -1830,7 +1832,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Bój bez TOP SETU: rampa idzie do pierwszej serii roboczej (02.10.2026).
   const rampaBoju = await kartaListy.locator(".rampa").innerText().catch(() => "");
   sprawdz("bój bez TOP SETU: rampa do pierwszej serii roboczej",
-    rampaBoju.includes("lekko × 8–10") && rampaBoju.includes("Dalej pierwsza seria robocza"),
+    rampaBoju.includes("lekko × 8–10") && rampaBoju.includes("Dalej pierwsza seria robocza")
+      && rampaBoju.includes("Serii rozgrzewkowych nie wpisujesz — wpisujesz dopiero serie robocze"),
     rampaBoju.replace(/\n/g, " · ") || "brak rampy");
   await kartaListy.getByRole("button", { name: /zapisz, co poszło/ }).click();
   const wierszeListy = kartaListy.locator(".wiersz-serii");

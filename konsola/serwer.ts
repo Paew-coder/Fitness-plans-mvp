@@ -36,7 +36,7 @@ import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy } from "../silnik/src/rampa.ts";
-import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
+import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
@@ -1244,6 +1244,9 @@ const serwer = createServer(async (req, res) => {
       return json(res, katalog.wszystkie.map((c) => ({
         ...c,
         zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
+        // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
+        // i przestawia przy nich „G” między progresją pauzowaną a bojem.
+        pauza: PAUZOWANE[c.id] ?? null,
       })));
     }
 

@@ -19,7 +19,7 @@ import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
 import type { Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { bojGlownySlotu, czescBoju, progresjaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, parametrySzablonu, pauzaSlotu } from "./szablon-boju.ts";
 
 export {
   PROGRESJA_BOJU, SERIE_AKCESORIUM, RPE_AKCESORIUM,
@@ -67,12 +67,16 @@ export function zastosujProgresje(
 
       // Szablon boju należy się ćwiczeniu złożonemu, nie miejscu w tabeli —
       // dlatego progresja musi wiedzieć, co w tym slocie stoi.
-      const coeff = katalog.poId(slot.cwiczenieId)?.coeff;
-      if (opcje.tylkoBoje && !bojGlownySlotu(slot, coeff)) return { ...slot };
+      const cwiczenie = katalog.poId(slot.cwiczenieId);
+      const coeff = cwiczenie?.coeff;
+      // Pauzowane mają progresję zależną od części planu, tak jak bój —
+      // po zmianie części ich liczby też trzeba przepisać.
+      if (opcje.tylkoBoje && !bojGlownySlotu(slot, coeff)
+        && !pauzaSlotu(slot, slot.cwiczenieId, plan.czescPlanu)) return { ...slot };
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
         tygodnie[t] = {
-          ...progresjaSlotu(slot.lp, t, coeff, czescBoju(plan.czescPlanu, slot.bojSilowy), slot.bojGlowny),
+          ...parametrySzablonu(slot, t, cwiczenie, plan.czescPlanu),
           ...wlasneTygodnia(tygodnie[t]),
         };
       }
