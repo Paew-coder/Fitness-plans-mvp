@@ -312,6 +312,20 @@ dalszych idą ±5 % od ostatniej wpisanej (*„Blade liczby to propozycja: 70 kg
 ciężej o 5% po Twojej ocenie"*). Wspólny zapis z panelem
 (`prowadzenie.korekty`), więc oba widoki mówią to samo.
 
+**Ocena zawsze coś zmienia — także mały ciężar i masa ciała** (od 02.10.2026).
+Trener: „przy 5 kg nasze »za trudne« coś zmieni, czy za mały jest %? Niech
+przeskakuje na 4 kg” i „miałem 10 powtórzeń, zaznaczyłem »za trudne«, a w kolejnej
+serii znowu 10”. Gdy ±5 % ginie w zaokrągleniu do skoku: **do 10 kg** ciężar idzie
+o 1 kg do pełnych kilogramów (5 → 4, 7,5 → 7), **wyżej** o skok ćwiczenia (12,5 → 10,
+jak dotąd). Dotąd 5 kg przy skoku 2,5 spadało do 2,5 w serii, a w kolejnych
+tygodniach nie zmieniało się wcale. Ta sama reguła w panelu, w propozycjach na
+liście i w silniku (`krokWidoczny` / `widocznaZmiana`); opis mówi „o 1 kg” zamiast
+„o 5%”, gdy tak wyszło. **Masa ciała:** ocena przy serii zmienia następną o ±1
+powtórzenie (panel: duża liczba z dopiskiem „w planie 10” i zdanie *„O 1 powtórzenie
+mniej po Twojej ocenie…”*; lista: propozycje), kolejne serie idą za tym, co klient
+zrobił; w kolejnych tygodniach silnik i tak odejmuje/dodaje 1 powtórzenie na ocenę
+(maks. ±3) — tak liczył arkusz.
+
 **Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii — także
 ostatniej — stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
 `Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"* (przy

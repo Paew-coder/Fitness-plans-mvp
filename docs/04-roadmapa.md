@@ -696,6 +696,15 @@ Trener (zrzuty: Poliquin step up, „za trudne” przy serii 1 → seria 2 na 10
 * Do trenera i do kolejnych tygodni idzie ocena z najpóźniejszej ocenionej serii; drugie dotknięcie zdejmuje ocenę tej serii (i jej korektę następnej). Przy ostatniej serii zdanie, która ocena zostaje dla kolejnych tygodni. Lista dnia bez zmian (jedna ocena na ćwiczenie, z „OK”).
 * Przegląd klienta (sekcja 27): przy serii 3 nic nie zaznaczone, ponowne „za trudne” → „Następna seria: 65 kg”, drugie dotknięcie zdejmuje, ocena tygodnia z serii 2 zostaje; przy ostatniej serii przyciski neutralne i zdanie o serii 2. Ze starą logiką trzy kontrole czerwone.
 
+**45. Ocena zawsze coś zmienia: mały ciężar o 1 kg, masa ciała o 1 powtórzenie — 02.10.2026.**
+
+Trener: „jeżeli w danym ćwiczeniu ciężary są bardzo małe, np. 5 kg, to nasze oznaczenie »za trudne« coś zmieni, czy za mały jest %? (…) niech przeskakuje na 4 kg” oraz „mam zrobić ćwiczenie na 10 powtórzeń i jak zaznaczyłem, że jest za trudne, to w kolejnej serii znowu 10 — najlepiej, żeby powtórzenia spadały od następnej serii o 1 albo rosły o 1, a reszta dni/tygodni dostosowała się do tego przesunięcia”.
+
+* **Było:** w serii — gdy 5 % ginęło w zaokrągleniu, o cały skok (5 kg → 2,5 kg przy skoku 2,5); w kolejnych tygodniach — wcale (5 × 0,95 = 4,75 → znów 5). Masa ciała: w serii nic; w tygodniach ±1 powtórzenie na ocenę (z arkusza).
+* **Jest:** gdy ocena ginie w zaokrągleniu — do 10 kg o 1 kg do pełnych kilogramów (5 → 4, 7,5 → 7, 10 → 9), wyżej o skok (12,5 → 10). Silnik: `krokWidoczny`, `widocznaZmiana` w obu drogach liczenia ciężaru (z RPE i „trzymaj z bloku”), tyle kroków, ile ocen netto; slot dostaje `zmianaPoOcenie`, a eksport wpisuje wtedy ciężar wprost (arkusz zaokrągliłby z powrotem). Telefon: `poKorekcie` z tą samą regułą; opisy „o 1 kg”, gdy to nie 5 %.
+* **Masa ciała w serii:** ocena → następna seria ±1 powtórzenie (panel: duża liczba, dopisek „w planie”, zdanie skąd; lista: propozycje i opis), dalsze serie za tym, co klient zrobił. Kolejne tygodnie — jak dotąd ±1 na ocenę, maks. ±3. Inne dni z tym samym ćwiczeniem to osobne pozycje planu — ocena jednej ich nie zmienia.
+* Testy silnika (krok, liczba kroków, plan z małym ciężarem i znacznikiem, masa ciała −1 w T2–T3), eksportu; przegląd klienta (sekcja 29: 5 kg → 4 kg na liście, Knee raises 10 → 9 na liście i w panelu). Bez reguł trzy kontrole czerwone.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
