@@ -41,6 +41,13 @@ export type SeriaMaksymalna = {
    * nie czyta; konsola pokazuje, skąd liczba.
    */
   zTygodniaMaksow?: number;
+  /**
+   * 1RM z treningu (wpis kalibracji), które ta seria maksymalna zastąpiła.
+   * Trzymane tylko po to, żeby usunięcie serii z telefonu je przywróciło —
+   * wcześniej wpisanie serii „na próbę” i wyczyszczenie pól kasowało 1RM
+   * na dobre. Silnik tego nie czyta.
+   */
+  zastapionaKalibracja?: { ciezar: number; powtorzenia: number; kalibracja: KalibracjaSerii };
 };
 
 /**

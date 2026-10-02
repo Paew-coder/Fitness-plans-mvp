@@ -252,7 +252,7 @@ addEventListener("popstate", (e) => {
 // Wejściowy wpis dostaje własny stempel, żeby `popstate` wiedział, gdzie wylądował.
 history.replaceState({ ekran: EKRAN_GLOWNY }, "");
 
-/** `pomiary: false` zostawia pola serii maksymalnych w spokoju — patrz `zapisz` niżej. */
+/** `pomiary: false` zostawia pola serii maksymalnych w spokoju — patrz `wyslijPomiar` niżej. */
 function rysuj({ pomiary = true } = {}) {
   if (!widok) return;
   // Samo imię klienta. „Marek X 1.0" — numer wersji był dla trenera,
@@ -2251,102 +2251,199 @@ function rysujPomiary() {
   const kontener = $("#pomiary");
   kontener.replaceChildren();
 
-  const naglowki = el("div", "etykiety");
-  naglowki.append(el("span", "", "ciężar"), el("span", "", "powt."), el("span", "", "1RM"));
-
   if (widok.doZmierzenia.some((p) => !p.bezSerii)) {
     kontener.append(el("p", "wskazowka-pomiarow",
       `Jedna seria do odmowy, przy dobrej technice. Najwyżej ${MAKS_POWTORZEN} `
-      + "powtórzeń — jeśli wychodzi więcej, dołóż kilogramów i spróbuj ponownie."));
+      + "powtórzeń — jeśli wychodzi więcej, dołóż kilogramów i spróbuj ponownie. "
+      + "Seria liczy się dopiero po „Zapisz”."));
   }
 
-  for (const p of widok.doZmierzenia) {
-    const karta = el("div", "pomiar");
-    const nazwa = el("div", "nazwa", p.nazwa);
-    if (p.film) {
-      const a = el("a", "film", " ▶");
-      a.href = p.film; a.target = "_blank"; a.rel = "noopener";
-      nazwa.append(a);
-    }
-    karta.append(nazwa);
+  for (const p of widok.doZmierzenia) kontener.append(kartaPomiaru(p));
+}
 
-    /*
-     * Ćwiczenia, przy których nie ma czego mierzyć — masa ciała, czas,
-     * dystans, ciężar ustawiany wprost przez trenera.
-     *
-     * Zostają na liście, ale bez pól. Wcześniej pola były wszędzie: klient
-     * wpisywał „10 kg × 15" przy ćwiczeniu na masie ciała, a w planie widział
-     * „masa ciała" i miał prawo sądzić, że aplikacja zgubiła jego liczby.
-     * Jedno zdanie zamiast dwóch pól kosztuje mniej niż kwadrans zastanawiania
-     * się, co się zepsuło.
-     */
-    if (p.bezSerii) {
-      karta.classList.add("bez-serii");
-      karta.append(el("p", "powod", p.bezSerii));
-      kontener.append(karta);
-      continue;
-    }
+/**
+ * 1RM z ciężaru i powtórzeń — podgląd przed zapisem, z tabeli silnika, którą
+ * przysyła serwer (`procent1RM`). `null`, gdy nie ma z czego (stary widok
+ * w pamięci telefonu albo powtórzenia poza tabelą). Zapisane 1RM liczy serwer.
+ */
+function podglad1RM(ciezar, powtorzenia) {
+  const procent = widok?.procent1RM?.[powtorzenia];
+  if (!(ciezar > 0) || !(procent > 0)) return null;
+  const x = ciezar / (procent / 100);
+  return Math.round((x + Number.EPSILON * x) * 10) / 10;
+}
 
-    // 1RM policzone z serii roboczej. Pola zostają puste — wpisana tu seria
-    // maksymalna zastąpi to wyliczenie, i klient ma to wiedzieć, zanim wpisze.
-    if (p.kalibracja) {
-      karta.append(el("p", "powod",
-        `Policzone z Twojej serii na treningu: ${liczba(p.kalibracja.ciezar)} kg × `
-        + `${p.kalibracja.powtorzenia} przy RPE ${liczba(p.kalibracja.rpe)}. `
-        + "Seria maksymalna wpisana niżej zastąpi to wyliczenie."));
-    }
+/**
+ * Skąd jest 1RM, które plan liczy teraz — w osobnej linijce nad polami.
+ *
+ * Trener 02.10.2026: 1RM policzone z serii na treningu stało w kolumnie obok
+ * pustych pól serii maksymalnej, jakby z nich wyszło. Teraz liczba obok pól
+ * to wyłącznie podgląd tego, co jest w polach.
+ */
+function zrodlo1RM(p) {
+  const blok = el("div", "obecne-1rm");
+  if (!p.oneRM) {
+    blok.append(el("div", "wartosc-1rm", "Jeszcze bez 1RM"));
+    blok.append(el("p", "powod",
+      "Wpisz serię maksymalną albo zrób serię na treningu — policzę 1RM z niej."));
+    return blok;
+  }
+  const wiersz = el("div", "wartosc-1rm");
+  wiersz.append("Twoje 1RM teraz: ", el("strong", "", `${liczba(p.oneRM)} kg`));
+  blok.append(wiersz);
+  if (p.kalibracja) {
+    blok.append(el("p", "powod",
+      `Policzone z Twojej serii na treningu: ${liczba(p.kalibracja.ciezar)} kg × `
+      + `${p.kalibracja.powtorzenia} przy RPE ${liczba(p.kalibracja.rpe)}.`));
+  } else if (p.ciezar && p.powtorzenia) {
+    const z = p.zastapionaKalibracja;
+    blok.append(el("p", "powod",
+      `Z serii maksymalnej: ${liczba(p.ciezar)} kg × ${p.powtorzenia}.`
+      + (z?.oneRM ? ` Zastąpiła 1RM z treningu (${liczba(z.oneRM)} kg) — `
+        + "po usunięciu serii wróci." : "")));
+  } else {
+    blok.append(el("p", "powod", "Ustawione przez trenera."));
+  }
+  return blok;
+}
 
-    karta.append(naglowki.cloneNode(true));
+function kartaPomiaru(p) {
+  const karta = el("div", "pomiar");
+  karta.dataset.cwiczenie = p.cwiczenieId;
+  const nazwa = el("div", "nazwa", p.nazwa);
+  if (p.film) {
+    const a = el("a", "film", " ▶");
+    a.href = p.film; a.target = "_blank"; a.rel = "noopener";
+    nazwa.append(a);
+  }
+  karta.append(nazwa);
 
-    const pola = el("div", "pola");
-    const wCiezar = el("input");
-    const wPowt = el("input");
-    for (const [input, wartosc, tytul] of [
-      [wCiezar, p.ciezar, "kg"], [wPowt, p.powtorzenia, "powt."],
-    ]) {
-      input.type = "number";
-      input.inputMode = "decimal";
-      input.min = "0";
-      input.placeholder = tytul;
-      input.value = wartosc ?? "";
-    }
-    // Tabela RPE kończy się na piętnastu powtórzeniach — powyżej nie ma
-    // z czego policzyć ciężaru. Lepiej powiedzieć to przy polu niż odmówić
-    // po wysłaniu.
-    wPowt.max = String(MAKS_POWTORZEN);
-    wPowt.title = `Najwyżej ${MAKS_POWTORZEN} powtórzeń — przy większej liczbie `
-      + "dołóż kilogramów.";
-    const rm = el("span", "rm", p.oneRM ? `${liczba(p.oneRM)} kg` : "—");
+  /*
+   * Ćwiczenia, przy których nie ma czego mierzyć — masa ciała, czas,
+   * dystans, ciężar ustawiany wprost przez trenera.
+   *
+   * Zostają na liście, ale bez pól. Wcześniej pola były wszędzie: klient
+   * wpisywał „10 kg × 15" przy ćwiczeniu na masie ciała, a w planie widział
+   * „masa ciała" i miał prawo sądzić, że aplikacja zgubiła jego liczby.
+   * Jedno zdanie zamiast dwóch pól kosztuje mniej niż kwadrans zastanawiania
+   * się, co się zepsuło.
+   */
+  if (p.bezSerii) {
+    karta.classList.add("bez-serii");
+    karta.append(el("p", "powod", p.bezSerii));
+    return karta;
+  }
 
-    // Bez przerysowania — inaczej po wpisaniu ciężaru znika pole powtórzeń
-    // spod palca. 1RM aktualizujemy punktowo, gdy wróci z serwera.
-    const zapisz = async () => {
-      const ciezar = Number(wCiezar.value) || 0;
-      const powtorzenia = Number(wPowt.value) || 0;
-      if (ciezar === (p.ciezar ?? 0) && powtorzenia === (p.powtorzenia ?? 0)) return;
-      // Seria liczy się tylko w komplecie. Połowa pary kasowała na serwerze
-      // poprzedni wpis, zanim klient zdążył dopisać drugie pole — a przy
-      // ćwiczeniu policzonym z serii roboczej znaczyło to utratę 1RM
-      // i ciężarów w całym planie. Oba pola puste to świadome wyczyszczenie.
-      if ((ciezar > 0) !== (powtorzenia > 0)) return;
-      await wyslij("/serie", { cwiczenieId: p.cwiczenieId, ciezar, powtorzenia }, () => {
-        p.ciezar = ciezar || null;
-        p.powtorzenia = powtorzenia || null;
-      }, { odswiez: false });
-      const swiezy = widok?.doZmierzenia.find((x) => x.cwiczenieId === p.cwiczenieId);
-      if (swiezy) {
-        p.oneRM = swiezy.oneRM;
-        rm.textContent = swiezy.oneRM ? `${liczba(swiezy.oneRM)} kg` : "—";
-      }
-      rysuj({ pomiary: false });   // baner „uzupełnij 1RM" i ciężary w planie
+  karta.append(zrodlo1RM(p));
+
+  const naglowki = el("div", "etykiety");
+  naglowki.append(el("span", "", "ciężar"), el("span", "", "powt."), el("span", "", "1RM z serii"));
+  karta.append(naglowki);
+
+  const pola = el("div", "pola");
+  const wCiezar = el("input");
+  const wPowt = el("input");
+  for (const [input, wartosc, tytul] of [
+    [wCiezar, p.ciezar, "kg"], [wPowt, p.powtorzenia, "powt."],
+  ]) {
+    input.type = "number";
+    input.inputMode = "decimal";
+    input.min = "0";
+    input.placeholder = tytul;
+    input.value = wartosc ?? "";
+  }
+  // Tabela RPE kończy się na piętnastu powtórzeniach — powyżej nie ma
+  // z czego policzyć ciężaru. Lepiej powiedzieć to przy polu niż odmówić
+  // po wysłaniu.
+  wPowt.max = String(MAKS_POWTORZEN);
+  wPowt.title = `Najwyżej ${MAKS_POWTORZEN} powtórzeń — przy większej liczbie `
+    + "dołóż kilogramów.";
+  const rm = el("span", "rm", "—");
+  pola.append(wCiezar, wPowt, rm);
+  karta.append(pola);
+
+  /*
+   * Zapis dopiero przyciskiem (trener 02.10.2026: „wpisanie serii maksymalnej
+   * zmienia ten RM bezpowrotnie — jak coś wpiszę testowo i usunę, to się
+   * zapisuje”). Wcześniej seria szła na serwer przy wyjściu z pola i od razu
+   * przestawiała ciężary w całym planie. Teraz pola tylko liczą podgląd obok,
+   * a plan zmienia się po „Zapisz”.
+   */
+  const akcje = el("div", "akcje-pomiaru");
+  const zapiszPrzycisk = el("button", "zapisz-pomiar", "Zapisz serię");
+  const notka = el("p", "notka-pomiaru");
+  akcje.append(zapiszPrzycisk);
+  const maSerie = Boolean(p.ciezar && p.powtorzenia && !p.kalibracja);
+  if (maSerie) {
+    const usun = el("button", "link usun-pomiar", p.zastapionaKalibracja?.oneRM
+      ? `Usuń serię — wróci 1RM z treningu (${liczba(p.zastapionaKalibracja.oneRM)} kg)`
+      : "Usuń serię");
+    usun.onclick = () => {
+      // Bez kalibracji pod spodem usunięcie zostawia ćwiczenie bez 1RM —
+      // a plan bez ciężarów. To nie może się stać jednym przypadkowym dotknięciem.
+      if (!p.zastapionaKalibracja && !confirm(
+        "Usunąć serię maksymalną? Ćwiczenie zostanie bez 1RM, dopóki nie wpiszesz "
+        + "nowej serii albo nie zrobisz serii na treningu.")) return;
+      wyslijPomiar(p, karta, 0, 0);
     };
-    wCiezar.onchange = zapisz;
-    wPowt.onchange = zapisz;
-
-    pola.append(wCiezar, wPowt, rm);
-    karta.append(pola);
-    kontener.append(karta);
+    akcje.append(usun);
   }
+  karta.append(akcje, notka);
+
+  const odswiez = () => {
+    const ciezar = Number(wCiezar.value) || 0;
+    const powtorzenia = Number(wPowt.value) || 0;
+    const pelna = ciezar > 0 && powtorzenia > 0;
+    const bezZmian = ciezar === (maSerie ? p.ciezar : 0) && powtorzenia === (maSerie ? p.powtorzenia : 0);
+    const wynik = pelna ? podglad1RM(ciezar, powtorzenia) : null;
+    rm.textContent = wynik ? `${liczba(wynik)} kg` : "—";
+    rm.classList.toggle("niezapisane", pelna && !bezZmian);
+    zapiszPrzycisk.classList.toggle("ukryty", !pelna || bezZmian || powtorzenia > MAKS_POWTORZEN);
+    notka.textContent = !pelna || bezZmian ? ""
+      : powtorzenia > MAKS_POWTORZEN ? `Najwyżej ${MAKS_POWTORZEN} powtórzeń — dołóż kilogramów.`
+        : p.kalibracja ? "Niezapisane. „Zapisz” zastąpi 1RM z treningu — usunięcie serii je przywróci."
+          : "Niezapisane — plan zmieni się po „Zapisz”.";
+  };
+  wCiezar.oninput = odswiez;
+  wPowt.oninput = odswiez;
+  zapiszPrzycisk.onclick = () =>
+    wyslijPomiar(p, karta, Number(wCiezar.value) || 0, Number(wPowt.value) || 0);
+  wPowt.onkeydown = (e) => {
+    if (e.key === "Enter" && !zapiszPrzycisk.classList.contains("ukryty")) zapiszPrzycisk.click();
+  };
+  odswiez();
+  return karta;
+}
+
+/**
+ * Zapis albo usunięcie (0 × 0) serii maksymalnej. Kartę rysuje od nowa —
+ * zapis idzie przyciskiem, więc nikt nie pisze w tym momencie w polu.
+ */
+async function wyslijPomiar(p, karta, ciezar, powtorzenia) {
+  await wyslij("/serie", { cwiczenieId: p.cwiczenieId, ciezar, powtorzenia }, () => {
+    // Bez zasięgu karta ma od razu pokazać to, co pokaże serwer. Zmiana idzie
+    // do widoku, który jest teraz w pamięci — karta mogła powstać z poprzedniego.
+    p = widok?.doZmierzenia.find((x) => x.cwiczenieId === p.cwiczenieId) ?? p;
+    if (ciezar > 0) {
+      if (p.kalibracja) {
+        p.zastapionaKalibracja = { oneRM: p.oneRM, ...p.kalibracja };
+        p.kalibracja = null;
+      }
+      p.ciezar = ciezar;
+      p.powtorzenia = powtorzenia;
+      p.oneRM = podglad1RM(ciezar, powtorzenia) ?? p.oneRM;
+    } else {
+      const z = p.zastapionaKalibracja;
+      p.ciezar = null;
+      p.powtorzenia = null;
+      p.oneRM = z?.oneRM ?? null;
+      p.kalibracja = z ? { ciezar: z.ciezar, powtorzenia: z.powtorzenia, rpe: z.rpe } : null;
+      p.zastapionaKalibracja = null;
+    }
+  }, { odswiez: false });
+  const swiezy = widok?.doZmierzenia.find((x) => x.cwiczenieId === p.cwiczenieId) ?? p;
+  if (karta.isConnected) karta.replaceWith(kartaPomiaru(swiezy));
+  rysuj({ pomiary: false });   // baner „uzupełnij 1RM" i ciężary w planie
 }
 
 /**

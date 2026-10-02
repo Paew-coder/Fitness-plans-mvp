@@ -136,8 +136,19 @@ na serię), po poprawieniu liczby (wtedy cały wiersz, tak jak stoi) albo po
 temu dalej zapisuje się dokładnie to, co klient zatwierdził, a „Zrobione: …" liczy
 tylko zatwierdzone serie.
 
-**Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Wpisuje ciężar
-i powtórzenia, 1RM liczy się od razu.
+**Serie maksymalne** — jedna z dwóch dróg na start cyklu (niżej). Nad polami
+każdego ćwiczenia stoi obecne 1RM i skąd jest (*„Twoje 1RM teraz: 41,4 kg —
+policzone z Twojej serii na treningu: 30 kg × 8 przy RPE 8"*, z serii
+maksymalnej albo od trenera). Liczba obok pól to tylko podgląd 1RM z tego, co
+w nich wpisane (*„≈ 59,6 kg"*, z tabeli silnika, także bez zasięgu). Plan zmienia
+się dopiero po **„Zapisz serię”**; seria, która zastępuje 1RM z treningu, mówi
+to przed zapisem, a po zapisie ma *„Usuń serię — wróci 1RM z treningu
+(41,4 kg)"*. Do 02.10.2026 seria szła na serwer przy wyjściu z pola i kasowała
+1RM z treningu na dobre — trener: „jak coś wpiszę testowo i usunę, to się
+zapisuje”. Serwer trzyma teraz zastąpioną kalibrację przy serii
+(`zastapionaKalibracja`) i przywraca ją, gdy seria zostanie usunięta. Usunięcie
+serii bez kalibracji pod spodem pyta o potwierdzenie — ćwiczenie zostałoby bez
+1RM.
 
 **Twój postęp** — osobny ekran: frekwencja tydzień po tygodniu, waga i postęp
 w każdym ćwiczeniu. Punkty tydzień po tygodniu to najcięższa seria

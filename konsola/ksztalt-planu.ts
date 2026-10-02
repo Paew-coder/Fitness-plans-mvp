@@ -108,6 +108,16 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
         return `${gdzie}: opis serii, z której policzono 1RM, jest uszkodzony`;
       }
     }
+    // 1RM z treningu, które ta seria zastąpiła — wraca, gdy klient ją usunie.
+    if (seria.zastapionaKalibracja != null) {
+      const z = seria.zastapionaKalibracja;
+      const k = jestObiektem(z) ? z.kalibracja : null;
+      if (!jestObiektem(z) || !jestLiczba(z.ciezar) || !jestLiczba(z.powtorzenia)
+        || !jestObiektem(k) || !jestLiczba(k.ciezar) || !jestLiczba(k.powtorzenia)
+        || !jestLiczba(k.rpe) || !jestLiczba(k.tydzien)) {
+        return `${gdzie}: zapamiętane 1RM z treningu jest uszkodzone`;
+      }
+    }
     // Numer cyklu, w którego tygodniu maksów padł ten wynik — czyta go konsola.
     if (seria.zTygodniaMaksow != null && !jestLiczba(seria.zTygodniaMaksow)) {
       return `${gdzie}: numer cyklu z tygodnia maksów musi być liczbą`;
