@@ -13,7 +13,7 @@ import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
-import { bojGlownySlotu, czescBoju, progresjaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, czescBoju, parametrySzablonu, pauzaSlotu, type RodzajPauzy } from "./szablon-boju.ts";
 import { rpeTopSetu, zwyczajowyTopSet } from "./top-set.ts";
 import {
   bilansTygodnia,
@@ -191,6 +191,8 @@ export type SlotWyliczony = {
    */
   ciezarZrodlo?: { tydzien: number; kto: "trener" | "klient" };
   stres: Stres;
+  /** Liczone progresją pauzowaną (`PROGRESJA_PAUZY`) — konsola to pokazuje. */
+  pauza?: RodzajPauzy;
 };
 
 export type TopSetWyliczony = {
@@ -306,10 +308,12 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // Część planu rozstrzyga nie tylko o powtórzeniach akcesoriów, ale też
     // o progresji boju: „objętość" to cz.1 trenera, „intensywność" — cz.2.
     // Deload nie ma własnego szablonu: serie i powtórzenia jak w T6, RPE niżej.
+    // Pauzowane wyciskanie i przysiad mają własną progresję (02.10.2026) —
+    // patrz `PROGRESJA_PAUZY`; ciężar liczy się wtedy jak przy boju, z RPE.
+    const pauza = pauzaSlotu(slot, cwiczenie.id, plan.czescPlanu);
     const szablon = wzor
       ? { serie: wzor.serie, powtorzenia: wzor.powtorzenia, rpe: rpeDeloadu(wzor.rpe) }
-      : progresjaSlotu(slot.lp, tydzien as Tydzien, cwiczenie.coeff,
-        czescBoju(plan.czescPlanu, slot.bojSilowy), slot.bojGlowny);
+      : parametrySzablonu(slot, tydzien as Tydzien, cwiczenie, plan.czescPlanu);
 
     const serie = p.serie ?? szablon.serie!;
     const efektywne = serieEfektywne(
@@ -348,7 +352,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
 
     const policzony = obliczCiezar({
       tydzien: tydzien as Tydzien,
-      jestBojemGlownym: bojGlowny,
+      jestBojemGlownym: bojGlowny || pauza !== null,
       trybAkcesoriow: slot.trybCiezaru ?? plan.trybAkcesoriow,
       powtorzenia,
       rpe,
@@ -379,6 +383,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       ...(p.ciezarOverride === undefined && przeniesiony
         ? { ciezarZrodlo: { tydzien: przeniesiony.tydzien, kto: przeniesiony.kto } } : {}),
       stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
+      ...(pauza ? { pauza } : {}),
     };
   };
 

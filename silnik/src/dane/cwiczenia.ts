@@ -4,7 +4,7 @@
 
 import type { Cwiczenie } from "../typy.ts";
 
-/** 165 cwiczen z BAZY 5.17. */
+/** 166 cwiczen z BAZY 5.17. */
 export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0001", nazwa: "Abduction machine", kategoria: "Lower pull", part: "d", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/H98IP8rARy4", scaloneId: "EX-0098" },
   { id: "EX-0002", nazwa: "Adduction machine", kategoria: "Lower push", part: "s", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/CjAVezAggkI", scaloneId: "EX-0099" },
@@ -19,6 +19,7 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0011", nazwa: "Barbell bench press", kategoria: "Upper push horizontal", part: "b", coeff: 1.0, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/ejI1Nlsul9k", scaloneId: "EX-0021" },
   { id: "EX-0012", nazwa: "Barbell curl", kategoria: "Bicep", part: "r", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/N5x5M1x1Gd0", scaloneId: "EX-0023, EX-0024, EX-0025" },
   { id: "EX-0013", nazwa: "Barbell low bar squat", kategoria: "Lower push", part: "s", coeff: 1.0, skokKg: 2.5, progresja: "kg", film: "https://youtube.com/shorts/WYGyt6FdI78" },
+  { id: "EX-0205", nazwa: "Barbell low bar squat paused 3sec", kategoria: "Lower push", part: "s", coeff: 1.0, skokKg: 2.5, progresja: "kg" },
   { id: "EX-0014", nazwa: "Barbell OHP", kategoria: "Upper push vertical", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/I7ND5OficOo" },
   { id: "EX-0015", nazwa: "Barbell oscilation", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 2.5, progresja: "kg" },
   { id: "EX-0016", nazwa: "Barbell row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/bm0_q9bR_HA" },

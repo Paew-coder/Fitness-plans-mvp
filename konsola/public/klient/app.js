@@ -1058,8 +1058,13 @@ function blokRampy(r) {
   const potem = r.przed === "topset" ? "TOP SET" : "pierwsza seria robocza";
   blok.append(el("p", "drobne", r.cel === null
     ? "Potem 2–3 serie z rosnącym ciężarem i coraz mniej powtórzeń, aż dojdziesz blisko "
-      + `ciężaru, który dobierzesz. Dalej ${potem}. Tych serii nie wpisujesz.`
-    : `Dalej ${potem} — ${liczba(r.cel)} kg. Tych serii nie wpisujesz.`));
+      + `ciężaru, który dobierzesz. Dalej ${potem}.`
+    : `Dalej ${potem} — ${liczba(r.cel)} kg.`));
+  // Trener, 02.10.2026: „Tych serii nie wpisujesz” było nieintuicyjne — nie
+  // wiadomo było, o które serie chodzi. Teraz wprost: rozgrzewkowe.
+  blok.append(el("p", "drobne rampa-uwaga", r.przed === "topset"
+    ? "Serii rozgrzewkowych nie wpisujesz — zapis zaczyna się od TOP SETU."
+    : "Serii rozgrzewkowych nie wpisujesz — wpisujesz dopiero serie robocze."));
   return blok;
 }
 

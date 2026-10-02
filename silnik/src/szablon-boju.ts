@@ -163,6 +163,86 @@ export function czescBoju(czesc: CzescPlanu, bojSilowy?: boolean): CzescPlanu {
 }
 
 /**
+ * Ćwiczenia pauzowane — własna progresja z periodyzacji trenera.
+ *
+ * Trener, 02.10.2026 (zrzut arkusza: Blok I i II, 5 tygodni + deload):
+ * „paused bench press i paused squat mają w tej periodyzacji swoją własną
+ * progresję — aktualnie paused bench press liczy mi się jak ćwiczenie
+ * akcesoryjne”. Jego decyzje:
+ *
+ * - cz.1 (objętość) = Blok I, cz.2 (intensywność) = Blok II; tygodnie 1–5
+ *   jeden do jednego jako T1–T5, **T6 jak T5** (szczyt trzymany dwa tygodnie);
+ *   deload aplikacji (T7) wychodzi z T6 jak przy każdym ćwiczeniu;
+ * - pauzowany przysiad w cz.1 ma liczby „RAW squat” z Bloku I (ten sam slot
+ *   w jego periodyzacji), w cz.2 — „pause lowbar squat” z Bloku II;
+ * - **zawsze, na każdej pozycji** (A, B, C…), chyba że trener kliknie „G” —
+ *   wtedy zwykły bój. W hipertrofii jak dotąd, chyba że „S”.
+ *
+ * Ciężar jak przy boju: z 1RM tego ćwiczenia i RPE z tabeli, co tydzień.
+ * Arkusz trenera daje tak samo 85 · 87,5 · 90 · 92,5 kg przy 1RM pauzowanego
+ * wyciskania ≈ 102 kg.
+ */
+export type RodzajPauzy = "wyciskanie" | "przysiad";
+
+/** Które ćwiczenia z BAZY liczą się progresją pauzowaną. */
+export const PAUZOWANE: Readonly<Record<string, RodzajPauzy>> = {
+  "EX-0022": "wyciskanie",   // Bench press paused 3sec
+  "EX-0205": "przysiad",     // Barbell low bar squat paused 3sec (dodany 02.10.2026)
+};
+
+const t = (serie: number, powtorzenia: number, rpe: number): ParametryBoju => ({ serie, powtorzenia, rpe });
+
+export const PROGRESJA_PAUZY: Record<RodzajPauzy, Record<"objętość" | "intensywność", readonly ParametryBoju[]>> = {
+  wyciskanie: {
+    // 4ct pause BP, Blok I
+    "objętość": [t(5, 3, 7.5), t(5, 3, 8), t(4, 3, 8), t(5, 3, 8.5), t(5, 2, 8.5), t(5, 2, 8.5)],
+    // 3ct pause BP, Blok II
+    "intensywność": [t(5, 4, 8), t(5, 4, 8), t(5, 3, 8), t(5, 4, 9), t(4, 3, 8.5), t(4, 3, 8.5)],
+  },
+  przysiad: {
+    // RAW squat, Blok I
+    "objętość": [t(4, 5, 7), t(4, 5, 8), t(4, 5, 8.5), t(4, 4, 8.5), t(4, 4, 9), t(4, 4, 9)],
+    // pause lowbar squat, Blok II
+    "intensywność": [t(4, 5, 8), t(4, 5, 8.5), t(4, 4, 8.5), t(4, 4, 9), t(4, 5, 9), t(4, 5, 9)],
+  },
+};
+
+/**
+ * Czy ten slot liczy się progresją pauzowaną — a jeśli tak, którą.
+ * `null`: ćwiczenie nie jest pauzowane, trener ustawił „G” (zwykły bój albo
+ * akcesorium z jego decyzji) albo część jest hipertroficzna bez „S”.
+ */
+export function pauzaSlotu(
+  slot: { bojGlowny?: boolean; bojSilowy?: boolean },
+  cwiczenieId: string | null | undefined,
+  czescPlanu: CzescPlanu,
+): RodzajPauzy | null {
+  const rodzaj = cwiczenieId ? PAUZOWANE[cwiczenieId] : undefined;
+  if (!rodzaj || slot.bojGlowny !== undefined) return null;
+  return jestHipertrofia(czescBoju(czescPlanu, slot.bojSilowy)) ? null : rodzaj;
+}
+
+/**
+ * Parametry tygodnia wg szablonu dla konkretnego slotu: progresja pauzowana,
+ * bój albo akcesorium. Jedno miejsce dla planu i przycisku „wpisz progresję”.
+ */
+export function parametrySzablonu(
+  slot: { lp: string; bojGlowny?: boolean; bojSilowy?: boolean },
+  tydzien: Tydzien,
+  cwiczenie: { id: string; coeff?: Coeff } | null | undefined,
+  czescPlanu: CzescPlanu,
+): ParametryTygodnia {
+  const pauza = pauzaSlotu(slot, cwiczenie?.id, czescPlanu);
+  if (pauza) {
+    const czesc = czescBoju(czescPlanu, slot.bojSilowy) as "objętość" | "intensywność";
+    const p = PROGRESJA_PAUZY[pauza][czesc][tydzien - 1]!;
+    return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
+  }
+  return progresjaSlotu(slot.lp, tydzien, cwiczenie?.coeff,
+    czescBoju(czescPlanu, slot.bojSilowy), slot.bojGlowny);
+}
+
+/**
  * Parametry jednej pozycji w jednym tygodniu, wg szablonu.
  *
  * Powtórzeń akcesoriów **nie ustawiamy** — w arkuszu liczy je formuła i tak
