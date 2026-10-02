@@ -977,7 +977,7 @@ function rysujTrening() {
  */
 function kolumnyZadania({
   seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne, podpisCiezaru = "Ciężar",
-  dopisekCiezaru = null,
+  dopisekCiezaru = null, dopisekPowtorzen = null,
 }) {
   const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
@@ -998,7 +998,7 @@ function kolumnyZadania({
   else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"));
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
-    null, jednostronne ? "na stronę" : null);
+    null, [jednostronne ? "na stronę" : null, dopisekPowtorzen].filter(Boolean).join(" · ") || null);
   blok.append(siatka);
   // Samo „RPE 8", bez „2 w zapasie" — trener: dopisek zbędny. Co znaczy
   // RPE, mówi „Co to jest RPE?" tam, gdzie klient dobiera ciężar.
@@ -1327,12 +1327,23 @@ function podpowiedzSerii(c, i, serie) {
   // ±5 % od tego, co klient właśnie podniósł (trener, 26.09.2026).
   const korekta = prowadzenie?.korekty?.[c.positionId];
   const skorygowana = !wlasna?.ciezar && poprzednia?.ciezar && korekta?.od === i + 1;
+  // Na masie ciała ocena zmienia powtórzenia następnej serii o ±1 (trener,
+  // 02.10.2026: „miałem 10 powtórzeń, zaznaczyłem »za trudne«, a w kolejnej
+  // serii znowu 10”). Dalsze serie idą za tym, co klient zrobił.
+  const naPowtorzenia = !skorygowana && c.ciezar === "masa ciała" && !wlasna?.powtorzenia
+    && poprzednia?.powtorzenia && korekta?.od === i + 1;
   return {
     ciezar: skorygowana
       ? poKorekcie(poprzednia.ciezar, korekta.kierunek, c.skokKg)
       : wlasna?.ciezar ?? poprzednia?.ciezar ?? (typeof c.ciezar === "number" ? c.ciezar : null),
-    powtorzenia: wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
-    korekta: skorygowana ? korekta.kierunek : 0,
+    powtorzenia: naPowtorzenia
+      ? Math.max(1, poprzednia.powtorzenia + korekta.kierunek)
+      : wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
+    korekta: skorygowana || naPowtorzenia ? korekta.kierunek : 0,
+    /** Ciężar, od którego liczona jest korekta — do opisu „o 5%” albo „o 1 kg”. */
+    zCiezaru: skorygowana ? poprzednia.ciezar : null,
+    /** Korekta poszła w powtórzenia, nie w ciężar (masa ciała). */
+    korektaPowtorzen: Boolean(naPowtorzenia),
     /** Skąd ciężar w polu — do dopisku pod dużą liczbą. */
     zrodlo: skorygowana ? "korekta" : wlasna?.ciezar ? "wlasna" : poprzednia?.ciezar ? "poprzednia" : "plan",
   };
@@ -1343,13 +1354,23 @@ const KOREKTA_SERII = 0.05;
 
 /**
  * Ciężar po korekcie ±5 %, zaokrąglony do skoku z BAZY (co najmniej 0,5 kg).
- * Przy małych ciężarach 5 % nie sięga skoku — wtedy o jeden skok, bo klient
- * powiedział „za trudne" i ta sama liczba byłaby odpowiedzią „nie słyszę".
+ * Gdy 5 % nie sięga skoku, ciężar i tak idzie o krok — klient powiedział
+ * „za trudne" i ta sama liczba byłaby odpowiedzią „nie słyszę". Krok jak
+ * w silniku (`krokWidoczny`, trener 02.10.2026: „nie wyłapało 5 kg — niech
+ * przeskakuje na 4 kg”): do 10 kg o 1 kg do pełnych kilogramów, wyżej o skok.
+ * Dotąd zawsze o skok, więc 5 kg przy skoku 2,5 spadało do 2,5.
  */
+const MALY_CIEZAR_KG = 10;
+/** „o 5%”, gdy tyle wyszło; przy małym ciężarze albo całym skoku — „o 1 kg”, „o 2,5 kg”. */
+const oIle = (przed, po) => (przed && Math.abs(po - przed) / przed > 0.07
+  ? `o ${liczba(Math.abs(po - przed))} kg` : "o 5%");
 function poKorekcie(kg, kierunek, skok) {
   const s = Math.max(Number(skok) || 0, 0.5);
   let nowy = Math.round((kg * (1 + kierunek * KOREKTA_SERII)) / s) * s;
-  if (nowy === kg) nowy = kg + kierunek * s;
+  if (nowy === kg) {
+    nowy = kg > MALY_CIEZAR_KG ? kg + kierunek * s
+      : kierunek < 0 ? Math.max(0.5, Math.ceil(kg - 1)) : Math.floor(kg + 1);
+  }
   return Math.max(0, Number(nowy.toFixed(2)));
 }
 
@@ -1373,7 +1394,7 @@ function poKorekcie(kg, kierunek, skok) {
  * a przerysowanie wracało do podpowiedzi i kasowało je (tak było przy
  * ocenie z ostatniej serii do 26.09).
  */
-function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
+function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
   const blok = el("div", "ocena-w-panelu");
   const ostatnia = k.ostatniaSeria;
   /*
@@ -1406,10 +1427,18 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
     }
     const korekta = prowadzenie.korekty?.[c.positionId];
     const baza = Number(String(wCiezar.value).replace(",", ".")) || null;
-    notka.textContent = !ostatnia && !bezCiezaru && baza && korekta?.od === k.seria + 1
-      ? `Następna seria: ${liczba(poKorekcie(baza, korekta.kierunek, c.skokKg))} kg `
-        + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} o 5%).`
-      : "";
+    const powt = Number(wPowt?.value) || null;
+    const nastepna = !ostatnia && korekta?.od === k.seria + 1;
+    if (nastepna && !bezCiezaru && baza) {
+      const kg = poKorekcie(baza, korekta.kierunek, c.skokKg);
+      notka.textContent = `Następna seria: ${liczba(kg)} kg `
+        + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(baza, kg)}).`;
+    } else if (nastepna && c.ciezar === "masa ciała" && powt) {
+      notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek)} powt. `
+        + `(o 1 ${korekta.kierunek < 0 ? "mniej" : "więcej"}).`;
+    } else {
+      notka.textContent = "";
+    }
   };
   const warianty = [["za trudne", "Za trudne", "trudne"], ["za łatwe", "Za łatwe", "latwe"]];
   for (const [wartosc, etykieta, klasa] of warianty) {
@@ -1443,6 +1472,7 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru) {
   }
   // Zmiana liczby w polu zmienia i zapowiedź następnej serii.
   wCiezar.addEventListener("input", pokaz);
+  wPowt?.addEventListener("input", pokaz);
   blok.append(oceny, notka);
   pokaz();
   return blok;
@@ -1684,9 +1714,13 @@ function polaWykonania(c) {
       const s = serie[j];
       if (s?.powtorzenia && (bezCiezaru || s.ciezar)) {
         const k = korekta();
+        const poOcenie = k?.od === j + 2;
         const ciezar = bezCiezaru ? null
-          : k?.od === j + 2 ? poKorekcie(s.ciezar, k.kierunek, c.skokKg) : s.ciezar;
-        return { ciezar, powtorzenia: s.powtorzenia };
+          : poOcenie ? poKorekcie(s.ciezar, k.kierunek, c.skokKg) : s.ciezar;
+        // Masa ciała: ocena przestawia powtórzenia o ±1 (02.10.2026).
+        const powtorzenia = poOcenie && c.ciezar === "masa ciała"
+          ? Math.max(1, s.powtorzenia + k.kierunek) : s.powtorzenia;
+        return { ciezar, powtorzenia, zCiezaru: s.ciezar };
       }
     }
     return null;
@@ -1713,11 +1747,16 @@ function polaWykonania(c) {
     // Skąd blade liczby — z poprzedniej serii albo po ocenie ±5 %.
     const pierwsza = wiersze.findIndex((_, i) => propozycja(i));
     const k = korekta();
-    const poOcenie = pierwsza >= 0 && !bezCiezaru && k?.od === pierwsza + 1;
-    opisPropozycji.textContent = poOcenie
-      ? `Blade liczby to propozycja: ${liczba(propozycja(pierwsza).ciezar)} kg — `
-        + `${k.kierunek < 0 ? "lżej" : "ciężej"} o 5% po Twojej ocenie. Po serii dotknij ✓ albo popraw.`
-      : "Blade liczby to propozycja z poprzedniej serii — po serii dotknij ✓ albo popraw.";
+    const poOcenie = pierwsza >= 0 && k?.od === pierwsza + 1;
+    const p0 = pierwsza >= 0 ? propozycja(pierwsza) : null;
+    opisPropozycji.textContent = poOcenie && !bezCiezaru
+      ? `Blade liczby to propozycja: ${liczba(p0.ciezar)} kg — `
+        + `${k.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(p0.zCiezaru, p0.ciezar)} po Twojej ocenie. `
+        + "Po serii dotknij ✓ albo popraw."
+      : poOcenie && c.ciezar === "masa ciała"
+        ? `Blade liczby to propozycja: ${p0.powtorzenia} powt. — o 1 ${k.kierunek < 0 ? "mniej" : "więcej"} `
+          + "po Twojej ocenie. Po serii dotknij ✓ albo popraw."
+        : "Blade liczby to propozycja z poprzedniej serii — po serii dotknij ✓ albo popraw.";
   };
   const wiersz = (i) => {
     const w = el("div", "wiersz-serii");
@@ -1756,7 +1795,7 @@ function polaWykonania(c) {
       const p = propozycja(i);
       if (!p) return;
       otwarteWykonania.add(c.positionId);
-      serie[i] = p;
+      serie[i] = { ciezar: p.ciezar, powtorzenia: p.powtorzenia };
       zapisz();
       odswiezPropozycje();
     };
@@ -1772,7 +1811,7 @@ function polaWykonania(c) {
     otwarteWykonania.add(c.positionId);
     for (let i = 0; i < wiersze.length; i++) {
       const p = propozycja(i);
-      if (p) serie[i] = p;
+      if (p) serie[i] = { ciezar: p.ciezar, powtorzenia: p.powtorzenia };
     }
     zapisz();
     odswiezPropozycje();
@@ -2222,10 +2261,13 @@ function panelSerii(k, kroki, d) {
     && podpowiedz.ciezar !== c.ciezar ? podpowiedz.ciezar : null;
   const skorygowany = podpowiedz.korekta && !bezCiezaru;
 
+  // Powtórzenia po ocenie (masa ciała) — duża liczba mówi to samo co pole.
+  const powtZPola = podpowiedz.korektaPowtorzen ? podpowiedz.powtorzenia : null;
   karta.append(kolumnyZadania({
     seria: k.seria, zSerii: k.zSerii, ciezar: zPola ?? c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
-    powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    powtorzenia: powtZPola ?? c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    dopisekPowtorzen: powtZPola !== null && c.powtorzenia ? `w planie ${c.powtorzenia}` : null,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
     dopisekCiezaru: zPola === null ? (c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null)
@@ -2309,14 +2351,20 @@ function panelSerii(k, kroki, d) {
   // Ciężar w polu to nie plan, tylko korekta po ocenie z poprzedniej serii —
   // mówimy wprost, skąd się wziął.
   if (skorygowany) {
-    karta.append(el("p", "korekta-serii", `${podpowiedz.korekta < 0 ? "Lżej" : "Ciężej"} o 5% `
+    karta.append(el("p", "korekta-serii", `${podpowiedz.korekta < 0 ? "Lżej" : "Ciężej"} `
+      + `${oIle(podpowiedz.zCiezaru, podpowiedz.ciezar)} `
       + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
       + `${liczba(podpowiedz.ciezar)} kg.`));
+  }
+  if (podpowiedz.korektaPowtorzen) {
+    karta.append(el("p", "korekta-serii", `O 1 powtórzenie ${podpowiedz.korekta < 0 ? "mniej" : "więcej"} `
+      + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
+      + `${podpowiedz.powtorzenia} powt.`));
   }
   karta.append(pola);
 
   // Ocena przy każdej serii — przy wcześniejszych bez „OK", patrz ocenaWPanelu.
-  if (!c.maks) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru));
+  if (!c.maks) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
 
   const poprawka = prowadzenie.zrobione.includes(k.klucz);
   const zakoncz = el("button", "glowny szeroki", poprawka ? "Zapisz poprawkę" : "Zakończ serię");

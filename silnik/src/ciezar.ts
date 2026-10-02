@@ -2,9 +2,47 @@ import type { Progresja, TrybAkcesoriow, Tydzien, WynikCiezaru } from "./typy.ts
 import { PROGRESJE_BEZ_CIEZARU } from "./typy.ts";
 import { mround } from "./pomocnicze.ts";
 import { procent1RM } from "./rpe.ts";
+import { KROK_ADAPTACJI } from "./adaptacja.ts";
 
 /** Arkusz nigdy nie zaokrągla poniżej 0,5 kg, nawet gdy BAZA podaje mniejszy skok. */
 export const SKOK_MINIMALNY = 0.5;
+
+/**
+ * Ocena klienta ma zmieniać ciężar także przy małych ciężarach.
+ *
+ * Trener, 02.10.2026: „jeżeli ciężary są bardzo małe, np. 5 kg, to nasze
+ * oznaczenie »za trudne« coś zmieni, czy za mały jest %? Zróbmy tak, żeby
+ * ciężar i tak się zmniejszał delikatnie — nie wyłapało 5 kg, to niech
+ * przeskakuje na 4 kg”. 5 kg × 0,95 = 4,75, po zaokrągleniu do skoku 2,5
+ * znowu 5 — ocena nie zmieniała nic (w trakcie treningu spadało o cały skok,
+ * czyli do 2,5 kg).
+ *
+ * Reguła: gdy ±5 % na ocenę ginie w zaokrągleniu, ciężar idzie o krok
+ * w stronę oceny — do `MALY_CIEZAR_KG` o 1 kg (do pełnych kilogramów: 5 → 4,
+ * 7,5 → 7), wyżej o skok ćwiczenia (12,5 → 10, jak było — trener: „okej”).
+ * Tę samą regułę ma telefon w korekcie serii (`poKorekcie`).
+ */
+export const MALY_CIEZAR_KG = 10;
+
+export function krokWidoczny(kg: number, kierunek: number, skok: number): number {
+  if (kg <= MALY_CIEZAR_KG) {
+    return kierunek < 0 ? Math.max(SKOK_MINIMALNY, Math.ceil(kg - 1)) : Math.floor(kg + 1);
+  }
+  return Math.max(0, kg + Math.sign(kierunek) * Math.max(skok, SKOK_MINIMALNY));
+}
+
+/**
+ * Ciężar z oceną (`z`) wobec ciężaru bez niej (`bez`): gdy ocena coś mówi
+ * (`wzgledny` ≠ 1), a w zaokrągleniu nic się nie zmieniło — tyle kroków
+ * `krokWidoczny`, ile ocen netto (każda to 5 %).
+ */
+export function widocznaZmiana(bez: number, z: number, wzgledny: number, skok: number): number {
+  const kroki = Math.round((wzgledny - 1) / KROK_ADAPTACJI);
+  if (kroki === 0 || z !== bez) return z;
+  let w = bez;
+  for (let i = 0; i < Math.abs(kroki); i++) w = krokWidoczny(w, Math.sign(kroki), skok);
+  return w;
+}
 
 export type KontekstCiezaru = {
   tydzien: Tydzien;
@@ -27,6 +65,8 @@ export type KontekstCiezaru = {
   ciezarBazowy?: WynikCiezaru;
   /** Mnożnik z tygodnia bazowego bloku. */
   mnoznikBazowy?: number;
+  /** Bez `widocznaZmiana` — tak, jak liczy arkusz. Do porównania w planie. */
+  bezWidocznejZmiany?: boolean;
 };
 
 /** Tygodnie, w których akcesoria mogą dziedziczyć ciężar z tygodnia bazowego bloku. */
@@ -67,7 +107,9 @@ export function obliczCiezar(k: KontekstCiezaru): WynikCiezaru {
       return (k.ciezarBazowy ?? "— brak 1RM") as WynikCiezaru;
     }
     const mnoznikBazowy = Math.max(k.mnoznikBazowy ?? 1, 0.0001);
-    return mround((k.ciezarBazowy * k.mnoznik) / mnoznikBazowy, skok);
+    const z = mround((k.ciezarBazowy * k.mnoznik) / mnoznikBazowy, skok);
+    return k.bezWidocznejZmiany ? z
+      : widocznaZmiana(k.ciezarBazowy, z, k.mnoznik / mnoznikBazowy, skok);
   }
 
   const baza = zmienione ? (k.oneRMReczny ?? 0) : k.oneRM;
@@ -76,7 +118,9 @@ export function obliczCiezar(k: KontekstCiezaru): WynikCiezaru {
   const procent = procent1RM(k.powtorzenia, k.rpe);
   if (procent === null) return "— ustaw ręcznie";
 
-  return mround((baza * procent * k.mnoznik) / 100, skok);
+  const z = mround((baza * procent * k.mnoznik) / 100, skok);
+  return k.bezWidocznejZmiany ? z
+    : widocznaZmiana(mround((baza * procent) / 100, skok), z, k.mnoznik, skok);
 }
 
 /**

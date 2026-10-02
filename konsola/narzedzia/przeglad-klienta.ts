@@ -1927,6 +1927,57 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && await kartaListy.locator(".wiersz-serii.proponowana").count() === 0,
     JSON.stringify(poWszystkich));
 
+  // ── 29. mały ciężar i masa ciała: ocena zawsze coś zmienia ────────
+  //
+  // Trener, 02.10.2026: „przy 5 kg nasze »za trudne« coś zmieni, czy za mały
+  // jest %? Niech przeskakuje na 4 kg” i „miałem 10 powtórzeń, zaznaczyłem
+  // »za trudne«, a w kolejnej serii znowu 10 — niech spadają o 1”.
+  const MALE = "male-ciezary";
+  await api("/api/plany", "POST", { klient: MALE, wersja: 1 });
+  const idMale = (await api("/api/plany")).find((p: any) => p.klient === MALE).id;
+  const planMale = (await api(`/api/plany/${idMale}`)).zapisany.plan;
+  planMale.sloty[0].cwiczenieId = "EX-0016";   // Barbell row — kg, skok 2,5
+  planMale.sloty[1].cwiczenieId = "EX-0122";   // Knee raises — masa ciała
+  planMale.serieMaksymalne = [{ cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 1 }];
+  await api(`/api/plany/${idMale}`, "PUT", { plan: planMale, dataStartu: null, status: "wysłany" });
+  const sciezkaMale = (await api(`/api/plany/${idMale}/link`, "POST")).sciezka;
+  await s.goto(`${adres}${sciezkaMale}`, { waitUntil: "networkidle" });
+  await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  for (const [poz, kg, powt] of [["D1-S01", "5", "10"], ["D1-S02", null, "10"]] as const) {
+    const karta = s.locator(`#cwiczenia [data-position="${poz}"]`);
+    await karta.getByRole("button", { name: /zapisz, co poszło/ }).click();
+    const pierwszy = karta.locator(".wiersz-serii").first().locator("input");
+    if (kg) await pierwszy.nth(0).fill(kg);
+    await pierwszy.nth(kg ? 1 : 0).fill(powt);
+    await pierwszy.nth(kg ? 1 : 0).blur();
+    await s.waitForTimeout(900);
+    await s.locator(`#cwiczenia [data-position="${poz}"] .oceny .ocena-przycisk`, { hasText: "Za trudne" }).click();
+    await s.waitForTimeout(900);
+  }
+  const wiersz2 = (poz: string) => s.locator(`#cwiczenia [data-position="${poz}"] .wiersz-serii`).nth(1).locator("input");
+  const opisMaly = await s.locator('#cwiczenia [data-position="D1-S01"] .opis-propozycji').innerText();
+  sprawdz("5 kg i „za trudne”: następna seria 4 kg, nie 5 i nie 2,5",
+    await wiersz2("D1-S01").nth(0).inputValue() === "4" && opisMaly.includes("lżej o 1 kg"),
+    `${await wiersz2("D1-S01").nth(0).inputValue()} kg · ${opisMaly}`);
+  const opisPowt = await s.locator('#cwiczenia [data-position="D1-S02"] .opis-propozycji').innerText();
+  sprawdz("masa ciała, 10 powtórzeń i „za trudne”: następna seria 9",
+    await wiersz2("D1-S02").nth(0).inputValue() === "9" && opisPowt.includes("o 1 mniej"),
+    `${await wiersz2("D1-S02").nth(0).inputValue()} powt. · ${opisPowt}`);
+  // To samo w panelu prowadzenia: seria 2 Knee raises z 9 powtórzeniami.
+  await s.locator('#cwiczenia [data-position="D1-S02"]').getByRole("button", { name: /Zacznij to ćwiczenie|zaczęte/ }).click();
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  await s.waitForSelector("#panel .panel-pola");
+  // Seria 1 wpisana na liście, ale nie odhaczona w prowadzeniu — zamykamy ją.
+  await dalejPoSerii();
+  const panelPowt = await panel.locator(".kolumna-powt").innerText();
+  sprawdz("w panelu seria 2 ma 9 powtórzeń, z dopiskiem planu i zdaniem skąd",
+    (await panel.locator('.panel-pola input[placeholder="powt."]').inputValue()) === "9"
+      && panelPowt.includes("9") && panelPowt.includes("w planie")
+      && (await panel.innerText()).includes("O 1 powtórzenie mniej po Twojej ocenie „za trudne”: 9 powt."),
+    `${panelPowt.replace(/\n/g, " ")} · pole ${await panel.locator('.panel-pola input[placeholder="powt."]').inputValue()}`);
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");
