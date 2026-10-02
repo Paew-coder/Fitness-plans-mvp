@@ -1763,6 +1763,23 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const dopisek = await panel.locator(".kolumna-ciezar .dopisek").innerText();
   sprawdz("duża liczba „Ciężar” mówi to samo co pole, plan zostaje w dopisku",
     duza === "67,5 kg" && dopisek.startsWith("w planie "), `${duza} · ${dopisek}`);
+  // Trener, 02.10.2026: ocena należy do jednej serii — przy następnej
+  // przyciski są neutralne, a ponowne „za trudne” obniża jeszcze raz.
+  const zaTrudne = panel.locator(".ocena-w-panelu").getByRole("button", { name: "Za trudne" });
+  sprawdz("przy serii 3 ocena z serii 2 nie stoi zaznaczona",
+    await panel.locator(".ocena-w-panelu .ocena-przycisk.wybrana").count() === 0);
+  await zaTrudne.click();
+  await s.waitForTimeout(300);
+  sprawdz("ponowne „za trudne” obniża następną serię jeszcze raz",
+    (await panel.locator(".ocena-w-panelu .korekta-serii").innerText()) === "Następna seria: 65 kg (lżej o 5%).",
+    await panel.locator(".ocena-w-panelu .korekta-serii").innerText());
+  await zaTrudne.click();                                   // drugie dotknięcie zdejmuje ocenę serii 3
+  await s.waitForTimeout(300);
+  sprawdz("drugie dotknięcie zdejmuje ocenę tej serii, a ocena tygodnia z serii 2 zostaje",
+    await panel.locator(".ocena-w-panelu .ocena-przycisk.wybrana").count() === 0
+      && (await panel.locator(".ocena-w-panelu .korekta-serii").innerText()) === ""
+      && (await api(`/api/plany/${idOceny}`)).zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback === "za trudne",
+    String((await api(`/api/plany/${idOceny}`)).zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback));
   // Najwęższy popularny telefon (360 px), ciężar z przecinkiem: nie może
   // wjechać na powtórzenia. Przy trzech równych kolumnach było „77,5 kg6" (26.09.2026).
   await s.setViewportSize({ width: 360, height: 740 });
@@ -1799,13 +1816,15 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       && await panel.locator(".korekta-serii:not(:empty)").count() === 0,
     `pole: ${await poleKg.inputValue()} · ${duza4} · ${dopisek4}`);
   for (let i = 4; i <= 5; i++) await dalejPoSerii();       // seria 4, 5
-  // Od 27.09.2026 w panelu bez „OK” także przy ostatniej serii — brak oceny znaczy OK.
-  sprawdz("przy ostatniej serii też bez „OK”, a „za trudne” stoi zaznaczone",
+  // Od 27.09.2026 w panelu bez „OK” także przy ostatniej serii — brak oceny
+  // znaczy OK. Od 02.10.2026 przyciski neutralne, a zdanie mówi, która ocena
+  // idzie do kolejnych tygodni.
+  sprawdz("przy ostatniej serii bez „OK”, przyciski neutralne, ocena z serii 2 opisana",
     (await panel.locator(".ocena-w-panelu .ocena-przycisk").allInnerTexts()).join(" | ")
       === "Za trudne | Za łatwe"
-    && (await panel.locator(".ocena-w-panelu").innerText()).includes("Jeśli było OK — nic nie klikaj")
-    && ((await panel.locator(".ocena-w-panelu .ocena-przycisk", { hasText: "Za trudne" })
-      .getAttribute("class")) ?? "").includes("wybrana"),
+    && (await panel.locator(".ocena-w-panelu").innerText())
+      .includes("Ocena z serii 2 („za trudne”) zostaje dla kolejnych tygodni")
+    && await panel.locator(".ocena-w-panelu .ocena-przycisk.wybrana").count() === 0,
     (await panel.locator(".ocena-w-panelu").innerText()).replace(/\n/g, " | "));
 
   // ── 28. lista dnia: kolejne serie proponują się same ──────────────
