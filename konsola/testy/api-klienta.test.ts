@@ -241,6 +241,41 @@ describe("nowy cykl zaczyna od tego, co klient faktycznie podnosił", () => {
     assert.equal(wpisy.length, 1, "jeden wpis na ćwiczenie");
     assert.equal(wpisy[0].kalibracja, undefined, "po serii maksymalnej opis kalibracji znika");
     assert.equal(wpisy[0].ciezar, 80);
+    assert.equal(wpisy[0].zastapionaKalibracja?.kalibracja.ciezar, 60,
+      "ale 1RM z treningu zostaje zapamiętane pod serią");
+  });
+
+  /**
+   * Trener 02.10.2026: wpisał serię „na próbę”, wyczyścił pola — i 1RM
+   * policzone z treningu zniknęło na dobre, a z nim ciężary w planie.
+   */
+  test("usunięcie serii maksymalnej przywraca 1RM z treningu, także po poprawce", async () => {
+    const telefon = await api(`/api/klient/${token}`);
+    const pomiar = telefon.dane.doZmierzenia.find((p: any) => p.cwiczenieId === "EX-0016");
+    assert.equal(pomiar.kalibracja, null);
+    assert.equal(pomiar.zastapionaKalibracja?.ciezar, 60,
+      "telefon wie, co wróci po usunięciu serii");
+    assert.ok(pomiar.zastapionaKalibracja.oneRM > 0);
+    assert.equal(telefon.dane.procent1RM["10"], 75.5,
+      "telefon dostaje tabelę do podglądu 1RM przed zapisem");
+
+    // Poprawka serii nie gubi kalibracji spod pierwszej.
+    await api(`/api/klient/${token}/serie`, "POST",
+      { cwiczenieId: "EX-0016", ciezar: 85, powtorzenia: 3 });
+    await api(`/api/klient/${token}/serie`, "POST",
+      { cwiczenieId: "EX-0016", ciezar: 0, powtorzenia: 0 });
+
+    const { dane } = await api(`/api/plany/${planCyklu2}`);
+    const wpisy = dane.zapisany.plan.serieMaksymalne.filter((s: any) => s.cwiczenieId === "EX-0016");
+    assert.equal(wpisy.length, 1);
+    assert.equal(wpisy[0].kalibracja?.ciezar, 60, "wrócił wpis kalibracji z opisem serii");
+    assert.equal(wpisy[0].zastapionaKalibracja, undefined);
+    assert.equal(dane.wynik.tygodnie[0].sloty[1].ciezar, 60,
+      "plan znów zaczyna od ciężaru z treningu");
+    const poUsunieciu = (await api(`/api/klient/${token}`)).dane.doZmierzenia
+      .find((p: any) => p.cwiczenieId === "EX-0016");
+    assert.equal(poUsunieciu.kalibracja?.ciezar, 60);
+    assert.equal(poUsunieciu.ciezar, null);
   });
 });
 

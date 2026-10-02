@@ -39,7 +39,7 @@ import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
 import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
-import { oblicz1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
+import { oblicz1RM, procent1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
 import { PRZECIWWSKAZANIA, dawkaOddechowa, OBJASNIENIA_ODDECHU } from "../silnik/src/oddech.ts";
@@ -1023,6 +1023,14 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
           ? { ciezar: seria.kalibracja.ciezar, powtorzenia: seria.kalibracja.powtorzenia,
               rpe: seria.kalibracja.rpe }
           : null,
+        // 1RM z treningu, które wpisana seria zastąpiła — klient widzi, że
+        // usunięcie serii je przywróci, i ile wynosiło.
+        zastapionaKalibracja: seria?.zastapionaKalibracja
+          ? { oneRM: oblicz1RM(seria.zastapionaKalibracja.ciezar, seria.zastapionaKalibracja.powtorzenia),
+              ciezar: seria.zastapionaKalibracja.kalibracja.ciezar,
+              powtorzenia: seria.zastapionaKalibracja.kalibracja.powtorzenia,
+              rpe: seria.zastapionaKalibracja.kalibracja.rpe }
+          : null,
         oneRM: slot?.oneRM || null,
         bezSerii: progresja ? dlaczegoBezSeriiMaksymalnej(progresja) : null,
       };
@@ -1037,6 +1045,11 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     dataStartu: zapisany.dataStartu,
     tygodnie,
     doZmierzenia,
+    // %1RM przy RPE 10 dla 1–15 powtórzeń, z tabeli silnika. Telefon liczy
+    // z tego podgląd 1RM, zanim klient zapisze serię maksymalną — także bez
+    // zasięgu. Zapisane 1RM i tak liczy serwer.
+    procent1RM: Object.fromEntries(Array.from({ length: POWT_MAX }, (_, i) =>
+      [i + 1, procent1RM(i + 1, 10)])),
     moduly: moduly(zapisany),
     postep: postepKlienta(zapisany, wynik),
   };
@@ -2001,10 +2014,28 @@ const serwer = createServer(async (req, res) => {
         }
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        /*
+         * 1RM z treningu (kalibracja) nie przepada pod serią maksymalną.
+         *
+         * Trener 02.10.2026: wpisał serię „na próbę”, wyczyścił pola — i 1RM
+         * policzone z jego serii na treningu zniknęło na dobre, a z nim ciężary
+         * w planie. Teraz seria maksymalna zapamiętuje kalibrację, którą
+         * zastępuje (także przy kolejnej poprawce serii), a usunięcie serii
+         * (oba pola puste) ją przywraca.
+         */
+        const dotychczasowe = cel.plan.serieMaksymalne.filter((s) => s.cwiczenieId === cwiczenieId);
+        const kalibracja = dotychczasowe.find((s) => s.kalibracja);
+        const doPrzywrocenia = kalibracja
+          ? { ciezar: kalibracja.ciezar, powtorzenia: kalibracja.powtorzenia,
+              kalibracja: kalibracja.kalibracja! }
+          : dotychczasowe.find((s) => s.zastapionaKalibracja)?.zastapionaKalibracja;
         const serieMaksymalne = cel.plan.serieMaksymalne
           .filter((s) => s.cwiczenieId !== cwiczenieId);
         if (ciezar > 0 && powtorzenia > 0) {
-          serieMaksymalne.push({ cwiczenieId, ciezar, powtorzenia });
+          serieMaksymalne.push({ cwiczenieId, ciezar, powtorzenia,
+            ...(doPrzywrocenia ? { zastapionaKalibracja: doPrzywrocenia } : {}) });
+        } else if (doPrzywrocenia) {
+          serieMaksymalne.push({ cwiczenieId, ...doPrzywrocenia });
         }
         cel.plan.serieMaksymalne = serieMaksymalne;
         return json(res, naEkran(magazyn.zapisz(cel)));
