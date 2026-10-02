@@ -253,7 +253,10 @@ button { font: inherit; cursor: pointer; }
   border-radius: 12px; padding: .9rem 1rem; margin-bottom: .7rem;
 }
 .pomiar .nazwa { font-weight: 600; margin-bottom: .6rem; }
-.pomiar .pola { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; align-items: center; }
+/* Trzecia kolumna stałej szerokości — etykiety stoją równo nad polami, czy
+   obok jest „—”, czy „≈ 128,2 kg”. */
+.pomiar .pola { display: grid; grid-template-columns: 1fr 1fr 7rem; gap: .5rem; align-items: center; }
+.pomiar .film { color: var(--akcent); text-decoration: none; }
 .pomiar input {
   font: inherit; text-align: center;
   padding: .7rem .4rem; border-radius: 9px; width: 100%;
@@ -261,8 +264,9 @@ button { font: inherit; cursor: pointer; }
 }
 .pomiar .rm {
   font-weight: 700; color: var(--akcent);
-  white-space: nowrap; font-size: .95rem;
+  white-space: nowrap; font-size: .95rem; text-align: right;
 }
+.pomiar .etykiety span:last-child { text-align: right; }
 /* Ćwiczenie bez serii maksymalnej — karta zostaje, pola znikają, powód
    zostaje napisany. Klient widzi je w planie, więc musi je widzieć i tu. */
 .pomiar.bez-serii { opacity: .75; }
@@ -272,10 +276,28 @@ button { font: inherit; cursor: pointer; }
   margin: 0 0 .8rem; font-size: .85rem; line-height: 1.45; color: var(--tekst-blady);
 }
 .pomiar .etykiety {
-  display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem;
+  display: grid; grid-template-columns: 1fr 1fr 7rem; gap: .5rem;
   font-size: .7rem; color: var(--tekst-blady);
   text-transform: uppercase; letter-spacing: .06em; margin-bottom: .25rem;
 }
+/* Skąd jest obecne 1RM — nad polami, nie obok nich (trener, 02.10.2026). */
+.pomiar .obecne-1rm {
+  background: var(--karta-2); border-radius: 9px; padding: .55rem .75rem; margin-bottom: .75rem;
+}
+.pomiar .wartosc-1rm { font-size: .92rem; }
+.pomiar .wartosc-1rm strong { color: var(--akcent); }
+.pomiar .obecne-1rm .powod { margin-top: .15rem; }
+/* Podgląd 1RM z niezapisanej serii — blady, z „≈”, dopóki nie ma „Zapisz”. */
+.pomiar .rm.niezapisane { color: var(--tekst-slaby); }
+.pomiar .rm.niezapisane::before { content: "≈ "; }
+.akcje-pomiaru { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: .6rem; }
+.akcje-pomiaru:not(:has(> :not(.ukryty))) { display: none; }
+.zapisz-pomiar {
+  background: var(--akcent); color: #fff; border: none; border-radius: 9px;
+  padding: .6rem 1.1rem; font-weight: 600; font-size: .9rem;
+}
+.notka-pomiaru:empty { display: none; }
+.notka-pomiaru { margin: .4rem 0 0; font-size: .8rem; line-height: 1.4; color: var(--latwe); }
 
 /* Ekran bez planu: między cyklami albo przy nieaktualnym linku. */
 .komunikat-pelny {

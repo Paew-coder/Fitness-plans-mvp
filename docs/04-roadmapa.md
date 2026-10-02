@@ -642,6 +642,16 @@ Trener: „w 3 serii nie musimy dodawać tego OK — brak kliknięcia czegokolwi
 * Ćwiczenie bez oceny zapisuje się przy końcu treningu jako OK, jak dotąd. Licznik nad treningiem: „X z N ćwiczeń zaczętych” (wpisana seria albo ocena) zamiast „ocenionych”.
 * Przegląd klienta: panel przy ostatniej serii bez „OK” z dopiskiem, lista z „OK” pośrodku.
 
+**39. Serie maksymalne: „Zapisz”, a 1RM z treningu da się przywrócić — 02.10.2026.**
+
+Trener (zrzut z iPada): „1RM jest już widoczne z boku, po prawej od okienek, a chciałbym, żeby było gdzieś indziej, bo wpisanie serii maksymalnej zmienia ten RM bezpowrotnie — jak coś wpiszę testowo i usunę, to się zapisuje jako seria do 1RM. Może dodajmy przycisk »zapisz« albo małą informację, że dany 1RM był liczony z serii”.
+
+* **Skąd 1RM — nad polami:** „Twoje 1RM teraz: X kg” i źródło (seria z treningu z RPE, seria maksymalna albo trener). Kolumna obok pól („1RM z serii”) pokazuje tylko podgląd z wpisanych liczb — blady, z „≈”, dopóki seria nie jest zapisana. Podgląd liczy telefon z tabeli %1RM silnika, którą serwer dosyła w widoku (`procent1RM`).
+* **„Zapisz serię”:** plan zmienia się dopiero po przycisku (albo Enter w polu powtórzeń). Przy ćwiczeniu z 1RM z treningu nad przyciskiem stoi, że zapis je zastąpi, a usunięcie serii przywróci. Powyżej 15 powtórzeń przycisku nie ma, a przy polu stoi, co zrobić.
+* **Przywracanie:** seria maksymalna z telefonu zapamiętuje kalibrację, którą zastąpiła (`zastapionaKalibracja`, także przez kolejne poprawki). „Usuń serię — wróci 1RM z treningu (X kg)” ją przywraca. Usunięcie serii bez kalibracji pod spodem pyta o potwierdzenie.
+* Przy okazji: etykiety równo nad polami, strzałka filmu w kolorze akcentu.
+* Testy API (zapamiętanie, poprawka, przywrócenie, tabela %1RM), kształtu planu (uszkodzone `zastapionaKalibracja`); przegląd klienta: bez „Zapisz” plan stoi, podgląd obok, zapis, „Usuń serię” przywraca 1RM z treningu, 16 powtórzeń bez przycisku.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

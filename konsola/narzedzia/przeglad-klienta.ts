@@ -235,9 +235,21 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.click("#pokaz-pomiary");
   await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
   const pomiar = s.locator("#pomiary .pomiar").first().locator("input");
+  const przedPomiarem = (await widok()).doZmierzenia[0];
   await pomiar.nth(0).fill("125");
   await pomiar.nth(1).fill("2");
   await pomiar.nth(1).blur();
+  await s.waitForTimeout(700);
+  // Od 02.10.2026 seria idzie do planu dopiero po „Zapisz” — wyjście z pola
+  // tylko liczy podgląd (trener: wpis „na próbę” zmieniał 1RM bezpowrotnie).
+  const bezZapisu = (await widok()).doZmierzenia[0];
+  sprawdz("wpisana seria bez „Zapisz” niczego w planie nie zmienia, a obok stoi podgląd",
+    bezZapisu.ciezar === przedPomiarem.ciezar && bezZapisu.oneRM === przedPomiarem.oneRM
+      && (await s.locator("#pomiary .pomiar").first().locator(".rm.niezapisane").count()) === 1
+      && await s.locator("#pomiary .pomiar").first().locator(".zapisz-pomiar").isVisible(),
+    `${bezZapisu.ciezar}×${bezZapisu.powtorzenia} → 1RM ${bezZapisu.oneRM} · podgląd `
+      + await s.locator("#pomiary .pomiar").first().locator(".rm").innerText());
+  await s.locator("#pomiary .pomiar").first().locator(".zapisz-pomiar").click();
   await s.waitForTimeout(700);
   const poPomiarze = await widok();
   const zmierzone = poPomiarze.doZmierzenia[0];
@@ -274,14 +286,17 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Odmowa to tu wynik, nie usterka, więc 400 w konsoli przeglądarki jest
   // oczekiwane i nie liczy się do błędów.
   const bledyPrzedOdmowa = bledy.length;
-  const zMaksem = kartyPomiarow.filter({ hasText: "Barbell row" }).first().locator("input");
+  // Od 02.10.2026 telefon nie daje nawet zapisać — mówi to przy polu.
+  const kartaRow = kartyPomiarow.filter({ hasText: "Barbell row" }).first();
+  const zMaksem = kartaRow.locator("input");
   await zMaksem.nth(0).fill("40");
   await zMaksem.nth(1).fill("16");
   await zMaksem.nth(1).blur();
-  await s.waitForTimeout(900);
-  const pasek = await s.locator("#stan-polaczenia").innerText();
-  sprawdz("przy 16 powtórzeniach klient czyta, co zrobić",
-    pasek.includes("15") && /dołóż|Dołóż/.test(pasek), pasek);
+  await s.waitForTimeout(400);
+  const notka16 = await kartaRow.locator(".notka-pomiaru").innerText();
+  sprawdz("przy 16 powtórzeniach klient czyta, co zrobić, i nie ma czego zapisać",
+    notka16.includes("15") && /dołóż|Dołóż/.test(notka16)
+      && !(await kartaRow.locator(".zapisz-pomiar").isVisible()), notka16);
   bledy.splice(bledyPrzedOdmowa);
 
   // Pole i tak nie powinno na to pozwolić — granica stoi przy nim, nie tylko
@@ -290,6 +305,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await zMaksem.nth(1).getAttribute("max") === "15");
   await zMaksem.nth(1).fill("5");
   await zMaksem.nth(1).blur();
+  await kartaRow.locator(".zapisz-pomiar").click();
   await s.waitForTimeout(700);
 
   // ── 10. ekran postępu ──────────────────────────────────────────────
@@ -1323,6 +1339,44 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("a pola nie udają serii, której nie było",
     await s.locator("#pomiary .pomiar").first().locator("input").first().inputValue() === "",
     await s.locator("#pomiary .pomiar").first().locator("input").first().inputValue());
+
+  // Trener 02.10.2026: 1RM z treningu stało w kolumnie obok pustych pól, jakby
+  // z nich wyszło, a seria wpisana „na próbę” i wyczyszczona kasowała je na dobre.
+  const kartaKalibracji = s.locator("#pomiary .pomiar").first();
+  const idKalibracji = await kartaKalibracji.getAttribute("data-cwiczenie");
+  const pomiarZ = async () => (await widokBezMaksow()).doZmierzenia
+    .find((p: any) => p.cwiczenieId === idKalibracji);
+  const kalibrowany = await pomiarZ();
+  sprawdz("1RM z treningu stoi nad polami, a kolumna obok pustych pól jest pusta",
+    (await kartaKalibracji.locator(".obecne-1rm").innerText()).includes(`${String(kalibrowany.oneRM).replace(".", ",")} kg`)
+      && await kartaKalibracji.locator(".rm").innerText() === "—",
+    (await kartaKalibracji.locator(".obecne-1rm").innerText()).replace(/\n/g, " ")
+      + " · kolumna: " + await kartaKalibracji.locator(".rm").innerText());
+  const polaKalibracji = kartaKalibracji.locator("input");
+  await polaKalibracji.nth(0).fill("100");
+  await polaKalibracji.nth(1).fill("5");
+  await polaKalibracji.nth(1).blur();
+  await s.waitForTimeout(600);
+  sprawdz("seria „na próbę” bez „Zapisz” nie rusza 1RM z treningu",
+    (await pomiarZ()).kalibracja?.ciezar === kalibrowany.kalibracja.ciezar
+      && (await kartaKalibracji.locator(".notka-pomiaru").innerText()).includes("zastąpi 1RM z treningu"),
+    await kartaKalibracji.locator(".notka-pomiaru").innerText());
+  await kartaKalibracji.locator(".zapisz-pomiar").click();
+  await s.waitForTimeout(800);
+  const zSeria = await pomiarZ();
+  const kartaPoZapisie = s.locator(`#pomiary .pomiar[data-cwiczenie="${idKalibracji}"]`);
+  sprawdz("po „Zapisz” plan liczy z serii, a pod spodem widać, co wróci po usunięciu",
+    zSeria.ciezar === 100 && zSeria.oneRM !== kalibrowany.oneRM
+      && (await kartaPoZapisie.locator(".usun-pomiar").innerText()).includes("wróci 1RM z treningu"),
+    `${zSeria.ciezar}×${zSeria.powtorzenia} → ${zSeria.oneRM} · `
+      + await kartaPoZapisie.locator(".usun-pomiar").innerText().catch(() => "brak „Usuń”"));
+  await kartaPoZapisie.locator(".usun-pomiar").click();
+  await s.waitForTimeout(800);
+  const poUsunieciu = await pomiarZ();
+  sprawdz("„Usuń serię” przywraca 1RM z treningu",
+    poUsunieciu.oneRM === kalibrowany.oneRM && poUsunieciu.kalibracja?.ciezar === kalibrowany.kalibracja.ciezar
+      && (await kartaPoZapisie.innerText()).includes("Policzone z Twojej serii na treningu"),
+    `1RM ${poUsunieciu.oneRM} (było ${kalibrowany.oneRM})`);
 
 
   // ── 24. słaby zasięg nie gubi serii ───────────────────────────────
