@@ -1323,6 +1323,26 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("ćwiczenie wybrane w pozycji z szablonu trafia do planu",
     (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].cwiczenieId === "EX-0011");
 
+  // Dobór ćwiczeń jednym kliknięciem (02.10.2026): reszta pozycji z kategorią
+  // dostaje ćwiczenia z tej kategorii, wybór trenera w A1 zostaje.
+  await s.locator("#dobierz-puste").click();
+  await s.waitForTimeout(1500);
+  const poDoborze = (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty
+    .filter((x: any) => x.kategoriaSzkieletu);
+  const cwiczeniaBazy = await api("/api/cwiczenia");
+  const zKategoriiBazy = (id: string, kat: string) => cwiczeniaBazy.find((c: any) => c.id === id)?.kategoria === kat;
+  sprawdz("„do pustych” wypełnia 20 pozycji z ich kategorii, A1 trenera zostaje",
+    poDoborze[0].cwiczenieId === "EX-0011"
+      && poDoborze.every((x: any) => x.cwiczenieId && zKategoriiBazy(x.cwiczenieId, x.kategoriaSzkieletu))
+      && (await s.locator("#dobor-info").innerText()).startsWith("wstawiono 20 ćwiczeń")
+      && await tabelaD1.locator("td.cwiczenie select").nth(1).inputValue() !== "",
+    await s.locator("#dobor-info").innerText());
+  const pytanPrzedOdNowa = pytania.length;
+  await s.locator("#dobierz-od-nowa").click();
+  await s.waitForTimeout(1500);
+  sprawdz("„wszystko od nowa” najpierw pyta",
+    pytania.length === pytanPrzedOdNowa + 1, `pytań: ${pytania.length - pytanPrzedOdNowa}`);
+
   // Rozgrzewka dnia (25.09.2026): pusta to sam przycisk, wpisana idzie do planu.
   await s.locator("#dni .dzien").first().getByRole("button", { name: "+ rozgrzewka" }).click();
   const edytor = s.locator("#dni .dzien").first().locator(".rozgrzewka-trenera");

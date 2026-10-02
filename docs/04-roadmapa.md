@@ -668,6 +668,15 @@ Trener: „czy nie powinno być tak, że ktoś ma 6 serii wyciskania i na 3 seri
 * **Okienko w T1–T2** przy „za łatwe” (panel i lista): „Plan dopiero się rozkręca” — tygodnie celowo lżejsze, RPE tego tygodnia i zapas powtórzeń, skutek dla najtrudniejszego tygodnia, „Jeśli zapasu było wyraźnie więcej — śmiało, oznacz. To Twój plan.” Przyciski „Oznacz »za łatwe«” / „Zostaw bez zmiany”; raz na ćwiczenie w tygodniu; własne okienko zamiast `confirm()` (na iPadzie systemowe ma adres strony w nagłówku i nie mieści akapitów).
 * Przegląd klienta: okienko w T1, „Zostaw bez zmiany” niczego nie zapisuje, po „Oznacz” ocena zapisana i dalsze serie 5 % ciężej, „Pozostałe serie tak samo” zapisuje skorygowane.
 
+**42. Dobór ćwiczeń jednym kliknięciem — 02.10.2026.**
+
+Trener: „czy możemy dodać funkcję, że w konsoli po wybraniu szablonu albo po wpisaniu kategorii w wybranej przeze mnie kolejności będzie możliwość wygenerowania ćwiczeń automatycznie jednym kliknięciem? Miałem już taką funkcję w Base44”. Import innych arkuszy — odłożony (trener i tak planuje nową BAZĘ i filmy).
+
+* **Reguła** wyciągnięta z generatora Base44 (funkcja `tEe` w opublikowanym pakiecie: kategoria slotu; `is_main` → klasa „main” z preferencją listy klasycznych bojów; B → coef ≥ 0,65 bez „main”; reszta → coef ≤ 0,5; losowanie) i przełożona na BAZĘ: A = coeff 1,0 (najpierw `KLASYCZNE_BOJE`), B = 0,75, C–E = ≤ 0,5, najbliższy coeff, gdy kategoria nie ma docelowego. OHP i wiosłowanie (0,75) na A nie trafiają — bojem głównym jest tylko 1,0 (decyzja z 22.09).
+* **Decyzje trenera** (inaczej niż w Base44, gdzie nic nie pilnowało powtórek): nigdy dwa razy w dniu; bój na A może wrócić w innym dniu; akcesoria bez powtórek w planie, dopóki kategoria ma inne (reguła pozycji ma pierwszeństwo przed „bez powtórek”); bez „DO WERYFIKACJI”; „do pustych” zostawia wybory trenera, „wszystko od nowa” pyta i omija pozycje z wpisami klienta.
+* `silnik/src/dobor-cwiczen.ts` (`dobierzCwiczenia`, `kandydaci`), `POST /api/plany/:id/dobierz` (zwraca obraz planu i `dobor`: ile wstawiono, gdzie nie było kandydata, ile pozycji z historią zostało), konsola: pole „Dobierz ćwiczenia” z przyciskami *do pustych* / *wszystko od nowa* i podsumowaniem.
+* Testy silnika (12 szablonów × 20 losowań: pozycje wypełnione z własnej kategorii, bez powtórek w dniu, bez „DO WERYFIKACJI”; reguła A/B/C–E; akcesoria bez powtórek; „od nowa” omija historię; najbliższy coeff), API (do pustych, drugi raz nic, od nowa omija pozycję z oceną klienta), przegląd konsoli (20 pozycji z ich kategorii, A1 trenera zostaje, „od nowa” pyta).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

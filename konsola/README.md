@@ -19,8 +19,23 @@ z sześciu tygodni.
 
 **Szablony z Base44** — lista *Szablon z Base44* przy planie wstawia jeden
 z 12 Twoich szablonów (Klasyczny, Rozbudowany, Hipertroficzny – 1…4 dni):
-dni, numerację, kategorie pozycji i TOP SET. Ćwiczenia wybierasz sam. Liczby
-liczy *Część planu*; kontynuacja „(cz. 2)” to ten sam szablon z drugą częścią.
+dni, numerację, kategorie pozycji i TOP SET. Ćwiczenia wybierasz sam albo
+losujesz (niżej). Liczby liczy *Część planu*; kontynuacja „(cz. 2)” to ten sam
+szablon z drugą częścią.
+
+**Dobierz ćwiczenia** (od 02.10.2026) — jednym kliknięciem, do kategorii
+z kolumny *Szkielet* (z szablonu albo ustawionych przez Ciebie w Twojej
+kolejności). Reguła z generatora Base44: **A** — bój (współczynnik 1,0,
+najpierw klasyczne: przysiady, martwe ciągi, wyciskanie leżąc, podciąganie
+z obciążeniem), **B** — złożone (0,75), **C–E** — akcesoria (0,5 i mniej);
+w kategorii bez takiego ćwiczenia najbliższy współczynnik. To samo ćwiczenie
+nigdy dwa razy w dniu; bój na A może wrócić w innym dniu, akcesoria nie
+powtarzają się w planie, dopóki kategoria ma inne. Pomija ćwiczenia „DO
+WERYFIKACJI”. *do pustych* — tylko pozycje bez ćwiczenia, Twoje wybory
+zostają; *wszystko od nowa* — po pytaniu losuje wszystkie, poza pozycjami,
+przy których klient już coś zapisał. Losowanie według reguły, nie AI; serii,
+powtórzeń, RPE i ciężarów nie dotyka. Silnik: `dobor-cwiczen.ts`, serwer:
+`POST /api/plany/:id/dobierz`.
 
 **Rozgrzewka dnia** — *+ rozgrzewka* przy dniu: tekst wiersz po wierszu i link
 do filmu. Ta sama w każdym tygodniu; klient widzi ją na początku dnia.

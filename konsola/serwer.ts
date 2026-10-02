@@ -39,6 +39,7 @@ import { krokiRampy, potrzebaRampy } from "../silnik/src/rampa.ts";
 import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
+import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
 import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
 import { oblicz1RM, procent1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
@@ -1528,6 +1529,31 @@ const serwer = createServer(async (req, res) => {
         return json(res, obrazPlanu(magazyn.zapisz({
           ...zapisany, plan: zastosujSzablon(zapisany.plan, szablon),
         })));
+      }
+
+      /*
+       * Dobór ćwiczeń jednym kliknięciem (trener, 02.10.2026) — do kategorii
+       * ze szkieletu, regułą z Base44 (`dobor-cwiczen.ts`). Domyślnie tylko
+       * puste pozycje; „od nowa” losuje wszystkie, ale nie te, przy których
+       * klient już coś zapisał — to historia, nie plan.
+       */
+      if (akcja === "/dobierz" && req.method === "POST") {
+        const { odNowa } = await cialo(req);
+        const zHistoria = new Set((zapisany.wykonania ?? []).map((w) => w.positionId));
+        for (const slot of zapisany.plan.sloty) {
+          if (Object.values(slot.tygodnie ?? {}).some((p) => p?.feedback !== undefined
+              || p?.topSetKlienta !== undefined || p?.ciezarKlienta !== undefined)) {
+            zHistoria.add(slot.positionId);
+          }
+        }
+        const wynik = dobierzCwiczenia(zapisany.plan, { odNowa: odNowa === true, zablokowane: zHistoria });
+        const zablokowane = odNowa === true
+          ? zapisany.plan.sloty.filter((s) => s.kategoriaSzkieletu && s.cwiczenieId && zHistoria.has(s.positionId)).length
+          : 0;
+        return json(res, {
+          ...obrazPlanu(magazyn.zapisz({ ...zapisany, plan: wynik.plan })),
+          dobor: { dobrane: wynik.dobrane.length, bezKandydata: wynik.bezKandydata, zablokowane },
+        });
       }
 
       if (akcja === "/przenies" && req.method === "POST") {

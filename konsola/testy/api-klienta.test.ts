@@ -1063,6 +1063,36 @@ describe("szablony z Base44 w konsoli", () => {
   });
 });
 
+describe("dobór ćwiczeń jednym kliknięciem", () => {
+  test("do pustych wypełnia pozycje z kategorią, od nowa omija pozycje z wpisami klienta", async () => {
+    await api("/api/plany", "POST", { klient: "Dobor Test", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Dobor Test").id;
+    await api(`/api/plany/${id}/szablon`, "POST", { szablonId: "fbw_3dni_6w" });
+    const pierwszy = await api(`/api/plany/${id}/dobierz`, "POST", { odNowa: false });
+    assert.equal(pierwszy.kod, 200);
+    const zKategoria = pierwszy.dane.zapisany.plan.sloty.filter((s: any) => s.kategoriaSzkieletu);
+    assert.ok(zKategoria.length > 0 && zKategoria.every((s: any) => s.cwiczenieId),
+      "każda pozycja z kategorią dostała ćwiczenie");
+    assert.equal(pierwszy.dane.dobor.dobrane, zKategoria.length);
+    assert.equal(pierwszy.dane.wynik.tygodnie.length, 6, "obraz planu jak zawsze — przeliczony");
+
+    const drugi = await api(`/api/plany/${id}/dobierz`, "POST", { odNowa: false });
+    assert.equal(drugi.dane.dobor.dobrane, 0, "do pustych nie rusza wybranych");
+
+    // Klient zapisał coś przy A1 — „od nowa” tej pozycji nie ruszy.
+    const { dane } = await api(`/api/plany/${id}`);
+    await api(`/api/plany/${id}`, "PUT", { plan: dane.zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: dane.zapisany.zmieniony });
+    const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    await api(`/api/klient/${token}/odczucie`, "POST", { positionId: "D1-S01", tydzien: 1, feedback: "OK" });
+    const a1 = dane.zapisany.plan.sloty.find((s: any) => s.positionId === "D1-S01").cwiczenieId;
+    const odNowa = await api(`/api/plany/${id}/dobierz`, "POST", { odNowa: true });
+    assert.equal(odNowa.dane.zapisany.plan.sloty.find((s: any) => s.positionId === "D1-S01").cwiczenieId, a1);
+    assert.equal(odNowa.dane.dobor.zablokowane, 1);
+    assert.equal(odNowa.dane.dobor.dobrane, zKategoria.length - 1);
+  });
+});
+
 describe("rozgrzewka na początek dnia", () => {
   test("klient dostaje ją wiersz po wierszu w dniu, dla którego ją wpisano", async () => {
     await api("/api/plany", "POST", { klient: "Rozgrzewka Test", wersja: 1 });
