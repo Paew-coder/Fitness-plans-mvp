@@ -326,8 +326,14 @@ zaokrąglony do skoku ćwiczenia z BAZY (57,5 kg „za trudne" → 55 kg). Duża
 liczba „Ciężar" pokazuje wtedy 55 z dopiskiem „w planie 57,5", nad polami stoi,
 skąd ta liczba; kto wpisze swoją, ma swoją. Ta sama ocena
 idzie do trenera i do następnych tygodni jak dotąd (jedna na ćwiczenie w tygodniu,
-ostatnie dotknięcie wygrywa) i przy ostatniej serii stoi już zaznaczona; drugie
-dotknięcie zdejmuje ocenę. Licznik nad treningiem pokazuje *„X z N ćwiczeń
+ostatnia oceniona seria wygrywa). Od 02.10.2026 ocena **należy do jednej
+serii**: przy następnej przyciski są neutralne, a ponowne „za trudne” obniża
+kolejną serię jeszcze raz (trener: „przeszło do następnej serii oznaczenie
+»za trudne«, a powinno się zresetować na neutralne"). Drugie dotknięcie
+zdejmuje ocenę tej serii. Przy ostatniej serii, gdy wcześniej była ocena, stoi
+*„Ocena z serii 2 („za trudne”) zostaje dla kolejnych tygodni. Kliknij, tylko
+jeśli ostatnia seria była inna."* Oceny serii trzyma pamięć prowadzenia
+(`prowadzenie.ocenySerii`). Licznik nad treningiem pokazuje *„X z N ćwiczeń
 zaczętych"* (wpisana seria albo ocena) — dawne „ocenionych" nie dochodziło do N,
 skoro OK się nie klika. Ocena nie przerysowuje panelu, więc
 wpisane liczby zostają w polach (do 26.09 dotknięcie oceny przy ostatniej serii
