@@ -1050,22 +1050,63 @@ function blokRampy(r) {
   const blok = el("div", "rampa");
   blok.append(el("div", "rampa-tytul", "Rozgrzewka rampą"));
   const kroki = el("div", "rampa-kroki");
-  for (const k of r.kroki) {
-    kroki.append(el("span", "rampa-krok",
-      `${k.ciezar === null ? "lekko" : `${liczba(k.ciezar)} kg`} × ${k.powtorzenia}`));
-  }
-  blok.append(kroki);
+  const opis = el("p", "drobne");
+  blok.append(kroki, opis);
   const potem = r.przed === "topset" ? "TOP SET" : "pierwsza seria robocza";
-  blok.append(el("p", "drobne", r.cel === null
-    ? "Potem 2–3 serie z rosnącym ciężarem i coraz mniej powtórzeń, aż dojdziesz blisko "
-      + `ciężaru, który dobierzesz. Dalej ${potem}.`
-    : `Dalej ${potem} — ${liczba(r.cel)} kg.`));
+  const ciezaru = r.przed === "topset" ? "TOP SETU" : "pierwszej serii roboczej";
+  let pole = null;
+  /*
+   * Bez ciężaru docelowego (klient dopiero dobiera) była sama „lekko × 8–10”
+   * i ogólne zdanie — trener, 04.10.2026: „dziwny i niejasny”. Teraz pełny
+   * schemat w procentach, a w panelu, gdy klient wpisze w pole ciężar, który
+   * planuje, rampa liczy się w kilogramach — tą samą regułą co w silniku
+   * (`krokiRampy`, schemat i skok przychodzą z serwera).
+   */
+  const rysuj = () => {
+    const wpisany = pole ? Number(String(pole.value).replace(",", ".")) || null : null;
+    const cel = r.cel ?? wpisany;
+    const lista = r.cel != null ? r.kroki : cel && r.schemat ? krokiZCelu(cel, r.schemat, r.skok) : null;
+    const napis = (k) => `${k.ciezar === null ? "lekko" : `${liczba(k.ciezar)} kg`} × ${k.powtorzenia}`;
+    kroki.replaceChildren(...(lista
+      ? lista.map((k) => el("span", "rampa-krok", napis(k)))
+      : r.schemat
+        ? r.schemat.map((k) => el("span", "rampa-krok",
+          `${k.procent === null ? "lekko" : `${k.procent}%`} × ${k.powtorzenia}`))
+        : r.kroki.map((k) => el("span", "rampa-krok", napis(k)))));
+    opis.textContent = cel
+      ? `Dalej ${potem} — ${liczba(cel)} kg.`
+      : `Procenty liczysz od ciężaru ${ciezaru}, który dobierasz.`
+        + (pole ? " Wpisz go w pole niżej — pokażę rampę w kilogramach." : "");
+  };
+  // Pole ciężaru powstaje w panelu później niż ramka — podpina się je osobno.
+  blok.polacz = (p) => {
+    if (r.cel != null || !p) return;
+    pole = p;
+    p.addEventListener("input", rysuj);
+    rysuj();
+  };
+  rysuj();
   // Trener, 02.10.2026: „Tych serii nie wpisujesz” było nieintuicyjne — nie
   // wiadomo było, o które serie chodzi. Teraz wprost: rozgrzewkowe.
   blok.append(el("p", "drobne rampa-uwaga", r.przed === "topset"
     ? "Serii rozgrzewkowych nie wpisujesz — zapis zaczyna się od TOP SETU."
     : "Serii rozgrzewkowych nie wpisujesz — wpisujesz dopiero serie robocze."));
   return blok;
+}
+
+/** Kroki rampy do wpisanego ciężaru — ta sama reguła co `krokiRampy` w silniku. */
+function krokiZCelu(cel, schemat, skok) {
+  const s = Math.max(Number(skok) || 0, 0.5);
+  const kroki = [];
+  let poprzedni = 0;
+  for (const { procent, powtorzenia } of schemat) {
+    if (procent === null) { kroki.push({ ciezar: null, powtorzenia }); continue; }
+    const ciezar = Number((Math.round((cel * procent / 100) / s) * s).toFixed(2));
+    if (ciezar <= poprzedni || ciezar >= cel) continue;
+    kroki.push({ ciezar, powtorzenia });
+    poprzedni = ciezar;
+  }
+  return kroki;
 }
 
 /** TOP SET dnia po `positionId` — ten obiekt, który jest teraz w widoku. */
@@ -2190,7 +2231,9 @@ function panelTopSetu(k, kroki) {
   if (bezCiezaru) karta.append(el("p", "dobor", jakDobrac(1, k.rpe)));
   const d = dzienBiezacy();
   const rampa = d?.cwiczenia.find((c) => c.positionId === k.slotTopSetu)?.rampa;
-  if (rampa?.przed === "topset" && !prowadzenie.zrobione.includes(k.klucz)) karta.append(blokRampy(rampa));
+  const ramkaRampy = rampa?.przed === "topset" && !prowadzenie.zrobione.includes(k.klucz)
+    ? blokRampy(rampa) : null;
+  if (ramkaRampy) karta.append(ramkaRampy);
   karta.append(el("p", "drobne", "Jedno ciężkie powtórzenie przed pracą — sprawdzian dnia."));
 
   /*
@@ -2207,6 +2250,7 @@ function panelTopSetu(k, kroki) {
   const pola = el("div", "pola-topsetu");
   pola.append(pole, el("span", "", "kg × 1"));
   karta.append(pola);
+  ramkaRampy?.polacz(pole);
   let ocena = zapisany?.feedback ?? null;
   const blokOceny = el("div", "ocena-w-panelu");
   blokOceny.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
@@ -2282,9 +2326,9 @@ function panelSerii(k, kroki, d) {
   if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
   // Rampa przed pierwszą serią roboczą (bez TOP SETU przy tym ćwiczeniu).
-  if (c.rampa?.przed === "seria" && k.seria === 1 && !prowadzenie.zrobione.includes(k.klucz)) {
-    karta.append(blokRampy(c.rampa));
-  }
+  const ramkaRampy = c.rampa?.przed === "seria" && k.seria === 1 && !prowadzenie.zrobione.includes(k.klucz)
+    ? blokRampy(c.rampa) : null;
+  if (ramkaRampy) karta.append(ramkaRampy);
 
   // Co już poszło w tym treningu przy tym ćwiczeniu.
   const wpisane = serieCwiczenia(c.positionId).filter(Boolean);
@@ -2362,6 +2406,8 @@ function panelSerii(k, kroki, d) {
       + `${podpowiedz.powtorzenia} powt.`));
   }
   karta.append(pola);
+  // Klient dobiera ciężar: wpisany w pole przelicza rampę na kilogramy.
+  ramkaRampy?.polacz(wCiezar);
 
   // Ocena przy każdej serii — przy wcześniejszych bez „OK", patrz ocenaWPanelu.
   if (!c.maks) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
