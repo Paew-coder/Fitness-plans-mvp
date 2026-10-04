@@ -1367,6 +1367,11 @@ function podpowiedzSerii(c, i, serie) {
   // Ocena „za trudne / za łatwe" przy poprzedniej serii: ta dostaje ciężar
   // ±5 % od tego, co klient właśnie podniósł (trener, 26.09.2026).
   const korekta = prowadzenie?.korekty?.[c.positionId];
+  // Poprzednia seria z inną liczbą powtórzeń niż w planie: ta wraca do
+  // powtórzeń z planu, z ciężarem o tym samym wysiłku (04.10.2026).
+  const dopasowany = !wlasna?.ciezar && !wlasna?.powtorzenia && poprzednia?.ciezar
+    ? naPowtorzeniaPlanu(poprzednia.ciezar, poprzednia.powtorzenia, c) : null;
+  const baza = dopasowany ?? poprzednia?.ciezar;
   const skorygowana = !wlasna?.ciezar && poprzednia?.ciezar && korekta?.od === i + 1;
   // Na masie ciała ocena zmienia powtórzenia następnej serii o ±1 (trener,
   // 02.10.2026: „miałem 10 powtórzeń, zaznaczyłem »za trudne«, a w kolejnej
@@ -1375,18 +1380,23 @@ function podpowiedzSerii(c, i, serie) {
     && poprzednia?.powtorzenia && korekta?.od === i + 1;
   return {
     ciezar: skorygowana
-      ? poKorekcie(poprzednia.ciezar, korekta.kierunek, c.skokKg)
-      : wlasna?.ciezar ?? poprzednia?.ciezar ?? (typeof c.ciezar === "number" ? c.ciezar : null),
+      ? poKorekcie(baza, korekta.kierunek, c.skokKg)
+      : wlasna?.ciezar ?? baza ?? (typeof c.ciezar === "number" ? c.ciezar : null),
     powtorzenia: naPowtorzenia
       ? Math.max(1, poprzednia.powtorzenia + korekta.kierunek)
+      : dopasowany !== null ? Number(c.powtorzenia)
       : wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
     korekta: skorygowana || naPowtorzenia ? korekta.kierunek : 0,
     /** Ciężar, od którego liczona jest korekta — do opisu „o 5%” albo „o 1 kg”. */
-    zCiezaru: skorygowana ? poprzednia.ciezar : null,
+    zCiezaru: skorygowana ? baza : null,
+    /** Dopasowanie do powtórzeń z planu: z jakiej serii i na ile kg. */
+    dopasowanie: dopasowany !== null
+      ? { zKg: poprzednia.ciezar, zPowt: poprzednia.powtorzenia, kg: dopasowany } : null,
     /** Korekta poszła w powtórzenia, nie w ciężar (masa ciała). */
     korektaPowtorzen: Boolean(naPowtorzenia),
     /** Skąd ciężar w polu — do dopisku pod dużą liczbą. */
-    zrodlo: skorygowana ? "korekta" : wlasna?.ciezar ? "wlasna" : poprzednia?.ciezar ? "poprzednia" : "plan",
+    zrodlo: skorygowana ? "korekta" : wlasna?.ciezar ? "wlasna" : dopasowany !== null ? "dopasowana"
+      : poprzednia?.ciezar ? "poprzednia" : "plan",
   };
 }
 
@@ -1405,6 +1415,27 @@ const MALY_CIEZAR_KG = 10;
 /** „o 5%”, gdy tyle wyszło; przy małym ciężarze albo całym skoku — „o 1 kg”, „o 2,5 kg”. */
 const oIle = (przed, po) => (przed && Math.abs(po - przed) / przed > 0.07
   ? `o ${liczba(Math.abs(po - przed))} kg` : "o 5%");
+/**
+ * Ciężar na powtórzenia z planu o tym samym wysiłku co zrobiona seria —
+ * z tabeli RPE silnika (`widok.tabelaRPE`), przy RPE z planu. `null`, gdy
+ * nie ma czego dopasowywać (te same powtórzenia, brak liczb, poza tabelą).
+ *
+ * Trener, 04.10.2026: „3 serie po 8 powtórzeń, a ktoś zrobi 10 w pierwszej —
+ * aplikacja powinna dopasować ciężar do 8 powtórzeń, żeby spełniało to
+ * założenia planu”. 12 kg × 10 przy RPE 8 to tyle co ~12,9 kg × 8 → 12,5 kg.
+ */
+function naPowtorzeniaPlanu(kg, powt, c) {
+  const t = widok?.tabelaRPE;
+  const plan = Number(c.powtorzenia);
+  const rpe = Number(c.rpe);
+  if (!t || !(kg > 0) || !(powt > 0) || !(plan > 0) || powt === plan || c.maks) return null;
+  const zrobione = t[powt]?.[rpe];
+  const docelowe = t[plan]?.[rpe];
+  if (!zrobione || !docelowe) return null;
+  const s = Math.max(Number(c.skokKg) || 0, 0.5);
+  return Number((Math.round((kg * docelowe) / zrobione / s) * s).toFixed(2));
+}
+
 function poKorekcie(kg, kierunek, skok) {
   const s = Math.max(Number(skok) || 0, 0.5);
   let nowy = Math.round((kg * (1 + kierunek * KOREKTA_SERII)) / s) * s;
@@ -1471,9 +1502,12 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
     const powt = Number(wPowt?.value) || null;
     const nastepna = !ostatnia && korekta?.od === k.seria + 1;
     if (nastepna && !bezCiezaru && baza) {
-      const kg = poKorekcie(baza, korekta.kierunek, c.skokKg);
-      notka.textContent = `Następna seria: ${liczba(kg)} kg `
-        + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(baza, kg)}).`;
+      // Inne powtórzenia niż w planie — najpierw ten sam wysiłek na plan.
+      const podstawa = naPowtorzeniaPlanu(baza, powt, c) ?? baza;
+      const kg = poKorekcie(podstawa, korekta.kierunek, c.skokKg);
+      notka.textContent = `Następna seria: ${liczba(kg)} kg`
+        + `${podstawa !== baza ? ` × ${c.powtorzenia}` : ""} `
+        + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(podstawa, kg)}).`;
     } else if (nastepna && c.ciezar === "masa ciała" && powt) {
       notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek)} powt. `
         + `(o 1 ${korekta.kierunek < 0 ? "mniej" : "więcej"}).`;
@@ -1756,12 +1790,17 @@ function polaWykonania(c) {
       if (s?.powtorzenia && (bezCiezaru || s.ciezar)) {
         const k = korekta();
         const poOcenie = k?.od === j + 2;
+        // Inne powtórzenia niż w planie — propozycja wraca do planu, z ciężarem
+        // o tym samym wysiłku (04.10.2026).
+        const dopasowany = bezCiezaru ? null : naPowtorzeniaPlanu(s.ciezar, s.powtorzenia, c);
+        const baza = dopasowany ?? s.ciezar;
         const ciezar = bezCiezaru ? null
-          : poOcenie ? poKorekcie(s.ciezar, k.kierunek, c.skokKg) : s.ciezar;
+          : poOcenie ? poKorekcie(baza, k.kierunek, c.skokKg) : baza;
         // Masa ciała: ocena przestawia powtórzenia o ±1 (02.10.2026).
         const powtorzenia = poOcenie && c.ciezar === "masa ciała"
-          ? Math.max(1, s.powtorzenia + k.kierunek) : s.powtorzenia;
-        return { ciezar, powtorzenia, zCiezaru: s.ciezar };
+          ? Math.max(1, s.powtorzenia + k.kierunek)
+          : dopasowany !== null ? Number(c.powtorzenia) : s.powtorzenia;
+        return { ciezar, powtorzenia, zCiezaru: baza, dopasowany: dopasowany !== null };
       }
     }
     return null;
@@ -1790,10 +1829,14 @@ function polaWykonania(c) {
     const k = korekta();
     const poOcenie = pierwsza >= 0 && k?.od === pierwsza + 1;
     const p0 = pierwsza >= 0 ? propozycja(pierwsza) : null;
+    const naPlan = p0?.dopasowany ? ` × ${p0.powtorzenia} (powtórzenia z planu)` : "";
     opisPropozycji.textContent = poOcenie && !bezCiezaru
-      ? `Blade liczby to propozycja: ${liczba(p0.ciezar)} kg — `
+      ? `Blade liczby to propozycja: ${liczba(p0.ciezar)} kg${naPlan} — `
         + `${k.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(p0.zCiezaru, p0.ciezar)} po Twojej ocenie. `
         + "Po serii dotknij ✓ albo popraw."
+      : p0?.dopasowany && !bezCiezaru
+        ? `Blade liczby to propozycja: ${liczba(p0.ciezar)} kg × ${p0.powtorzenia} — tyle powtórzeń, `
+          + "ile w planie, z ciężarem o tym samym wysiłku co Twoja seria. Po serii dotknij ✓ albo popraw."
       : poOcenie && c.ciezar === "masa ciała"
         ? `Blade liczby to propozycja: ${p0.powtorzenia} powt. — o 1 ${k.kierunek < 0 ? "mniej" : "więcej"} `
           + "po Twojej ocenie. Po serii dotknij ✓ albo popraw."
@@ -2317,6 +2360,7 @@ function panelSerii(k, kroki, d) {
     dopisekCiezaru: zPola === null ? (c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null)
       : typeof c.ciezar === "number" ? `w planie ${liczba(c.ciezar)}`
       : podpowiedz.zrodlo === "korekta" ? "po Twojej ocenie"
+      : podpowiedz.zrodlo === "dopasowana" ? `na ${c.powtorzenia} powt.`
       : podpowiedz.zrodlo === "poprzednia" ? `jak w serii ${k.seria - 1}` : null,
   }));
   const historia = linijkaOstatnio(c);
@@ -2399,6 +2443,12 @@ function panelSerii(k, kroki, d) {
       + `${oIle(podpowiedz.zCiezaru, podpowiedz.ciezar)} `
       + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
       + `${liczba(podpowiedz.ciezar)} kg.`));
+  }
+  if (podpowiedz.dopasowanie && !bezCiezaru) {
+    const dp = podpowiedz.dopasowanie;
+    karta.append(el("p", "korekta-serii dopasowanie-serii",
+      `Na ${c.powtorzenia} powtórzeń z planu: ${liczba(dp.kg)} kg — tyle samo wysiłku co Twoja `
+      + `seria ${k.seria - 1} (${liczba(dp.zKg)} kg × ${dp.zPowt}).`));
   }
   if (podpowiedz.korektaPowtorzen) {
     karta.append(el("p", "korekta-serii", `O 1 powtórzenie ${podpowiedz.korekta < 0 ? "mniej" : "więcej"} `

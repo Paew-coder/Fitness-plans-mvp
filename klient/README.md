@@ -332,6 +332,20 @@ mniej po Twojej ocenie…”*; lista: propozycje), kolejne serie idą za tym, co
 zrobił; w kolejnych tygodniach silnik i tak odejmuje/dodaje 1 powtórzenie na ocenę
 (maks. ±3) — tak liczył arkusz.
 
+**Inne powtórzenia niż w planie — następna seria wraca do planu** (od
+04.10.2026). Trener: „3 serie po 8 na stronę, a ktoś zrobi 10 w pierwszej —
+aplikacja powinna dopasować ciężar do 8 powtórzeń, żeby spełniało to założenia
+planu”. Dotąd następna seria kopiowała poprzednią (12 kg × 10). Teraz w panelu
+i w propozycjach na liście następna seria ma powtórzenia z planu i ciężar o tym
+samym wysiłku z tabeli RPE silnika (przy RPE z planu), zaokrąglony do skoku:
+12 kg × 10 przy RPE 8 → 12,5 kg × 8; 15 kg × 12 → 17,5 kg × 8. W panelu zdanie
+*„Na 8 powtórzeń z planu: 12,5 kg — tyle samo wysiłku co Twoja seria 1 (12 kg ×
+10)."*, na liście opis propozycji. Mniej powtórzeń niż w planie działa w drugą
+stronę (lżej). Ocena „za trudne / za łatwe” liczy się od tego dopasowanego
+ciężaru. Gdy różnica ginie w zaokrągleniu do skoku (15 kg × 10 → 16,1 → 15),
+ciężar zostaje, a powtórzenia wracają do planu. Tabela przychodzi w widoku
+(`tabelaRPE`), liczy `naPowtorzeniaPlanu`; masa ciała i maksy bez zmian.
+
 **Ocena przy każdej serii, ale bez obowiązku.** Pod polami każdej serii — także
 ostatniej — stoi pytanie *„Za ciężko albo za lekko?"* z dwoma przyciskami —
 `Za trudne` i `Za łatwe` — i dopisek *„Jeśli jest OK — nic nie klikaj"* (przy
