@@ -36,6 +36,7 @@ import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
+import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
 import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
@@ -1090,6 +1091,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     // zasięgu. Zapisane 1RM i tak liczy serwer.
     procent1RM: Object.fromEntries(Array.from({ length: POWT_MAX }, (_, i) =>
       [i + 1, procent1RM(i + 1, 10)])),
+    // Cała tabela RPE (powtórzenia × RPE → %1RM). Gdy klient zrobi inną
+    // liczbę powtórzeń niż w planie, telefon proponuje następną serię na
+    // powtórzenia z planu z ciężarem o tym samym wysiłku (04.10.2026).
+    tabelaRPE: TABELA_RPE,
     moduly: moduly(zapisany),
     postep: postepKlienta(zapisany, wynik),
   };
