@@ -1938,6 +1938,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const planMale = (await api(`/api/plany/${idMale}`)).zapisany.plan;
   planMale.sloty[0].cwiczenieId = "EX-0016";   // Barbell row — kg, skok 2,5
   planMale.sloty[1].cwiczenieId = "EX-0122";   // Knee raises — masa ciała
+  planMale.sloty[3].cwiczenieId = "EX-0011";   // C1. wyciskanie bez 1RM — rampa bez ciężaru docelowego
   planMale.serieMaksymalne = [{ cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 1 }];
   await api(`/api/plany/${idMale}`, "PUT", { plan: planMale, dataStartu: null, status: "wysłany" });
   const sciezkaMale = (await api(`/api/plany/${idMale}/link`, "POST")).sciezka;
@@ -1977,6 +1978,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       && panelPowt.includes("9") && panelPowt.includes("w planie")
       && (await panel.innerText()).includes("O 1 powtórzenie mniej po Twojej ocenie „za trudne”: 9 powt."),
     `${panelPowt.replace(/\n/g, " ")} · pole ${await panel.locator('.panel-pola input[placeholder="powt."]').inputValue()}`);
+
+  // Trener, 04.10.2026: rampa przed wpisanym ciężarem była „dziwna i niejasna”
+  // (sama „lekko × 8–10”). Teraz schemat w procentach, a w panelu wpisany
+  // ciężar przelicza ją na kilogramy.
+  await s.click("#wroc-z-serii");
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const kartaBezCelu = s.locator('#cwiczenia [data-position="D1-S04"]');
+  const rampaBezCelu = await kartaBezCelu.locator(".rampa").innerText().catch(() => "");
+  sprawdz("bez ciężaru docelowego rampa pokazuje cały schemat w procentach i od czego je liczyć",
+    (await kartaBezCelu.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 · 50% × 5 · 70% × 3 · 85% × 1"
+      && rampaBezCelu.includes("Procenty liczysz od ciężaru pierwszej serii roboczej"),
+    rampaBezCelu.replace(/\n/g, " · ") || "brak rampy");
+  await kartaBezCelu.getByRole("button", { name: /Zacznij to ćwiczenie/ }).click();
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  await s.waitForSelector("#panel .panel-pola");
+  await panel.locator('.panel-pola input[placeholder="kg"]').fill("60");
+  await s.waitForTimeout(200);
+  const rampaPanelu = await panel.locator(".rampa").innerText();
+  sprawdz("w panelu wpisany ciężar przelicza rampę na kilogramy",
+    (await panel.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 · 30 kg × 5 · 42,5 kg × 3 · 50 kg × 1"
+      && rampaPanelu.includes("Dalej pierwsza seria robocza — 60 kg"),
+    rampaPanelu.replace(/\n/g, " · "));
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

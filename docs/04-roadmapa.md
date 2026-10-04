@@ -713,6 +713,15 @@ Trener: „Swiss ball leg curl pokazuje, żeby dobrać ciężar, a ono jest bez 
 * **Bird dog row** (EX-0035): `masa ciała` → `kg`, skok 2,5 kg jak pozostałe wiosłowania hantlą. Bez 1RM klient dobiera ciężar według RPE, a pierwsza seria liczy resztę.
 * Liczba ćwiczeń bez serii maksymalnej bez zmian (27 — jedno weszło, jedno wyszło). Test silnika pilnuje obu; na starych danych czerwony.
 
+**47. Rampa bez ciężaru docelowego — w procentach, a w panelu w kilogramach — 04.10.2026.**
+
+Trener: „opis rozgrzewki — rampy w ćwiczeniu barbell bench press przed wpisanym jeszcze jakimkolwiek ciężarem był dziwny i niejasny”. Bez 1RM (klient dobiera ciężar) rampa miała sam krok „lekko × 8–10” i zdanie „Potem 2–3 serie z rosnącym ciężarem…”.
+
+* Teraz pełny schemat w procentach: „lekko × 8–10 · 50% × 5 · 70% × 3 · 85% × 1” i „Procenty liczysz od ciężaru pierwszej serii roboczej (TOP SETU), który dobierasz.”
+* W panelu (seria 1 albo TOP SET) dopisek „Wpisz go w pole niżej — pokażę rampę w kilogramach” — wpisany ciężar od razu przelicza kroki (60 kg → 30 · 42,5 · 50 kg) i zdanie „Dalej pierwsza seria robocza — 60 kg”.
+* Serwer dokłada do rampy `schemat` (`SCHEMAT_RAMPY`) i `skok`; telefon liczy kroki tą samą regułą co silnik (`krokiZCelu`). Stary widok w pamięci telefonu bez schematu pokazuje rampę jak dotąd.
+* Przegląd klienta (sekcja 29): schemat w procentach na liście, przeliczenie po wpisaniu 60 kg w panelu; bez podpięcia pola kontrola czerwona.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
