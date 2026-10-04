@@ -722,6 +722,14 @@ Trener: „opis rozgrzewki — rampy w ćwiczeniu barbell bench press przed wpis
 * Serwer dokłada do rampy `schemat` (`SCHEMAT_RAMPY`) i `skok`; telefon liczy kroki tą samą regułą co silnik (`krokiZCelu`). Stary widok w pamięci telefonu bez schematu pokazuje rampę jak dotąd.
 * Przegląd klienta (sekcja 29): schemat w procentach na liście, przeliczenie po wpisaniu 60 kg w panelu; bez podpięcia pola kontrola czerwona.
 
+**48. Inne powtórzenia niż w planie — następna seria wraca do planu z dopasowanym ciężarem — 04.10.2026.**
+
+Trener (zrzut: Split squat 3 × 8 na stronę, seria 1: 12 kg × 10, propozycje 12 × 10): „jeżeli ktoś zrobi 10 powtórzeń w pierwszej serii, to nie powinno być tak, że aplikacja i tak dopasowuje mu ten ciężar do 8 powtórzeń, żeby spełniało to założenia planu?”.
+
+* Następna seria (panel i propozycje na liście) dostaje powtórzenia z planu i ciężar o tym samym wysiłku: `kg × %1RM(plan, RPE) / %1RM(zrobione, RPE)` z tabeli RPE silnika, zaokrąglone do skoku. 12 × 10 @8 → 12,5 × 8 (to, co pokazuje plan); 15 × 12 → 17,5 × 8; mniej powtórzeń → lżej. Założenie: seria była na RPE z planu — jeśli nie, od tego jest ocena, która liczy się od dopasowanego ciężaru.
+* Serwer dokłada do widoku `tabelaRPE`; telefon: `naPowtorzeniaPlanu` w `podpowiedzSerii`, w propozycjach listy i w zapowiedzi „Następna seria”. Zdanie w panelu („Na 8 powtórzeń z planu: …”), opis propozycji na liście. Bez zmian: masa ciała (tam liczą się powtórzenia), maksy, seria z już wpisanymi liczbami.
+* Przegląd klienta (sekcja 29): Split squat z 1RM, seria 1 z 12 powtórzeniami przy planie 8 → lista i panel 17,5 kg × 8 ze zdaniem skąd; bez dopasowania dwie kontrole czerwone.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

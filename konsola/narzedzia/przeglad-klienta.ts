@@ -1939,7 +1939,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   planMale.sloty[0].cwiczenieId = "EX-0016";   // Barbell row — kg, skok 2,5
   planMale.sloty[1].cwiczenieId = "EX-0122";   // Knee raises — masa ciała
   planMale.sloty[3].cwiczenieId = "EX-0011";   // C1. wyciskanie bez 1RM — rampa bez ciężaru docelowego
-  planMale.serieMaksymalne = [{ cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 1 }];
+  planMale.sloty[5].cwiczenieId = "EX-0184";   // D1. Split squat — plan na 8 powtórzeń z 1RM
+  planMale.serieMaksymalne = [{ cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 1 },
+    { cwiczenieId: "EX-0184", ciezar: 20, powtorzenia: 1 }];
   await api(`/api/plany/${idMale}`, "PUT", { plan: planMale, dataStartu: null, status: "wysłany" });
   const sciezkaMale = (await api(`/api/plany/${idMale}/link`, "POST")).sciezka;
   await s.goto(`${adres}${sciezkaMale}`, { waitUntil: "networkidle" });
@@ -2000,6 +2002,46 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await panel.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 · 30 kg × 5 · 42,5 kg × 3 · 50 kg × 1"
       && rampaPanelu.includes("Dalej pierwsza seria robocza — 60 kg"),
     rampaPanelu.replace(/\n/g, " · "));
+
+  // Trener, 04.10.2026: „3 serie po 8 na stronę, a ktoś zrobi 10 w pierwszej —
+  // aplikacja powinna dopasować ciężar do 8 powtórzeń”. Następna seria wraca
+  // do powtórzeń z planu, z ciężarem o tym samym wysiłku (tabela RPE).
+  await s.click("#wroc-z-serii");
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  const widokMale = await api(`/api/klient/${sciezkaMale.replace("/k/", "")}`);
+  const split = widokMale.tygodnie[0].dni[0].cwiczenia.find((x: any) => x.positionId === "D1-S06");
+  const naPlan = (kg: number, powt: number) => {
+    const t = widokMale.tabelaRPE;
+    const skok = Math.max(split.skokKg, 0.5);
+    return Math.round(kg * t[split.powtorzenia][split.rpe] / t[powt][split.rpe] / skok) * skok;
+  };
+  // 4 powtórzenia więcej — dość, żeby po zaokrągleniu do skoku ciężar urósł.
+  const wiecej = split.powtorzenia + 4;
+  const kartaSplit = s.locator('#cwiczenia [data-position="D1-S06"]');
+  await kartaSplit.getByRole("button", { name: /zapisz, co poszło/ }).click();
+  const pierwszySplit = kartaSplit.locator(".wiersz-serii").first().locator("input");
+  await pierwszySplit.nth(0).fill(String(split.ciezar));
+  await pierwszySplit.nth(1).fill(String(wiecej));
+  await pierwszySplit.nth(1).blur();
+  await s.waitForTimeout(900);
+  const drugiSplit = kartaSplit.locator(".wiersz-serii").nth(1).locator("input");
+  const opisSplit = await kartaSplit.locator(".opis-propozycji").innerText();
+  sprawdz(`więcej powtórzeń niż w planie (${wiecej} zamiast ${split.powtorzenia}): następna seria wraca do planu z dopasowanym ciężarem`,
+    Number(await drugiSplit.nth(0).inputValue()) === naPlan(split.ciezar, wiecej)
+      && naPlan(split.ciezar, wiecej) > split.ciezar
+      && Number(await drugiSplit.nth(1).inputValue()) === split.powtorzenia
+      && opisSplit.includes("tyle powtórzeń, ile w planie"),
+    `${await drugiSplit.nth(0).inputValue()} kg × ${await drugiSplit.nth(1).inputValue()} · ${opisSplit}`);
+  await kartaSplit.getByRole("button", { name: /Zacznij to ćwiczenie|zaczęte/ }).click();
+  await s.waitForSelector("#ekran-seria:not(.ukryty)");
+  await s.waitForSelector("#panel .panel-pola");
+  await dalejPoSerii();                                     // seria 1 wpisana na liście
+  const notkaSplit = await panel.locator(".dopasowanie-serii").innerText().catch(() => "");
+  sprawdz("w panelu seria 2 też na powtórzenia z planu, z dopasowanym ciężarem i zdaniem skąd",
+    Number(await panel.locator('.panel-pola input[placeholder="kg"]').inputValue()) === naPlan(split.ciezar, wiecej)
+      && Number(await panel.locator('.panel-pola input[placeholder="powt."]').inputValue()) === split.powtorzenia
+      && notkaSplit.includes(`Na ${split.powtorzenia} powtórzeń z planu`),
+    notkaSplit || "brak zdania");
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
