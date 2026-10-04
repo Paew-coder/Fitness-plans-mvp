@@ -35,7 +35,7 @@ import { PROGRESJE_BEZ_CIEZARU } from "../silnik/src/typy.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
-import { krokiRampy, potrzebaRampy } from "../silnik/src/rampa.ts";
+import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
@@ -930,7 +930,11 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     })) return null;
     const cel = ts ? ts.ciezar : s.ciezar;
     const ciezarCelu = typeof cel === "number" && cel > 0 ? cel : null;
-    return { przed: ts ? "topset" : "seria", cel: ciezarCelu, kroki: krokiRampy(ciezarCelu, cw.skokKg) };
+    // Schemat i skok jadą razem z krokami: bez ciężaru docelowego (klient
+    // dopiero dobiera) telefon pokazuje procenty, a gdy klient wpisze
+    // planowany ciężar — przelicza je na kilogramy tą samą regułą.
+    return { przed: ts ? "topset" : "seria", cel: ciezarCelu, kroki: krokiRampy(ciezarCelu, cw.skokKg),
+      schemat: SCHEMAT_RAMPY, skok: cw.skokKg };
   };
 
   // Sześć tygodni pracy i te po cyklu, które trener włączył. Tydzień maksów

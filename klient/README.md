@@ -96,7 +96,13 @@ silnik (`rampa.ts`): 50 / 70 / 85 % ciężaru docelowego, zaokrąglone do skoku
 SETEM, przy boju głównym (G, S) i przy ćwiczeniu złożonym z BAZY (współczynnik
 1,0) — tylko z progresją w kilogramach i tylko przy pierwszym wystąpieniu
 ćwiczenia w dniu. Na liście znika, gdy ćwiczenie jest zaczęte; w panelu stoi
-przy TOP SECIE albo serii 1. Bez ciężaru docelowego (klient dobiera) — słowami.
+przy TOP SECIE albo serii 1. **Bez ciężaru docelowego** (klient dobiera, brak
+1RM) — pełny schemat w procentach (*„lekko × 8–10 · 50% × 5 · 70% × 3 · 85% × 1 —
+procenty liczysz od ciężaru pierwszej serii roboczej, który dobierasz"*),
+a w panelu ciężar wpisany w pole od razu przelicza rampę na kilogramy (60 kg →
+30 · 42,5 · 50 kg). Do 04.10.2026 stało tam samo „lekko × 8–10” i ogólne zdanie —
+trener: „dziwny i niejasny”. Schemat i skok przychodzą z serwera (`rampa.schemat`,
+`rampa.skok`), telefon liczy tą samą regułą co silnik (`krokiZCelu`).
 
 **TOP SET: ocena i inny ciężar** (od 02.10.2026). W panelu pole z ciężarem
 z planu (`130 kg × 1`) i *„Za ciężko albo za lekko?"* z `Za trudne` / `Za
