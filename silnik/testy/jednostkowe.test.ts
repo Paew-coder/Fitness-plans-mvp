@@ -389,6 +389,15 @@ describe("katalog BAZY 5.17", () => {
     }
   });
 
+  // Trener, 04.10.2026: „Swiss ball leg curl pokazuje, żeby dobrać ciężar, a ono
+  // jest bez — a bird dog row na odwrót, tam powinien być ciężar”.
+  test("Swiss ball leg curl na masie ciała, Bird dog row z ciężarem (skok jak inne wiosłowania hantlą)", () => {
+    assert.equal(katalog.poId("EX-0190")?.progresja, "masa ciała");
+    assert.equal(katalog.poId("EX-0190")?.skokKg, 0);
+    assert.equal(katalog.poId("EX-0035")?.progresja, "kg");
+    assert.equal(katalog.poId("EX-0035")?.skokKg, katalog.poNazwie("Dumbbell s/a row")?.skokKg);
+  });
+
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(katalog.wKategorii("Tricep").length, 9);
     assert.equal(katalog.wKategorii(null).length, 166);
