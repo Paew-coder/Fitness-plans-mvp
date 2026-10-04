@@ -705,6 +705,14 @@ Trener: „jeżeli w danym ćwiczeniu ciężary są bardzo małe, np. 5 kg, to n
 * **Masa ciała w serii:** ocena → następna seria ±1 powtórzenie (panel: duża liczba, dopisek „w planie”, zdanie skąd; lista: propozycje i opis), dalsze serie za tym, co klient zrobił. Kolejne tygodnie — jak dotąd ±1 na ocenę, maks. ±3. Inne dni z tym samym ćwiczeniem to osobne pozycje planu — ocena jednej ich nie zmienia.
 * Testy silnika (krok, liczba kroków, plan z małym ciężarem i znacznikiem, masa ciała −1 w T2–T3), eksportu; przegląd klienta (sekcja 29: 5 kg → 4 kg na liście, Knee raises 10 → 9 na liście i w panelu). Bez reguł trzy kontrole czerwone.
 
+**46. Poprawki w BAZIE: Swiss ball leg curl i Bird dog row — 04.10.2026.**
+
+Trener: „Swiss ball leg curl pokazuje, żeby dobrać ciężar, a ono jest bez — a bird dog row na odwrót, tam powinien być ciężar”.
+
+* **Swiss ball leg curl** (EX-0190): `kg` → `masa ciała`, skok 0. Bez pola ciężaru i bez serii maksymalnej; oceny zmieniają powtórzenia (±1).
+* **Bird dog row** (EX-0035): `masa ciała` → `kg`, skok 2,5 kg jak pozostałe wiosłowania hantlą. Bez 1RM klient dobiera ciężar według RPE, a pierwsza seria liczy resztę.
+* Liczba ćwiczeń bez serii maksymalnej bez zmian (27 — jedno weszło, jedno wyszło). Test silnika pilnuje obu; na starych danych czerwony.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

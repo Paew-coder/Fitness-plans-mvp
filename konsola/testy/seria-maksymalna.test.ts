@@ -49,8 +49,11 @@ describe("kiedy seria maksymalna ma sens", () => {
   test("dotyczy 27 ćwiczeń ze 166 — nie jest to margines", () => {
     const bez = katalog.wszystkie.filter((c) => !seriaMaksymalnaMaSens(c.progresja));
     // 27.09.2026: +2 — Reverse Nordic i Glute crusher przeszły na masę ciała.
+    // 04.10.2026: ±0 — Swiss ball leg curl na masę ciała, Bird dog row na kg.
     assert.equal(bez.length, 27);
     assert.ok(bez.some((c) => c.nazwa === "Reverse Nordic"));
+    assert.ok(bez.some((c) => c.nazwa === "Swiss ball leg curl"));
+    assert.ok(!bez.some((c) => c.nazwa === "Bird dog row"));
     assert.ok(bez.some((c) => c.nazwa === "Glute crusher"));
     // Dokładnie te dwa, na których trener się potknął.
     assert.ok(bez.some((c) => c.nazwa === "SLDL balance"));
