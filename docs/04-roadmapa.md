@@ -721,6 +721,7 @@ Trener: „opis rozgrzewki — rampy w ćwiczeniu barbell bench press przed wpis
 * W panelu (seria 1 albo TOP SET) dopisek „Wpisz go w pole niżej — pokażę rampę w kilogramach” — wpisany ciężar od razu przelicza kroki (60 kg → 30 · 42,5 · 50 kg) i zdanie „Dalej pierwsza seria robocza — 60 kg”.
 * Serwer dokłada do rampy `schemat` (`SCHEMAT_RAMPY`) i `skok`; telefon liczy kroki tą samą regułą co silnik (`krokiZCelu`). Stary widok w pamięci telefonu bez schematu pokazuje rampę jak dotąd.
 * Przegląd klienta (sekcja 29): schemat w procentach na liście, przeliczenie po wpisaniu 60 kg w panelu; bez podpięcia pola kontrola czerwona.
+* 05.10.2026, trener: „do tych liczb 8–10, × 5 itd. dopiszmy powt.” — każdy krok kończy się bladym „powt.” („lekko × 8–10 powt.”, „50% × 5 powt.”, „30 kg × 5 powt.”), żeby było jasne, że to powtórzenia, a nie procenty czy kilogramy.
 
 **48. Inne powtórzenia niż w planie — następna seria wraca do planu z dopasowanym ciężarem — 04.10.2026.**
 

@@ -844,9 +844,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const kartaTsPrzysiadu = s.locator('#cwiczenia .topset[data-topset="D1-S01"]');
   const rampaListy = await kartaTsPrzysiadu.locator(".rampa").innerText().catch(() => "");
   const krokiListy = await kartaTsPrzysiadu.locator(".rampa-krok").allInnerTexts();
-  const ostatniKrok = Number((krokiListy.at(-1) ?? "").replace(",", ".").replace(/[^\d.]/g, ""));
+  const ostatniKrok = parseFloat((krokiListy.at(-1) ?? "").replace(",", "."));
   sprawdz("przed TOP SETEM przysiadu rampa z ciężarami, poniżej TOP SETU",
-    krokiListy[0] === "lekko × 8–10" && krokiListy.length >= 3
+    // 05.10.2026: przy liczbach dopisane „powt.” — wiadomo, że to powtórzenia.
+    krokiListy[0] === "lekko × 8–10 powt." && krokiListy.length >= 3
+      && krokiListy.every((k) => k.endsWith(" powt."))
       && ostatniKrok > 0 && ostatniKrok < tsPrzysiadu.ciezar && rampaListy.includes("Dalej TOP SET")
       // 02.10.2026: wprost, że chodzi o serie rozgrzewkowe („Tych serii…” było niejasne).
       && rampaListy.includes("Serii rozgrzewkowych nie wpisujesz — zapis zaczyna się od TOP SETU"),
@@ -1851,7 +1853,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Bój bez TOP SETU: rampa idzie do pierwszej serii roboczej (02.10.2026).
   const rampaBoju = await kartaListy.locator(".rampa").innerText().catch(() => "");
   sprawdz("bój bez TOP SETU: rampa do pierwszej serii roboczej",
-    rampaBoju.includes("lekko × 8–10") && rampaBoju.includes("Dalej pierwsza seria robocza")
+    rampaBoju.includes("lekko × 8–10 powt.") && rampaBoju.includes("Dalej pierwsza seria robocza")
       && rampaBoju.includes("Serii rozgrzewkowych nie wpisujesz — wpisujesz dopiero serie robocze"),
     rampaBoju.replace(/\n/g, " · ") || "brak rampy");
   await kartaListy.getByRole("button", { name: /zapisz, co poszło/ }).click();
@@ -1989,7 +1991,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const kartaBezCelu = s.locator('#cwiczenia [data-position="D1-S04"]');
   const rampaBezCelu = await kartaBezCelu.locator(".rampa").innerText().catch(() => "");
   sprawdz("bez ciężaru docelowego rampa pokazuje cały schemat w procentach i od czego je liczyć",
-    (await kartaBezCelu.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 · 50% × 5 · 70% × 3 · 85% × 1"
+    (await kartaBezCelu.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 powt. · 50% × 5 powt. · 70% × 3 powt. · 85% × 1 powt."
       && rampaBezCelu.includes("Procenty liczysz od ciężaru pierwszej serii roboczej"),
     rampaBezCelu.replace(/\n/g, " · ") || "brak rampy");
   await kartaBezCelu.getByRole("button", { name: /Zacznij to ćwiczenie/ }).click();
@@ -1999,7 +2001,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForTimeout(200);
   const rampaPanelu = await panel.locator(".rampa").innerText();
   sprawdz("w panelu wpisany ciężar przelicza rampę na kilogramy",
-    (await panel.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 · 30 kg × 5 · 42,5 kg × 3 · 50 kg × 1"
+    (await panel.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 powt. · 30 kg × 5 powt. · 42,5 kg × 3 powt. · 50 kg × 1 powt."
       && rampaPanelu.includes("Dalej pierwsza seria robocza — 60 kg"),
     rampaPanelu.replace(/\n/g, " · "));
 

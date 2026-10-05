@@ -277,6 +277,7 @@ button { font: inherit; cursor: pointer; }
 }
 .rampa-kroki { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin-top: .35rem; font-weight: 600; }
 .rampa-krok { white-space: nowrap; }
+.rampa-powt { font-weight: 400; color: var(--tekst-slaby); font-size: .85em; }
 .rampa .drobne { margin: .35rem 0 0; }
 
 /* ── serie maksymalne ───────────────────────────────────────────── */

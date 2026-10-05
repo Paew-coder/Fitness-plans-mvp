@@ -1066,13 +1066,18 @@ function blokRampy(r) {
     const wpisany = pole ? Number(String(pole.value).replace(",", ".")) || null : null;
     const cel = r.cel ?? wpisany;
     const lista = r.cel != null ? r.kroki : cel && r.schemat ? krokiZCelu(cel, r.schemat, r.skok) : null;
-    const napis = (k) => `${k.ciezar === null ? "lekko" : `${liczba(k.ciezar)} kg`} × ${k.powtorzenia}`;
+    // Trener, 05.10.2026: przy „× 8–10”, „× 5” dopisać, że to powtórzenia.
+    const krok = (ile, powtorzenia) => {
+      const e = el("span", "rampa-krok", `${ile} × ${powtorzenia} `);
+      e.append(el("span", "rampa-powt", "powt."));
+      return e;
+    };
+    const ile = (k) => k.ciezar === null ? "lekko" : `${liczba(k.ciezar)} kg`;
     kroki.replaceChildren(...(lista
-      ? lista.map((k) => el("span", "rampa-krok", napis(k)))
+      ? lista.map((k) => krok(ile(k), k.powtorzenia))
       : r.schemat
-        ? r.schemat.map((k) => el("span", "rampa-krok",
-          `${k.procent === null ? "lekko" : `${k.procent}%`} × ${k.powtorzenia}`))
-        : r.kroki.map((k) => el("span", "rampa-krok", napis(k)))));
+        ? r.schemat.map((k) => krok(k.procent === null ? "lekko" : `${k.procent}%`, k.powtorzenia))
+        : r.kroki.map((k) => krok(ile(k), k.powtorzenia))));
     opis.textContent = cel
       ? `Dalej ${potem} — ${liczba(cel)} kg.`
       : `Procenty liczysz od ciężaru ${ciezaru}, który dobierasz.`
