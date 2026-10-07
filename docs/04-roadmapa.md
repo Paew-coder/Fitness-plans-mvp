@@ -731,6 +731,18 @@ Trener (zrzut: Split squat 3 × 8 na stronę, seria 1: 12 kg × 10, propozycje 1
 * Serwer dokłada do widoku `tabelaRPE`; telefon: `naPowtorzeniaPlanu` w `podpowiedzSerii`, w propozycjach listy i w zapowiedzi „Następna seria”. Zdanie w panelu („Na 8 powtórzeń z planu: …”), opis propozycji na liście. Bez zmian: masa ciała (tam liczą się powtórzenia), maksy, seria z już wpisanymi liczbami.
 * Przegląd klienta (sekcja 29): Split squat z 1RM, seria 1 z 12 powtórzeniami przy planie 8 → lista i panel 17,5 kg × 8 ze zdaniem skąd; bez dopasowania dwie kontrole czerwone.
 
+**49. Analiza ruchu — MediaPipe Pose Landmarker, prototyp dla przysiadu — 07.10.2026.**
+
+Trener: „moduł analizy ruchu: nagrać kamerą albo wgrać wideo, MediaPipe klatka po klatce z landmarkami i połączeniami, pełny zestaw punktów zapisany na przyszłość, kąty i trajektorie, zatrzymanie na dowolnej klatce, sugerowana pozycja punktu — na razie bez AI”.
+
+* Strona `/ruch/` w konsoli (link „Analiza ruchu”), za tym samym logowaniem; bez logowania — ekran logowania, po nim powrót na analizę. Analiza w przeglądarce, film nie wychodzi z urządzenia.
+* Czysta logika w modułach ES (`public/ruch/`: szkielet, geometria, przebieg, profile, sesja) — 31 testów w `testy/analiza-ruchu.test.ts`; ekran, MediaPipe, nakładka i wykres osobno.
+* Każda klatka filmu dokładnie raz: odtwarzanie z pauzą na klatce zamiast przewijania (34 s zamiast 235 s na filmie 12 s), zgubione przy obciążeniu klatki uzupełniane; programowa karta graficzna → procesor.
+* Zapis JSON: 33 punkty obrazu + 33 punkty 3D na klatkę, czas w ms, sugestie (`autor`: trener, później ai). CSV do arkusza. Wczytanie zapisu także bez filmu.
+* Kąty kliniczne 2D/3D z pewnością i rozpoznaniem ujęcia (z boku / z przodu / skos) — kąt niewidoczny z danego ujęcia oznaczony „?” z powodem. Przysiad: powtórzenia, czasy, największe zgięcia, głębokość, kolana względem stóp.
+* MediaPipe przypięte na 0.10.35: od 1.0 biblioteka wysyła do Google statystyki użycia (wymagałoby zgody klientów). Przegląd ruchu blokuje i zgłasza każde połączenie poza bibliotekę i model — z 1.0.1 robi się czerwony.
+* `npm run przeglad-ruchu`: 50 kontroli na prawdziwych filmach (przód, bok, kamera); opis i dalsze kroki w `docs/06-analiza-ruchu.md`. Do decyzji trenera: zapis analiz w bazie przy kliencie.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

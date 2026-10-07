@@ -55,9 +55,13 @@ describe("składnia — każdy plik da się sparsować", () => {
       // `stripTypeScriptTypes` parsuje plik i wywala się na błędzie składni,
       // ale niczego nie wykonuje — czyli sprawdza też `serwer.ts`, którego
       // zwykły import postawiłby nasłuch na porcie.
+      // Moduły ES (analiza ruchu, `public/ruch/`, 07.10.2026) mają `import`
+      // i `export`, których `new Function` nie przyjmie — parsuje je ten sam
+      // parser co TypeScript (JS jest jego podzbiorem), też bez wykonywania.
+      const modul = /^\s*(import|export)\s/m.test(kod);
       assert.doesNotThrow(() => {
-        if (extname(plik) === ".ts") stripTypeScriptTypes(kod);
-        else new Function(kod);   // moduły klienta: sam parser, bez uruchamiania
+        if (extname(plik) === ".ts" || modul) stripTypeScriptTypes(kod);
+        else new Function(kod);   // skrypty klienta: sam parser, bez uruchamiania
       });
     });
   }

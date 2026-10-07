@@ -43,7 +43,9 @@
         body: JSON.stringify(dane),
       });
       if (!odp.ok) throw new Error((await odp.json()).blad ?? "Nie udało się zalogować.");
-      location.href = "/";
+      // Ekran logowania stoi pod adresem, na który ktoś wszedł (np. /ruch/) —
+      // po zalogowaniu wracamy tam, a nie zawsze na listę klientów.
+      location.href = location.pathname === "/logowanie.html" ? "/" : location.pathname;
     } catch (err) {
       blad.textContent = err.message;
       blad.classList.remove("ukryty");

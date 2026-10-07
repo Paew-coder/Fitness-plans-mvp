@@ -10,6 +10,8 @@ npm start          # → http://localhost:4173
 Nic nie trzeba instalować ani stawiać. Node 22, zero zależności, dane w jednym
 pliku SQLite obok. Chodzi na Twoim komputerze i nic nie wychodzi na zewnątrz —
 z jednym wyjątkiem, który sam włączasz kluczem do API: [asystent](#asystent-co-robi-a-czego-nie).
+[Analiza ruchu](#analiza-ruchu-od-07102026) pobiera z internetu tylko bibliotekę
+MediaPipe i model (raz) — film i wyniki zostają na urządzeniu.
 
 ## Co robi
 
@@ -293,6 +295,37 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
+
+## Analiza ruchu (od 07.10.2026)
+
+Link **Analiza ruchu** na ekranie głównym → strona `/ruch/`, za tym samym
+logowaniem. **Wgraj wideo** (na iPadzie: aparat albo biblioteka) albo **Nagraj
+kamerą** → MediaPipe Pose Landmarker liczy sylwetkę w każdej klatce filmu,
+w przeglądarce — film nie wychodzi z urządzenia.
+
+- **Na obrazie** szkielet (lewa strona pomarańczowa, prawa niebieska), kąty
+  przy stawach, trajektorie wybranych punktów. ◀︎ / ▶︎ i strzałki — klatka po
+  klatce; suwak, odtwarzanie 0,25–1×.
+- **Zatrzymana klatka**: kąty (L i P) i punkty z położeniem w pikselach
+  i widocznością; „wszystkie 33 punkty” pokazuje pełny zestaw MediaPipe.
+- **Kąty** w konwencji klinicznej (0° = wyprost): kolano, biodro, zgięcie
+  grzbietowe stopy, łokieć, ramię względem tułowia, pochylenie tułowia, głowa
+  względem tułowia i przed barkami, przechył barków i bioder. 2D z obrazu albo
+  3D z modelu. Kąt, którego z danego ujęcia nie widać (np. stopa z przodu),
+  jest oznaczony „?” z powodem.
+- **Przysiad**: powtórzenia liczone same, w każdym czasy zejścia i wstawania,
+  największe zgięcia, biodro względem kolana w dole, kolana względem stóp
+  (z przodu); wiersz przenosi do dołu powtórzenia. „Inne ćwiczenie” — to samo
+  bez liczenia powtórzeń.
+- **Sugerowana pozycja**: wybierz punkt → „Zaznacz sugerowaną pozycję” →
+  dotknij obrazu. ● obecna → ○ sugerowana, z wyliczeniem, jak to zmienia
+  kąty, i notatką.
+- **Zapis**: JSON (wszystkie 33 punkty w każdej klatce, z czasem i sugestiami)
+  i CSV do arkusza. JSON wczytuje się z powrotem — także bez filmu (sam
+  szkielet), film można dołączyć później.
+
+Szczegóły, format danych i plan dalszych kroków: [`docs/06-analiza-ruchu.md`](../docs/06-analiza-ruchu.md).
+Przegląd na prawdziwym filmie: `npm run przeglad-ruchu` (opis w pliku).
 
 ## Dlaczego wybór z listy, a nie wpisywanie
 
@@ -998,6 +1031,8 @@ npm run kopia
 | `narzedzia/sprawdz-odpornosc.ts` | całe API zapytane źle — 108 prób, serwer ma przeżyć i odmówić |
 | `narzedzia/sprawdz-skale.ts` | 40 klientów × 6 cykli — czy konsola nadąża |
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
+| `public/ruch/` | analiza ruchu: `szkielet`, `geometria`, `przebieg`, `profile`, `sesja` (czysta logika, testy w `testy/analiza-ruchu.test.ts`), `detektor` (MediaPipe), `rysowanie`, `wykres`, `app` (ekran) |
+| `narzedzia/przeglad-ruchu.ts` | analiza ruchu na prawdziwym filmie w Chromium, z prawdziwym MediaPipe |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
 

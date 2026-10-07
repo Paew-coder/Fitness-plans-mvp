@@ -119,6 +119,29 @@ describe("wejście", () => {
   });
 });
 
+describe("analiza ruchu (07.10.2026)", () => {
+  test("bez logowania /ruch/ pokazuje ekran logowania, a skrypty modułu — odmowę", async () => {
+    for (const sciezka of ["/ruch", "/ruch/"]) {
+      const odp = await fetch(`${adres}${sciezka}`);
+      assert.equal(odp.status, 200, sciezka);
+      assert.match(await odp.text(), /api\/logowanie/, `${sciezka}: to ma być ekran logowania`);
+    }
+    for (const plik of ["/ruch/app.js", "/ruch/sesja.js", "/ruch/index.html"]) {
+      assert.equal((await fetch(`${adres}${plik}`)).status, 401, plik);
+    }
+  });
+
+  test("po zalogowaniu /ruch/ to strona analizy, a jej moduły idą jako JavaScript", async () => {
+    const ciastko = ciastkoZOdpowiedzi(await zaloguj());
+    const strona = await fetch(`${adres}/ruch/`, { headers: { cookie: ciastko } });
+    assert.equal(strona.status, 200);
+    assert.match(await strona.text(), /<title>Analiza ruchu/);
+    const modul = await fetch(`${adres}/ruch/szkielet.js`, { headers: { cookie: ciastko } });
+    assert.equal(modul.status, 200);
+    assert.match(modul.headers.get("content-type") ?? "", /javascript/);
+  });
+});
+
 describe("wyjście", () => {
   test("po wylogowaniu to samo ciasteczko już nie działa", async () => {
     const odp = await zaloguj();

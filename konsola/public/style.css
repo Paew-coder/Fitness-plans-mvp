@@ -404,6 +404,9 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .ekran-logowania button.szeroki { display: block; width: 100%; padding: .6rem; }
 .naglowek-glowny { display: flex; align-items: flex-start; gap: 1rem; }
 .naglowek-glowny > div { flex: 1; }
+/* Wejście do analizy ruchu (07.10.2026) — osobna strona, ta sama konsola. */
+.link-naglowka { color: var(--akcent); text-decoration: none; padding: .3rem 0; white-space: nowrap; }
+.link-naglowka:hover { text-decoration: underline; }
 
 /* ── kartoteka klienta ──────────────────────────────────────────── */
 .podsumowanie-klienta {

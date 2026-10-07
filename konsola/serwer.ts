@@ -1233,7 +1233,7 @@ const serwer = createServer(async (req, res) => {
         // Wejście na stronę → ekran logowania. Pozostałe zasoby (skrypty,
         // dane) → zwykła odmowa, żeby nie odsyłać HTML-a tam, gdzie
         // przeglądarka spodziewa się czegoś innego.
-        if (kto.kod === 401 && (sciezka === "/" || sciezka === "/index.html")) {
+        if (kto.kod === 401 && ["/", "/index.html", "/ruch", "/ruch/"].includes(sciezka)) {
           if (plikStatyczny("/logowanie.html", res, req)) return;
         }
         res.writeHead(kto.kod, { "content-type": "text/plain; charset=utf-8" });
@@ -2163,6 +2163,11 @@ const serwer = createServer(async (req, res) => {
       const ciezar = Number(url.searchParams.get("ciezar"));
       const powt = Number(url.searchParams.get("powt"));
       return json(res, { oneRM: oblicz1RM(ciezar, powt) });
+    }
+
+    // Analiza ruchu (07.10.2026) — osobna strona konsoli, za tym samym logowaniem.
+    if (sciezka === "/ruch" || sciezka === "/ruch/") {
+      if (plikStatyczny("/ruch/index.html", res, req)) return;
     }
 
     if (plikStatyczny(sciezka, res, req)) return;
