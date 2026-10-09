@@ -5,6 +5,7 @@
  * i zbieranie zmian: po każdej edycji plan leci do zapisu, wraca przeliczony
  * i odrysowujemy analizę. Dokładnie tak, jak arkusz przelicza się sam.
  */
+import { otworzWyszukiwarke } from "./wybor-cwiczenia.js";
 
 const KATEGORIE = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
@@ -13,6 +14,13 @@ const KATEGORIE = [
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let cwiczenia = [];
+/**
+ * Ćwiczenia po id. Po imporcie bibliotek filmów baza ma kilka tysięcy
+ * pozycji, a wiersz planu pyta o swoje ćwiczenie kilka razy przy każdym
+ * rysowaniu — `find` po całej liście byłoby tu odczuwalne na iPadzie.
+ */
+let cwiczeniaPoId = new Map();
+const cwiczenie = (id) => (id ? cwiczeniaPoId.get(id) : undefined);
 
 /** Tabela RPE kończy się na piętnastu powtórzeniach — tyle, co POWT_MAX w silniku. */
 const MAKS_POWTORZEN_SERII = 15;
@@ -1295,7 +1303,7 @@ function rysujDni() {
       // Nazwa wprost z planu, nie z wyniku — po kliknięciu „T" ma być widać
       // od razu, a wynik z serwera dojdzie chwilę później razem z ciężarem.
       const zrodlo = slotPlanu(top.slotPositionId);
-      const nazwa = cwiczenia.find((c) => c.id === zrodlo?.cwiczenieId)?.nazwa
+      const nazwa = cwiczenie(zrodlo?.cwiczenieId)?.nazwa
         ?? wyliczony?.cwiczenie?.nazwa ?? "—";
       const pasek = el("div", "topset");
       /*
@@ -1506,7 +1514,7 @@ function bojGlowny(slot) {
   return slot.bojGlowny ?? bojGlownyZReguly(slot);
 }
 function bojGlownyZReguly(slot) {
-  const c = cwiczenia.find((x) => x.id === slot.cwiczenieId);
+  const c = cwiczenie(slot.cwiczenieId);
   return (slot.lp || "").trim().toUpperCase().startsWith("A") && c?.coeff === 1;
 }
 
@@ -1515,7 +1523,7 @@ function bojGlownyZReguly(slot) {
  * (02.10.2026), na każdej pozycji. Ta sama reguła co w silniku (`pauzaSlotu`):
  * nie, gdy trener ustawił „G”, i nie w hipertrofii bez „S”.
  */
-const pauzowane = (slot) => Boolean(cwiczenia.find((x) => x.id === slot.cwiczenieId)?.pauza);
+const pauzowane = (slot) => Boolean(cwiczenie(slot.cwiczenieId)?.pauza);
 function liczonyPauza(slot) {
   if (!pauzowane(slot) || slot.bojGlowny !== undefined) return false;
   return !planHipertroficzny() || Boolean(slot.bojSilowy);
@@ -1601,7 +1609,7 @@ function jestTopSetem(slot) {
  * dodać TOP SET można wszędzie.
  */
 function zwyczajowyTopSet(slot) {
-  return !!cwiczenia.find((c) => c.id === slot.cwiczenieId)?.zwyczajowyTopSet;
+  return !!cwiczenie(slot.cwiczenieId)?.zwyczajowyTopSet;
 }
 
 /**
@@ -1757,32 +1765,41 @@ function rysujSlot(slot, pusty) {
   wiersz.append(komorkaLp);
 
   // ── ćwiczenie: wybór z listy, nigdy wpisywanie ──
+  // Lista w wierszu: BAZA trenera (z filtrem szkieletu). Ćwiczenia z bibliotek
+  // filmów (kilka tysięcy) — przez wyszukiwarkę: 🔎 obok listy albo ostatnia
+  // pozycja listy. Lista z tysiącami pozycji w każdym wierszu byłaby nie do
+  // przewinięcia i ciężka do narysowania na iPadzie.
   const komorkaCwiczenia = el("td", "cwiczenie");
   const wybor = el("select");
   const pustaOpcja = el("option", "", "— wybierz —");
   pustaOpcja.value = "";
   wybor.append(pustaOpcja);
-  const dostepne = slot.kategoriaSzkieletu
-    ? cwiczenia.filter((c) => c.kategoria === slot.kategoriaSzkieletu)
-    : cwiczenia;
+  const dostepne = cwiczenia.filter((c) => !c.biblioteka
+    && (!slot.kategoriaSzkieletu || c.kategoria === slot.kategoriaSzkieletu));
   for (const c of dostepne) {
     const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : ""));
     o.value = c.id;
     wybor.append(o);
   }
-  // Ćwiczenie spoza filtra zostaje widoczne, żeby zmiana szkieletu go nie gubiła.
+  // Ćwiczenie spoza listy (spoza szkieletu albo z biblioteki) zostaje widoczne,
+  // żeby zmiana szkieletu go nie gubiła.
   if (slot.cwiczenieId && !dostepne.some((c) => c.id === slot.cwiczenieId)) {
-    const c = cwiczenia.find((x) => x.id === slot.cwiczenieId);
+    const c = cwiczenie(slot.cwiczenieId);
     if (c) {
-      const o = el("option", "", `${c.nazwa} (spoza szkieletu)`);
+      const dopisek = c.biblioteka ? "biblioteka" : "spoza szkieletu";
+      const o = el("option", "", `${c.nazwa}${c.jednostronne ? "  ↔" : ""} (${dopisek})`);
       o.value = c.id;
       wybor.append(o);
     }
   }
+  const SZUKAJ = "__szukaj__";
+  const opcjaSzukaj = el("option", "", "🔎 Szukaj w całej bazie i bibliotekach filmów…");
+  opcjaSzukaj.value = SZUKAJ;
+  wybor.append(opcjaSzukaj);
   wybor.value = slot.cwiczenieId ?? "";
-  wybor.onchange = () => {
+  const ustaw = (id) => {
     const poprzednie = slot.cwiczenieId;
-    slot.cwiczenieId = wybor.value || null;
+    slot.cwiczenieId = id || null;
     zapytajOPodmiane(slot, poprzednie);
     zapiszPozniej();
     /*
@@ -1800,7 +1817,24 @@ function rysujSlot(slot, pusty) {
      */
     rysujDni();
   };
-  komorkaCwiczenia.append(wybor);
+  const szukaj = () => otworzWyszukiwarke({
+    cwiczenia, kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "",
+    wybraneId: slot.cwiczenieId, api, naWybor: ustaw,
+  });
+  wybor.onchange = () => {
+    if (wybor.value === SZUKAJ) {
+      wybor.value = slot.cwiczenieId ?? "";
+      szukaj();
+      return;
+    }
+    ustaw(wybor.value);
+  };
+  const lupa = el("button", "szukaj-cwiczenia", "🔎");
+  lupa.type = "button";
+  lupa.title = "Szukaj ćwiczenia w całej bazie i w bibliotekach filmów";
+  lupa.setAttribute("aria-label", "Szukaj ćwiczenia");
+  lupa.onclick = szukaj;
+  komorkaCwiczenia.append(wybor, lupa);
   wiersz.append(komorkaCwiczenia);
 
   // ── kategoria szkieletu ──
@@ -2141,7 +2175,7 @@ function znacznikOcen(wyliczony) {
 function zapytajOPodmiane(slot, poprzednieCwiczenie) {
   if (!poprzednieCwiczenie || poprzednieCwiczenie === slot.cwiczenieId) return;
 
-  const nazwa = (id) => cwiczenia.find((c) => c.id === id)?.nazwa ?? id;
+  const nazwa = (id) => cwiczenie(id)?.nazwa ?? id;
   const nowe = slot.cwiczenieId;
 
   // Tygodnie, w których ten slot ma już ślad treningu: ocenę albo zapisane
@@ -2254,7 +2288,7 @@ function rysujSerieMax(pelne = false) {
   }
 
   for (const id of uzyte) {
-    const c = cwiczenia.find((x) => x.id === id);
+    const c = cwiczenie(id);
     if (!c) continue;
     const istniejaca = obraz.zapisany.plan.serieMaksymalne.find((s) => s.cwiczenieId === id);
 
@@ -2863,6 +2897,7 @@ $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 (async () => {
   cwiczenia = await api("/api/cwiczenia");
   cwiczenia.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  cwiczeniaPoId = new Map(cwiczenia.map((c) => [c.id, c]));
   wypelnijListeSzablonow(await api("/api/szablony"));
   await wczytajStanAsystenta();
   await pokazListe();

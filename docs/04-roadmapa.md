@@ -754,6 +754,18 @@ Trener: „przetestuj integrację z biblioteką ćwiczeń OPEX Fitness na jednym
 * Aplikacja klienta: karta ćwiczenia (`karta-cwiczenia.js`) z odtwarzaczem YouTube (IFrame Player API, `playsinline=1`, youtube-nocookie, ramka z `strict-origin-when-cross-origin` przy `no-referrer` strony), opisem i podpisem źródła; z listy, z panelu serii (także TOP SET) i z serii maksymalnych. „Wstecz” zamyka kartę, wpisane liczby zostają. Moduł w pamięci offline (test pilnuje każdego importu `app.js`). SW `trening-v62`.
 * Sprawdzone: testy silnika i konsoli, `npm run przeglad-filmu` (telefon i komputer, prawdziwy odtwarzacz: właściwy film zgłoszony przez API, start przyjęty, dane treningu zostają, własny plik gra/pauza/przewija). Samo odtwarzanie obrazu YouTube nie do sprawdzenia w tym środowisku — lista do sprawdzenia ręcznie w `docs/07-filmy-cwiczen.md`.
 
+**51. Biblioteki ćwiczeń z filmami — Theory of Motion i Catalyst Athletics — 09.10.2026.**
+
+Trener: „przygotuj bazę ćwiczeń na bazie kanału Theory of Motion Exercise Library razem z ich filmami … coeff, part i kategoria … całą ich bibliotekę … Catalyst z filmami poradnikowymi — to samo ćwiczenie może mieć dwa nagrania … jeżeli nie będziesz pewien, zostaw do weryfikacji”.
+
+* Cały kanał Theory of Motion (3469 filmów) i playlista Catalyst „Olympic Weightlifting Exercise Library” (618), każdy film sprawdzony oEmbedem (osadzanie dozwolone). Tylko metadane, bez pobierania filmów.
+* `docs/dane/biblioteka-cwiczen.json`: 3420 ćwiczeń (ToM 2928, Catalyst 492) z kategorią, part, coeff, progresją, skokiem, jednostronnością, rodzajem i sprzętem; 2221 pewnych, 1199 „DO WERYFIKACJI” z kodem powodu (KOMPLEKS 463, MOBILNOSC 320, KATEGORIA 197, JEDNOSTRONNE 145, COEFF 106, KONDYCJA 79, PROGRESJA 24, NAZWA 14). Zasady: `docs/dane/zasady-klasyfikacji.md`. Kettlebell — skok 4 kg (do potwierdzenia).
+* To samo ćwiczenie = jeden wpis: 76 ćwiczeń BAZY trenera dostało filmy (160), pary ToM–Catalyst łączone (pokaz + poradnik). `filmy-cwiczen.json`: 3916 filmów z rolą `demonstracja` / `poradnik`; `sprawdzFilmy` pilnuje duplikatów i ról zamiast „jednego filmu”.
+* Generator nie losuje ćwiczeń z bibliotek (`katalog.bazaTrenera`). Konsola: wyszukiwarka po całej bazie (PL/EN, filtry, podgląd karty), dopisek „(biblioteka)”; eksport dopisuje brakujące ćwiczenia do zakładki BAZA szablonu z rozszerzeniem zakresów i formuł LISTY. `/api/cwiczenia` gzipem, karta z `/api/karta-cwiczenia`.
+* Klient: karta z przyciskami *Pokaz* / *Poradnik* (jeden rząd, przewijany), CSS karty wspólny z konsolą. SW `trening-v64`.
+* Weryfikacja: `silnik/narzedzia/weryfikacja-bibliotek.py arkusz` → arkusz z grupami, linkami do filmów i listami decyzji (OK, USUŃ = ukryte, poprawki, przypięcie poradnika, odpięcie filmu) → `zastosuj`. Kolejny import nie nadpisuje decyzji trenera. Narzędzia importu: `silnik/narzedzia/import-bibliotek/`.
+* Sprawdzone: testy silnika i konsoli, `przeglad-ekranow` (13b: wyszukiwarka, podgląd, slot, eksport i import), `przeglad-filmu` (6 nagrań przy wyciskaniu, poradnik, cała karta na ekranie), `przeglad-klienta`. Ręcznie: odtwarzanie pokazu i poradnika na iPhonie/iPadzie i komputerze. Opis: `docs/08-biblioteki-cwiczen.md`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

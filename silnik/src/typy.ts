@@ -57,6 +57,19 @@ export type Cwiczenie = {
   sprzet?: readonly string[];
   /** Link z arkusza (kolumna filmu w BAZIE). Film odtwarzany w aplikacji: `wideo.ts`. */
   film?: string;
+  /**
+   * Skąd ćwiczenie: brak = BAZA trenera (arkusz 5.17 i jego dopiski);
+   * `tom` / `catalyst` = import biblioteki filmów (09.10.2026,
+   * `docs/dane/biblioteka-cwiczen.json`). Ćwiczenia z bibliotek trener
+   * wybiera ręcznie — generator ich nie losuje.
+   */
+  biblioteka?: "tom" | "catalyst";
+  /**
+   * Trener usunął ćwiczenie z wyboru (arkusz weryfikacji bibliotek). Zostaje
+   * w danych, bo mogło już trafić do planu — plan dalej się otwiera i eksportuje,
+   * tylko wyszukiwarka go nie podsuwa.
+   */
+  ukryte?: boolean;
   uwagi?: string;
   /** Duplikat zwinięty w tę pozycję. */
   scaloneId?: string;
