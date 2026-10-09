@@ -344,6 +344,9 @@ await zSerwerem(4231, async ({ adres }) => {
 
       // Wczytanie zapisu bez filmu, potem dołączenie filmu.
       await s.reload();
+      sprawdz("przycisk zapisanej analizy opisany słowami, z wyjaśnieniem pliku .json",
+        (await s.textContent('label[for="plik-analizy"]')) === "Otwórz zapisaną analizę"
+          && (await s.textContent("#panel-zrodla"))!.includes("plik .json, który pobierasz po analizie"));
       await s.setInputFiles("#plik-analizy", plikJson);
       await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 }).catch(() => null);
       const bezFilmu = await stanEkranu(s);
@@ -385,8 +388,11 @@ await zSerwerem(4231, async ({ adres }) => {
           while (performance.now() - t < 30) { /* zajęty */ }
         }, 40);
       });
-      await s.setInputFiles("#plik-wideo", BOK);
-      sprawdz("analiza filmu z boku (przy obciążonym procesorze)", await czekajNaAnalize(s));
+      // Trener, 09.10.2026: film wybrany przyciskiem zapisanej analizy był
+      // wyszarzony. Teraz każdy z dwóch przycisków przyjmuje film i JSON.
+      await s.setInputFiles("#plik-analizy", BOK);
+      sprawdz("analiza filmu z boku (wybranego przyciskiem zapisanej analizy, przy obciążonym procesorze)",
+        await czekajNaAnalize(s));
       await s.evaluate(() => clearInterval((window as any).__obciazenie));
       const sesja = await sesjaEkranu(s);
       const odstepy = sesja.klatki.slice(1).map((k: any, i: number) => k.t - sesja.klatki[i].t).sort((a: number, b: number) => a - b);
