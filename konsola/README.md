@@ -296,6 +296,19 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
+## Biblioteki ćwiczeń z filmami (od 09.10.2026)
+
+Poza BAZĄ trenera (166) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
+i Catalyst Athletics, każde z kategorią, part, coeff, progresją i skokiem
+(1199 oznaczonych „DO WERYFIKACJI”). Lista w slocie pokazuje jak dotąd BAZĘ
+trenera; **🔎** obok (albo ostatnia opcja listy) otwiera wyszukiwarkę po
+całości — po polsku i angielsku, z filtrami kategorii i źródła, z ▶ podglądem
+karty i filmów. Wybrane ćwiczenie z biblioteki stoi w slocie z dopiskiem
+„(biblioteka)”, eksport dopisuje je do zakładki BAZA szablonu (z rozszerzeniem
+zakresów i formuł LISTY). Generator ich nie losuje. `/api/cwiczenia` idzie
+gzipem, filmy do karty z `/api/karta-cwiczenia?id=`. Opis, liczby, weryfikacja:
+[`docs/08-biblioteki-cwiczen.md`](../docs/08-biblioteki-cwiczen.md).
+
 ## Filmy ćwiczeń — test biblioteki OPEX (od 09.10.2026)
 
 Barbell bench press (EX-0011 — ten sam, który już był w BAZIE, bez
@@ -303,8 +316,8 @@ duplikatu) ma opis (nazwa polska, mięśnie, sprzęt, kategoria) i film
 z oficjalnego kanału OPEX Fitness, odtwarzany w aplikacji klienta w karcie
 ćwiczenia. Filmy leżą osobno od BAZY (`docs/dane/filmy-cwiczen.json`,
 `silnik/src/wideo.ts`): zamiana YouTube na własny MP4 to zmiana jednego wpisu.
-W bibliotece `/api/cwiczenia` ćwiczenie ma pole `wideo`; do planu dodaje się
-jak każde inne. Opis, sprawdzenia i lista do sprawdzenia ręcznie:
+W bibliotece `/api/cwiczenia` ćwiczenie ma liczbę filmów (`filmow`); karta
+z filmami przychodzi z `/api/karta-cwiczenia`. Do planu dodaje się jak każde inne. Opis, sprawdzenia i lista do sprawdzenia ręcznie:
 [`docs/07-filmy-cwiczen.md`](../docs/07-filmy-cwiczen.md). Przegląd:
 `npm run przeglad-filmu`.
 
@@ -1047,7 +1060,9 @@ npm run kopia
 | `public/ruch/` | analiza ruchu: `szkielet`, `geometria`, `przebieg`, `profile`, `sesja` (czysta logika, testy w `testy/analiza-ruchu.test.ts`), `detektor` (MediaPipe), `rysowanie`, `wykres`, `app` (ekran) |
 | `narzedzia/przeglad-ruchu.ts` | analiza ruchu na prawdziwym filmie w Chromium, z prawdziwym MediaPipe |
 | `public/klient/karta-cwiczenia.js` | karta ćwiczenia z filmem w aplikacji klienta (YouTube IFrame Player API albo własny plik) |
-| `narzedzia/przeglad-filmu.ts` | karta z filmem OPEX na telefonie i komputerze, z prawdziwym odtwarzaczem YouTube |
+| `narzedzia/przeglad-filmu.ts` | karta z filmem OPEX na telefonie i komputerze, z prawdziwym odtwarzaczem YouTube; przełączanie pokaz / poradnik |
+| `public/wybor-cwiczenia.js` | wyszukiwarka ćwiczeń (BAZA + biblioteki filmów) z podglądem karty |
+| `public/klient/karta-cwiczenia.css` | wygląd karty ćwiczenia — wspólny dla klienta i podglądu w konsoli |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
 

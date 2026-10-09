@@ -21,6 +21,11 @@
  *   adresu z tokenem.
  * - Własny plik (MP4/WebM, `typ: "plik"`) gra w zwykłym `<video>` — tak
  *   podmienimy filmy YouTube na własne bez zmian w aplikacji.
+ * - Kilka nagrań (09.10.2026, biblioteki Theory of Motion i Catalyst
+ *   Athletics): przyciski nad filmem — „Pokaz” (krótka demonstracja)
+ *   i „Poradnik” (omówienie techniki). Przełączenie zatrzymuje poprzedni film.
+ * - Ta sama karta służy konsoli trenera do podglądu ćwiczenia przy wyborze
+ *   z biblioteki (`opcje.tekstZamkniecia`).
  */
 
 const HOST_YT = "https://www.youtube-nocookie.com";
@@ -128,7 +133,24 @@ export function powrotZKarty() {
  * Otwiera kartę. `zrodlo` — przycisk, który ją otworzył (wraca na niego
  * fokus po zamknięciu).
  */
-export function otworzKarteCwiczenia(karta, zrodlo = null) {
+/** „0:21”, „9:36” — długość filmu na przycisku. */
+const czasFilmu = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+/** Napisy przycisków: „Pokaz”, „Pokaz 2”, „Poradnik” — z długością, gdy znana. */
+function etykietyNagran(filmy) {
+  const ile = { demonstracja: 0, poradnik: 0 };
+  for (const f of filmy) ile[f.rola === "poradnik" ? "poradnik" : "demonstracja"]++;
+  const nr = { demonstracja: 0, poradnik: 0 };
+  return filmy.map((f) => {
+    const rola = f.rola === "poradnik" ? "poradnik" : "demonstracja";
+    nr[rola]++;
+    const slowo = rola === "poradnik" ? "Poradnik" : "Pokaz";
+    const numer = ile[rola] > 1 ? ` ${nr[rola]}` : "";
+    return `${slowo}${numer}${f.czasSekund ? ` · ${czasFilmu(f.czasSekund)}` : ""}`;
+  });
+}
+
+export function otworzKarteCwiczenia(karta, zrodlo = null, opcje = {}) {
   if (otwarta) zamknijKarte();
   const tlo = el("div", "karta-cw-tlo");
   const okno = el("div", "karta-cw");
@@ -150,22 +172,54 @@ export function otworzKarteCwiczenia(karta, zrodlo = null) {
   naglowek.append(tytuly, x);
   okno.append(naglowek);
 
+  const filmy = karta.filmy?.length ? karta.filmy : karta.wideo ? [karta.wideo] : [];
   const ramka = el("div", "karta-cw-film");
-  ramka.dataset.stan = "laduje";
-  okno.append(ramka);
-  const odtwarzacz = karta.wideo ? wstawFilm(ramka, karta.wideo) : null;
-
-  if (karta.wideo) {
-    const z = karta.wideo.zrodlo;
-    const podpis = el("p", "karta-cw-zrodlo", `Film: ${z.nazwa}${z.platforma ? ` / ${z.platforma}` : ""}`);
-    if (karta.wideo.link) {
+  const podpis = el("p", "karta-cw-zrodlo");
+  let odtwarzacz = null;
+  /** Film nr `i` w ramce: poprzedni zatrzymany i usunięty, podpis pod nowy. */
+  const pokaz = (i) => {
+    try { odtwarzacz?.zatrzymaj(); } catch { /* mógł się nie wczytać */ }
+    ramka.replaceChildren();
+    ramka.dataset.stan = "laduje";
+    const f = filmy[i];
+    ramka.dataset.film = f.youtubeId ?? f.plik ?? "";
+    ramka.dataset.rola = f.rola ?? "demonstracja";
+    odtwarzacz = wstawFilm(ramka, f);
+    if (otwarta) otwarta.odtwarzacz = odtwarzacz;
+    const z = f.zrodlo;
+    podpis.replaceChildren(`Film: ${z.nazwa}${z.platforma ? ` / ${z.platforma}` : ""}`);
+    if (f.link) {
       const a = el("a", "", z.platforma === "YouTube" ? "Otwórz na YouTube ↗" : "Otwórz u źródła ↗");
-      a.href = karta.wideo.link;
+      a.href = f.link;
       a.target = "_blank";
       a.rel = "noopener";
       podpis.append(" · ", a);
     }
+    for (const [j, b] of przyciski.entries()) b.setAttribute("aria-pressed", String(j === i));
+  };
+  const przyciski = [];
+  if (filmy.length > 1) {
+    okno.classList.add("z-wyborem");
+    const wybor = el("div", "karta-cw-nagrania");
+    wybor.setAttribute("role", "group");
+    wybor.setAttribute("aria-label", "Nagrania");
+    etykietyNagran(filmy).forEach((tekst, i) => {
+      const b = el("button", "", tekst);
+      b.type = "button";
+      b.dataset.rola = filmy[i].rola ?? "demonstracja";
+      b.title = filmy[i].tytul;
+      b.onclick = () => { if (b.getAttribute("aria-pressed") !== "true") pokaz(i); };
+      przyciski.push(b);
+      wybor.append(b);
+    });
+    okno.append(wybor);
+  }
+  okno.append(ramka);
+  if (filmy.length) {
+    pokaz(0);
     okno.append(podpis);
+  } else {
+    ramka.dataset.stan = "brak";
   }
 
   const opis = el("dl", "karta-cw-opis");
@@ -180,7 +234,7 @@ export function otworzKarteCwiczenia(karta, zrodlo = null) {
   wiersz("Wzorzec ruchu", karta.kategoria);
   if (opis.children.length) okno.append(opis);
 
-  const wroc = el("button", "glowny szeroki karta-cw-wroc", "Wróć do treningu");
+  const wroc = el("button", "glowny szeroki karta-cw-wroc", opcje.tekstZamkniecia ?? "Wróć do treningu");
   wroc.type = "button";
   wroc.onclick = () => zamknijKarte();
   okno.append(wroc);

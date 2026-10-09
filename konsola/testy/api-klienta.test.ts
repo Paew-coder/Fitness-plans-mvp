@@ -1226,14 +1226,33 @@ describe("rampa i TOP SET od klienta", () => {
 });
 
 describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
-  test("biblioteka ćwiczeń konsoli: Barbell bench press z filmem do odtwarzania", async () => {
+  test("biblioteka ćwiczeń konsoli: Barbell bench press z filmami do odtwarzania", async () => {
     const { dane } = await api("/api/cwiczenia");
     const lawka = dane.filter((c: any) => c.nazwa.toLowerCase() === "barbell bench press");
     assert.equal(lawka.length, 1);
     assert.equal(lawka[0].id, "EX-0011");
     assert.equal(lawka[0].nazwaPl, "Wyciskanie sztangi leżąc");
-    assert.equal(lawka[0].wideo.youtubeId, "ejI1Nlsul9k");
-    assert.equal(dane.find((c: any) => c.id === "EX-0059").wideo, null);
+    // Lista podaje liczbę filmów; same filmy konsola bierze dopiero przy podglądzie.
+    assert.ok(lawka[0].filmow >= 2);
+    assert.equal(lawka[0].wideo, undefined);
+    assert.equal(dane.find((c: any) => c.id === "EX-0062").filmow, 0);
+  });
+
+  test("podgląd w konsoli: ta sama karta, którą widzi klient, z pokazami i poradnikami", async () => {
+    const { kod, dane } = await api("/api/karta-cwiczenia?id=EX-0011");
+    assert.equal(kod, 200);
+    assert.equal(dane.cwiczenieId, "EX-0011");
+    assert.equal(dane.filmy[0].youtubeId, "ejI1Nlsul9k");
+    assert.deepEqual([...new Set(dane.filmy.map((f: any) => f.rola))], ["demonstracja", "poradnik"]);
+    assert.equal((await api("/api/karta-cwiczenia?id=EX-9999")).kod, 404);
+  });
+
+  test("lista ćwiczeń przychodzi spakowana — kilka tysięcy pozycji po imporcie bibliotek", async () => {
+    const odp = await fetch(`${ADRES}/api/cwiczenia`, { headers: { "accept-encoding": "gzip" } });
+    assert.equal(odp.headers.get("content-encoding"), "gzip");
+    const dane = await odp.json();
+    assert.ok(dane.length > 2500);
+    assert.ok(dane.some((c: any) => c.biblioteka === "catalyst") && dane.some((c: any) => c.biblioteka === "tom"));
   });
 
   test("telefon dostaje kartę z opisem i filmem; inne ćwiczenie — dotychczasowy link", async () => {
@@ -1241,7 +1260,7 @@ describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
     const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Film Test").id;
     const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
     plan.sloty[0].cwiczenieId = "EX-0011";
-    plan.sloty[1].cwiczenieId = "EX-0059";
+    plan.sloty[1].cwiczenieId = "EX-0062";
     plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
     assert.equal((await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" })).kod, 200);
     const t = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
@@ -1254,11 +1273,14 @@ describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
     assert.deepEqual(lawka.karta.sprzet, ["sztanga", "ławka pozioma"]);
     assert.deepEqual(lawka.karta.wideo.zrodlo, { nazwa: "OPEX Fitness", platforma: "YouTube", url: "https://www.youtube.com/@OPEXFitness" });
     assert.equal(lawka.karta.wideo.youtubeId, "ejI1Nlsul9k");
+    // Kilka nagrań: pokaz OPEX pierwszy, za nim pozostałe pokazy i poradniki.
+    assert.equal(lawka.karta.filmy[0].youtubeId, "ejI1Nlsul9k");
+    assert.ok(lawka.karta.filmy.some((f: any) => f.rola === "poradnik"));
     // Ciężary i serie liczą się jak dotąd — film niczego w planie nie zmienia.
     assert.equal(typeof lawka.ciezar, "number");
-    const hantle = dzien.cwiczenia.find((c: any) => c.positionId === plan.sloty[1].positionId);
-    assert.equal(hantle.karta, null);
-    assert.equal(hantle.film, "https://youtu.be/db-h-UBzbhE");
+    const rotacja = dzien.cwiczenia.find((c: any) => c.positionId === plan.sloty[1].positionId);
+    assert.equal(rotacja.karta, null);
+    assert.equal(rotacja.film, "https://youtu.be/t5Ft8OMG_D8");
     const pomiar = dane.doZmierzenia.find((p: any) => p.cwiczenieId === "EX-0011");
     assert.equal(pomiar.karta.wideo.youtubeId, "ejI1Nlsul9k");
   });

@@ -43,9 +43,15 @@ lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
        "",
        'import type { Cwiczenie } from "../typy.ts";',
        "",
-       f"/** {b['liczba']} cwiczen z BAZY 5.17. */",
-       "export const BAZA_CWICZEN: readonly Cwiczenie[] = ["]
-for e in b["cwiczenia"]:
+       ]
+# Biblioteki filmow (09.10.2026): cwiczenia z Theory of Motion i Catalyst
+# Athletics, z wlasna klasyfikacja i jednostronnoscia w pliku. Za BAZA trenera.
+plik_bib = dane / "biblioteka-cwiczen.json"
+bib = json.load(open(plik_bib, encoding="utf-8")) if plik_bib.exists() else {"cwiczenia": []}
+lin[1] = "// Zrodlo: docs/dane/baza-cwiczen.json (MasterTemplate 5.17, zakladka BAZA) + docs/dane/biblioteka-cwiczen.json"
+lin += [f"/** {b['liczba']} cwiczen z BAZY 5.17 i {len(bib['cwiczenia'])} z bibliotek filmow. */",
+        "export const BAZA_CWICZEN: readonly Cwiczenie[] = ["]
+for e in b["cwiczenia"] + bib["cwiczenia"]:
     p = [f'id: {json.dumps(e["id"], ensure_ascii=False)}',
          f'nazwa: {json.dumps(e["nazwa"], ensure_ascii=False)}',
          f'kategoria: {json.dumps(e["kategoria"], ensure_ascii=False)}',
@@ -63,12 +69,14 @@ for e in b["cwiczenia"]:
     if e.get("film"):       p.append(f'film: {json.dumps(e["film"], ensure_ascii=False)}')
     if e.get("uwagi"):      p.append(f'uwagi: {json.dumps(e["uwagi"], ensure_ascii=False)}')
     if e.get("scalone_id"): p.append(f'scaloneId: {json.dumps(e["scalone_id"], ensure_ascii=False)}')
-    if e["id"] in POTWIERDZONE: p.append("jednostronne: true")
-    elif e["id"] in KANDYDACI:  p.append("jednostronneDoPotwierdzenia: true")
+    if e.get("biblioteka"):  p.append(f'biblioteka: {json.dumps(e["biblioteka"])}')
+    if e.get("ukryte"):      p.append("ukryte: true")
+    if e["id"] in POTWIERDZONE or e.get("jednostronne") == "tak": p.append("jednostronne: true")
+    elif e["id"] in KANDYDACI or e.get("jednostronne") == "?":   p.append("jednostronneDoPotwierdzenia: true")
     lin.append("  { " + ", ".join(p) + " },")
 lin += ["];", ""]
 (out / "cwiczenia.ts").write_text("\n".join(lin), encoding="utf-8")
-print("tabele.ts + cwiczenia.ts wygenerowane;", b["liczba"], "cwiczen")
+print("tabele.ts + cwiczenia.ts wygenerowane;", b["liczba"], "cwiczen z BAZY +", len(bib["cwiczenia"]), "z bibliotek")
 
 # ── FILMY CWICZEN ─────────────────────────────────────────────────────
 #
@@ -89,11 +97,11 @@ lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
 for z in f["zrodla"]:
     lin.append("  " + ts_obiekt(z, (("id", "id"), ("nazwa", "nazwa"), ("platforma", "platforma"),
                                    ("kanal", "kanal"), ("kanal_id", "kanalId"), ("url", "url"))) + ",")
-lin += ["];", "", f"/** {len(f['filmy'])} film(y) przypisane do cwiczen z BAZY. */",
+lin += ["];", "", f"/** {len(f['filmy'])} film(y) przypisane do cwiczen. */",
         "export const FILMY_CWICZEN: readonly WpisWideo[] = ["]
 for w in f["filmy"]:
     lin.append("  " + ts_obiekt(w, (("id", "id"), ("cwiczenie_id", "cwiczenieId"), ("typ", "typ"),
-                                   ("youtube_id", "youtubeId"), ("plik", "plik"), ("zrodlo", "zrodlo"),
+                                   ("rola", "rola"), ("youtube_id", "youtubeId"), ("plik", "plik"), ("zrodlo", "zrodlo"),
                                    ("tytul", "tytul"), ("url", "url"), ("czas_s", "czasSekund"))) + ",")
 lin += ["];", ""]
 (out / "filmy.ts").write_text("\n".join(lin), encoding="utf-8")

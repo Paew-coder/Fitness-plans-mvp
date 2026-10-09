@@ -13,7 +13,7 @@ import { powtorzeniaAkcesorium, powtorzeniaBazowe, offsetTygodnia } from "../src
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "../src/ciezar.ts";
 import { stresSlotu, bilansTygodnia, ocenaNormy, serieEfektywne, NORMY } from "../src/stres.ts";
 import { mround } from "../src/pomocnicze.ts";
-import { katalog } from "../src/katalog.ts";
+import { Katalog, katalog } from "../src/katalog.ts";
 import { przeliczPlan, porownajLiczenieJednostronnych, type Plan } from "../src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../src/walidacja.ts";
 import { porownajCykle, podsumujPorownanie } from "../src/porownanie-cykli.ts";
@@ -364,13 +364,17 @@ describe("normy skalowane liczbą dni (Analiza!K, L)", () => {
 });
 
 describe("katalog BAZY 5.17", () => {
+  // Kontrole zgodne z arkuszem liczą BAZĘ trenera — bez ćwiczeń z bibliotek
+  // filmów (import 09.10.2026), które są w tym samym katalogu.
+  const bazaTrenera = new Katalog(katalog.bazaTrenera);
+
   test("zawiera 164 ćwiczenia z arkusza i 2 dodane przez trenera", () => {
     // Dodane: Sumo deadlift (EX-0204) i „Barbell low bar squat paused 3sec”
     // (EX-0205, 02.10.2026 — progresja pauzowana).
-    assert.equal(katalog.wszystkie.length, 166);
+    assert.equal(katalog.bazaTrenera.length, 166);
     // Rozdzielone celowo: arkusz to arkusz, a to, co trener dołożył później,
     // ma być widać. Inaczej za pół roku nikt nie odróżni jednego od drugiego.
-    const zArkusza = katalog.wszystkie.filter((c) => c.id !== "EX-0204" && c.id !== "EX-0205");
+    const zArkusza = katalog.bazaTrenera.filter((c) => c.id !== "EX-0204" && c.id !== "EX-0205");
     assert.equal(zArkusza.length, 164);
     assert.equal(katalog.poNazwie("sumo deadlift")?.coeff, 1);
   });
@@ -399,23 +403,24 @@ describe("katalog BAZY 5.17", () => {
   });
 
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
-    assert.equal(katalog.wKategorii("Tricep").length, 9);
-    assert.equal(katalog.wKategorii(null).length, 166);
+    assert.equal(bazaTrenera.wKategorii("Tricep").length, 9);
+    assert.equal(bazaTrenera.wKategorii(null).length, 166);
+    assert.equal(katalog.wKategorii(null).length, katalog.wszystkie.length);
   });
 
   test("oznaczenie ćwiczeń jednostronnych", () => {
     // 19 z jawnym markerem w nazwie + 12 wzorców potwierdzonych przez trenera
     // (27.09.2026 doszedł Halfkneeling wood chopper — „robione na każdą stronę")
-    assert.equal(katalog.jednostronne().length, 31);
+    assert.equal(bazaTrenera.jednostronne().length, 31);
     assert.equal(katalog.poId("EX-0095")?.jednostronne, true, "wood chopper na stronę");
-    assert.equal(katalog.kandydaciJednostronne().length, 0, "wszystkie rozstrzygnięte");
+    assert.equal(bazaTrenera.kandydaciJednostronne().length, 0, "wszystkie rozstrzygnięte");
     assert.equal(katalog.poNazwie("lateral raise s/a")?.jednostronne, true);
     assert.equal(katalog.poNazwie("split squat")?.jednostronne, true);
     assert.equal(katalog.poNazwie("walking lunges")?.jednostronne, true);
     // "b/l" to obustronne — marker przeciwny, nie może zostać oznaczone
     assert.equal(katalog.poNazwie("b/l dragonflag eccentric")?.jednostronne, undefined);
     // oznaczenie nie zmienia matematyki — stres liczy się jak dla obustronnych
-    const jedno = katalog.jednostronne()[0]!;
+    const jedno = bazaTrenera.jednostronne()[0]!;
     assert.equal(
       stresSlotu({ coeff: jedno.coeff, serie: 3, rpe: 8, powtorzenia: 10 }).calkowity,
       stresSlotu({ coeff: jedno.coeff, serie: 3, rpe: 8, powtorzenia: 10 }).calkowity,
@@ -424,12 +429,12 @@ describe("katalog BAZY 5.17", () => {
 
   test("listy robocze zgadzają się z analizą arkusza", () => {
     // Kontrola Analiza!B71 sprawdza tylko prefiks "DO WERYFIKACJI" — łapie 14 pozycji.
-    assert.equal(katalog.doWeryfikacji().length, 14);
+    assert.equal(bazaTrenera.doWeryfikacji().length, 14);
     // Pełna lista czekających na decyzję to 14 + 2 oznaczone "UZUPEŁNIĆ".
-    assert.equal(katalog.wymagajaceDecyzji().length, 16);
+    assert.equal(bazaTrenera.wymagajaceDecyzji().length, 16);
     // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania,
     // + pauzowany przysiad low bar (02.10.2026, film dopisze trener).
-    assert.equal(katalog.bezFilmu().length, 28);
+    assert.equal(bazaTrenera.bezFilmu().length, 28);
   });
 });
 
