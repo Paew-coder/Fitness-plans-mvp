@@ -59,6 +59,16 @@ describe("offline klienta — zakres service workera", () => {
     }
   });
 
+  test("każdy moduł importowany przez app.js jest w szkielecie (inaczej offline nie wstanie nic)", () => {
+    // Karta ćwiczenia z filmem (09.10.2026) to pierwszy osobny moduł klienta.
+    // Bez niego w cache przeglądarka bez zasięgu nie wykona nawet app.js.
+    const sw = zrodlo("public/klient/sw.js");
+    const szkielet = sw.match(/const SZKIELET = \[[^\]]*\]/s)?.[0] ?? "";
+    const importy = [...zrodlo("public/klient/app.js").matchAll(/^import .* from "\.\/([^"]+)";/gm)].map((m) => m[1]);
+    assert.ok(importy.includes("karta-cwiczenia.js"), "app.js importuje kartę ćwiczenia");
+    for (const plik of importy) assert.ok(szkielet.includes(`/klient/${plik}`), `/klient/${plik} musi być w szkielecie`);
+  });
+
   test("wersja cache jest podbita przy zmianie szkieletu", () => {
     // Nie sprawdzamy konkretnego numeru — tylko tego, że stała istnieje
     // i że aktywacja kasuje wszystko, co do niej nie należy.
