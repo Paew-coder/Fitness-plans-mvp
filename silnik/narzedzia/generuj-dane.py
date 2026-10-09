@@ -53,6 +53,13 @@ for e in b["cwiczenia"]:
          f'coeff: {e["coeff"]}',
          f'skokKg: {e["skok_kg"]}',
          f'progresja: {json.dumps(e["progresja"], ensure_ascii=False)}']
+    # Opis ćwiczenia (09.10.2026, test biblioteki OPEX) — pola opcjonalne,
+    # na razie tylko przy EX-0011. Film do odtwarzania w aplikacji jest
+    # osobno, w filmy-cwiczen.json; `film` to dotychczasowy link z arkusza.
+    for klucz, pole in (("nazwa_en", "nazwaEn"), ("nazwa_pl", "nazwaPl"), ("rodzaj", "rodzaj"),
+                        ("miesnie_glowne", "miesnieGlowne"), ("miesnie_pomocnicze", "miesniePomocnicze"),
+                        ("sprzet", "sprzet")):
+        if e.get(klucz): p.append(f'{pole}: {json.dumps(e[klucz], ensure_ascii=False)}')
     if e.get("film"):       p.append(f'film: {json.dumps(e["film"], ensure_ascii=False)}')
     if e.get("uwagi"):      p.append(f'uwagi: {json.dumps(e["uwagi"], ensure_ascii=False)}')
     if e.get("scalone_id"): p.append(f'scaloneId: {json.dumps(e["scalone_id"], ensure_ascii=False)}')
@@ -62,6 +69,35 @@ for e in b["cwiczenia"]:
 lin += ["];", ""]
 (out / "cwiczenia.ts").write_text("\n".join(lin), encoding="utf-8")
 print("tabele.ts + cwiczenia.ts wygenerowane;", b["liczba"], "cwiczen")
+
+# ── FILMY CWICZEN ─────────────────────────────────────────────────────
+#
+# Osobno od BAZY (09.10.2026): cwiczenie wskazuje film po swoim id, a BAZA
+# nie wie, skad film jest. Zamiana YouTube na wlasny MP4 = zmiana wpisu tutaj.
+f = json.load(open(dane / "filmy-cwiczen.json", encoding="utf-8"))
+def ts_obiekt(d, klucze):
+    return "{ " + ", ".join(f'{pole}: {json.dumps(d[klucz], ensure_ascii=False)}'
+                            for klucz, pole in klucze if d.get(klucz) is not None) + " }"
+lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
+       "// Zrodlo: docs/dane/filmy-cwiczen.json",
+       "// Regeneracja: python3 silnik/narzedzia/generuj-dane.py",
+       "",
+       'import type { WpisWideo, ZrodloWideo } from "../wideo.ts";',
+       "",
+       "/** Skad pochodza filmy (kanal, platforma) — wspolne dla wielu wpisow. */",
+       "export const ZRODLA_WIDEO: readonly ZrodloWideo[] = ["]
+for z in f["zrodla"]:
+    lin.append("  " + ts_obiekt(z, (("id", "id"), ("nazwa", "nazwa"), ("platforma", "platforma"),
+                                   ("kanal", "kanal"), ("kanal_id", "kanalId"), ("url", "url"))) + ",")
+lin += ["];", "", f"/** {len(f['filmy'])} film(y) przypisane do cwiczen z BAZY. */",
+        "export const FILMY_CWICZEN: readonly WpisWideo[] = ["]
+for w in f["filmy"]:
+    lin.append("  " + ts_obiekt(w, (("id", "id"), ("cwiczenie_id", "cwiczenieId"), ("typ", "typ"),
+                                   ("youtube_id", "youtubeId"), ("plik", "plik"), ("zrodlo", "zrodlo"),
+                                   ("tytul", "tytul"), ("url", "url"), ("czas_s", "czasSekund"))) + ",")
+lin += ["];", ""]
+(out / "filmy.ts").write_text("\n".join(lin), encoding="utf-8")
+print("filmy.ts wygenerowane;", len(f["filmy"]), "film(y)")
 
 # ── ODDECH ────────────────────────────────────────────────────────────
 o = json.load(open(dane / "oddech-progi.json", encoding="utf-8"))

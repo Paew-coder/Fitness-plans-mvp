@@ -135,11 +135,25 @@
   {
    "id": "EX-0011",
    "nazwa": "Barbell bench press",
+   "nazwa_en": "Barbell Bench Press",
+   "nazwa_pl": "Wyciskanie sztangi leżąc",
    "kategoria": "Upper push horizontal",
    "part": "b",
    "coeff": 1.0,
    "skok_kg": 2.5,
    "progresja": "kg",
+   "rodzaj": "trening siłowy",
+   "miesnie_glowne": [
+    "mięsień piersiowy większy"
+   ],
+   "miesnie_pomocnicze": [
+    "triceps",
+    "przednia część mięśnia naramiennego"
+   ],
+   "sprzet": [
+    "sztanga",
+    "ławka pozioma"
+   ],
    "film": "https://youtu.be/ejI1Nlsul9k",
    "uwagi": null,
    "scalone_id": "EX-0021",

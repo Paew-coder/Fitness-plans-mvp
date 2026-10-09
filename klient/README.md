@@ -414,6 +414,19 @@ Na górze listy tygodni stoi przycisk *„▶ Następny trening: tydzień 3 · D
 — pierwszy niedomknięty dzień, otwierany od razu. Gdy klient wyszedł z treningu
 w połowie, przycisk mówi *„▶ Wróć do treningu"*. Po całym cyklu znika.
 
+## Film w aplikacji — karta ćwiczenia (test OPEX, od 09.10.2026)
+
+Przy *Barbell bench press* **▶ film** nie wyprowadza już do YouTube, tylko
+otwiera kartę nad treningiem: *Wyciskanie sztangi leżąc* / *Barbell Bench
+Press*, odtwarzacz YouTube (film z biblioteki OPEX Fitness, `playsinline`,
+tryb ochrony prywatności), podpis *„Film: OPEX Fitness / YouTube”*, mięśnie
+główne i pomocnicze, sprzęt, kategoria. *„Wróć do treningu”*, ✕, Esc albo
+systemowe „wstecz” zamykają kartę i zatrzymują film — wpisane ciężary
+i powtórzenia zostają, ekran się nie przewija. Ten sam przycisk jest
+w nagłówku panelu serii (także przy TOP SECIE) i przy seriach maksymalnych.
+Pozostałe ćwiczenia — jak dotąd link. Szczegóły i lista do sprawdzenia
+ręcznie: [`docs/07-filmy-cwiczen.md`](../docs/07-filmy-cwiczen.md).
+
 ## Rozgrzewka
 
 Jeśli trener wpisał rozgrzewkę przy dniu, klient widzi na początku dnia kartę

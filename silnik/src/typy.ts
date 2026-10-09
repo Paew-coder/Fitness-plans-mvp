@@ -42,6 +42,20 @@ export type Cwiczenie = {
   /** Najmniejszy sensowny przyrost obciążenia. */
   skokKg: number;
   progresja: Progresja;
+  /**
+   * Opis ćwiczenia do karty w aplikacji (09.10.2026, test biblioteki OPEX).
+   * Opcjonalny — na razie tylko przy EX-0011. `nazwa` zostaje bez zmian:
+   * po niej import arkusza dopasowuje ćwiczenia, a reguły (klasyczne boje,
+   * TOP SET) porównują ją dosłownie. `nazwaEn` to tylko zapis do wyświetlenia.
+   */
+  nazwaEn?: string;
+  nazwaPl?: string;
+  /** Rodzaj treningu, np. „trening siłowy” — inaczej niż `kategoria` (wzorzec ruchu z BAZY). */
+  rodzaj?: string;
+  miesnieGlowne?: readonly string[];
+  miesniePomocnicze?: readonly string[];
+  sprzet?: readonly string[];
+  /** Link z arkusza (kolumna filmu w BAZIE). Film odtwarzany w aplikacji: `wideo.ts`. */
   film?: string;
   uwagi?: string;
   /** Duplikat zwinięty w tę pozycję. */

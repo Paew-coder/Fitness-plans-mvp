@@ -1224,3 +1224,42 @@ describe("rampa i TOP SET od klienta", () => {
     assert.equal(t1.kod, 400, "w T1 szablon TOP SETU nie przewiduje");
   });
 });
+
+describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
+  test("biblioteka ćwiczeń konsoli: Barbell bench press z filmem do odtwarzania", async () => {
+    const { dane } = await api("/api/cwiczenia");
+    const lawka = dane.filter((c: any) => c.nazwa.toLowerCase() === "barbell bench press");
+    assert.equal(lawka.length, 1);
+    assert.equal(lawka[0].id, "EX-0011");
+    assert.equal(lawka[0].nazwaPl, "Wyciskanie sztangi leżąc");
+    assert.equal(lawka[0].wideo.youtubeId, "ejI1Nlsul9k");
+    assert.equal(dane.find((c: any) => c.id === "EX-0059").wideo, null);
+  });
+
+  test("telefon dostaje kartę z opisem i filmem; inne ćwiczenie — dotychczasowy link", async () => {
+    await api("/api/plany", "POST", { klient: "Film Test", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Film Test").id;
+    const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0011";
+    plan.sloty[1].cwiczenieId = "EX-0059";
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
+    assert.equal((await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" })).kod, 200);
+    const t = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    const { dane } = await api(`/api/klient/${t}`);
+    const dzien = dane.tygodnie[0].dni[0];
+    const lawka = dzien.cwiczenia.find((c: any) => c.positionId === plan.sloty[0].positionId);
+    assert.equal(lawka.karta.cwiczenieId, "EX-0011");
+    assert.equal(lawka.karta.nazwaPl, "Wyciskanie sztangi leżąc");
+    assert.equal(lawka.karta.nazwaEn, "Barbell Bench Press");
+    assert.deepEqual(lawka.karta.sprzet, ["sztanga", "ławka pozioma"]);
+    assert.deepEqual(lawka.karta.wideo.zrodlo, { nazwa: "OPEX Fitness", platforma: "YouTube", url: "https://www.youtube.com/@OPEXFitness" });
+    assert.equal(lawka.karta.wideo.youtubeId, "ejI1Nlsul9k");
+    // Ciężary i serie liczą się jak dotąd — film niczego w planie nie zmienia.
+    assert.equal(typeof lawka.ciezar, "number");
+    const hantle = dzien.cwiczenia.find((c: any) => c.positionId === plan.sloty[1].positionId);
+    assert.equal(hantle.karta, null);
+    assert.equal(hantle.film, "https://youtu.be/db-h-UBzbhE");
+    const pomiar = dane.doZmierzenia.find((p: any) => p.cwiczenieId === "EX-0011");
+    assert.equal(pomiar.karta.wideo.youtubeId, "ejI1Nlsul9k");
+  });
+});

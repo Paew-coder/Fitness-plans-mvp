@@ -1,0 +1,28 @@
+{
+ "opis": "Filmy instruktażowe do ćwiczeń — osobno od BAZY. Wpis wskazuje ćwiczenie po jego id (EX-…); BAZA nie wie, skąd jest film. Zmiana źródła (YouTube → własny plik MP4) to zmiana typu w jednym wpisie, bez ruszania BAZY i planów. Typy: youtube (youtube_id), plik (url do MP4/WebM). Jedno ćwiczenie — najwyżej jeden film. Test integracji z biblioteką OPEX Fitness: na razie tylko EX-0011 (09.10.2026).",
+ "zrodla": [
+  {
+   "id": "opex-youtube",
+   "nazwa": "OPEX Fitness",
+   "platforma": "YouTube",
+   "kanal": "@OPEXFitness",
+   "kanal_id": "UCCgDGih2kSp0A6W_0cVYuaQ",
+   "url": "https://www.youtube.com/@OPEXFitness",
+   "zweryfikowano": "2026-10-09",
+   "jak": "kanał podlinkowany z oficjalnej strony opexfit.com; nazwa, identyfikator i opis z metadanych kanału na YouTube"
+  }
+ ],
+ "filmy": [
+  {
+   "id": "WID-0001",
+   "cwiczenie_id": "EX-0011",
+   "typ": "youtube",
+   "youtube_id": "ejI1Nlsul9k",
+   "zrodlo": "opex-youtube",
+   "tytul": "Barbell Bench Press - OPEX Exercise Library",
+   "url": "https://www.youtube.com/watch?v=ejI1Nlsul9k",
+   "czas_s": 9,
+   "osadzanie": "dozwolone — oEmbed YouTube zwrócił kod odtwarzacza (09.10.2026); autor: OPEX Fitness (@OPEXFitness)"
+  }
+ ]
+}

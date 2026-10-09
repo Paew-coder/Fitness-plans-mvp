@@ -37,6 +37,7 @@ import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
+import { kartaCwiczenia, wideoCwiczenia } from "../silnik/src/wideo.ts";
 import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
@@ -977,6 +978,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             grupa: (s.lp || "").charAt(0),
             nazwa: s.cwiczenie!.nazwa,
             film: s.cwiczenie!.film ?? null,
+            // Karta ćwiczenia z filmem w aplikacji (09.10.2026, test OPEX):
+            // opis i odtwarzacz zamiast linku do YouTube. `null` dla ćwiczeń
+            // bez wpisu w filmach — tam zostaje `film`.
+            karta: kartaCwiczenia(s.cwiczenie!),
             jednostronne: s.cwiczenie!.jednostronne ?? false,
             // Skok ciężaru z BAZY — telefon zaokrągla do niego korektę ±5 %
             // w trakcie treningu (ocena przy serii, 26.09.2026).
@@ -1055,6 +1060,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
         cwiczenieId: id,
         nazwa: slot?.cwiczenie?.nazwa ?? id,
         film: slot?.cwiczenie?.film ?? null,
+        karta: slot?.cwiczenie ? kartaCwiczenia(slot.cwiczenie) : null,
         // Wpis z kalibracji to `1RM × 1` — prawda dla silnika, ale w polach
         // serii maksymalnej wyglądałby jak seria, której klient nie zrobił.
         // Pola zostają puste, a skąd jest 1RM, mówi `kalibracja`.
@@ -1256,6 +1262,9 @@ const serwer = createServer(async (req, res) => {
         // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
         // i przestawia przy nich „G” między progresją pauzowaną a bojem.
         pauza: PAUZOWANE[c.id] ?? null,
+        // Film do odtwarzania w aplikacji (09.10.2026) — osobno od BAZY;
+        // `null` = zostaje link `film` z arkusza.
+        wideo: wideoCwiczenia(c.id),
       })));
     }
 

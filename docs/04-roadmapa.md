@@ -744,6 +744,16 @@ Trener: „moduł analizy ruchu: nagrać kamerą albo wgrać wideo, MediaPipe kl
 * `npm run przeglad-ruchu`: 50 kontroli na prawdziwych filmach (przód, bok, kamera); opis i dalsze kroki w `docs/06-analiza-ruchu.md`. Do decyzji trenera: zapis analiz w bazie przy kliencie.
 * 09.10.2026, trener: „co to jest to .json? próbowałem nagranie ekranu i się nie da” — przycisk przyjmował tylko JSON, więc film był wyszarzony. Teraz „Otwórz zapisaną analizę” z wyjaśnieniem pod przyciskami (plik .json z „Pobierz analizę”), a oba przyciski przyjmują i film, i zapis — film idzie do analizy, zapis na ekran.
 
+**50. Film w aplikacji — test biblioteki OPEX Fitness na Barbell Bench Press — 09.10.2026.**
+
+Trener: „przetestuj integrację z biblioteką ćwiczeń OPEX Fitness na jednym ćwiczeniu — film na karcie ćwiczenia, bez opuszczania aplikacji, IFrame Player API z playsinline, baza niezależna od źródła wideo, w przyszłości własne MP4”.
+
+* Film: „Barbell Bench Press - OPEX Exercise Library” (`ejI1Nlsul9k`, 9 s), kanał `@OPEXFitness` (`UCCgDGih2kSp0A6W_0cVYuaQ`, podlinkowany z opexfit.com); osadzanie dozwolone (oEmbed). Tylko metadane, bez pobierania filmu.
+* Ćwiczenie było już w BAZIE (EX-0011, z tym samym filmem jako linkiem) — dostało pola opisu (`nazwa_en`, `nazwa_pl`, mięśnie, sprzęt, `rodzaj`), bez duplikatu i bez zmiany `nazwa`.
+* Filmy osobno od BAZY: `docs/dane/filmy-cwiczen.json` → `silnik/src/dane/filmy.ts`, `wideo.ts` (`wideoCwiczenia`, `kartaCwiczenia`, `sprawdzFilmy`); typ `youtube` albo `plik` (własne MP4 bez zmian w BAZIE). Serwer: `karta` w widoku klienta, `wideo` w `/api/cwiczenia`.
+* Aplikacja klienta: karta ćwiczenia (`karta-cwiczenia.js`) z odtwarzaczem YouTube (IFrame Player API, `playsinline=1`, youtube-nocookie, ramka z `strict-origin-when-cross-origin` przy `no-referrer` strony), opisem i podpisem źródła; z listy, z panelu serii (także TOP SET) i z serii maksymalnych. „Wstecz” zamyka kartę, wpisane liczby zostają. Moduł w pamięci offline (test pilnuje każdego importu `app.js`). SW `trening-v62`.
+* Sprawdzone: testy silnika i konsoli, `npm run przeglad-filmu` (telefon i komputer, prawdziwy odtwarzacz: właściwy film zgłoszony przez API, start przyjęty, dane treningu zostają, własny plik gra/pauza/przewija). Samo odtwarzanie obrazu YouTube nie do sprawdzenia w tym środowisku — lista do sprawdzenia ręcznie w `docs/07-filmy-cwiczen.md`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
