@@ -6,6 +6,8 @@
  * czeka w kolejce, aż wróci połączenie.
  */
 
+import { kartaOtwarta, powrotZKarty, przyciskFilmu, zamknijKarte } from "./karta-cwiczenia.js";
+
 const TOKEN = location.pathname.split("/")[2] ?? "";
 const KLUCZ_KOLEJKI = `kolejka-${TOKEN}`;
 const KLUCZ_WIDOKU = `widok-${TOKEN}`;
@@ -243,6 +245,12 @@ function wroc() {
 }
 
 addEventListener("popstate", (e) => {
+  // Karta ćwiczenia z filmem (09.10.2026) leży nad ekranem i ma własny wpis
+  // w historii. „Wstecz” przy otwartej karcie zamyka tylko ją, a cofnięcie
+  // zrobione przez samą kartę nie przerysowuje ekranu — inaczej przepadłyby
+  // wpisane, jeszcze niezapisane ciężary i powtórzenia.
+  if (kartaOtwarta()) { zamknijKarte({ zHistorii: true }); return; }
+  if (powrotZKarty()) return;
   const cel = ustawEkran(e.state?.ekran ?? EKRAN_GLOWNY);
   // Gdy trafiliśmy gdzie indziej, niż mówił wpis (trening bez wybranego dnia),
   // prostujemy wpis — inaczej kolejne „wstecz" liczyłoby ekran, którego nie ma.
@@ -1212,13 +1220,9 @@ function kartaCwiczenia(c, stan = null) {
   const gora = el("div", "cwiczenie-gora");
   gora.append(el("span", "lp", c.lp || ""));
   gora.append(el("span", "nazwa", c.nazwa));
-  if (c.film) {
-    const a = el("a", "film", "▶ film");
-    a.href = c.film;
-    a.target = "_blank";
-    a.rel = "noopener";
-    gora.append(a);
-  }
+  // Z kartą (opis + film w aplikacji) — przycisk; bez niej — link jak dotąd.
+  const film = przyciskFilmu(c.film, c.karta);
+  if (film) gora.append(film);
   karta.append(gora);
 
   const pasuje = (k) => k.positionId === c.positionId;
@@ -1970,6 +1974,8 @@ function krokiDnia(d) {
     // liczyłaby TOP SET do jego serii.
     slotTopSetu: ts.positionId,
     lp: d.cwiczenia.find((c) => c.positionId === ts.positionId)?.lp ?? "",
+    // Karta z filmem także przy TOP SECIE (09.10.2026) — to samo ćwiczenie.
+    karta: d.cwiczenia.find((c) => c.positionId === ts.positionId)?.karta ?? null,
     rpe: ts.rpe,
     nazwa: ts.cwiczenie.nazwa,
     ciezar: ts.ciezar,
@@ -2253,25 +2259,20 @@ function opisKroku(k, d) {
   return `${c?.lp ?? ""} ${c?.nazwa ?? ""} · seria ${k.seria} z ${k.zSerii}`.trim();
 }
 
-/** Nagłówek panelu: numer w planie, nazwa, film. */
-function gloweczka(lp, nazwa, film) {
+/** Nagłówek panelu: numer w planie, nazwa, film (karta w aplikacji albo link). */
+function gloweczka(lp, nazwa, film, karta = null) {
   const gora = el("div", "panel-gora");
   if (lp) gora.append(el("span", "lp", lp));
   gora.append(el("span", "nazwa", nazwa));
-  if (film) {
-    const a = el("a", "film", "▶ film");
-    a.href = film;
-    a.target = "_blank";
-    a.rel = "noopener";
-    gora.append(a);
-  }
+  const przycisk = przyciskFilmu(film, karta);
+  if (przycisk) gora.append(przycisk);
   return gora;
 }
 
 function panelTopSetu(k, kroki) {
   const karta = el("div", "panel-karta topset-panel");
   karta.append(el("div", "etykieta", "TOP SET"));
-  karta.append(gloweczka(k.lp || "", k.nazwa, null));
+  karta.append(gloweczka(k.lp || "", k.nazwa, null, k.karta ?? null));
   const bezCiezaru = k.ciezar === "— brak 1RM";
   karta.append(kolumnyZadania({
     ciezar: k.ciezar, dobierz: bezCiezaru, powtorzenia: 1, rpe: k.rpe,
@@ -2334,7 +2335,7 @@ function panelSerii(k, kroki, d) {
     return karta;
   }
 
-  karta.append(gloweczka(c.lp, c.nazwa, c.film));
+  karta.append(gloweczka(c.lp, c.nazwa, c.film, c.karta));
   if (k.wGrupie) karta.append(el("div", "seria-numer", `superseria ${k.litera}`));
 
   // Wcześniej stały tu szare podpowiedzi z planu, a zapisywało się tylko to,
@@ -2712,11 +2713,8 @@ function kartaPomiaru(p) {
   const karta = el("div", "pomiar");
   karta.dataset.cwiczenie = p.cwiczenieId;
   const nazwa = el("div", "nazwa", p.nazwa);
-  if (p.film) {
-    const a = el("a", "film", " ▶");
-    a.href = p.film; a.target = "_blank"; a.rel = "noopener";
-    nazwa.append(a);
-  }
+  const film = przyciskFilmu(p.film, p.karta, " ▶");
+  if (film) nazwa.append(film);
   karta.append(nazwa);
 
   /*

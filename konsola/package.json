@@ -17,6 +17,7 @@
     "przeglad-ekranow": "node --no-warnings narzedzia/przeglad-ekranow.ts",
     "przeglad-klienta": "node --no-warnings narzedzia/przeglad-klienta.ts",
     "przeglad-ruchu": "node --no-warnings narzedzia/przeglad-ruchu.ts",
+    "przeglad-filmu": "node --no-warnings narzedzia/przeglad-filmu.ts",
     "sprawdz-kolko": "node --no-warnings narzedzia/sprawdz-kolko.ts",
     "sprawdz-odpornosc": "node --no-warnings narzedzia/sprawdz-odpornosc.ts",
     "sprawdz-skale": "node --no-warnings narzedzia/sprawdz-skale.ts",

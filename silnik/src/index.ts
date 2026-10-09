@@ -30,3 +30,5 @@ export { SZABLONY_BASE44 } from "./dane/szablony.ts";
 export * from "./walidacja.ts";
 export { TABELA_RPE, TABELA_STRES_CALKOWITY, TABELA_STRES_CENTRALNY, TABELA_STRES_OBWODOWY } from "./dane/tabele.ts";
 export { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
+export * from "./wideo.ts";
+export { FILMY_CWICZEN, ZRODLA_WIDEO } from "./dane/filmy.ts";

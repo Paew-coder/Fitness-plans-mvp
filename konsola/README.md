@@ -296,6 +296,18 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
+## Filmy ćwiczeń — test biblioteki OPEX (od 09.10.2026)
+
+Barbell bench press (EX-0011 — ten sam, który już był w BAZIE, bez
+duplikatu) ma opis (nazwa polska, mięśnie, sprzęt, kategoria) i film
+z oficjalnego kanału OPEX Fitness, odtwarzany w aplikacji klienta w karcie
+ćwiczenia. Filmy leżą osobno od BAZY (`docs/dane/filmy-cwiczen.json`,
+`silnik/src/wideo.ts`): zamiana YouTube na własny MP4 to zmiana jednego wpisu.
+W bibliotece `/api/cwiczenia` ćwiczenie ma pole `wideo`; do planu dodaje się
+jak każde inne. Opis, sprawdzenia i lista do sprawdzenia ręcznie:
+[`docs/07-filmy-cwiczen.md`](../docs/07-filmy-cwiczen.md). Przegląd:
+`npm run przeglad-filmu`.
+
 ## Analiza ruchu (od 07.10.2026)
 
 Link **Analiza ruchu** na ekranie głównym → strona `/ruch/`, za tym samym
@@ -1034,6 +1046,8 @@ npm run kopia
 | `narzedzia/przegladarka.ts` | serwer na czystej bazie i Chromium — wspólne dla obu przeglądów |
 | `public/ruch/` | analiza ruchu: `szkielet`, `geometria`, `przebieg`, `profile`, `sesja` (czysta logika, testy w `testy/analiza-ruchu.test.ts`), `detektor` (MediaPipe), `rysowanie`, `wykres`, `app` (ekran) |
 | `narzedzia/przeglad-ruchu.ts` | analiza ruchu na prawdziwym filmie w Chromium, z prawdziwym MediaPipe |
+| `public/klient/karta-cwiczenia.js` | karta ćwiczenia z filmem w aplikacji klienta (YouTube IFrame Player API albo własny plik) |
+| `narzedzia/przeglad-filmu.ts` | karta z filmem OPEX na telefonie i komputerze, z prawdziwym odtwarzaczem YouTube |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |
 
