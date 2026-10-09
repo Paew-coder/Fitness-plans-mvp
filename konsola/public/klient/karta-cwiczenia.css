@@ -1,0 +1,75 @@
+/*
+ * Karta ćwiczenia z filmami — wspólna dla aplikacji klienta i konsoli trenera
+ * (podgląd przy wyborze ćwiczenia z biblioteki). Kolory z tokenów strony:
+ * --karta, --karta-2, --linia, --tekst, --tekst-slaby, --tekst-blady, --akcent.
+ */
+body.karta-cw-otwarta { overflow: hidden; }
+.karta-cw-tlo {
+  position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .6);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+/* Telefon: arkusz od dołu na całą szerokość; szerzej — okno na środku. */
+.karta-cw {
+  background: var(--karta); border: 1px solid var(--linia); border-bottom: none;
+  border-radius: 16px 16px 0 0; width: 100%; max-width: 42rem;
+  max-height: calc(100dvh - env(safe-area-inset-top) - .5rem); overflow-y: auto;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 700px) {
+  .karta-cw-tlo { align-items: center; padding: 1.5rem; }
+  .karta-cw { border-radius: 16px; border-bottom: 1px solid var(--linia); padding: 1.3rem 1.4rem 1.2rem; }
+}
+.karta-cw-naglowek { display: flex; align-items: flex-start; gap: .8rem; margin-bottom: .8rem; }
+.karta-cw-tytuly { flex: 1; min-width: 0; }
+.karta-cw h2 { margin: 0; font-size: 1.2rem; line-height: 1.25; }
+.karta-cw-en { margin: .15rem 0 0; color: var(--tekst-slaby); font-size: .9rem; }
+.karta-cw-x {
+  flex: none; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: none;
+  background: var(--karta-2); color: var(--tekst); font-size: 1rem;
+}
+/* Odtwarzacz 16:9 na całą szerokość karty — na telefonie i na iPadzie. */
+.karta-cw-film {
+  position: relative; aspect-ratio: 16 / 9; background: #000;
+  border-radius: 10px; overflow: hidden; margin: 0 auto;
+  /* Na niskim ekranie (laptop, iPad w poziomie) film mniejszy, żeby opis
+     i „Wróć do treningu” zmieściły się bez przewijania karty. */
+  width: min(100%, calc((100dvh - 23rem) * 16 / 9));
+}
+.karta-cw-film iframe, .karta-cw-film video {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;
+}
+.karta-cw-komunikat {
+  position: absolute; inset: 0; display: flex; flex-direction: column; gap: .5rem;
+  align-items: center; justify-content: center; text-align: center; padding: 1rem;
+  background: var(--karta-2); color: var(--tekst-slaby); font-size: .9rem;
+}
+.karta-cw-komunikat p { margin: 0; }
+.karta-cw-komunikat a, .karta-cw-zrodlo a { color: var(--akcent); text-decoration: none; }
+.karta-cw-zrodlo { margin: .55rem 0 0; font-size: .82rem; color: var(--tekst-blady); }
+.karta-cw-opis {
+  display: grid; grid-template-columns: max-content 1fr; gap: .35rem .9rem;
+  margin: 1rem 0 0; font-size: .92rem;
+}
+.karta-cw-opis dt { color: var(--tekst-blady); }
+.karta-cw-opis dd { margin: 0; }
+@media (max-width: 380px) {
+  .karta-cw-opis { grid-template-columns: 1fr; gap: .1rem; }
+  .karta-cw-opis dd { margin-bottom: .45rem; }
+}
+.karta-cw .karta-cw-wroc { margin-top: 1.1rem; }
+/* Kilka nagrań (09.10.2026, biblioteki filmów): przełącznik nad filmem —
+   najpierw pokazy, potem poradniki. Film robi miejsce na rząd przycisków. */
+/* Jeden rząd: przy wielu nagraniach przewija się w bok, zamiast spychać
+   „Wróć do treningu” poza ekran (6 nagrań przy wyciskaniu). */
+.karta-cw-nagrania {
+  display: flex; gap: .4rem; margin: 0 0 .65rem; overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.karta-cw-nagrania::-webkit-scrollbar { display: none; }
+.karta-cw-nagrania button {
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+  border-radius: 999px; padding: .38rem .8rem; font: inherit; font-size: .86rem; cursor: pointer;
+  min-height: 2.2rem; flex: none; white-space: nowrap;
+}
+.karta-cw-nagrania button[aria-pressed="true"] { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+.karta-cw.z-wyborem .karta-cw-film { width: min(100%, calc((100dvh - 26rem) * 16 / 9)); }

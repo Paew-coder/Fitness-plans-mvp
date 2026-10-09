@@ -59,9 +59,15 @@ logika w `silnik/src/wideo.ts`:
 "zrodla": [{ "id": "opex-youtube", "nazwa": "OPEX Fitness", "platforma": "YouTube",
              "kanal": "@OPEXFitness", "kanal_id": "UCCg…", "url": "…" }],
 "filmy":  [{ "id": "WID-0001", "cwiczenie_id": "EX-0011", "typ": "youtube",
-             "youtube_id": "ejI1Nlsul9k", "zrodlo": "opex-youtube",
-             "tytul": "…", "url": "…", "czas_s": 9 }]
+             "rola": "demonstracja", "youtube_id": "ejI1Nlsul9k",
+             "zrodlo": "opex-youtube", "tytul": "…", "czas_s": 9 }]
 ```
+
+Od 09.10.2026 (import bibliotek Theory of Motion i Catalyst Athletics,
+`docs/08-biblioteki-cwiczen.md`) ćwiczenie może mieć **kilka filmów**.
+`rola`: `demonstracja` (krótki pokaz, domyślna) albo `poradnik` (omówienie
+techniki). `filmyCwiczenia(id)` zwraca najpierw pokazy, potem poradniki;
+`wideoCwiczenia(id)` = pierwszy z nich.
 
 - Ćwiczenie ma swój identyfikator (EX-…), film swój (WID-…); wpis wiąże je
   po `cwiczenie_id`. BAZA nie wie, skąd jest film.
@@ -74,8 +80,8 @@ logika w `silnik/src/wideo.ts`:
   go nie przewinie. Dzisiejszy serwer konsoli zakresów nie obsługuje — do
   dołożenia razem z pierwszymi własnymi plikami (albo pliki z CDN).
 - `sprawdzFilmy()` pilnuje spójności, gdy wpisów będą setki: istniejące
-  ćwiczenie, znane źródło, najwyżej jeden film na ćwiczenie, unikalne id,
-  poprawne id YouTube.
+  ćwiczenie, znane źródło i rola, ten sam film najwyżej raz przy ćwiczeniu,
+  unikalne id, poprawne id YouTube.
 - Ćwiczenia bez wpisu zostają przy dotychczasowym linku `film` z arkusza
   (otwiera YouTube w nowej karcie) — jak przed testem.
 
@@ -89,6 +95,10 @@ TOP SECIE) i przy seriach maksymalnych.
   środku): nazwa polska i angielska, odtwarzacz 16:9, podpis „Film: OPEX
   Fitness / YouTube” z linkiem „Otwórz na YouTube ↗”, mięśnie, sprzęt,
   kategoria, wzorzec ruchu, „Wróć do treningu”.
+- **Kilka nagrań**: nad filmem rząd przycisków „Pokaz” / „Poradnik · 4:00”
+  (przy kilku pokazach „Pokaz 1”, „Pokaz 2”…); wybór podmienia film w tej
+  samej ramce razem z podpisem źródła. Przy wielu nagraniach rząd przewija
+  się w bok, żeby „Wróć do treningu” zostało na ekranie.
 - **Odtwarzacz**: oficjalny YouTube IFrame Player API, `playsinline=1`
   (iPhone nie wyskakuje na pełny ekran), `rel=0`, `enablejsapi=1`,
   `origin` = adres aplikacji. Domena **youtube-nocookie.com** (tryb ochrony
@@ -144,18 +154,13 @@ Dlatego **do sprawdzenia ręcznie**:
 6. Gest „wstecz” (przesunięcie od lewej krawędzi na iPhonie) zamyka kartę,
    a nie trening.
 
-## 6. Pod przyszłą bibliotekę (bez importu teraz)
+## 6. Biblioteki filmów
 
-Import kanału = dopisanie wpisów do `filmy-cwiczen.json`, bez zmian w kodzie:
-
-1. Lista filmów kanału (YouTube Data API z kluczem albo lista ręczna) —
-   tytuły mają stały wzór „<Ćwiczenie> - OPEX Exercise Library”.
-2. Dopasowanie do BAZY po nazwie (jak import arkusza: `katalog.poNazwie`),
-   niedopasowane — do decyzji trenera, nie zgadywane.
-3. Każdy film przez oEmbed (osadzanie dozwolone, autor = kanał OPEX).
-4. `sprawdzFilmy()` przed zapisem; generator; testy.
+Pełny import dwóch kanałów (3420 ćwiczeń, 3916 filmów) — opis, liczby,
+klasyfikacja i weryfikacja w `docs/08-biblioteki-cwiczen.md`.
 
 Licencja: osadzanie publicznego filmu odtwarzaczem YouTube jest zgodne
 z warunkami YouTube, ale **nie daje prawa do pobrania i hostowania** tych
-filmów jako własnych MP4 — na to potrzebna zgoda OPEX. Własne MP4 to
+filmów jako własnych MP4 — na to potrzebna zgoda autora kanału (OPEX,
+Theory of Motion, Catalyst Athletics). Własne MP4 to
 osobna droga (własne nagrania albo licencja).

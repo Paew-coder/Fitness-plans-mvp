@@ -11,6 +11,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync, statSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { gzipSync } from "node:zlib";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,7 +38,7 @@ import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
-import { kartaCwiczenia, wideoCwiczenia } from "../silnik/src/wideo.ts";
+import { filmyCwiczenia, kartaCwiczenia } from "../silnik/src/wideo.ts";
 import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
@@ -150,6 +151,44 @@ function json(res: ServerResponse, dane: unknown, kod = 200): void {
   const tresc = JSON.stringify(dane);
   res.writeHead(kod, { "content-type": "application/json; charset=utf-8" });
   res.end(tresc);
+}
+
+/**
+ * Lista ćwiczeń dla konsoli — liczona raz, wysyłana spakowana.
+ *
+ * Po imporcie bibliotek filmów (09.10.2026) to kilka tysięcy pozycji, ok.
+ * 1 MB JSON-a; gzip schodzi do ok. 1/8 — ma znaczenie na iPadzie przez sieć
+ * komórkową. Katalog nie zmienia się w trakcie pracy serwera, więc wynik
+ * trzymamy w pamięci.
+ */
+let listaCwiczen: { tresc: Buffer; gzip: Buffer } | null = null;
+function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
+  if (!listaCwiczen) {
+    /*
+     * Do każdego ćwiczenia dokładamy jedną informację, której nie ma w BAZIE:
+     * czy TOP SET jest przy nim zwyczajowy. Reguła jest wiedzą trenera
+     * i siedzi w silniku (`top-set.ts`) — przeglądarka nie ma jej powtarzać
+     * u siebie, bo wtedy byłyby dwie listy i jedna z nich by się rozjechała.
+     */
+    const tresc = Buffer.from(JSON.stringify(katalog.wszystkie.map((c) => ({
+      ...c,
+      zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
+      // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
+      // i przestawia przy nich „G” między progresją pauzowaną a bojem.
+      pauza: PAUZOWANE[c.id] ?? null,
+      // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
+      // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
+      filmow: filmyCwiczenia(c.id).length,
+    }))));
+    listaCwiczen = { tresc, gzip: gzipSync(tresc) };
+  }
+  const gzip = /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));
+  res.writeHead(200, {
+    "content-type": "application/json; charset=utf-8",
+    vary: "accept-encoding",
+    ...(gzip ? { "content-encoding": "gzip" } : {}),
+  });
+  res.end(gzip ? listaCwiczen.gzip : listaCwiczen.tresc);
 }
 
 function blad(res: ServerResponse, wiadomosc: string, kod = 400): void {
@@ -1249,23 +1288,14 @@ const serwer = createServer(async (req, res) => {
     }
 
     // ── katalog ćwiczeń ──────────────────────────────────────────────
-    if (sciezka === "/api/cwiczenia") {
-      /*
-       * Do każdego ćwiczenia dokładamy jedną informację, której nie ma w BAZIE:
-       * czy TOP SET jest przy nim zwyczajowy. Reguła jest wiedzą trenera
-       * i siedzi w silniku (`top-set.ts`) — przeglądarka nie ma jej powtarzać
-       * u siebie, bo wtedy byłyby dwie listy i jedna z nich by się rozjechała.
-       */
-      return json(res, katalog.wszystkie.map((c) => ({
-        ...c,
-        zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
-        // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
-        // i przestawia przy nich „G” między progresją pauzowaną a bojem.
-        pauza: PAUZOWANE[c.id] ?? null,
-        // Film do odtwarzania w aplikacji (09.10.2026) — osobno od BAZY;
-        // `null` = zostaje link `film` z arkusza.
-        wideo: wideoCwiczenia(c.id),
-      })));
+    if (sciezka === "/api/cwiczenia") return wyslijListeCwiczen(req, res);
+
+    // Karta ćwiczenia (opis i filmy) — podgląd w konsoli przy wyborze
+    // ćwiczenia z biblioteki: ta sama karta, którą widzi klient.
+    if (sciezka === "/api/karta-cwiczenia" && req.method === "GET") {
+      const c = katalog.poId(url.searchParams.get("id") ?? "");
+      if (!c) return blad(res, "Nie ma takiego ćwiczenia", 404);
+      return json(res, kartaCwiczenia(c));
     }
 
     // ── szablony planów z Base44 ─────────────────────────────────────

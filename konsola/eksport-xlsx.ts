@@ -192,7 +192,24 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     })),
   }));
 
+  /*
+   * Ćwiczenia planu z kompletem pól BAZY — wypełniacz dopisze do zakładki
+   * BAZA te, których szablon nie zna (biblioteki filmów, ćwiczenia dodane
+   * przez trenera poza arkuszem 5.17). Formuły T1–T6 szukają po nazwie
+   * kategorii, coeff i progresji; bez wiersza w BAZIE ciężar byłby pusty.
+   */
+  const uzyte = new Set<string>();
+  for (const slot of plan.sloty) {
+    if (slot.cwiczenieId) uzyte.add(slot.cwiczenieId);
+    for (const t of Object.values(slot.tygodnie ?? {})) if (t?.cwiczenieIdOverride) uzyte.add(t.cwiczenieIdOverride);
+  }
+  const cwiczeniaBazy = [...uzyte].map((id) => katalog.poId(id)).filter((c) => c !== undefined).map((c) => ({
+    nazwa: c.nazwa, kategoria: c.kategoria, part: c.part, coeff: c.coeff, skok_kg: c.skokKg,
+    progresja: c.progresja, film: c.film ?? null, id: c.id, uwagi: c.uwagi ?? null,
+  }));
+
   return {
+    cwiczenia_bazy: cwiczeniaBazy,
     tygodnie_dodatkowe: tygodnieDodatkowe,
     ustawienia: {
       tryb_akcesoriow: plan.trybAkcesoriow,

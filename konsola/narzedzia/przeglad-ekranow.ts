@@ -27,6 +27,7 @@
  * Wymaga Playwrighta z Chromium. Nie chodzi w `npm test`, bo tam przeglądarki
  * nie ma — to jest kontrola do puszczenia po zmianach w `public/`.
  */
+import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -88,6 +89,15 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const zBazy = async () => await (await fetch(`${ADRES}/api/plany/${PLAN}`)).json();
   const zapisano = () => s.waitForFunction(
     () => document.querySelector("#zapis")?.textContent === "zapisano", null, { timeout: 8000 });
+
+  // Podgląd filmów (karta ćwiczenia) sięga do YouTube. Środowisko przeglądu
+  // nie ma zaufanego certyfikatu dla zewnętrznych adresów, więc każde wejście
+  // kończyłoby się błędem sieci w konsoli przeglądarki — to nie błąd konsoli
+  // trenera. Odpowiadamy pustą stroną; samo odtwarzanie sprawdza przeglad-filmu.
+  await s.route(/youtube(-nocookie)?\.com|ytimg\.com|googlevideo\.com/, (r: any) => r.fulfill({
+    status: 200, body: "",
+    contentType: r.request().resourceType() === "script" ? "application/javascript" : "text/html",
+  }));
 
   await s.goto(ADRES, { waitUntil: "networkidle" });
 
@@ -905,6 +915,72 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     await fetch(`${ADRES}/api/klienci/${doUsuniecia.id}`, { method: "DELETE" });
   }
 
+  // ── 13b. ćwiczenie z biblioteki filmów przez wyszukiwarkę ─────────
+  //
+  // Biblioteki Theory of Motion i Catalyst (09.10.2026) to kilka tysięcy
+  // pozycji — lista w wierszu ma tylko BAZĘ trenera, reszta przez 🔎.
+  // Sprawdzamy całą drogę: szukanie, filtr źródła, podgląd filmów (pokaz
+  // i poradnik), wybór — a dalej eksport do arkusza i powrót (sekcje 15, 17).
+  const katalogCwiczen = await (await fetch(`${ADRES}/api/cwiczenia`)).json();
+  const goblet = katalogCwiczen.find((c: any) => c.nazwa === "Goblet Squat");
+  const opcjeWiersza = await wiersz(0).locator("td.cwiczenie select option").allTextContents();
+  sprawdz("lista w wierszu: BAZA trenera i wejście do wyszukiwarki, bez tysięcy pozycji z bibliotek",
+    opcjeWiersza.length < 200 && opcjeWiersza.some((o) => o.startsWith("🔎")),
+    `${opcjeWiersza.length} pozycji, w bazie ${katalogCwiczen.length}`);
+  const pustyWiersz = await s.locator("#dni tr td.cwiczenie select").evaluateAll(
+    (lista: HTMLSelectElement[]) => lista.findIndex((x) => x.value === ""));
+  await wiersz(pustyWiersz).locator("button.szukaj-cwiczenia").click();
+  await s.waitForSelector(".wyszukiwarka", { timeout: 5000 });
+  await s.fill(".wyszukiwarka-pole", "goblet squat");
+  await s.waitForTimeout(400);
+  const wyniki = () => s.locator(".wyszukiwarka-wynik");
+  const nazwyWynikow = await s.locator(".wyszukiwarka-nazwa").allTextContents();
+  sprawdz("wyszukiwarka znajduje ćwiczenia z bibliotek po słowach",
+    nazwyWynikow.some((n) => n.trim() === "Goblet Squat") && nazwyWynikow.length > 3,
+    `${nazwyWynikow.length}: ${nazwyWynikow.slice(0, 4).join(" | ")}`);
+  await s.fill(".wyszukiwarka-pole", "przysiad goblet hantle");
+  await s.waitForTimeout(400);
+  const poPolsku = await s.locator(".wyszukiwarka-nazwa").allTextContents();
+  sprawdz("polskie słowa też szukają („przysiad goblet hantle”)",
+    poPolsku.some((n) => /goblet squat/i.test(n) && /\bDB\b|dumbbell/i.test(n)), poPolsku.slice(0, 3).join(" | "));
+  await s.fill(".wyszukiwarka-pole", "goblet squat");
+  await s.selectOption(".wyszukiwarka-filtry select >> nth=1", "tom");
+  await s.waitForTimeout(300);
+  const metaToM = await s.locator(".wyszukiwarka-meta").allTextContents();
+  sprawdz("filtr źródła zostawia tylko Theory of Motion",
+    metaToM.length > 0 && metaToM.every((m) => m.endsWith("Theory of Motion")), `${metaToM.length} wyników`);
+
+  // Podgląd: ta sama karta, co u klienta — pokaz i poradnik do przełączenia.
+  const wierszGoblet = wyniki().filter({ has: s.locator(".wyszukiwarka-nazwa", { hasText: /^Goblet Squat$/ }) });
+  await wierszGoblet.locator(".wyszukiwarka-film").click();
+  await s.waitForSelector(".karta-cw", { timeout: 8000 });
+  const przyciskiNagran = await s.locator(".karta-cw-nagrania button").allTextContents();
+  sprawdz("podgląd ma przyciski nagrań: pokaz i poradnik",
+    przyciskiNagran.some((t) => t.startsWith("Pokaz")) && przyciskiNagran.some((t) => t.startsWith("Poradnik")),
+    przyciskiNagran.join(" | "));
+  const filmPrzed = await s.getAttribute(".karta-cw-film", "data-film");
+  await s.locator(".karta-cw-nagrania button", { hasText: /^Poradnik/ }).first().click();
+  await s.waitForTimeout(300);
+  const filmPo = await s.getAttribute(".karta-cw-film", "data-film");
+  sprawdz("przełączenie na poradnik podmienia film w tej samej karcie",
+    filmPo !== filmPrzed && (await s.getAttribute(".karta-cw-film", "data-rola")) === "poradnik"
+      && (await s.locator(".karta-cw-film iframe").count()) <= 1,
+    `${filmPrzed} → ${filmPo}`);
+  await s.locator(".karta-cw-wroc").click();
+  await s.waitForTimeout(200);
+  sprawdz("zamknięcie podglądu wraca do wyszukiwarki",
+    (await s.locator(".karta-cw").count()) === 0 && await s.locator(".wyszukiwarka").isVisible());
+
+  await wierszGoblet.click();
+  await zapisano();
+  const zBiblioteki = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.cwiczenieId === goblet?.id);
+  sprawdz("wybór z wyszukiwarki wstawia ćwiczenie z biblioteki do planu",
+    !!goblet && !!zBiblioteki && (await s.locator(".wyszukiwarka").count()) === 0, goblet?.id ?? "brak Goblet Squat");
+  const opisWyboru = await s.locator("#dni td.cwiczenie select").evaluateAll(
+    (lista: HTMLSelectElement[], id: string) => lista.find((x) => x.value === id)?.selectedOptions[0]?.textContent ?? "",
+    goblet?.id);
+  sprawdz("w wierszu widać, że to ćwiczenie z biblioteki", /\(biblioteka\)/.test(opisWyboru), opisWyboru);
+
   // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
@@ -930,6 +1006,14 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const sciezka = (await s.locator("#modal-body code").innerText()).trim();
   sprawdz("eksport zapisuje arkusz na dysku",
     sciezka.endsWith(".xlsx") && existsSync(sciezka), sciezka);
+  // Ćwiczenie z biblioteki dopisane do zakładki BAZA — formuły arkusza
+  // szukają po nazwie kategorii, coeff i progresji.
+  const wBazieArkusza = existsSync(sciezka) ? execFileSync("python3", ["-c",
+    "import sys, openpyxl; ws = openpyxl.load_workbook(sys.argv[1])['BAZA']; "
+    + "print(next((f'{r[0]}|{r[1]}|{r[7]}' for r in ws.iter_rows(min_row=3, values_only=True) if r[0] == 'Goblet Squat'), ''))",
+    sciezka], { encoding: "utf-8" }).trim() : "";
+  sprawdz("eksport dopisuje ćwiczenie z biblioteki do zakładki BAZA",
+    wBazieArkusza.startsWith("Goblet Squat|Lower push|EX-"), wBazieArkusza || "brak wiersza");
   await s.click("#modal-zamknij");
 
   // ── 16. wysyłka planu ─────────────────────────────────────────────
@@ -1005,6 +1089,8 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(",")
       === "EX-0016,EX-0010",
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(" → ") ?? "brak");
+  sprawdz("ćwiczenie z biblioteki wraca z arkusza pod tym samym id",
+    !!wczytany.zapisany?.plan.sloty.some((x: any) => x.cwiczenieId === goblet?.id), goblet?.id ?? "");
   // Arkusz był potrzebny tylko na tę jedną kontrolę — katalog eksportów należy
   // do trenera i nie ma w nim zostawać plik po przeglądzie.
   rmSync(sciezka, { force: true });

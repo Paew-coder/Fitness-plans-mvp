@@ -427,6 +427,14 @@ w nagłówku panelu serii (także przy TOP SECIE) i przy seriach maksymalnych.
 Pozostałe ćwiczenia — jak dotąd link. Szczegóły i lista do sprawdzenia
 ręcznie: [`docs/07-filmy-cwiczen.md`](../docs/07-filmy-cwiczen.md).
 
+**Kilka nagrań (od importu bibliotek, 09.10.2026).** Kartę z filmem ma teraz
+każde ćwiczenie z bibliotek Theory of Motion i Catalyst oraz 76 ćwiczeń BAZY.
+Gdy nagrań jest kilka, nad filmem stoi rząd przycisków *Pokaz* / *Poradnik ·
+4:00* (przy kilku pokazach *Pokaz 1*, *Pokaz 2*…) — wybór podmienia film w tej
+samej ramce, razem z podpisem źródła. Przy wielu nagraniach rząd przewija się
+w bok, żeby *„Wróć do treningu”* zostało na ekranie. Opis bibliotek:
+[`docs/08-biblioteki-cwiczen.md`](../docs/08-biblioteki-cwiczen.md).
+
 ## Rozgrzewka
 
 Jeśli trener wpisał rozgrzewkę przy dniu, klient widzi na początku dnia kartę

@@ -12,6 +12,7 @@ import json, shutil, sys
 
 try:
     import openpyxl
+    from openpyxl.formula.translate import Translator
 except ImportError:
     sys.exit("Brak openpyxl. Zainstaluj: apt-get install -y python3-openpyxl")
 
@@ -54,10 +55,67 @@ def wiersz_startu(dzien: int, pozycja: int) -> int:
     return 6 + (dzien - 1) * 13 + (pozycja - 1)
 
 
+# Zakladka BAZA: kolumny A-I w kolejnosci zakresow BAZA_EX ... BAZA_UWAGI.
+KOLUMNY_BAZY = ("nazwa", "kategoria", "part", "coeff", "skok_kg", "progresja", "film", "id", "uwagi")
+PIERWSZY_WIERSZ_BAZY = 3
+
+
+def koniec_zakresu_bazy(wb) -> int:
+    """Ostatni wiersz zakresow BAZA_* (w szablonie 5.18: 202)."""
+    return int(wb.defined_names["BAZA_EX"].attr_text.rsplit("$", 1)[1])
+
+
+def rozszerz_zakresy(wb, stary: int, nowy: int) -> None:
+    """Zakresy BAZA_* i LISTA_* do wiersza `nowy`; formuly LISTY dociagniete w dol."""
+    for nazwa, d in wb.defined_names.items():
+        if nazwa.startswith(("BAZA_", "LISTA_")) and d.attr_text.endswith(f"${stary}"):
+            d.attr_text = d.attr_text[: -len(str(stary))] + str(nowy)
+    listy = wb["LISTY"]
+    for kol in ("GV", "GW"):
+        wzor = listy[f"{kol}{stary}"].value
+        for r in range(stary + 1, nowy + 1):
+            listy[f"{kol}{r}"] = Translator(wzor, origin=f"{kol}{stary}").translate_formula(f"{kol}{r}")
+
+
+def dopisz_do_bazy(wb, cwiczenia: list) -> int:
+    """
+    Cwiczenia z planu, ktorych nie ma w zakladce BAZA szablonu — dopisane
+    na koncu, z kompletem pol. Formuly T1-T6 szukaja cwiczenia po nazwie
+    w zakresach BAZA_* (kategoria, coeff, progresja, ID); bez wiersza
+    w BAZIE arkusz klienta pokazalby puste pola zamiast ciezaru.
+
+    Dotyczy cwiczen z bibliotek filmow (09.10.2026) i tych, ktore trener
+    dodal poza arkuszem 5.17 (Sumo deadlift, Barbell low bar squat paused).
+    Gdy wolnych wierszy (do 202) zabraknie — zakresy rosna.
+    """
+    ws = wb["BAZA"]
+    znane = set()
+    wolny = PIERWSZY_WIERSZ_BAZY
+    while ws.cell(row=wolny, column=1).value not in (None, ""):
+        znane.add(str(ws.cell(row=wolny, column=1).value).strip().lower())
+        wolny += 1
+    dopisane = 0
+    for c in cwiczenia:
+        if not c.get("nazwa") or c["nazwa"].strip().lower() in znane:
+            continue
+        for i, klucz in enumerate(KOLUMNY_BAZY, 1):
+            ws.cell(row=wolny, column=i).value = c.get(klucz)
+        znane.add(c["nazwa"].strip().lower())
+        wolny += 1
+        dopisane += 1
+    koniec = koniec_zakresu_bazy(wb)
+    if wolny - 1 > koniec:
+        rozszerz_zakresy(wb, koniec, wolny - 1)
+    return dopisane
+
+
 def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
     shutil.copy(szablon, cel)
     wb = openpyxl.load_workbook(cel, data_only=False)
     licznik = {"sloty": 0, "serie_maksymalne": 0, "tygodnie": 0}
+
+    # --- BAZA: cwiczenia z planu, ktorych szablon nie zna ---
+    licznik["dopisane_do_bazy"] = dopisz_do_bazy(wb, dane.get("cwiczenia_bazy") or [])
 
     # --- przelaczniki ---
     analiza = wb["Analiza"]

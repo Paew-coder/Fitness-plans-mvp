@@ -43,21 +43,22 @@ await zSerwerem(4241, async ({ adres, api }) => {
   console.log("\n  Biblioteka i plan");
   const cwiczenia = await api("/api/cwiczenia");
   const lawka = cwiczenia.filter((c: any) => c.nazwa.toLowerCase() === "barbell bench press");
-  sprawdz("Barbell bench press jest w bibliotece ćwiczeń — raz, jako EX-0011, z filmem OPEX",
-    lawka.length === 1 && lawka[0].id === "EX-0011" && lawka[0].wideo?.youtubeId === ID_FILMU
+  const kartaLawki = await api("/api/karta-cwiczenia?id=EX-0011");
+  sprawdz("Barbell bench press jest w bibliotece ćwiczeń — raz, jako EX-0011, z filmem OPEX jako pierwszym",
+    lawka.length === 1 && lawka[0].id === "EX-0011" && kartaLawki.filmy?.[0]?.youtubeId === ID_FILMU
       && lawka[0].nazwaPl === "Wyciskanie sztangi leżąc",
-    `${lawka.length}× ${lawka[0]?.id} · ${lawka[0]?.wideo?.zrodlo?.nazwa}`);
+    `${lawka.length}× ${lawka[0]?.id} · ${kartaLawki.filmy?.map((f: any) => `${f.rola}/${f.zrodlo.nazwa}`).join(", ")}`);
 
-  /** Plan z wyciskaniem (EX-0011) na A1 i hantlami (EX-0059, bez karty) — osobny na każde urządzenie. */
+  /** Plan z wyciskaniem (EX-0011) na A1 i rotacją z hantlem (EX-0062, bez karty) — osobny na każde urządzenie. */
   async function planZWyciskaniem(klient: string): Promise<{ sciezka: string; blad: string | null }> {
     await api("/api/plany", "POST", { klient, wersja: 1 });
     const id = (await api("/api/plany")).find((p: any) => p.klient === klient).id;
     const o = await api(`/api/plany/${id}`);
     const plan = o.zapisany.plan;
     plan.sloty[0].cwiczenieId = "EX-0011";
-    plan.sloty[1].cwiczenieId = "EX-0059";
+    plan.sloty[1].cwiczenieId = "EX-0062";
     plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
-      { cwiczenieId: "EX-0059", ciezar: 30, powtorzenia: 10 }];
+      { cwiczenieId: "EX-0062", ciezar: 6, powtorzenia: 12 }];
     const zapis = await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany", zmieniony: o.zapisany.zmieniony });
     const { sciezka } = await api(`/api/plany/${id}/link`, "POST");
     return { sciezka, blad: zapis.blad ?? null };
@@ -114,11 +115,17 @@ await zSerwerem(4241, async ({ adres, api }) => {
       const nowe: string[] = [];
       kontekst.on("page", (p: any) => nowe.push(p.url()));
       const bledy: string[] = [];
+      let zerwaniaSieci = 0;
       // Błędy z ramki YouTube (np. „writeEmbed is not defined”, gdy jej skrypt
       // nie doszedł przez sieć) to nie błędy aplikacji — poznać je po stosie.
+      // Tak samo „NetworkError” bez stosu: rzuca go odtwarzacz YouTube, gdy sieć
+      // tej maszyny zerwie mu pobieranie (bywa też na wersji sprzed bibliotek,
+      // raz na telefonie, raz na komputerze). Kod aplikacji zawsze ma stos.
       s.on("pageerror", (e: Error) => {
+        const stos = (e.stack ?? "").split("\n").slice(1).join(" ").trim();
+        if (e.name === "NetworkError" && !stos) { zerwaniaSieci++; return; }
         if (!/youtube|ytimg|google|gstatic/.test(e.stack ?? "") && !/writeEmbed/.test(String(e))) {
-          bledy.push(`${e} [${(e.stack ?? "").split("\n").slice(1, 3).join(" ").trim() || "bez stosu"}]`);
+          bledy.push(`${e} [${stos.split(" at ").slice(1, 3).join(" at ").trim() || "bez stosu"}]`);
         }
       });
       s.on("console", (m: any) => {
@@ -251,6 +258,23 @@ await zSerwerem(4241, async ({ adres, api }) => {
       sprawdz("film gra w aplikacji: adres strony bez zmian, żadnej nowej karty przeglądarki",
         s.url() === adresPrzed && nowe.length === 0, nowe.join(" "));
 
+      // Kilka nagrań (biblioteki ToM i Catalyst, 09.10.2026): przyciski nad
+      // filmem, przełączenie podmienia film w tej samej ramce.
+      const nagrania = await okno.locator(".karta-cw-nagrania button").allTextContents();
+      sprawdz("nad filmem przyciski nagrań: pokazy i poradniki",
+        nagrania.some((t) => t.startsWith("Pokaz")) && nagrania.some((t) => t.startsWith("Poradnik")), nagrania.join(" | "));
+      await okno.locator(".karta-cw-nagrania button", { hasText: /^Poradnik/ }).first().click();
+      await s.waitForTimeout(400);
+      const srcPoradnika = await okno.locator(".karta-cw-film iframe").getAttribute("src").catch(() => "") ?? "";
+      sprawdz("„Poradnik” podmienia film w tej samej karcie (jedna ramka, inny film, podpis źródła)",
+        await okno.locator(".karta-cw-film iframe").count() === 1 && !srcPoradnika.includes(ID_FILMU)
+          && /\/embed\/[\w-]{11}/.test(srcPoradnika) && (await okno.innerText()).includes("Film: "),
+        srcPoradnika.split("?")[0]);
+      await okno.locator(".karta-cw-nagrania button").first().click();
+      await s.waitForTimeout(300);
+      sprawdz("powrót do pierwszego pokazu — znowu film OPEX",
+        (await okno.locator(".karta-cw-film iframe").getAttribute("src").catch(() => "") ?? "").includes(ID_FILMU));
+
       // Zamknięcie i powrót do treningu.
       await okno.getByRole("button", { name: "Wróć do treningu" }).click();
       await s.waitForTimeout(300);
@@ -336,6 +360,7 @@ await zSerwerem(4241, async ({ adres, api }) => {
         await s.keyboard.press("Escape");
       }
 
+      if (zerwaniaSieci) console.log(`  … odtwarzacz YouTube zgłosił zerwanie sieci (${zerwaniaSieci}×) — sieć tej maszyny, nie aplikacja`);
       console.log(`  błędów aplikacji w przeglądarce: ${bledy.length ? bledy.join(" | ") : "brak"}`);
       doliczBledy(bledy.length);
       await kontekst.close();

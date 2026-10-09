@@ -236,7 +236,13 @@ button.mikro.wlaczony { color: var(--akcent); border-color: var(--akcent); font-
   background: var(--akcent-tlo); color: var(--akcent);
   font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .04em;
 }
-td.cwiczenie select { width: 100%; min-width: 12rem; }
+td.cwiczenie { white-space: nowrap; }
+td.cwiczenie select { width: calc(100% - 2.2rem); min-width: 12rem; }
+button.szukaj-cwiczenia {
+  width: 1.9rem; height: 1.9rem; margin-left: .3rem; padding: 0; vertical-align: middle;
+  border: 1px solid var(--linia); border-radius: 5px; background: var(--plaszczyzna);
+  font-size: .85rem; cursor: pointer;
+}
 td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
 td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
 td.ciezar { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
@@ -573,7 +579,7 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
   table.sloty { min-width: 0; font-size: .82rem; }
   table.sloty th, table.sloty td { padding: .35rem .25rem; }
   table.sloty td.cwiczenie { width: 99%; }
-  table.sloty td.cwiczenie select { min-width: 0; width: 100%; }
+  table.sloty td.cwiczenie select { min-width: 0; width: calc(100% - 2.2rem); }
   table.sloty td.liczba input { width: 2.4rem; }
   table.sloty td.ciezar input.pole-ciezaru { width: 3.2rem; }
   table.sloty.bieg { min-width: 0; }
@@ -673,3 +679,51 @@ td.ciezar .zrobione {
 .rozgrzewka-trenera .podpowiedz-pola { flex-basis: 100%; }
 .etykieta-rozgrzewki { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em;
   text-transform: uppercase; color: var(--tekst-blady); flex-basis: 100%; }
+
+/* ── wyszukiwarka ćwiczeń (09.10.2026, biblioteki filmów) ───────────── */
+body.wyszukiwarka-otwarta { overflow: hidden; }
+.wyszukiwarka-tlo {
+  position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .45);
+  display: flex; align-items: flex-start; justify-content: center; padding: 4vh 1rem 1rem;
+}
+.wyszukiwarka {
+  background: var(--plaszczyzna); border-radius: 10px; width: 100%; max-width: 46rem;
+  max-height: 92vh; display: flex; flex-direction: column; padding: 1rem 1.1rem .8rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+}
+.wyszukiwarka-gora { display: flex; align-items: center; justify-content: space-between; }
+.wyszukiwarka-gora h3 { margin: 0; font-size: 1rem; }
+.wyszukiwarka-x { border: none; background: var(--panel); color: var(--tekst); width: 2.2rem; height: 2.2rem; border-radius: 50%; cursor: pointer; }
+.wyszukiwarka-pole {
+  font: inherit; font-size: 1rem; margin-top: .7rem; padding: .6rem .75rem; border-radius: 7px;
+  border: 1px solid var(--linia-mocna); background: var(--tlo); color: var(--tekst); width: 100%;
+}
+.wyszukiwarka-filtry { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .55rem; font-size: .85rem; }
+.wyszukiwarka-filtry select { font: inherit; font-size: .85rem; }
+.wyszukiwarka-bez { display: inline-flex; align-items: center; gap: .3rem; color: var(--tekst-slaby); }
+.wyszukiwarka-licznik { margin: .55rem 0 .3rem; font-size: .8rem; color: var(--tekst-blady); }
+.wyszukiwarka-lista { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 8rem; border-top: 1px solid var(--linia); }
+.wyszukiwarka-wynik {
+  display: flex; align-items: center; gap: .6rem; padding: .5rem .4rem; cursor: pointer;
+  border-bottom: 1px solid var(--linia);
+}
+.wyszukiwarka-wynik:hover, .wyszukiwarka-wynik[aria-selected="true"] { background: var(--akcent-tlo); }
+.wyszukiwarka-wynik.obecne .wyszukiwarka-nazwa { color: var(--akcent); }
+.wyszukiwarka-opis { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wyszukiwarka-nazwa { font-weight: 600; font-size: .92rem; }
+.wyszukiwarka-meta { font-size: .76rem; color: var(--tekst-blady); }
+.wyszukiwarka-weryfikacja {
+  align-self: flex-start; margin-top: .2rem; padding: 0 .3rem; border-radius: 3px;
+  background: var(--uwaga-tlo); color: var(--uwaga); font-size: .7rem;
+}
+.wyszukiwarka-film {
+  flex: none; border: 1px solid var(--linia); background: var(--plaszczyzna); color: var(--akcent);
+  border-radius: 6px; padding: .3rem .55rem; font: inherit; font-size: .82rem; cursor: pointer; min-height: 2.1rem;
+}
+.wyszukiwarka-wiecej { margin-top: .5rem; align-self: center; font: inherit; font-size: .85rem; }
+/* Karta ćwiczenia z aplikacji klienta (podgląd filmów) — jej kolory z tokenów konsoli. */
+.karta-cw-tlo {
+  --karta: var(--plaszczyzna); --karta-2: var(--panel);
+}
+.karta-cw .glowny { font: inherit; padding: .6rem 1rem; border-radius: 7px; border: none;
+  background: var(--akcent); color: #fff; width: 100%; cursor: pointer; }

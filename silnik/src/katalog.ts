@@ -7,8 +7,15 @@ export class Katalog {
   #poId = new Map<string, Cwiczenie>();
   #poNazwie = new Map<string, Cwiczenie>();
 
+  /**
+   * BAZA trenera — arkusz 5.17 i jego dopiski, bez ćwiczeń z bibliotek filmów
+   * (import 09.10.2026). Na niej stoją kontrole zgodne z arkuszem i generator.
+   */
+  readonly bazaTrenera: readonly Cwiczenie[];
+
   constructor(cwiczenia: readonly Cwiczenie[] = BAZA_CWICZEN) {
     this.wszystkie = cwiczenia;
+    this.bazaTrenera = cwiczenia.filter((c) => !c.biblioteka);
     for (const c of cwiczenia) {
       this.#poId.set(c.id, c);
       this.#poNazwie.set(c.nazwa.toLocaleLowerCase("pl"), c);

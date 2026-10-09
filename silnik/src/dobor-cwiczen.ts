@@ -22,7 +22,10 @@
  * dwa razy w jednym dniu; bój na A może wrócić w innym dniu (przysiad
  * 2× w tygodniu), akcesoria nie powtarzają się w całym planie, dopóki
  * kategoria ma coś innego. Ćwiczenia „DO WERYFIKACJI” są pomijane — ręcznie
- * dalej da się je wybrać.
+ * dalej da się je wybrać. Tak samo ćwiczenia z bibliotek filmów (import
+ * 09.10.2026, kilka tysięcy wariantów): generator losuje tylko z BAZY
+ * trenera, żeby do planu nie trafiały przypadkowe warianty; w planie trener
+ * wstawia je ręcznie.
  *
  * To nie jest AI: losowanie wśród ćwiczeń spełniających regułę. Serii,
  * powtórzeń, RPE i ciężarów nie dotyka — te liczy silnik jak zawsze.
@@ -113,7 +116,7 @@ export function dobierzCwiczenia(
   for (const s of sloty) {
     if (!doLosowania(s)) continue;
     const zKategorii = katalog.wKategorii(s.kategoriaSzkieletu)
-      .filter((c) => !c.uwagi?.startsWith("DO WERYFIKACJI"));
+      .filter((c) => !c.biblioteka && !c.uwagi?.startsWith("DO WERYFIKACJI"));
     const dzis = wDniu.get(s.dzien) ?? new Set<string>();
     // Nigdy dwa razy w jednym dniu. Bój na A może wrócić w innym dniu;
     // reszta najpierw spośród jeszcze niewybranych.
