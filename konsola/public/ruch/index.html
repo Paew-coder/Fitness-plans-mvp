@@ -39,10 +39,15 @@
       <label class="przycisk glowny" for="plik-wideo">Wgraj wideo</label>
       <input id="plik-wideo" type="file" accept="video/*" class="ukryty-plik">
       <button id="nagraj" type="button">Nagraj kamerą</button>
-      <label class="przycisk" for="plik-analizy">Wczytaj analizę (.json)</label>
-      <input id="plik-analizy" type="file" accept=".json,application/json" class="ukryty-plik">
+      <label class="przycisk" for="plik-analizy">Otwórz zapisaną analizę</label>
+      <input id="plik-analizy" type="file" accept=".json,application/json,video/*" class="ukryty-plik">
       <button id="analizuj-ponownie" type="button" class="ukryty">Analizuj ponownie</button>
     </div>
+    <p class="wskazowka">
+      Film — każdy, który odtwarza ta przeglądarka: z aparatu, z galerii, nagranie ekranu.
+      Zapisana analiza to plik .json, który pobierasz po analizie przyciskiem „Pobierz analizę”:
+      otwiera wyniki (punkty, kąty, sugestie) bez ponownego liczenia.
+    </p>
     <p class="wskazowka" id="wskazowka-ujecia"></p>
     <p class="wskazowka">
       Film nie wychodzi z tego urządzenia — sylwetkę liczy przeglądarka.

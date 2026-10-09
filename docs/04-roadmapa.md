@@ -742,6 +742,7 @@ Trener: „moduł analizy ruchu: nagrać kamerą albo wgrać wideo, MediaPipe kl
 * Kąty kliniczne 2D/3D z pewnością i rozpoznaniem ujęcia (z boku / z przodu / skos) — kąt niewidoczny z danego ujęcia oznaczony „?” z powodem. Przysiad: powtórzenia, czasy, największe zgięcia, głębokość, kolana względem stóp.
 * MediaPipe przypięte na 0.10.35: od 1.0 biblioteka wysyła do Google statystyki użycia (wymagałoby zgody klientów). Przegląd ruchu blokuje i zgłasza każde połączenie poza bibliotekę i model — z 1.0.1 robi się czerwony.
 * `npm run przeglad-ruchu`: 50 kontroli na prawdziwych filmach (przód, bok, kamera); opis i dalsze kroki w `docs/06-analiza-ruchu.md`. Do decyzji trenera: zapis analiz w bazie przy kliencie.
+* 09.10.2026, trener: „co to jest to .json? próbowałem nagranie ekranu i się nie da” — przycisk przyjmował tylko JSON, więc film był wyszarzony. Teraz „Otwórz zapisaną analizę” z wyjaśnieniem pod przyciskami (plik .json z „Pobierz analizę”), a oba przyciski przyjmują i film, i zapis — film idzie do analizy, zapis na ekran.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 

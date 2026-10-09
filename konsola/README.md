@@ -321,8 +321,9 @@ w przeglądarce — film nie wychodzi z urządzenia.
   dotknij obrazu. ● obecna → ○ sugerowana, z wyliczeniem, jak to zmienia
   kąty, i notatką.
 - **Zapis**: JSON (wszystkie 33 punkty w każdej klatce, z czasem i sugestiami)
-  i CSV do arkusza. JSON wczytuje się z powrotem — także bez filmu (sam
-  szkielet), film można dołączyć później.
+  i CSV do arkusza. JSON otwiera się z powrotem przyciskiem **Otwórz zapisaną
+  analizę** — także bez filmu (sam szkielet), film można dołączyć później.
+  Oba przyciski przyjmują i film (także nagranie ekranu), i zapis.
 
 Szczegóły, format danych i plan dalszych kroków: [`docs/06-analiza-ruchu.md`](../docs/06-analiza-ruchu.md).
 Przegląd na prawdziwym filmie: `npm run przeglad-ruchu` (opis w pliku).
