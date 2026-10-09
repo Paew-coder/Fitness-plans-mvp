@@ -99,23 +99,35 @@ pokazUjecie();
 
 let ostatniPlik = null;
 
-$("#plik-wideo").addEventListener("change", async (e) => {
-  const plik = e.target.files?.[0];
-  e.target.value = "";
-  if (!plik) return;
+/**
+ * Plik z którejkolwiek z dwóch kontrolek: film idzie do analizy, zapisana
+ * analiza (.json) — na ekran. Trener, 09.10.2026: wybrał nagranie ekranu
+ * przyciskiem „Wczytaj analizę (.json)” i „się nie da” — przycisk przyjmował
+ * tylko JSON, więc film był wyszarzony. Teraz żadna droga nie jest ślepa.
+ */
+const zapisAnalizy = (plik) => /\.json$/i.test(plik.name) || /json/.test(plik.type);
+
+async function otworzPlik(plik) {
+  if (zapisAnalizy(plik)) return otworzZapis(plik);
   ostatniPlik = plik;
   if (await zaladujWideo(plik)) await analizuj(plik.name);
-});
+}
+
+for (const pole of ["#plik-wideo", "#plik-analizy"]) {
+  $(pole).addEventListener("change", async (e) => {
+    const plik = e.target.files?.[0];
+    e.target.value = "";
+    if (plik) await otworzPlik(plik);
+  });
+}
 
 $("#analizuj-ponownie").addEventListener("click", async () => {
   if (!stan.maWideo) return;
   await analizuj(stan.sesja?.wideo.nazwa ?? ostatniPlik?.name ?? "nagranie");
 });
 
-$("#plik-analizy").addEventListener("change", async (e) => {
-  const plik = e.target.files?.[0];
-  e.target.value = "";
-  if (!plik) return;
+/** Zapisana wcześniej analiza (.json z „Pobierz analizę”) — bez ponownego liczenia. */
+async function otworzZapis(plik) {
   try {
     const sesja = zJSON(await plik.text());
     zatrzymaj();
@@ -128,7 +140,7 @@ $("#plik-analizy").addEventListener("change", async (e) => {
   } catch (blad) {
     komunikat(blad instanceof BladSesji ? blad.message : `Nie udało się wczytać pliku: ${blad.message}`);
   }
-});
+}
 
 $("#plik-dolacz").addEventListener("change", async (e) => {
   const plik = e.target.files?.[0];
