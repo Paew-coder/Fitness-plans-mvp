@@ -784,6 +784,14 @@ Trener (zrzut z iPada, właśnie dodane „Overhead Split Squat”): „chciałb
 * Cofnięcie nigdy nie zabiera wpisów klienta: oceny, jego ciężary i TOP SETY zostają z bieżącego planu; gdy klient wpisał coś w międzyczasie, zapis i tak przechodzi przez scalanie (409 → przejęcie wpisów klienta).
 * Przegląd ekranów (13c): dodanie → ⌘Z → pusto, ⇧⌘Z → wraca, przycisk „Cofnij”, ▼ i cofnięcie, liczba serii, plan w bazie identyczny jak przed, ocena klienta wpisana w międzyczasie zostaje.
 
+**54. Backspace usuwa ćwiczenie albo kategorię; fokus przez przerysowanie tabeli — 10.10.2026.**
+
+Trener: „cofnij działa, ale potrzebuję usuwania danego ćwiczenia klawiszem backspace — możliwość usunięcia nazwy ćwiczenia albo nazwy kategorii”.
+
+* **Backspace / Delete** na liście ćwiczenia czyści wiersz (jak „— wybierz —”), na liście kategorii — wraca do „— pełna baza —”. Każde to krok do cofnięcia (⌘Z), z opisem „C1 · usunięte ćwiczenie” / „C1 · bez kategorii”. Przy ćwiczeniu, które klient już robił, konsola jak dotąd pyta, od którego tygodnia je zdjąć. Podpowiedź w legendzie nad tabelą.
+* Po zapisie tabela rysuje się od nowa i fokus ginął — po Backspace nie dało się od razu wybrać innego ćwiczenia z klawiatury, a Tab między polami gubił się w połowie. Teraz fokus wraca na to samo pole w tym samym wierszu (wiersz po `positionId`, komórka, pole), z kursorem w tym samym miejscu.
+* Przegląd ekranów (13c): Backspace na ćwiczeniu (zapisane, fokus zostaje), ⌘Z przywraca, Backspace na kategorii, cofanie po kolei do stanu wyjścia, Tab po zapisie.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
