@@ -38,7 +38,7 @@ import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
-import { filmyCwiczenia, kartaCwiczenia } from "../silnik/src/wideo.ts";
+import { filmyCwiczenia, idZLinkuYoutube, kartaCwiczenia, kartaPodgladu } from "../silnik/src/wideo.ts";
 import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
@@ -170,16 +170,22 @@ function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
      * i siedzi w silniku (`top-set.ts`) — przeglądarka nie ma jej powtarzać
      * u siebie, bo wtedy byłyby dwie listy i jedna z nich by się rozjechała.
      */
-    const tresc = Buffer.from(JSON.stringify(katalog.wszystkie.map((c) => ({
-      ...c,
-      zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
-      // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
-      // i przestawia przy nich „G” między progresją pauzowaną a bojem.
-      pauza: PAUZOWANE[c.id] ?? null,
-      // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
-      // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
-      filmow: filmyCwiczenia(c.id).length,
-    }))));
+    const tresc = Buffer.from(JSON.stringify(katalog.wszystkie.map((c) => {
+      const filmow = filmyCwiczenia(c.id).length;
+      return {
+        ...c,
+        zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
+        // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
+        // i przestawia przy nich „G” między progresją pauzowaną a bojem.
+        pauza: PAUZOWANE[c.id] ?? null,
+        // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
+        // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
+        filmow,
+        // Ćwiczenie BAZY bez wpisu w filmach, ale z linkiem YouTube w arkuszu —
+        // konsola i tak pokaże go w podglądzie (`kartaPodgladu`).
+        ...(filmow === 0 && idZLinkuYoutube(c.film) ? { filmZArkusza: true } : {}),
+      };
+    })));
     listaCwiczen = { tresc, gzip: gzipSync(tresc) };
   }
   const gzip = /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));
@@ -1295,7 +1301,7 @@ const serwer = createServer(async (req, res) => {
     if (sciezka === "/api/karta-cwiczenia" && req.method === "GET") {
       const c = katalog.poId(url.searchParams.get("id") ?? "");
       if (!c) return blad(res, "Nie ma takiego ćwiczenia", 404);
-      return json(res, kartaCwiczenia(c));
+      return json(res, kartaPodgladu(c));
     }
 
     // ── szablony planów z Base44 ─────────────────────────────────────

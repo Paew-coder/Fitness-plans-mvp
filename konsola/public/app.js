@@ -5,7 +5,7 @@
  * i zbieranie zmian: po każdej edycji plan leci do zapisu, wraca przeliczony
  * i odrysowujemy analizę. Dokładnie tak, jak arkusz przelicza się sam.
  */
-import { otworzWyszukiwarke } from "./wybor-cwiczenia.js";
+import { opisFilmow, otworzWyszukiwarke, podgladFilmow } from "./wybor-cwiczenia.js";
 
 const KATEGORIE = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
@@ -1834,7 +1834,27 @@ function rysujSlot(slot, pusty) {
   lupa.title = "Szukaj ćwiczenia w całej bazie i w bibliotekach filmów";
   lupa.setAttribute("aria-label", "Szukaj ćwiczenia");
   lupa.onclick = szukaj;
-  komorkaCwiczenia.append(wybor, lupa);
+  // ▶ — filmy wybranego ćwiczenia jednym dotknięciem (trener, 10.10.2026:
+  // „szybsza możliwość zobaczenia, jakie filmy są załączone do wybranych
+  // ćwiczeń”). Liczba = ile nagrań w karcie; bez filmu przycisk jest
+  // wyszarzony, w pustym wierszu niewidoczny — kolumna się nie przesuwa.
+  const wybrane = cwiczenie(slot.cwiczenieId);
+  const filmy = opisFilmow(wybrane);
+  const film = el("button", "filmy-cwiczenia", filmy?.etykieta ?? "▶");
+  film.type = "button";
+  if (filmy) {
+    film.title = filmy.tytul;
+    film.setAttribute("aria-label", `${filmy.tytul}: ${wybrane.nazwa}`);
+    film.onclick = () => podgladFilmow(wybrane.id, film, api);
+  } else {
+    film.disabled = true;
+    film.title = wybrane ? "To ćwiczenie nie ma filmu" : "";
+    if (!wybrane) film.classList.add("pusty");
+    film.setAttribute("aria-label", wybrane ? "Brak filmu" : "Najpierw wybierz ćwiczenie");
+  }
+  const rzad = el("div", "wybor-cwiczenia");
+  rzad.append(wybor, lupa, film);
+  komorkaCwiczenia.append(rzad);
   wiersz.append(komorkaCwiczenia);
 
   // ── kategoria szkieletu ──
