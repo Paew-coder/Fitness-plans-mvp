@@ -330,6 +330,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         czesc: plan.czescPlanu,
         tydzien,
         korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
+        // Masa ciała: T1–T6 bez restartu w T4 (trener, 10.10.2026).
+        przezCalyCykl: cwiczenie.progresja === "masa ciała",
       });
 
     const zmienione = cwiczenieIdOverride !== undefined && cwiczenieIdOverride !== slot.cwiczenieId;

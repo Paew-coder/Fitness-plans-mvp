@@ -28,17 +28,35 @@ export function powtorzeniaBazowe(coeff: Coeff, czesc: CzescPlanu): number {
 }
 
 /**
+ * Przesunięcie powtórzeń przez cały cykl — dla ćwiczeń z masą ciała.
+ *
+ * Trener, 10.10.2026: „glute crusher na tygodnie 1–3 ma progresję 10–12
+ * powtórzeń, bo jest z masą ciała, ale na tygodnie 4–6 znowu ma 10–12, co jest
+ * bez sensu, bo ktoś powtarza to samo. W tego typu ćwiczeniu powinno być od T1
+ * do T6 10–15 powtórzeń”. Restart w T4 ma sens przy ciężarze: blok II podnosi
+ * RPE, czyli kilogramy. Przy masie ciała nie ma czego dociążyć — rosnąć mogą
+ * tylko powtórzenia, więc rosną przez cały cykl. Deload (T7) jak T6.
+ */
+export function offsetCyklu(tydzien: Tydzien): number {
+  return Math.min(tydzien, 6) - 1;
+}
+
+/**
  * Pełny automat powtórzeń akcesorium (kolumna E w arkuszu):
- * baza z coeff, plus przesunięcie tygodnia w bloku, plus korekta z odczuć
- * (tylko dla progresji bezciężarowych), obcięte do zakresu tabeli 1–15.
+ * baza z coeff, plus przesunięcie tygodnia w bloku (przy masie ciała — w całym
+ * cyklu, `offsetCyklu`), plus korekta z odczuć (tylko dla progresji
+ * bezciężarowych), obcięte do zakresu tabeli 1–15.
  */
 export function powtorzeniaAkcesorium(args: {
   coeff: Coeff;
   czesc: CzescPlanu;
   tydzien: Tydzien;
   korekta?: number;
+  /** Ćwiczenie z masą ciała: powtórzenia rosną T1→T6 bez restartu w T4. */
+  przezCalyCykl?: boolean;
 }): number {
-  const { coeff, czesc, tydzien, korekta = 0 } = args;
+  const { coeff, czesc, tydzien, korekta = 0, przezCalyCykl = false } = args;
   const baza = powtorzeniaBazowe(coeff, czesc);
-  return ogranicz(baza + offsetTygodnia(tydzien) + korekta, POWT_MIN, POWT_MAX);
+  const przesuniecie = przezCalyCykl ? offsetCyklu(tydzien) : offsetTygodnia(tydzien);
+  return ogranicz(baza + przesuniecie + korekta, POWT_MIN, POWT_MAX);
 }
