@@ -130,6 +130,12 @@
 </div>
 
 <div id="ekran-plan" class="ekran ukryty">
+  <!-- Cofanie zmian w planie (10.10.2026): zawsze w zasięgu ręki, także przy
+       przewiniętym planie na iPadzie; ⌘Z / Ctrl+Z robi to samo. -->
+  <div id="cofanie" class="cofanie" hidden>
+    <button type="button" id="cofnij"><span aria-hidden="true">↶</span> Cofnij <span id="cofnij-opis" class="cofnij-opis"></span></button>
+    <button type="button" id="ponow" hidden><span aria-hidden="true">↷</span> Ponów</button>
+  </div>
   <header class="naglowek-planu">
     <button class="link" id="wroc">← klient</button>
     <div class="tytul-planu">

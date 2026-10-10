@@ -296,6 +296,15 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
+## Cofanie zmian w planie (od 10.10.2026)
+
+**↶ Cofnij** w prawym dolnym rogu planu albo **⌘Z / Ctrl+Z** cofa ostatnią zmianę
+(np. „B2 · Overhead Split Squat”), **↷ Ponów** / **⇧⌘Z / Ctrl+Y** ją przywraca —
+do 50 kroków, w obrębie otwartego planu. Cofa zmiany z tabeli i to, co robi
+serwer (tygodnie, szablon, losowanie, asystent, 1RM, status); ▲▼ — przestawieniem
+z powrotem. Wpisy klienta (oceny, jego ciężary) zostają zawsze. W polu tekstowym
+⌘Z cofa samo pole, jak w każdej przeglądarce.
+
 ## Biblioteki ćwiczeń z filmami (od 09.10.2026)
 
 Poza BAZĄ trenera (166) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
