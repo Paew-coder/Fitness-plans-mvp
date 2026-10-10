@@ -1,0 +1,142 @@
+/* Analiza ruchu — dokłada się do /style.css konsoli (te same kolory i tryb ciemny). */
+
+:root {
+  /* Kolory serii wykresu: kategoryczne 1–4, osobno na jasne i ciemne tło. */
+  --seria-1: #2a78d6;
+  --seria-2: #eb6834;
+  --seria-3: #1baf7a;
+  --seria-4: #eda100;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --seria-1: #3987e5;
+    --seria-2: #d95926;
+    --seria-3: #199e70;
+    --seria-4: #c98500;
+  }
+}
+
+.naglowek-ruchu { display: flex; gap: 1.2rem; align-items: flex-start; margin-bottom: 1.2rem; }
+.link-wroc { color: var(--tekst-slaby); text-decoration: none; padding-top: .3rem; white-space: nowrap; }
+.link-wroc:hover { color: var(--akcent); }
+
+.rzad-zrodla { display: flex; gap: .8rem; align-items: flex-end; flex-wrap: wrap; }
+.rzad-zrodla select { max-width: 100%; }
+.rzad-zrodla label { max-width: 100%; }
+.przyciski-zrodla { margin-top: 1rem; }
+
+/* Etykieta pliku wygląda jak przycisk — iPad otwiera z niej aparat albo bibliotekę. */
+label.przycisk {
+  display: inline-block; font: inherit; font-family: var(--sans); font-size: inherit;
+  text-transform: none; letter-spacing: normal; cursor: pointer;
+  border-radius: 4px; border: 1px solid var(--linia-mocna); background: var(--plaszczyzna);
+  color: var(--tekst); padding: .42rem .85rem;
+}
+label.przycisk.glowny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+@media (hover: hover) {
+  label.przycisk:hover { border-color: var(--akcent); color: var(--akcent); }
+  label.przycisk.glowny:hover { filter: brightness(1.1); color: #fff; }
+}
+/* Pole pliku zostaje w dokumencie (Safari nie otworzy wyboru z `display: none`),
+   tylko niewidoczne. */
+.ukryty-plik { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.komunikat { margin: .9rem 0 0; padding: .6rem .8rem; border-radius: 4px;
+             background: var(--zle-tlo); color: var(--zle); font-size: .88rem; }
+.komunikat.informacja { background: var(--akcent-tlo); color: var(--akcent); }
+
+/* ── nagrywanie ─────────────────────────────────────────────────── */
+.scena-kamery { background: #000; border-radius: 6px; overflow: hidden; margin-bottom: .9rem;
+                max-width: 900px; }
+.scena-kamery video { display: block; width: 100%; max-height: 60vh; object-fit: contain; }
+.czas-nagrania { font-family: var(--mono); color: var(--zle); align-self: center; }
+
+/* ── postęp ─────────────────────────────────────────────────────── */
+#panel-postepu progress { width: 100%; height: .7rem; accent-color: var(--akcent); }
+#panel-postepu p { margin: 0 0 .6rem; }
+
+/* ── widok analizy ──────────────────────────────────────────────── */
+.podsumowanie-analizy { margin: 0 0 .8rem; color: var(--tekst-slaby); font-size: .88rem; }
+.uklad-analizy { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 1.2rem; align-items: start; }
+.kolumna-glowna, .kolumna-boczna { min-width: 0; }
+@media (max-width: 1050px) { .uklad-analizy { grid-template-columns: minmax(0, 1fr); } }
+
+.scena { position: relative; background: #000; border-radius: 6px; overflow: hidden;
+         width: 100%; margin: 0 auto; }
+.scena video, .scena canvas, .scena .bez-filmu { position: absolute; inset: 0; width: 100%; height: 100%; }
+.scena video { object-fit: fill; }
+.scena canvas { touch-action: manipulation; cursor: crosshair; }
+.scena.tryb-sugestii canvas { touch-action: none; }
+.bez-filmu { display: flex; align-items: flex-end; justify-content: center; padding: .8rem;
+             color: #969DB1; font-size: .8rem; background: #0F1117; }
+
+.sterowanie { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: .7rem 0 .4rem; }
+.sterowanie button { min-width: 2.8rem; min-height: 2.4rem; }
+.sterowanie input[type="range"] { flex: 1 1 200px; accent-color: var(--akcent); min-height: 2rem; }
+.czas { font-family: var(--mono); font-size: .8rem; color: var(--tekst-slaby); white-space: nowrap; }
+
+.przelaczniki { display: flex; gap: .4rem 1.1rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.2rem; }
+.przelaczniki label { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);
+                      text-transform: none; letter-spacing: normal; font-size: .86rem; color: var(--tekst-slaby); }
+.przelaczniki input[type="checkbox"], .wybor-trajektorii input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--akcent); }
+
+/* ── tabele ─────────────────────────────────────────────────────── */
+.przewijana { overflow-x: auto; }
+.przewijana-punkty { max-height: 26rem; overflow-y: auto; }
+table.tabela { width: 100%; border-collapse: collapse; font-size: .84rem; }
+table.tabela th {
+  font-family: var(--mono); font-size: .64rem; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--tekst-blady); font-weight: 500; text-align: left; padding: .35rem .45rem;
+  border-bottom: 1px solid var(--linia); white-space: nowrap;
+}
+table.tabela td { padding: .3rem .45rem; border-bottom: 1px solid var(--linia); vertical-align: top; }
+table.tabela tr:last-child td { border-bottom: none; }
+table.tabela td.liczba, table.tabela th.liczba { text-align: right; font-family: var(--mono); white-space: nowrap; }
+table.tabela .niepewny { color: var(--tekst-blady); }
+table.tabela .opis-kata { display: block; font-size: .72rem; color: var(--tekst-blady); }
+table.tabela tr.klikalny { cursor: pointer; }
+table.tabela tr.wybrany td { background: var(--akcent-tlo); }
+@media (hover: hover) { table.tabela tr.klikalny:hover td { background: var(--panel); } }
+.znak-strony { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .35rem; vertical-align: .05rem; }
+.kolumna-boczna h3 { margin-top: 1.1rem; }
+.kolumna-boczna h3:first-of-type { margin-top: 0; }
+
+/* ── wykres ─────────────────────────────────────────────────────── */
+.legenda-ruchu { display: flex; gap: .3rem 1rem; flex-wrap: wrap; font-size: .82rem; color: var(--tekst-slaby); margin-bottom: .4rem; }
+.pozycja-legendy { white-space: nowrap; }
+.znak-serii { display: inline-block; width: .9rem; height: 2px; margin-right: .35rem; vertical-align: .25rem; border-radius: 1px; }
+.wykres { position: relative; min-width: 0; }
+.wykres-svg { display: block; width: 100%; height: auto; touch-action: pan-y; cursor: pointer; }
+.wykres-linia { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.wykres-siatka { stroke: var(--linia); stroke-width: 1; }
+.wykres-zero { stroke: var(--linia-mocna); stroke-width: 1; }
+.wykres-opis { fill: var(--tekst-blady); font-size: 11px; font-family: var(--mono); }
+.wykres-podpis { fill: var(--tekst-slaby); font-size: 11px; }
+.wykres-powtorzenie { fill: var(--akcent-tlo); opacity: .55; }
+.wykres-kursor { stroke: var(--akcent); stroke-width: 2; }
+.wykres-celownik { stroke: var(--tekst-blady); stroke-width: 1; stroke-dasharray: 3 3; }
+.wykres-podpowiedz {
+  position: absolute; top: 0; pointer-events: none; z-index: 2;
+  background: var(--plaszczyzna); border: 1px solid var(--linia-mocna); border-radius: 4px;
+  padding: .4rem .55rem; font-size: .78rem; color: var(--tekst); box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  white-space: nowrap;
+}
+.wykres-podpowiedz-czas { font-family: var(--mono); color: var(--tekst-blady); font-size: .7rem; margin-bottom: .15rem; }
+
+/* ── trajektorie i sugestie ─────────────────────────────────────── */
+.wybor-trajektorii { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin: .7rem 0 .8rem; }
+.wybor-trajektorii label { flex-direction: row; align-items: center; gap: .35rem; font-family: var(--sans);
+                           text-transform: none; letter-spacing: normal; font-size: .85rem; color: var(--tekst-slaby); }
+.sugestia { border: 1px solid var(--linia); border-radius: 4px; padding: .55rem .65rem; margin-top: .7rem; font-size: .85rem; }
+.sugestia .naglowek-sugestii { display: flex; justify-content: space-between; gap: .5rem; align-items: center; font-weight: 600; }
+.sugestia ul { margin: .4rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); }
+.sugestia input { width: 100%; margin-top: .45rem; font-size: .84rem; }
+.sugestia-wiersz { display: flex; justify-content: space-between; gap: .5rem; align-items: center; font-size: .84rem;
+                   padding: .25rem 0; border-bottom: 1px solid var(--linia); }
+#zaznacz-sugestie.aktywny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+
+@media (max-width: 760px) {
+  .ekran-ruchu { padding: 1rem; }
+  .naglowek-ruchu { flex-direction: column; gap: .4rem; }
+  .panel { padding: .9rem; }
+}

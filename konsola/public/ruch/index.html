@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analiza ruchu — CraftMyPlan</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/ruch/ruch.css">
+</head>
+<body>
+
+<div class="ekran ekran-ruchu">
+  <header class="naglowek-ruchu">
+    <a class="link-wroc" href="/">← konsola</a>
+    <div>
+      <h1>Analiza ruchu</h1>
+      <p class="podtytul">Film z kamery albo z pliku → sylwetka MediaPipe klatka po klatce → kąty, trajektorie, zatrzymana klatka.</p>
+    </div>
+  </header>
+
+  <section class="panel" id="panel-zrodla">
+    <div class="rzad-zrodla">
+      <label>Ćwiczenie
+        <select id="cwiczenie"></select>
+      </label>
+      <label>Model
+        <select id="model"></select>
+      </label>
+      <label>Klatki
+        <select id="gestosc">
+          <option value="0" selected>każda klatka filmu</option>
+          <option value="30">najwyżej 30 na sekundę</option>
+          <option value="15">najwyżej 15 na sekundę (szybciej)</option>
+        </select>
+      </label>
+    </div>
+    <div class="rzad-zrodla przyciski-zrodla">
+      <label class="przycisk glowny" for="plik-wideo">Wgraj wideo</label>
+      <input id="plik-wideo" type="file" accept="video/*" class="ukryty-plik">
+      <button id="nagraj" type="button">Nagraj kamerą</button>
+      <label class="przycisk" for="plik-analizy">Otwórz zapisaną analizę</label>
+      <input id="plik-analizy" type="file" accept=".json,application/json,video/*" class="ukryty-plik">
+      <button id="analizuj-ponownie" type="button" class="ukryty">Analizuj ponownie</button>
+    </div>
+    <p class="wskazowka">
+      Film — każdy, który odtwarza ta przeglądarka: z aparatu, z galerii, nagranie ekranu.
+      Zapisana analiza to plik .json, który pobierasz po analizie przyciskiem „Pobierz analizę”:
+      otwiera wyniki (punkty, kąty, sugestie) bez ponownego liczenia.
+    </p>
+    <p class="wskazowka" id="wskazowka-ujecia"></p>
+    <p class="wskazowka">
+      Film nie wychodzi z tego urządzenia — sylwetkę liczy przeglądarka.
+      Z internetu pobiera się tylko model MediaPipe, raz.
+    </p>
+    <p class="komunikat ukryty" id="komunikat" role="alert"></p>
+  </section>
+
+  <section class="panel ukryty" id="panel-nagrywania">
+    <div class="scena-kamery"><video id="podglad-kamery" playsinline muted autoplay></video></div>
+    <div class="rzad-zrodla">
+      <button id="start-nagrywania" type="button" class="glowny">● Nagrywaj</button>
+      <button id="stop-nagrywania" type="button" class="glowny ukryty">■ Zatrzymaj i analizuj</button>
+      <button id="zmien-kamere" type="button">Przełącz kamerę</button>
+      <button id="anuluj-nagrywanie" type="button" class="link">Anuluj</button>
+      <span id="czas-nagrania" class="czas-nagrania"></span>
+    </div>
+  </section>
+
+  <section class="panel ukryty" id="panel-postepu">
+    <p id="opis-postepu">Wczytuję model…</p>
+    <progress id="pasek-postepu" max="1" value="0"></progress>
+    <button id="przerwij" type="button" class="link">Przerwij</button>
+  </section>
+
+  <div class="ukryty" id="widok-analizy">
+    <p class="podsumowanie-analizy" id="info-analizy"></p>
+    <div class="uklad-analizy">
+      <div class="kolumna-glowna">
+        <div class="scena" id="scena">
+          <video id="wideo" playsinline muted preload="auto"></video>
+          <div class="bez-filmu ukryty" id="bez-filmu">Bez filmu — sam szkielet z zapisanej analizy</div>
+          <canvas id="nakladka"></canvas>
+        </div>
+        <div class="sterowanie">
+          <button id="klatka-wstecz" type="button" title="Poprzednia klatka (←)" aria-label="Poprzednia klatka">◀︎ klatka</button>
+          <button id="odtworz" type="button" class="glowny" aria-label="Odtwórz">▶︎</button>
+          <button id="klatka-dalej" type="button" title="Następna klatka (→)" aria-label="Następna klatka">klatka ▶︎</button>
+          <input id="suwak" type="range" min="0" max="0" value="0" aria-label="Klatka">
+          <span id="czas" class="czas">—</span>
+          <select id="tempo" aria-label="Tempo odtwarzania">
+            <option value="0.25">0,25×</option>
+            <option value="0.5" selected>0,5×</option>
+            <option value="1">1×</option>
+          </select>
+        </div>
+        <div class="przelaczniki">
+          <label><input type="checkbox" id="pokaz-katy" checked> kąty na obrazie</label>
+          <label><input type="checkbox" id="pokaz-trajektorie" checked> trajektorie</label>
+          <label><input type="checkbox" id="wszystkie-punkty"> wszystkie 33 punkty</label>
+          <label>Kąty
+            <select id="uklad">
+              <option value="2d" selected>2D — obraz</option>
+              <option value="3d">3D — model</option>
+            </select>
+          </label>
+          <label>Strona ciała
+            <select id="strona">
+              <option value="auto" selected>bliżej kamery</option>
+              <option value="L">lewa</option>
+              <option value="P">prawa</option>
+            </select>
+          </label>
+        </div>
+
+        <section class="panel">
+          <h2>Kąty w czasie</h2>
+          <div class="legenda-ruchu" id="legenda"></div>
+          <div class="wykres" id="wykres"></div>
+        </section>
+
+        <section class="panel ukryty" id="panel-powtorzen">
+          <h2>Powtórzenia</h2>
+          <div class="przewijana"><table class="tabela" id="tabela-powtorzen"></table></div>
+          <p class="wskazowka" id="opis-powtorzen"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Trajektorie</h2>
+          <p class="wskazowka">Do czterech punktów naraz. Droga punktu w całym nagraniu — blado; do bieżącej klatki — pełnym kolorem.</p>
+          <div class="wybor-trajektorii" id="wybor-trajektorii"></div>
+          <div class="przewijana"><table class="tabela" id="tabela-trajektorii"></table></div>
+        </section>
+      </div>
+
+      <aside class="kolumna-boczna">
+        <section class="panel">
+          <h2 id="tytul-klatki">Klatka</h2>
+          <h3>Kąty</h3>
+          <table class="tabela tabela-katow" id="tabela-katow"></table>
+          <h3>Punkty</h3>
+          <p class="wskazowka">Dotknij punktu na obrazie albo wiersza, żeby go wybrać. Współrzędne w pikselach filmu, od lewego górnego rogu.</p>
+          <div class="przewijana przewijana-punkty"><table class="tabela tabela-punktow" id="tabela-punktow"></table></div>
+        </section>
+
+        <section class="panel" id="panel-sugestii">
+          <h2>Sugerowana pozycja</h2>
+          <p id="wybrany-punkt" class="wskazowka">Wybierz punkt na obrazie.</p>
+          <button id="zaznacz-sugestie" type="button" disabled>Zaznacz sugerowaną pozycję</button>
+          <p class="wskazowka ukryty" id="instrukcja-sugestii">
+            Dotknij obrazu tam, gdzie punkt powinien być (○). Przeciągnij, żeby poprawić.
+          </p>
+          <div id="sugestie-klatki"></div>
+          <h3 class="ukryty" id="naglowek-wszystkich-sugestii">Wszystkie w tym nagraniu</h3>
+          <div id="wszystkie-sugestie"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Zapis</h2>
+          <p class="wskazowka">Pełny zapis — 33 punkty MediaPipe w każdej klatce, z czasem i sugestiami. CSV: główne punkty i kąty do arkusza.</p>
+          <div class="rzad-zrodla">
+            <button id="pobierz-json" type="button">Pobierz analizę (.json)</button>
+            <button id="pobierz-csv" type="button">Pobierz CSV</button>
+          </div>
+          <div class="rzad-zrodla ukryty" id="dolacz-wideo-rzad">
+            <label class="przycisk" for="plik-dolacz">Dołącz film do tej analizy</label>
+            <input id="plik-dolacz" type="file" accept="video/*" class="ukryty-plik">
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/ruch/app.js"></script>
+</body>
+</html>
