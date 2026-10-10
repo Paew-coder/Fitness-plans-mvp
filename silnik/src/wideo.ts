@@ -179,6 +179,40 @@ export function kartaCwiczenia(
   };
 }
 
+/** Id filmu z linku YouTube (youtu.be/…, watch?v=…, shorts/…, embed/…, live/…) albo `null`. */
+export function idZLinkuYoutube(link: string | null | undefined): string | null {
+  if (!link || !/^https?:\/\/([\w-]+\.)?(youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(link)) return null;
+  return link.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/)?.[1] ?? null;
+}
+
+/**
+ * Karta do podglądu w konsoli trenera (10.10.2026, przycisk ▶ przy ćwiczeniu
+ * w planie). Jak `kartaCwiczenia`, a ćwiczenie BAZY bez wpisu w filmach,
+ * ale z linkiem YouTube z arkusza, dostaje ten link jako film — trener widzi
+ * go w tej samej karcie, zamiast wychodzić do YouTube. Aplikacja klienta
+ * zostaje przy linku: tam idą tylko filmy sprawdzone oEmbedem.
+ */
+export function kartaPodgladu(
+  c: Cwiczenie,
+  wpisy: readonly WpisWideo[] = FILMY_CWICZEN,
+  zrodla: readonly ZrodloWideo[] = ZRODLA_WIDEO,
+): KartaCwiczenia | null {
+  const karta = kartaCwiczenia(c, wpisy, zrodla);
+  if (karta?.filmy.length) return karta;
+  const youtubeId = idZLinkuYoutube(c.film);
+  if (!youtubeId) return karta;
+  const wideo: Wideo = {
+    typ: "youtube", rola: "demonstracja", youtubeId, tytul: c.nazwa, link: c.film!,
+    zrodlo: { nazwa: "link z arkusza (BAZA)", platforma: "YouTube", url: null },
+  };
+  return {
+    cwiczenieId: c.id, nazwa: c.nazwa, nazwaEn: c.nazwaEn ?? c.nazwa, nazwaPl: c.nazwaPl ?? null,
+    kategoria: c.kategoria, rodzaj: c.rodzaj ?? null, miesnieGlowne: c.miesnieGlowne ?? [],
+    miesniePomocnicze: c.miesniePomocnicze ?? [], sprzet: c.sprzet ?? [],
+    ...karta, wideo, filmy: [wideo],
+  };
+}
+
 /**
  * Kontrola danych filmów (tysiące wpisów po imporcie bibliotek): każdy
  * wpis wskazuje istniejące ćwiczenie i znane źródło, rola jest znana, id

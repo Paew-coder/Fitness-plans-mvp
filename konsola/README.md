@@ -304,7 +304,9 @@ i Catalyst Athletics, każde z kategorią, part, coeff, progresją i skokiem
 trenera; **🔎** obok (albo ostatnia opcja listy) otwiera wyszukiwarkę po
 całości — po polsku i angielsku, z filtrami kategorii i źródła, z ▶ podglądem
 karty i filmów. Wybrane ćwiczenie z biblioteki stoi w slocie z dopiskiem
-„(biblioteka)”, eksport dopisuje je do zakładki BAZA szablonu (z rozszerzeniem
+„(biblioteka)”, a **▶** (z liczbą nagrań, np. „▶ 6”) przy każdym wybranym
+ćwiczeniu otwiera jego filmy jednym dotknięciem — także link YouTube z arkusza
+przy ćwiczeniach BAZY. Eksport dopisuje ćwiczenia z bibliotek do zakładki BAZA szablonu (z rozszerzeniem
 zakresów i formuł LISTY). Generator ich nie losuje. `/api/cwiczenia` idzie
 gzipem, filmy do karty z `/api/karta-cwiczenia?id=`. Opis, liczby, weryfikacja:
 [`docs/08-biblioteki-cwiczen.md`](../docs/08-biblioteki-cwiczen.md).

@@ -102,6 +102,11 @@ NAZWA 14.
   wiosłowanie/row…), filtry kategorii, źródła (Twoja baza / Theory of
   Motion / Catalyst) i „bez do weryfikacji”, ▶ podgląd karty z filmami.
   Wybrane ćwiczenie z biblioteki stoi w slocie z dopiskiem „(biblioteka)”.
+- **▶ przy każdym ćwiczeniu w planie** (10.10.2026): filmy wybranego
+  ćwiczenia jednym dotknięciem — ta sama karta, co u klienta, z przyciskami
+  nagrań. Na przycisku liczba nagrań („▶ 6”); ćwiczenie BAZY tylko z linkiem
+  w arkuszu też gra w karcie (podpis „link z arkusza”); bez filmu — przycisk
+  wyszarzony. U klienta bez zmian: link z arkusza zostaje linkiem.
 - **Eksport do arkusza**: ćwiczenia spoza zakładki BAZA szablonu są
   dopisywane na jej końcu (nazwa, kategoria, part, coeff, skok, progresja,
   film, id), a nazwane zakresy BAZA_* / LISTA_* i formuły LISTY rozszerzane —

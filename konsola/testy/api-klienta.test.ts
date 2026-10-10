@@ -1236,6 +1236,17 @@ describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
     assert.ok(lawka[0].filmow >= 2);
     assert.equal(lawka[0].wideo, undefined);
     assert.equal(dane.find((c: any) => c.id === "EX-0062").filmow, 0);
+    // …ale ma link YouTube w arkuszu — konsola pokaże go w podglądzie.
+    assert.equal(dane.find((c: any) => c.id === "EX-0062").filmZArkusza, true);
+    assert.equal(lawka[0].filmZArkusza, undefined);
+  });
+
+  test("podgląd ▶ w konsoli: ćwiczenie tylko z linkiem w arkuszu dostaje ten film w karcie", async () => {
+    const { kod, dane } = await api("/api/karta-cwiczenia?id=EX-0062");
+    assert.equal(kod, 200);
+    assert.equal(dane.filmy.length, 1);
+    assert.equal(dane.wideo.youtubeId, "t5Ft8OMG_D8");
+    assert.equal(dane.wideo.link, "https://youtu.be/t5Ft8OMG_D8");
   });
 
   test("podgląd w konsoli: ta sama karta, którą widzi klient, z pokazami i poradnikami", async () => {

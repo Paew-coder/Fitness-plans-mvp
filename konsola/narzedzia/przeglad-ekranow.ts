@@ -981,6 +981,49 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     goblet?.id);
   sprawdz("w wierszu widać, że to ćwiczenie z biblioteki", /\(biblioteka\)/.test(opisWyboru), opisWyboru);
 
+  // ▶ przy ćwiczeniu w wierszu (10.10.2026): filmy wybranego ćwiczenia jednym
+  // dotknięciem. Liczba = nagrania w karcie, bez filmu — wyszarzony, pusty
+  // wiersz — niewidoczny (kolumna się nie przesuwa).
+  const poId = new Map(katalogCwiczen.map((c: any) => [c.id, c]));
+  const stanyFilmow = await s.locator("#dni td.cwiczenie").evaluateAll((komorki: HTMLElement[]) => komorki.map((k) => {
+    const b = k.querySelector("button.filmy-cwiczenia") as HTMLButtonElement | null;
+    const lista = k.querySelector("select") as HTMLSelectElement | null;
+    return { id: lista?.value ?? "", jest: !!b, tekst: b?.textContent ?? "", wylaczony: !!b?.disabled,
+      widoczny: !!b && getComputedStyle(b).visibility === "visible" };
+  }));
+  const zleFilmy = stanyFilmow.filter((st: any) => {
+    if (!st.jest) return true;
+    if (!st.id) return st.widoczny;
+    const c: any = poId.get(st.id);
+    const oczekiwany = c?.filmow > 1 ? `▶ ${c.filmow}` : "▶";
+    const ma = c?.filmow > 0 || c?.filmZArkusza;
+    return !st.widoczny || st.wylaczony === !!ma || (ma && st.tekst !== oczekiwany);
+  });
+  sprawdz("▶ w każdym wierszu: liczba nagrań, bez filmu wyszarzony, pusty wiersz bez przycisku",
+    stanyFilmow.length > 3 && zleFilmy.length === 0,
+    zleFilmy.length ? JSON.stringify(zleFilmy.slice(0, 3)) : `${stanyFilmow.length} wierszy, np. ${stanyFilmow.map((x: any) => x.tekst).filter(Boolean).slice(0, 4).join(" ")}`);
+  const zFilmem = stanyFilmow.findIndex((st: any) => st.id && !st.wylaczony);
+  const przyciskFilmu = s.locator("#dni td.cwiczenie").nth(zFilmem).locator("button.filmy-cwiczenia");
+  const wyborPrzed = await s.locator("#dni td.cwiczenie select").nth(zFilmem).inputValue();
+  await przyciskFilmu.click();
+  await s.waitForSelector(".karta-cw", { timeout: 8000 });
+  const kartaZWiersza = {
+    tytul: (await s.locator(".karta-cw h2, #karta-cw-tytul").first().textContent())?.trim() ?? "",
+    film: await s.getAttribute(".karta-cw-film", "data-film"),
+    nagran: await s.locator(".karta-cw-nagrania button").count(),
+  };
+  const cZWiersza: any = poId.get(wyborPrzed);
+  sprawdz("▶ w wierszu otwiera kartę tego ćwiczenia z filmem, bez wyszukiwarki",
+    !!kartaZWiersza.film && kartaZWiersza.tytul.includes(cZWiersza?.nazwaPl ?? cZWiersza?.nazwa ?? "?")
+      && (await s.locator(".wyszukiwarka").count()) === 0
+      && (cZWiersza?.filmow > 1 ? kartaZWiersza.nagran === cZWiersza.filmow : kartaZWiersza.nagran === 0),
+    `${cZWiersza?.nazwa}: ${JSON.stringify(kartaZWiersza)}`);
+  await s.locator(".karta-cw-wroc").click();
+  await s.waitForTimeout(200);
+  sprawdz("zamknięcie podglądu z wiersza zostawia plan bez zmian",
+    (await s.locator(".karta-cw").count()) === 0
+      && await s.locator("#dni td.cwiczenie select").nth(zFilmem).inputValue() === wyborPrzed);
+
   // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
