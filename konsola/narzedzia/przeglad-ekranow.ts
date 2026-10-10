@@ -1146,6 +1146,43 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("kolejne „Cofnij” przywracają kategorię i zdejmują dodane ćwiczenie",
     ((await slot0())?.kategoriaSzkieletu ?? "") === kategoriaPrzed && !(await slot0())?.cwiczenieId);
 
+  // Numer pozycji w wierszu (10.10.2026): „żeby w dniu 1 było A1 i A2, a dopiero
+  // później B1”. B1 → A2: zapisane, u klienta w grupie A (superseria z A1),
+  // opis kroku „B1 → A2”, „Cofnij” wraca do B1.
+  const wierszeZNumerem = await s.locator("#dni tr[data-position]").evaluateAll((w: Element[]) => w.map((tr) => ({
+    position: tr.getAttribute("data-position") ?? "",
+    lp: (tr.querySelector("select.lp-wybor") as HTMLSelectElement | null)?.value ?? null,
+    cw: (tr.querySelector("td.cwiczenie select") as HTMLSelectElement | null)?.value ?? "",
+  })));
+  sprawdz("numer pozycji w każdym wierszu da się zmienić (lista przy numerze)",
+    wierszeZNumerem.length > 3 && wierszeZNumerem.every((w: any) => w.lp !== null),
+    `${wierszeZNumerem.length} wierszy, np. ${wierszeZNumerem.slice(0, 4).map((w: any) => w.lp || "—").join(" ")}`);
+  const doNumeru = wierszeZNumerem.find((w: any) => w.lp === "B1." && w.cw);
+  const listaNumeru = s.locator(`#dni tr[data-position="${doNumeru?.position}"] select.lp-wybor`);
+  if (doNumeru) {
+    await listaNumeru.selectOption("A2.");
+    await zapisano();
+  }
+  const zKlienta = await api(`/api/klient/${(await api(`/api/plany/${PLAN}/link`, "POST")).token}`);
+  const znajdz = (o: any): any => {
+    if (!o || typeof o !== "object") return null;
+    if (o.positionId === doNumeru?.position && "grupa" in o) return o;
+    for (const v of Object.values(o)) { const x = znajdz(v); if (x) return x; }
+    return null;
+  };
+  const uKlienta = znajdz(zKlienta);
+  const lpWBazie = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === doNumeru?.position)?.lp;
+  sprawdz("B1 → A2: zapisane, u klienta w grupie A (superseria z A1), przycisk „Cofnij” opisuje zmianę",
+    !!doNumeru && lpWBazie === "A2." && await listaNumeru.inputValue() === "A2." && uKlienta?.grupa === "A"
+      && /B1 → A2/.test((await s.locator("#cofnij-opis").textContent()) ?? ""),
+    `${doNumeru?.position}: ${lpWBazie} · u klienta ${uKlienta?.lp} grupa ${uKlienta?.grupa} · ${await s.locator("#cofnij-opis").textContent()}`);
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("„Cofnij” przywraca numer B1",
+    (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === doNumeru?.position)?.lp === "B1."
+      && await listaNumeru.inputValue() === "B1.");
+
   sprawdz("po cofnięciu wszystkiego plan w bazie jest dokładnie taki jak przed",
     bezDat(await zBazy()) === planPrzedCofaniem);
 

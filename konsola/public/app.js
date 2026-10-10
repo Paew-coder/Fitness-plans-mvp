@@ -1854,6 +1854,41 @@ function czyscKlawiszem(lista, positionId, selektor, wyczysc) {
   });
 }
 
+/**
+ * Numer pozycji (Lp.) do zmiany w wierszu (10.10.2026).
+ *
+ * Trener: „co mogę zrobić, żeby w dniu 1 było ćwiczenie A1 i A2 i dopiero
+ * później B1?”. Numeracja była stała jak w pustym arkuszu (A1 · B1 B2 · C1 C2
+ * · D1 D2 · E1 E2), choć szablony z Base44 miały już układy z A2. W arkuszu
+ * wystarczyło wpisać inny numer — tu tak samo: dotknięcie numeru i wybór.
+ *
+ * Co znaczy numer: wspólna litera = superseria (u klienta jedna grupa),
+ * litera A = miejsce boju głównego (ćwiczenie z coeff 1,0 liczy się tam jak
+ * bój, chyba że „G” mówi inaczej), C2 i D2 — o stopień wyżej w szablonie
+ * akcesoriów, jak w arkuszu. Zmiana to zwykły krok do cofnięcia (⌘Z).
+ */
+const NUMERY_LP = [..."ABCDEFGH"].flatMap((litera) => [1, 2, 3, 4].map((n) => `${litera}${n}.`));
+function wyborNumeru(slot) {
+  const wybor = el("select", "lp-wybor");
+  const opcje = ["", ...NUMERY_LP];
+  if (slot.lp && !opcje.includes(slot.lp)) opcje.push(slot.lp);
+  for (const lp of opcje) {
+    const o = el("option", "", lp || "—");
+    o.value = lp;
+    wybor.append(o);
+  }
+  wybor.value = slot.lp || "";
+  wybor.title = "Numer pozycji — wspólna litera to superseria, A — miejsce boju głównego";
+  wybor.setAttribute("aria-label", `Numer pozycji ${slot.lp || "bez numeru"}`);
+  wybor.onchange = () => {
+    const bylo = (slot.lp || "—").replace(/\.$/, "");
+    slot.lp = wybor.value;
+    zapiszPozniej(`${bylo} → ${(slot.lp || "—").replace(/\.$/, "")}`);
+    rysujDni();
+  };
+  return wybor;
+}
+
 function rysujSlot(slot, pusty) {
   const wyliczony = slotWyliczony(slot.positionId);
   const litera = (slot.lp || "").charAt(0);
@@ -1865,7 +1900,7 @@ function rysujSlot(slot, pusty) {
   // komórkę i chowały się pod listą ćwiczeń — z „TS" zostawało samo „T"
   // (26.09.2026; wcześniej tak samo zniknął znacznik „BÓJ").
   const numer = el("span", "numer-lp");
-  numer.append(el("span", "", slot.lp || "—"));
+  numer.append(wyborNumeru(slot));
   komorkaLp.append(numer);
   if (!pusty) {
     const strzalki = el("span", "strzalki");
