@@ -305,6 +305,11 @@ serwer (tygodnie, szablon, losowanie, asystent, 1RM, status); ▲▼ — przesta
 z powrotem. Wpisy klienta (oceny, jego ciężary) zostają zawsze. W polu tekstowym
 ⌘Z cofa samo pole, jak w każdej przeglądarce.
 
+**Backspace / Delete** na liście ćwiczenia usuwa ćwiczenie z wiersza, na liście
+kategorii — kategorię („— pełna baza —”); ⌘Z przywraca. Po zapisie i
+przerysowaniu tabeli fokus wraca na to samo pole, więc z klawiatury da się
+pracować bez myszy.
+
 ## Biblioteki ćwiczeń z filmami (od 09.10.2026)
 
 Poza BAZĄ trenera (166) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
