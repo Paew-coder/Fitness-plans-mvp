@@ -831,6 +831,13 @@ Trener: „ćwiczenie glute crusher na tygodnie 1–3 ma progresję 10–12 powt
 * Zmiana w automacie, więc działa od razu we wszystkich planach (także wysłanych — to nie zmiana trenera w planie, nie czeka na zatwierdzenie). Eksport wpisuje te powtórzenia do arkusza wprost — formuła arkusza zaczęłaby blok od nowa.
 * Testy: automat (trzy części planu, obcięcie), plan z Glute crusherem obok akcesorium z ciężarem (restart zostaje), eksport.
 
+**59. Przy „dobierz ciężar” bez „za lekko / za ciężko” — 10.10.2026.**
+
+Trener: „w trakcie treningu, jeżeli ktoś ma na panelu »dobierz ciężar«, bo jeszcze nie robił tego ćwiczenia, nie powinny być widoczne opcje »za lekko« / »za ciężko«, nie uważasz?”. Zgoda: nie ma ciężaru z planu, do którego ocena by się odnosiła, a poszłaby do trenera i do kolejnych tygodni jako korekta ciężaru, który klient sam wybrał — choć instrukcja doboru i tak mówi „wyszło za lekko? dołóż w następnej serii i wpisz ją”.
+
+* Panel serii: gdy stoi „dobierz” (brak 1RM albo ręczne ustawienie bez wpisu trenera), zamiast oceny jedno zdanie: „Za lekko albo za ciężko? Nic nie klikaj — zmień ciężar w następnej serii i wpisz go. Ocena pojawi się, gdy ciężar będzie już ustalony.” Gdy ciężar jest już policzony z pierwszej serii, ocena wraca. TOP SET bez 1RM — tak samo. Masa ciała (ocena zmienia powtórzenia) i lista ćwiczeń — bez zmian. SW `trening-v66`.
+* Przegląd klienta: przy dobieraniu brak oceny i jest zdanie; po pierwszej serii ocena wraca.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

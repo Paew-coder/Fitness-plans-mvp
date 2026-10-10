@@ -728,6 +728,14 @@ function wskazowkaDoboru(c) {
   return blok;
 }
 
+/** Na panelu stoi „dobierz” — ciężaru z planu jeszcze nie ma, klient go wybiera. */
+const dobieraCiezar = (c) => Boolean(c.dobierzCiezar || c.ciezarWybieraKlient);
+
+/** Zamiast „Za ciężko albo za lekko?” przy dobieraniu ciężaru — co zrobić zamiast oceny. */
+const bezOcenyPrzyDoborze = () => el("p", "drobne bez-oceny-doboru",
+  "Za lekko albo za ciężko? Nic nie klikaj — zmień ciężar w następnej serii i wpisz go. "
+  + "Ocena pojawi się, gdy ciężar będzie już ustalony.");
+
 /** Czy przy ćwiczeniu jest już pełna seria — ta, z której policzymy ciężar. */
 const seriaWpisana = (c) =>
   (c.serieWykonane ?? []).some((x) => x?.ciezar > 0 && x?.powtorzenia > 0)
@@ -2321,15 +2329,21 @@ function panelTopSetu(k, kroki) {
   karta.append(pola);
   ramkaRampy?.polacz(pole);
   let ocena = zapisany?.feedback ?? null;
-  const blokOceny = el("div", "ocena-w-panelu");
-  blokOceny.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
-  blokOceny.append(el("p", "drobne podpowiedz-oceny",
-    "Jeśli było OK — nic nie klikaj. Ocena idzie do trenera, serii roboczych nie zmienia."));
-  blokOceny.append(ocenyTopSetu(ocena, (f) => {
-    ocena = f;
-    zapiszTopSet(d, k.slotTopSetu, { feedback: f, kg: Number(pole.value) || 0 });
-  }));
-  karta.append(blokOceny);
+  // TOP SET bez 1RM — klient sam dobiera ciężar jednego powtórzenia, więc tak
+  // jak przy seriach: bez „za ciężko / za lekko” (trener, 10.10.2026).
+  if (bezCiezaru) {
+    karta.append(bezOcenyPrzyDoborze());
+  } else {
+    const blokOceny = el("div", "ocena-w-panelu");
+    blokOceny.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
+    blokOceny.append(el("p", "drobne podpowiedz-oceny",
+      "Jeśli było OK — nic nie klikaj. Ocena idzie do trenera, serii roboczych nie zmienia."));
+    blokOceny.append(ocenyTopSetu(ocena, (f) => {
+      ocena = f;
+      zapiszTopSet(d, k.slotTopSetu, { feedback: f, kg: Number(pole.value) || 0 });
+    }));
+    karta.append(blokOceny);
+  }
 
   const zrobione = el("button", "glowny szeroki",
     prowadzenie.zrobione.includes(k.klucz) ? "Dalej" : "Zrobione");
@@ -2486,7 +2500,14 @@ function panelSerii(k, kroki, d) {
   ramkaRampy?.polacz(wCiezar);
 
   // Ocena przy każdej serii — przy wcześniejszych bez „OK", patrz ocenaWPanelu.
-  if (!c.maks) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
+  // Bez oceny, gdy klient dopiero dobiera ciężar (trener, 10.10.2026: „jeżeli
+  // ktoś ma na panelu »dobierz ciężar«, bo jeszcze nie robił tego ćwiczenia,
+  // nie powinny być widoczne opcje za lekko / za ciężko”). Nie ma ciężaru
+  // z planu, do którego by się odnosiła — a poszłaby do trenera i do kolejnych
+  // tygodni jako korekta ciężaru, który klient sam wybrał. Za lekko? Dokłada
+  // w następnej serii i ją wpisuje — od niej liczymy od nowa.
+  if (!c.maks && !dobieraCiezar(c)) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
+  else if (dobieraCiezar(c)) karta.append(bezOcenyPrzyDoborze());
 
   const poprawka = prowadzenie.zrobione.includes(k.klucz);
   const zakoncz = el("button", "glowny szeroki", poprawka ? "Zapisz poprawkę" : "Zakończ serię");

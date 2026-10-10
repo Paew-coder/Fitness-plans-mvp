@@ -619,3 +619,11 @@ Telefon pokazuje plan w wersji, którą trener zatwierdził. Gdy trener poprawia
 plan w konsoli, klient trenuje dalej na poprzedniej wersji — nic mu nie znika
 w połowie treningu — a zmiany zobaczy po zatwierdzeniu. Jego oceny i ciężary
 z tego czasu zostają w obu wersjach. Szczegóły: `konsola/wersja-robocza.ts`.
+
+## Dobieranie ciężaru bez oceny „za lekko / za ciężko” (od 10.10.2026)
+
+Gdy na panelu stoi **„dobierz”** — klient jeszcze nie robił tego ćwiczenia
+i ciężaru z planu nie ma — zamiast „Za ciężko albo za lekko?” jest zdanie:
+„Nic nie klikaj — zmień ciężar w następnej serii i wpisz go”. Ocena wraca,
+gdy ciężar jest już policzony z pierwszej serii. Tak samo przy TOP SECIE
+bez 1RM.
