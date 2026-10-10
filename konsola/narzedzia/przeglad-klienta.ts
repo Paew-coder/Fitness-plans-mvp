@@ -1288,6 +1288,20 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await s.locator("#rpe-baner details").innerText()).includes("RPE 8")
     && (await s.locator("#rpe-baner details").innerText()).includes("2 w zapasie"));
 
+  // Baner da się zwinąć do jednej linijki (10.10.2026) — klient, który wybrał
+  // już drogę, nie musi mieć całej karty nad listą przy każdym wejściu.
+  await s.locator("#pomiary-baner > summary").click();
+  const zwiniety = await s.locator("#pomiary-baner").innerText();
+  sprawdz("baner „Skąd wziąć ciężary” zwija się do jednej linijki",
+    !(await s.locator("#od-razu").isVisible()) && zwiniety.includes("2 do ustalenia"),
+    zwiniety.replace(/\s+/g, " ").slice(0, 80));
+  await s.reload({ waitUntil: "networkidle" });
+  sprawdz("zwinięty baner zostaje zwinięty po ponownym otwarciu",
+    await s.locator("#pomiary-baner:not(.ukryty):not([open])").count() === 1);
+  await s.locator("#pomiary-baner > summary").click();
+  sprawdz("i rozwija się z powrotem tym samym dotknięciem",
+    await s.locator("#od-razu").isVisible());
+
   await s.click("#od-razu");
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
   const panelDoboru = await panel.innerText();
