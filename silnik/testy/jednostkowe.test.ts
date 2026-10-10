@@ -164,6 +164,29 @@ describe("automat powtórzeń akcesoriów (kolumna E)", () => {
     assert.deepEqual(powt(1).slice(3), powt(1).slice(0, 3), "z ciężarem T4 zaczyna blok od nowa — rośnie RPE");
   });
 
+  test("deload przy masie ciała wraca do powtórzeń z T1; z ciężarem — jak T6, RPE niżej (trener, 10.10.2026)", () => {
+    const plan: Plan = {
+      nazwa: "x", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "objętość", serieMaksymalne: [], deload: true,
+      sloty: [
+        { positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId: "EX-0092", kategoriaSzkieletu: null, tygodnie: {} },
+        { positionId: "D1-S03", dzien: 1, lp: "B2.", cwiczenieId: "EX-0062", kategoriaSzkieletu: null, tygodnie: {} },
+        // Podmiana od T4 na inne ćwiczenie z masą ciała — deload bierze T1 z automatu.
+        { positionId: "D1-S04", dzien: 1, lp: "C1.", cwiczenieId: "EX-0062", kategoriaSzkieletu: null,
+          tygodnie: { 4: { cwiczenieIdOverride: "EX-0092" }, 5: { cwiczenieIdOverride: "EX-0092" },
+            6: { cwiczenieIdOverride: "EX-0092" } } },
+      ],
+    };
+    const wynik = przeliczPlan(plan);
+    const t7 = wynik.tygodnieDodatkowe!.find((t) => t.rodzaj === "deload")!;
+    const [glute, zCiezarem, podmieniony] = t7.sloty;
+    assert.equal(glute!.powtorzenia, wynik.tygodnie[0]!.sloty[0]!.powtorzenia);
+    assert.equal(glute!.powtorzenia, 10);
+    assert.equal(glute!.rpe, wynik.tygodnie[5]!.sloty[0]!.rpe - 1);
+    assert.equal(zCiezarem!.powtorzenia, wynik.tygodnie[5]!.sloty[1]!.powtorzenia, "z ciężarem jak T6");
+    assert.equal(podmieniony!.cwiczenie!.id, "EX-0092");
+    assert.equal(podmieniony!.powtorzenia, 10, "po podmianie: T1 tego ćwiczenia z automatu");
+  });
+
   test("obcięcie do zakresu tabeli 1–15", () => {
     assert.equal(
       powtorzeniaAkcesorium({ coeff: 0.5, czesc: "objętość", tydzien: 6, korekta: 3 }),
