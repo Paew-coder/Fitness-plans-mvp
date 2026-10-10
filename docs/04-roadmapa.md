@@ -774,6 +774,16 @@ Trener (zrzut z iPada, edycja planu): „na etapie wyboru ćwiczenia chciałbym,
 * Ćwiczenia BAZY bez wpisu w filmach, ale z linkiem YouTube w arkuszu (72), też grają w karcie — `kartaPodgladu` / `idZLinkuYoutube` w `wideo.ts`, pole `filmZArkusza` w `/api/cwiczenia`. U klienta bez zmian (tam tylko filmy sprawdzone oEmbedem).
 * Układ: lista + 🔎 + ▶ w jednym rzędzie (lista bez naturalnej szerokości, żeby długa opcja nie rozpychała tabeli); na telefonie przyciski linijkę pod listą. Sprawdzone: przegląd ekranów (stan ▶ w każdym wierszu, karta z wiersza, telefon i iPad bez wystawania poza ekran), testy silnika i konsoli.
 
+**53. Cofanie zmian w planie — ↶ Cofnij i ⌘Z — 10.10.2026.**
+
+Trener (zrzut z iPada, właśnie dodane „Overhead Split Squat”): „chciałbym mieć możliwość cofać dodane ćwiczenie — np. klawiszem cofania od razu”.
+
+* **↶ Cofnij** w prawym dolnym rogu ekranu planu (widoczny także przy przewiniętym planie), z opisem kroku: „B2 · Overhead Split Squat”. **⌘Z / Ctrl+Z** robi to samo, **⇧⌘Z / Ctrl+Y** i **↷ Ponów** przywracają. Do 50 kroków w obrębie otwartego planu; ponowne otwarcie planu zaczyna od nowa.
+* Krok = stan planu sprzed zmiany (plan, data startu, status). Seria szybkich zmian (pisanie w polu) to jeden krok. W polu liczby/tekstu ⌘Z cofa samo pole (przeglądarka), na liście wyboru i poza polami — plan.
+* Cofa się też to, co robi serwer, bo zmienia tylko plan: wypełnienie i rozniesienie tygodni, progresja bojów, szablon, losowanie ćwiczeń, wstawienie z asystenta, przyjęcie 1RM, status. ▲▼ przenosi razem ze slotem wykonania klienta (poza planem), więc cofa się przestawieniem w drugą stronę.
+* Cofnięcie nigdy nie zabiera wpisów klienta: oceny, jego ciężary i TOP SETY zostają z bieżącego planu; gdy klient wpisał coś w międzyczasie, zapis i tak przechodzi przez scalanie (409 → przejęcie wpisów klienta).
+* Przegląd ekranów (13c): dodanie → ⌘Z → pusto, ⇧⌘Z → wraca, przycisk „Cofnij”, ▼ i cofnięcie, liczba serii, plan w bazie identyczny jak przed, ocena klienta wpisana w międzyczasie zostaje.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

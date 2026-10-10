@@ -1024,6 +1024,107 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await s.locator(".karta-cw").count()) === 0
       && await s.locator("#dni td.cwiczenie select").nth(zFilmem).inputValue() === wyborPrzed);
 
+  // ── 13c. cofanie zmian w planie (10.10.2026) ───────────────────────
+  // Trener: „chciałbym móc cofać dodane ćwiczenie — np. klawiszem cofania
+  // od razu”. Dodanie → ⌘Z → pusto; ⇧⌘Z → wraca; przycisk „Cofnij” to samo;
+  // ▼ cofa się przestawieniem z powrotem; pole liczby wraca do poprzedniej.
+  // Na końcu plan ma być dokładnie taki jak przed tą sekcją.
+  {
+  const bezDat = (o: any) => JSON.stringify(o.zapisany.plan);
+  const planPrzedCofaniem = bezDat(await zBazy());
+  const listy = () => s.locator("#dni td.cwiczenie select");
+  const pustyDoCofania = await listy().evaluateAll((l: HTMLSelectElement[]) => l.findIndex((x) => x.value === ""));
+  const opcjaDoDodania = await listy().nth(pustyDoCofania).evaluate((x: HTMLSelectElement) =>
+    [...x.options].find((o) => o.value && !o.value.startsWith("__"))?.value ?? "");
+  const nazwaDodanego = katalogCwiczen.find((c: any) => c.id === opcjaDoDodania)?.nazwa ?? "";
+  await listy().nth(pustyDoCofania).selectOption(opcjaDoDodania);
+  await zapisano();
+  const pasek = s.locator("#cofanie");
+  const opisCofania = (await s.locator("#cofnij-opis").textContent()) ?? "";
+  sprawdz("po dodaniu ćwiczenia widać „↶ Cofnij” z nazwą tego ćwiczenia",
+    await pasek.isVisible() && opisCofania.includes(nazwaDodanego), opisCofania);
+  const maDodane = async () => (await zBazy()).zapisany.plan.sloty.some((x: any) => x.cwiczenieId === opcjaDoDodania);
+  const dodaneWBazie = await maDodane();
+  await listy().nth(pustyDoCofania).focus();
+  await s.keyboard.press("ControlOrMeta+z");
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("⌘Z / Ctrl+Z od razu cofa dodane ćwiczenie — wiersz pusty, zapisane",
+    dodaneWBazie && await listy().nth(pustyDoCofania).inputValue() === "" && !(await maDodane()),
+    `${nazwaDodanego}: ${dodaneWBazie ? "było" : "nie zapisało się"} → ${await listy().nth(pustyDoCofania).inputValue() || "pusto"}`);
+  await s.keyboard.press("ControlOrMeta+Shift+z");
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("⇧⌘Z / Ctrl+Shift+Z przywraca cofnięte",
+    await listy().nth(pustyDoCofania).inputValue() === opcjaDoDodania && await maDodane());
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("przycisk „Cofnij” działa tak samo (iPad bez klawiatury)",
+    await listy().nth(pustyDoCofania).inputValue() === "" && !(await maDodane()));
+
+  // ▼ — przestawienie wraca przestawieniem w drugą stronę.
+  const kolejnosc = async () => await listy().evaluateAll((l: HTMLSelectElement[]) => l.map((x) => x.value).filter(Boolean));
+  const przed = await kolejnosc();
+  await wiersz(0).locator("button.mikro", { hasText: "▼" }).click();
+  await s.waitForFunction((p: string) => {
+    const w = [...document.querySelectorAll("#dni td.cwiczenie select")].map((x: any) => x.value).filter(Boolean);
+    return w[0] !== p;
+  }, przed[0], { timeout: 8000 });
+  const poPrzestawieniu = await kolejnosc();
+  await s.locator("#cofnij").click();
+  await s.waitForFunction((p: string) => {
+    const w = [...document.querySelectorAll("#dni td.cwiczenie select")].map((x: any) => x.value).filter(Boolean);
+    return w[0] === p;
+  }, przed[0], { timeout: 8000 }).catch(() => null);
+  sprawdz("▼ i „Cofnij” — ćwiczenie wraca na swoje miejsce",
+    poPrzestawieniu[0] === przed[1] && JSON.stringify(await kolejnosc()) === JSON.stringify(przed),
+    `${przed.slice(0, 2).join(", ")} → ${poPrzestawieniu.slice(0, 2).join(", ")} → ${(await kolejnosc()).slice(0, 2).join(", ")}`);
+
+  // Liczba w polu: zmiana zatwierdzona, potem „Cofnij” poza polem.
+  const poleSerii = wiersz(0).locator("td.liczba input").first();
+  const serieWczesniej = await poleSerii.inputValue();
+  await poleSerii.fill(String(Number(serieWczesniej || 3) + 2));
+  await poleSerii.press("Tab");
+  await zapisano();
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("zmieniona liczba serii wraca po „Cofnij”",
+    await wiersz(0).locator("td.liczba input").first().inputValue() === serieWczesniej, serieWczesniej);
+  sprawdz("po cofnięciu wszystkiego plan w bazie jest dokładnie taki jak przed",
+    bezDat(await zBazy()) === planPrzedCofaniem);
+
+  // Cofnięcie nie zabiera tego, co w międzyczasie wpisał klient.
+  await listy().nth(pustyDoCofania).selectOption(opcjaDoDodania);
+  await zapisano();
+  // Tydzień, który klient już ocenił: zmienia ocenę, trener cofa swoje
+  // ćwiczenie, a na koniec klient wraca do poprzedniej oceny — dalsze sekcje
+  // liczą na stan cyklu sprzed tej próby.
+  const bledyPrzedCofnieciem = bledyPrzegladarki.length;
+  const tokenKlienta = (await api(`/api/plany/${PLAN}/link`, "POST")).token;
+  const ocenione = (await zBazy()).zapisany.plan.sloty.flatMap((x: any) => Object.entries(x.tygodnie ?? {})
+    .filter(([, t]: any) => t?.feedback).map(([tydz, t]: any) => ({ positionId: x.positionId, tydzien: Number(tydz), feedback: t.feedback })))[0];
+  const inna = ocenione?.feedback === "OK" ? "za trudne" : "OK";
+  if (ocenione) {
+    await api(`/api/klient/${tokenKlienta}/odczucie`, "POST", { ...ocenione, feedback: inna });
+  }
+  await s.locator("#cofnij").click();
+  await zapisano();
+  const ocenaPo = (await zBazy()).zapisany.plan.sloty
+    .find((x: any) => x.positionId === ocenione?.positionId)?.tygodnie?.[String(ocenione?.tydzien)]?.feedback;
+  sprawdz("cofnięcie dodanego ćwiczenia zostawia ocenę, którą klient wpisał w międzyczasie",
+    !!ocenione && !(await maDodane()) && ocenaPo === inna,
+    `${ocenione?.feedback} → klient: ${inna} → po „Cofnij”: ${ocenaPo}`);
+  if (ocenione) await api(`/api/klient/${tokenKlienta}/odczucie`, "POST", ocenione);
+  // 409 to zamierzone: serwer odrzuca zapis z nieaktualnej kopii, konsola
+  // przejmuje wpisy klienta i zapisuje jeszcze raz (jak w sekcji 10).
+  const nowe409 = bledyPrzegladarki.slice(bledyPrzedCofnieciem);
+  sprawdz("jedyny „błąd” po drodze to zamierzone 409 przy zapisie z nieaktualnej kopii",
+    nowe409.every((b: string) => /409/.test(b)), nowe409.join(" | ") || "brak");
+  bledyPrzegladarki.splice(bledyPrzedCofnieciem);
+  }
+
   // ── 14. link dla klienta ──────────────────────────────────────────
   await s.click("#link-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
