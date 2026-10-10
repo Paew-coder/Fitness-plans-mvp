@@ -205,6 +205,14 @@ td.lp { font-family: var(--mono); font-size: .78rem; color: var(--tekst-blady); 
         display: flex; align-items: center; gap: .3rem; }
 /* Numer, a pod nim znaczniki TS / RPE — w słupku, żeby nie wyjeżdżały z komórki. */
 .numer-lp { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 1.9rem; }
+/* Numer pozycji do zmiany (10.10.2026): wygląda jak numer, a nie jak pole —
+   kropkowane podkreślenie mówi, że da się w niego dotknąć. */
+select.lp-wybor {
+  appearance: none; -webkit-appearance: none; border: none; background: none; padding: 0 .1rem;
+  font: inherit; color: inherit; cursor: pointer; min-width: 2.2rem; min-height: 1.6rem;
+  text-decoration: underline dotted; text-underline-offset: 3px; border-radius: 4px;
+}
+select.lp-wybor:hover, select.lp-wybor:focus-visible { background: var(--plaszczyzna); color: var(--tekst); }
 /*
  * Przyciski przy ćwiczeniu — ▲ ▼ » T R — widać zawsze, na każdym urządzeniu.
  *
@@ -657,6 +665,7 @@ td.ciezar .zrobione {
      wymieniała pola tabeli po nazwie i przegapiła pole w oknie „Połącz
      klienta": lista wyjątków zawsze jest o jeden krótsza, niż trzeba. */
   select, input:not([type="checkbox"]) { min-height: 2.25rem; }
+  select.lp-wybor { min-height: 1.75rem; min-width: 2.4rem; }
   button.szukaj-cwiczenia, button.filmy-cwiczenia { height: 2.25rem; min-width: 2.25rem; }
   button.szukaj-cwiczenia { width: 2.25rem; }
   /* `flex: none` nie jest ozdobą: kratka TOP SETU stoi w pasku ustawionym

@@ -52,6 +52,10 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
       return `${gdzie} nie ma identyfikatora pozycji`;
     }
     if (!jestLiczba(slot.dzien)) return `${gdzie} nie ma numeru dnia`;
+    // Numer pozycji (Lp.) — od 10.10.2026 trener ustawia go w konsoli.
+    if (slot.lp != null && (typeof slot.lp !== "string" || slot.lp.length > 20)) {
+      return `${gdzie}: numer pozycji (Lp.) musi być krótkim tekstem, np. „A2.”`;
+    }
     if (slot.cwiczenieId != null && typeof slot.cwiczenieId !== "string") {
       return `${gdzie}: ćwiczenie musi być identyfikatorem albo pustką`;
     }

@@ -1,6 +1,6 @@
 import type { Uwaga } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { pozycjaBoju } from "./szablon-boju.ts";
+import { numerLp, pozycjaBoju } from "./szablon-boju.ts";
 import { konfliktSeriiMaksymalnych } from "./rpe.ts";
 import { POWT_MAX } from "./rpe.ts";
 import type { Plan, PlanWyliczony } from "./plan.ts";
@@ -45,13 +45,27 @@ export function sprawdzPlan(
   // Trener, który przy slocie sam rozstrzygnął „bój / akcesorium" (przycisk
   // „G"), wie, co robi — ostrzeżenie byłoby tylko szumem.
   const zdecydowane = new Set(plan.sloty.filter((s) => s.bojGlowny !== undefined).map((s) => s.positionId));
+  // Tylko A1 — pierwsze miejsce dnia. A2 w superserii z bojem (od 10.10.2026
+  // trener numeruje sam) to zwykle akcesorium, np. wiosłowanie do wyciskania.
   const pozycjaANieZlozona = zCwiczeniem
-    .filter((s) => pozycjaBoju(s.lp) && s.cwiczenie!.coeff !== 1 && !zdecydowane.has(s.positionId))
+    .filter((s) => pozycjaBoju(s.lp) && numerLp(s.lp) === "A1" && s.cwiczenie!.coeff !== 1
+      && !zdecydowane.has(s.positionId))
     .map((s) => `${s.positionId} ${s.cwiczenie!.nazwa}`);
   dodaj("POZYCJA_A_BEZ_BOJU", "ostrzezenie",
     "Na pierwszym miejscu dnia stoi ćwiczenie, które nie jest złożone — "
     + "liczy się jak akcesorium, nie jak bój główny",
     pozycjaANieZlozona);
+
+  // Numeracja ustawiana przez trenera (10.10.2026): ten sam numer dwa razy
+  // w jednym dniu to prawie na pewno pomyłka — klient zobaczy dwa „B1”.
+  const powtorzone: string[] = [];
+  for (const dzien of new Set(zCwiczeniem.map((s) => s.dzien))) {
+    const numery = zCwiczeniem.filter((s) => s.dzien === dzien && numerLp(s.lp)).map((s) => numerLp(s.lp));
+    for (const n of new Set(numery.filter((n, i) => numery.indexOf(n) !== i))) powtorzone.push(`dzień ${dzien}: ${n}`);
+  }
+  dodaj("NUMERACJA_POWTORZONA", "ostrzezenie",
+    "Ten sam numer pozycji dwa razy w jednym dniu — zmień numer (Lp.) przy jednym z ćwiczeń",
+    powtorzone);
 
   // Ciężar wpisany ręcznie nie reaguje ani na 1RM, ani na oceny klienta.
   // W tabeli widać go przy konkretnym tygodniu, ale trener patrzy zwykle na

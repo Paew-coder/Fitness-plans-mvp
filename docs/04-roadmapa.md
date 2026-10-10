@@ -792,6 +792,15 @@ Trener: „cofnij działa, ale potrzebuję usuwania danego ćwiczenia klawiszem 
 * Po zapisie tabela rysuje się od nowa i fokus ginął — po Backspace nie dało się od razu wybrać innego ćwiczenia z klawiatury, a Tab między polami gubił się w połowie. Teraz fokus wraca na to samo pole w tym samym wierszu (wiersz po `positionId`, komórka, pole), z kursorem w tym samym miejscu.
 * Przegląd ekranów (13c): Backspace na ćwiczeniu (zapisane, fokus zostaje), ⌘Z przywraca, Backspace na kategorii, cofanie po kolei do stanu wyjścia, Tab po zapisie.
 
+**55. Numer pozycji (Lp.) do zmiany w wierszu — A1 i A2 przed B1 — 10.10.2026.**
+
+Trener: „co mogę zrobić, żeby w dniu 1 było ćwiczenie A1 i A2 i dopiero później B1?”.
+
+* Numeracja dnia była stała jak w pustym arkuszu (A1 · B1 B2 · C1 C2 · D1 D2 · E1 E2), choć szablony z Base44 miały już układy z A2. Teraz numer w kolumnie Lp. to lista (kropkowane podkreślenie): A1–H4 albo „—”. W arkuszu wystarczało wpisać inny numer — tu tak samo. Zmiana to krok do cofnięcia („B1 → A2”).
+* Numer niesie znaczenie, jak w arkuszu: wspólna litera = superseria (u klienta jedna grupa), litera A = miejsce boju głównego (coeff 1,0 liczy się jak bój, „G” przestawia), C2 i D2 o stopień wyżej w szablonie akcesoriów. Eksport wpisuje numer do arkusza, import go czyta.
+* Kontrola planu: ostrzeżenie „pierwsze miejsce dnia bez boju” tylko dla A1 (akcesorium w A2 przy boju to normalna superseria); nowe ostrzeżenie o tym samym numerze dwa razy w dniu. Serwer przyjmuje numer jako krótki tekst.
+* Testy silnika (A2 z bojem i z akcesorium, powtórzony numer), kształtu planu, przegląd ekranów (B1 → A2 zapisane, u klienta grupa A, „Cofnij”).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
