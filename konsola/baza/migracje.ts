@@ -287,10 +287,27 @@ function doWersji6(d: DatabaseSync): void {
   d.exec("ALTER TABLE wykonanie ADD COLUMN serie_json TEXT");
 }
 
+/**
+ * Wersja 7 — wersja robocza planu (10.10.2026).
+ *
+ * Trener: „jak wprowadzam zmiany, to nie ma to wpływać na aktualne plany
+ * klientów, chyba że to zatwierdzę”. Plan trenera zostaje w `plan_json`;
+ * `plan_klienta_json` to kopia tego, co klient widzi, dopóki zmiany czekają
+ * na zatwierdzenie, `pozycje_klienta_json` — mapa przestawień ▲▼, a
+ * `zmiany_od` — od kiedy czekają. Pusto = nic nie czeka. Szczegóły:
+ * `wersja-robocza.ts`.
+ */
+function doWersji7(d: DatabaseSync): void {
+  for (const kolumna of ["plan_klienta_json", "pozycje_klienta_json", "zmiany_od"]) {
+    if (!maKolumne(d, "plan", kolumna)) d.exec(`ALTER TABLE plan ADD COLUMN ${kolumna} TEXT`);
+  }
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
   { doWersji: 4, opis: "TOP SET zapisany tam, gdzie był widoczny", wykonaj: doWersji4 },
   { doWersji: 5, opis: "RPE TOP SETU osobno na każdy tydzień", wykonaj: doWersji5 },
   { doWersji: 6, opis: "wykonanie pamięta wszystkie serie, nie tylko najcięższą", wykonaj: doWersji6 },
+  { doWersji: 7, opis: "wersja robocza planu — zmiany trenera czekają na zatwierdzenie", wykonaj: doWersji7 },
 ];
