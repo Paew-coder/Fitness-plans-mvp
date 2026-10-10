@@ -1492,6 +1492,83 @@ function poZapisieTrenera(wykonaj) {
   else wykonaj();
 }
 
+/*
+ * ── „Resetuj plan” (10.10.2026) ──────────────────────────────────────
+ *
+ * Trener: „przycisk, który resetuje plan, żeby ktoś mógł zacząć go od
+ * początku — z pytaniem o potwierdzenie, żeby nie zrobić tego przypadkiem”.
+ * Okno mówi, co dokładnie zniknie (wpisy klienta z tego cyklu) i co zostaje
+ * (cały plan trenera). Reset jest ostateczny — historia cofania też startuje
+ * od nowa, bo ⌘Z nie przywróciłby wykonań, które leżą poza planem.
+ */
+const dzisISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const dataPL = (iso) => iso ? iso.split("-").reverse().join(".") : "";
+
+$("#resetuj-plan").onclick = () => {
+  const z = obraz.zapisany;
+  const tygodnie = z.plan.sloty.flatMap((s) => Object.values(s.tygodnie ?? {}));
+  const oceny = tygodnie.filter((t) => t?.feedback).length;
+  const ciezaryKlienta = tygodnie.filter((t) => t?.ciezarKlienta || t?.topSetKlienta).length;
+  const kalibracje = z.plan.serieMaksymalne.filter((s) => s.kalibracja).length;
+  const wykonan = (z.wykonania ?? []).length;
+  const dni = (z.ukonczoneDni ?? []).length;
+  const coZniknie = [
+    [dni, ["ukończony trening", "ukończone treningi", "ukończonych treningów"]],
+    [wykonan, ["zapisane wykonanie ćwiczenia (ciężary, serie)", "zapisane wykonania ćwiczeń (ciężary, serie)", "zapisanych wykonań ćwiczeń (ciężary, serie)"]],
+    [oceny, ["ocena klienta", "oceny klienta", "ocen klienta"]],
+    [ciezaryKlienta, ["ciężar wybrany przez klienta", "ciężary wybrane przez klienta", "ciężarów wybranych przez klienta"]],
+    [kalibracje, ["1RM wyliczone z jego treningu", "1RM wyliczone z jego treningu", "1RM wyliczonych z jego treningu"]],
+  ].filter(([n]) => n > 0).map(([n, formy]) => el("li", "", `${n} ${odmiana(n, formy)}`));
+
+  const lista = el("ul", "lista-resetu");
+  lista.append(...(coZniknie.length ? coZniknie : [el("li", "", "nic — klient nie ma jeszcze wpisów w tym cyklu")]));
+  const dzis = dzisISO();
+  const naDzis = el("input");
+  naDzis.type = "checkbox";
+  naDzis.id = "reset-start-dzis";
+  naDzis.checked = !z.dataStartu || z.dataStartu < dzis;
+  const etykieta = el("label", "pole-resetu");
+  etykieta.append(naDzis, ` Ustaw start na dziś (${dataPL(dzis)})${z.dataStartu ? ` — teraz: ${dataPL(z.dataStartu)}` : ""}`);
+
+  const resetuj = el("button", "niebezpieczny", "↺ Resetuj plan — od początku");
+  resetuj.type = "button";
+  resetuj.onclick = () => poZapisieTrenera(async () => {
+    resetuj.disabled = true;
+    try {
+      obraz = await api(`/api/plany/${z.id}/reset`, {
+        method: "POST", body: naDzis.checked ? { dataStartu: dzis } : {},
+      });
+      zamknijModal();
+      tydzien = 1;
+      historia.idPlanu = null;   // reset jest ostateczny — cofanie zaczyna od tego stanu
+      rysujPlan();
+      $("#zapis").textContent = "plan zresetowany — klient zaczyna od początku";
+    } catch (err) {
+      alert(err.message);
+      resetuj.disabled = false;
+    }
+  });
+  const anuluj = el("button", "", "Anuluj");
+  anuluj.type = "button";
+  anuluj.onclick = zamknijModal;
+  const akcje = el("div", "akcje-modala");
+  akcje.append(resetuj, anuluj);
+
+  pokazModal(`Zresetować plan „${z.klient} ${z.wersja}.0”?`,
+    el("p", "", "Klient zacznie ten plan od pierwszego treningu. Znikną jego wpisy z tego cyklu:"),
+    lista,
+    el("p", "wskazowka", "Zostaje cały plan: ćwiczenia, serie, powtórzenia, RPE, ciężary wpisane przez Ciebie, "
+      + "serie maksymalne i waga klienta." + (obraz.zmianyDlaKlienta ? " Twoje zmiany dalej czekają na zatwierdzenie." : "")),
+    etykieta,
+    el("p", "wskazowka ostrzezenie", "Tego nie da się cofnąć."),
+    akcje);
+  $("#modal-zamknij").classList.add("ukryty");   // wyjście jest jedno: „Anuluj”
+  anuluj.focus();   // Enter przy otwartym oknie nie może zresetować
+};
+
 $("#zatwierdz-zmiany").onclick = () => poZapisieTrenera(async () => {
   try {
     obraz = await api(`/api/plany/${obraz.zapisany.id}/zatwierdz`, { method: "POST" });

@@ -19,7 +19,8 @@ import { baza } from "./baza/polaczenie.ts";
 import { idKlienta, idPlanu } from "./nazwy.ts";
 import type { SeriaWykonana } from "./serie-wykonane.ts";
 import {
-  bezPrzestawien, kanonicznie, naKlienta, odwrocMape, przeniesWpisyKlienta, przestaw, type MapaPozycji,
+  bezPrzestawien, bezWpisowKlienta, kanonicznie, naKlienta, odwrocMape, przeniesWpisyKlienta, przestaw,
+  type MapaPozycji,
 } from "./wersja-robocza.ts";
 
 export { trenerDomyslny } from "./baza/polaczenie.ts";
@@ -605,6 +606,31 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
   // klienta i mapą pozycji takimi, jakie właśnie trafiły do bazy.
   return wczytaj(pelny.trenerId, pelny.id, zapisany.widok === "klient" ? "klient" : "trener")
     ?? { ...pelny, waga: wagaKlienta(pelny.trenerId, pelny.klientId) };
+}
+
+/**
+ * „Resetuj plan” (10.10.2026): klient zaczyna ten cykl od pierwszego treningu.
+ *
+ * Znikają wpisy klienta z tego cyklu — wykonania, ukończone dni, oceny, jego
+ * ciężary i TOP SETY, 1RM wyliczone z jego treningu — w obu wersjach planu,
+ * jeśli zmiany trenera czekają na zatwierdzenie (te zmiany dalej czekają).
+ * Zapis idzie jako zapis klienta: to jego dane, a `przeniesWpisyKlienta`
+ * przepisze ich usunięcie na plan trenera. Waga klienta zostaje — należy do
+ * niego, nie do cyklu. `dataStartu` — nowa data startu, gdy trener ją podał.
+ */
+export function resetujPostep(
+  trenerId: number, id: string, dataStartu?: string | null,
+): ZapisanyPlan | null {
+  const uKlienta = wczytaj(trenerId, id, "klient");
+  if (!uKlienta) return null;
+  zapisz({
+    ...uKlienta,
+    plan: bezWpisowKlienta(uKlienta.plan),
+    wykonania: [],
+    ukonczoneDni: [],
+    ...(dataStartu !== undefined ? { dataStartu } : {}),
+  });
+  return wczytaj(trenerId, id);
 }
 
 /** Zatwierdzenie zmian trenera: klient widzi odtąd plan trenera. */

@@ -1679,6 +1679,17 @@ const serwer = createServer(async (req, res) => {
         return json(res, obrazPlanu(magazyn.odrzucZmiany(zapisany)));
       }
 
+      // „Resetuj plan” (10.10.2026): klient zaczyna cykl od pierwszego treningu.
+      // Konsola pyta o potwierdzenie i mówi, co zniknie; tu tylko granica.
+      if (akcja === "/reset" && req.method === "POST") {
+        const { dataStartu } = await cialo(req);
+        if (dataStartu !== undefined) {
+          const bladDaty = bladDatyStartu(dataStartu);
+          if (bladDaty) return blad(res, bladDaty);
+        }
+        return json(res, obrazPlanu(magazyn.resetujPostep(trenerId, id!, dataStartu)!));
+      }
+
       // Link należy do klienta, nie do planu — raz wysłany działa przez
       // kolejne cykle i sam pokazuje aktualny. Ten adres zostaje przy planie,
       // bo trener klika go z ekranu planu; działa na jego kliencie.

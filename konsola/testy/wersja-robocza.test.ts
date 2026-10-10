@@ -268,3 +268,73 @@ describe("wersja robocza przez serwer", () => {
     assert.equal((await trener()).zmianyDlaKlienta, null);
   });
 });
+
+/**
+ * „Resetuj plan” (10.10.2026): „przycisk, który resetuje plan, żeby ktoś mógł
+ * zacząć go od początku — z pytaniem o potwierdzenie”. Pytanie zadaje konsola;
+ * tu sprawdzamy, co serwer zdejmuje, a co zostawia.
+ */
+describe("reset planu — klient zaczyna od początku", () => {
+  const RESET = "reset-osoba-1";
+  let tokenResetu = "";
+  const trenerR = async () => (await api(`/api/plany/${RESET}`)).dane;
+  const klientR = async () => (await api(`/api/klient/${tokenResetu}`)).dane;
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Reset Osoba", wersja: 1 });
+    const o = await trenerR();
+    const p = o.zapisany.plan;
+    p.sloty[0].cwiczenieId = "EX-0011";
+    p.sloty[1].cwiczenieId = "EX-0016";   // bez serii maksymalnej — klient dobierze, 1RM z treningu
+    p.sloty[0].tygodnie = { 1: { serie: 5, ciezarOverride: 60 } };
+    p.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
+    await api(`/api/plany/${RESET}`, "PUT", { plan: p, dataStartu: "2026-09-01", status: "wysłany", zmieniony: o.zapisany.zmieniony });
+    tokenResetu = (await api(`/api/plany/${RESET}/link`, "POST")).dane.token;
+    await api(`/api/klient/${tokenResetu}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 1, feedback: "za łatwe", ciezarWykonany: 60, powtorzeniaWykonane: 5 });
+    await api(`/api/klient/${tokenResetu}/odczucie`, "POST",
+      { positionId: "D1-S02", tydzien: 1, feedback: "OK", serie: [{ ciezar: 50, powtorzenia: 10 }] });
+    await api(`/api/klient/${tokenResetu}/dzien`, "POST", { tydzien: 1, dzien: 1 });
+    // Zmiana trenera, która czeka na zatwierdzenie — reset jej nie rusza.
+    const t = await trenerR();
+    t.zapisany.plan.sloty[2].cwiczenieId = "EX-0010";
+    await api(`/api/plany/${RESET}`, "PUT", { plan: t.zapisany.plan, dataStartu: t.zapisany.dataStartu, status: "wysłany", zmieniony: t.zapisany.zmieniony });
+  });
+
+  test("przed resetem są wpisy klienta (żeby test sprawdzał coś realnego)", async () => {
+    const t = await trenerR();
+    assert.ok(t.zapisany.wykonania.length >= 2);
+    assert.equal(t.zapisany.ukonczoneDni.length, 1);
+    assert.equal(t.zapisany.plan.sloty[0].tygodnie[1].feedback, "za łatwe");
+    assert.ok(t.zapisany.plan.serieMaksymalne.some((s: any) => s.kalibracja), "brak 1RM z treningu klienta");
+    assert.ok(t.zmianyDlaKlienta);
+  });
+
+  test("reset: znikają wykonania, ukończone dni, oceny i 1RM z treningu — w obu wersjach", async () => {
+    const odp = await api(`/api/plany/${RESET}/reset`, "POST", { dataStartu: "2026-10-10" });
+    assert.equal(odp.kod, 200);
+    const t = odp.dane.zapisany;
+    assert.deepEqual([t.wykonania.length, t.ukonczoneDni.length], [0, 0]);
+    assert.ok(t.plan.sloty.every((s: any) => Object.values(s.tygodnie ?? {})
+      .every((w: any) => !w.feedback && !w.ciezarKlienta && !w.topSetKlienta)));
+    assert.ok(!t.plan.serieMaksymalne.some((s: any) => s.kalibracja), "1RM z treningu klienta zostało");
+    const k = await klientR();
+    const pierwszy = k.tygodnie[0].dni[0].cwiczenia[0];
+    assert.equal(pierwszy.feedback, null);
+    assert.equal(pierwszy.ciezarWykonany, null);
+  });
+
+  test("zostaje plan trenera: parametry, ciężar na sztywno, seria maksymalna; zmiana dalej czeka", async () => {
+    const t = await trenerR();
+    assert.deepEqual(t.zapisany.plan.sloty[0].tygodnie[1], { serie: 5, ciezarOverride: 60 });
+    assert.deepEqual(t.zapisany.plan.serieMaksymalne, [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }]);
+    assert.equal(t.zapisany.plan.sloty[2].cwiczenieId, "EX-0010");
+    assert.ok(t.zmianyDlaKlienta, "czekająca zmiana trenera nie zniknęła");
+    assert.equal(t.zapisany.dataStartu, "2026-10-10");
+  });
+
+  test("bez daty w żądaniu data startu zostaje; zła data — odmowa", async () => {
+    assert.equal((await api(`/api/plany/${RESET}/reset`, "POST", {})).dane.zapisany.dataStartu, "2026-10-10");
+    assert.equal((await api(`/api/plany/${RESET}/reset`, "POST", { dataStartu: "2026-02-30" })).kod, 400);
+  });
+});
