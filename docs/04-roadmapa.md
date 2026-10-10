@@ -822,6 +822,15 @@ Trener: „z poziomu konsoli chcę mieć przycisk, który resetuje plan, żeby k
 * „Szablon z Base44” → **„Wybierz szablon”**.
 * Testy: reset przez serwer (wpisy klienta i 1RM z treningu znikają w obu wersjach, plan trenera i czekająca zmiana zostają, data startu, zła data — odmowa), przegląd ekranów (okno, „Anuluj” nic nie rusza, reset, start od dziś).
 
+**58. Masa ciała: powtórzenia rosną przez cały cykl, bez restartu w T4 — 10.10.2026.**
+
+Trener: „ćwiczenie glute crusher na tygodnie 1–3 ma progresję 10–12 powtórzeń, bo jest z masą ciała, ale na tygodnie 4–6 znowu ma 10–12, co jest bez sensu, bo ktoś powtarza to samo. W tego typu ćwiczeniu powinno być od T1 do T6 10–15 powtórzeń, i w innych ćwiczeniach typu glute crusher tak samo”.
+
+* Automat powtórzeń akcesoriów (baza z coeff + przesunięcie tygodnia) restartował w T4 — przy ciężarze słusznie, bo blok II podnosi RPE. Przy progresji „masa ciała” nie ma czego dociążyć, więc przesunięcie idzie teraz przez cały cykl (`offsetCyklu`): objętość coeff 0,5 → 10, 11, 12, 13, 14, 15; coeff 0,75 (Pull up, Dips) → 8 … 13; intensywność o 2 niżej; hipertrofia 12 … 15 (tabela kończy się na 15). Deload jak T6. Korekta z ocen klienta (±1 powtórzenie za 5%) działa jak dotąd, w granicach 1–15.
+* Dotyczy wszystkich ćwiczeń z progresją „masa ciała” — 17 w BAZIE trenera (Glute crusher, Push up, Pull up, Dips, Knee raises, Reverse Nordic, Swiss ball leg curl…) i tych z bibliotek. Powtórzenia wpisane ręcznie przez trenera — bez zmian. Akcesoria z ciężarem, „czas”, „dystans” i „ręczne ustawienie” — jak dotąd.
+* Zmiana w automacie, więc działa od razu we wszystkich planach (także wysłanych — to nie zmiana trenera w planie, nie czeka na zatwierdzenie). Eksport wpisuje te powtórzenia do arkusza wprost — formuła arkusza zaczęłaby blok od nowa.
+* Testy: automat (trzy części planu, obcięcie), plan z Glute crusherem obok akcesorium z ciężarem (restart zostaje), eksport.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

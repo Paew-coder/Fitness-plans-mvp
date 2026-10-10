@@ -143,6 +143,14 @@ function powtorzeniaAkcesorium(
 
 `offsetTygodnia`: T1 = 0, T2 = 1, T3 = 2, T4 = 0, T5 = 1, T6 = 2.
 
+**Wyjątek poza arkuszem — masa ciała (10.10.2026).** Trener: „glute crusher na
+T1–T3 ma 10–12, a na T4–T6 znowu 10–12, co jest bez sensu, bo ktoś powtarza to
+samo — powinno być od T1 do T6 10–15”. Restart w T4 ma sens przy ciężarze (blok II
+podnosi RPE, czyli kilogramy); przy masie ciała rosnąć mogą tylko powtórzenia.
+Dla progresji „masa ciała” offset idzie przez cały cykl: `offsetCyklu` = T1 0 …
+T6 5 (deload jak T6), z tym samym obcięciem do 15. Eksport wpisuje te powtórzenia
+do arkusza wprost, bo formuła arkusza zaczęłaby blok od nowa.
+
 Bój główny ma własną tabelę — `PROGRESJA_BOJU` w `szablon-boju.ts`, dwie kolumny wg tej samej `CzescPlanu`: `objętość` to cz.1 trenera (6×6 @6,5 → … → 6×3 @7,5), `intensywność` to cz.2 (6×4 @7 → … → 6×2 @8).
 
 Dotyczy wszystkiego, co **nie jest bojem głównym**. Bojem głównym jest pozycja `A` **z ćwiczeniem złożonym** (coeff 1,0) — jej serie/powtórzenia/RPE ustawia trener wprost albo bierze z szablonu 5.18. Akcesorium postawione na pierwszym miejscu dnia idzie przez ten automat jak każde inne; kontrola planu mówi o tym wprost (`POZYCJA_A_BEZ_BOJU`).

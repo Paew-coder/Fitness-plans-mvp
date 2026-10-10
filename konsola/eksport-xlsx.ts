@@ -113,7 +113,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // formułę, która w arkuszu liczy je sama.
         // Pauzowane (02.10.2026) też — arkusz nie zna ich progresji i policzyłby
         // im powtórzenia automatem akcesorium (8 zamiast 3).
+        // Masa ciała (10.10.2026) też: w aplikacji powtórzenia rosną T1–T6
+        // bez restartu w T4, a formuła arkusza zaczęłaby blok od nowa.
         powtorzenia_reczne: bojGlowny || bezAutomatuArkusza || obliczony?.pauza
+          || cwiczenie.progresja === "masa ciała"
           ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
           : (p.powtorzenia ?? null),
         // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby
