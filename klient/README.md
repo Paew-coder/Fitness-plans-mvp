@@ -224,6 +224,13 @@ ciężary** z dwoma przyciskami:
   na pierwszy niezrobiony trening.
 * **Najpierw serie maksymalne** — jak dotąd: jedna seria do odmowy na ćwiczenie.
 
+Baner **da się zwinąć** (od 10.10.2026) — dotknięcie nagłówka zostawia jedną
+spokojną linijkę: *Skąd wziąć ciężary … 6 do ustalenia ▸*. Klient,
+który wybrał już drogę i trenuje, nie musi mieć całej karty nad listą przy
+każdym wejściu. Telefon pamięta zwinięcie do końca cyklu; nowy plan pokazuje
+baner znowu cały, bo przynosi nowe ćwiczenia bez ciężarów. Gdy ciężary są już
+we wszystkich ćwiczeniach, baner znika sam — zwinięty czy nie.
+
 Tam, gdzie ciężaru jeszcze nie ma, zamiast „— brak 1RM" klient widzi **dobierz
 ciężar** i jedno zdanie, jak to zrobić. Pola na wpisanie serii są od razu na
 wierzchu — bo tu wpis nie jest dodatkiem, tylko jedynym źródłem ciężarów.

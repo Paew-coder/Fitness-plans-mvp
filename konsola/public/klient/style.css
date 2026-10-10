@@ -117,6 +117,30 @@ button { font: inherit; cursor: pointer; }
 .akcje-baneru { display: flex; gap: .6rem; flex-wrap: wrap; }
 .akcje-baneru button { flex: 1 1 auto; }
 
+/* Baner zwijany do jednej linijki — „Skąd wziąć ciężary” (10.10.2026).
+   Nagłówek działa jak nagłówek tygodnia: dotknięcie zwija i rozwija, strzałka
+   po prawej. Sięga do krawędzi karty, żeby dało się trafić kciukiem w całą
+   jej górę, a po zwinięciu — w całą linijkę. */
+.baner-naglowek {
+  display: flex; align-items: center; gap: .6rem;
+  margin: -1rem -1rem 0; padding: 1rem 1rem 0; border-radius: inherit;
+  cursor: pointer; list-style: none;
+}
+.baner-naglowek::-webkit-details-marker { display: none; }
+.baner-tytul { flex: 1; }
+.baner-naglowek::after {
+  content: "▸"; color: var(--akcent); width: 1rem; text-align: center;
+  transition: transform .15s ease;
+}
+details.baner[open] > .baner-naglowek::after { transform: rotate(90deg); }
+/* „6 do ustalenia” przy strzałce — jak „0 z 1” przy tygodniu. */
+.baner-licznik { font-size: .82rem; color: var(--tekst-slaby); white-space: nowrap; }
+details.baner[open] .baner-licznik { display: none; }
+/* Zwinięty nie woła akcentem — spokojna linijka jak tydzień na liście. */
+details.baner:not([open]) { background: var(--karta); border-color: var(--linia); }
+details.baner:not([open]) > .baner-naglowek { margin-bottom: -1rem; padding-bottom: 1rem; }
+details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); }
+
 /* ── tygodnie i dni ─────────────────────────────────────────────── */
 .tydzien { border-bottom: 1px solid var(--linia); }
 .tydzien[open] { padding-bottom: .6rem; }
