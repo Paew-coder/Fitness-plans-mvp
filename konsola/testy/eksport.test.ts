@@ -198,6 +198,16 @@ describe("eksport — deload i maksy, gdy są w planie", () => {
   });
 });
 
+describe("eksport — masa ciała (10.10.2026)", () => {
+  test("Glute crusher dostaje powtórzenia wprost: 10–15, a nie formułę arkusza z restartem w T4", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.sloty[2]!.cwiczenieId = "EX-0092";   // B2. Glute crusher — masa ciała
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual([1, 2, 3, 4, 5, 6].map((t) => pole(dane, "D1-S03", t).powtorzenia_reczne), [10, 11, 12, 13, 14, 15]);
+    assert.equal(pole(dane, "D1-S02", 4).powtorzenia_reczne, null, "akcesorium z ciężarem dalej liczy formuła arkusza");
+  });
+});
+
 describe("eksport — hipertrofia", () => {
   test("akcesoria dostają powtórzenia wprost — arkusz liczyłby 8/10, nie 10–12", () => {
     const zapisany = planDomyslny();

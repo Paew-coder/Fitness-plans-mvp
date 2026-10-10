@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { oblicz1RM, procent1RM, rozwiaz1RM, konfliktSeriiMaksymalnych } from "../src/rpe.ts";
 import { oneRMzSerii, propozycja1RM, ocenPropozycje } from "../src/odczyt-1rm.ts";
 import { mnoznikAdaptacji, mnoznikNaTydzien, korektaPowtorzen } from "../src/adaptacja.ts";
-import { powtorzeniaAkcesorium, powtorzeniaBazowe, offsetTygodnia } from "../src/powtorzenia.ts";
+import { powtorzeniaAkcesorium, powtorzeniaBazowe, offsetCyklu, offsetTygodnia } from "../src/powtorzenia.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "../src/ciezar.ts";
 import { stresSlotu, bilansTygodnia, ocenaNormy, serieEfektywne, NORMY } from "../src/stres.ts";
 import { mround } from "../src/pomocnicze.ts";
@@ -136,6 +136,32 @@ describe("automat powtórzeń akcesoriów (kolumna E)", () => {
       powtorzeniaAkcesorium({ coeff: 0.5, czesc: "objętość", tydzien: t as 1 }),
     );
     assert.deepEqual(wynik, [10, 11, 12, 10, 11, 12]);
+  });
+
+  test("masa ciała: T1–T6 bez restartu w T4 — glute crusher 10–15 (trener, 10.10.2026)", () => {
+    const tygodnie = [1, 2, 3, 4, 5, 6] as const;
+    const masaCiala = (czesc: "objętość" | "intensywność" | "hipertrofia") =>
+      tygodnie.map((t) => powtorzeniaAkcesorium({ coeff: 0.5, czesc, tydzien: t, przezCalyCykl: true }));
+    assert.deepEqual(masaCiala("objętość"), [10, 11, 12, 13, 14, 15]);
+    assert.deepEqual(masaCiala("intensywność"), [8, 9, 10, 11, 12, 13]);
+    assert.deepEqual(masaCiala("hipertrofia"), [12, 13, 14, 15, 15, 15], "nie ponad 15 — tabela RPE kończy się na 15");
+    assert.deepEqual(tygodnie.map((t) => offsetCyklu(t)), [0, 1, 2, 3, 4, 5]);
+  });
+
+  test("masa ciała w planie: Glute crusher rośnie do T6, akcesorium z ciężarem dalej restartuje w T4", () => {
+    const plan: Plan = {
+      nazwa: "x", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "objętość", serieMaksymalne: [],
+      sloty: [
+        { positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId: "EX-0092", kategoriaSzkieletu: null, tygodnie: {} },
+        { positionId: "D1-S03", dzien: 1, lp: "B2.", cwiczenieId: "EX-0062", kategoriaSzkieletu: null, tygodnie: {} },
+      ],
+    };
+    const wynik = przeliczPlan(plan);
+    const powt = (i: number) => wynik.tygodnie.map((t) => t.sloty[i]!.powtorzenia);
+    assert.equal(katalog.poId("EX-0092")!.progresja, "masa ciała");
+    assert.deepEqual(powt(0), [10, 11, 12, 13, 14, 15]);
+    assert.equal(katalog.poId("EX-0062")!.progresja, "kg");
+    assert.deepEqual(powt(1).slice(3), powt(1).slice(0, 3), "z ciężarem T4 zaczyna blok od nowa — rośnie RPE");
   });
 
   test("obcięcie do zakresu tabeli 1–15", () => {
