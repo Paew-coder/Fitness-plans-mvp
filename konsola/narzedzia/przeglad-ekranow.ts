@@ -1762,6 +1762,68 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       film: "https://youtu.be/abc" }]),
     JSON.stringify(rozgrzewki));
 
+  // ── 19c. „Resetuj plan” (10.10.2026) ──────────────────────────────
+  // „Przycisk, który resetuje plan, żeby ktoś mógł zacząć go od początku —
+  // z pytaniem o potwierdzenie, żeby nie zrobić tego przypadkiem.” Osobny
+  // plan z treningiem klienta: okno mówi, co zniknie; „Anuluj” nic nie rusza;
+  // „Resetuj” czyści wpisy klienta i zostawia plan trenera.
+  {
+    await api("/api/plany", "POST", { klient: "Reset Ekran", wersja: 1 });
+    const idResetu = (await api("/api/plany")).find((p: any) => p.klient === "Reset Ekran").id;
+    const o = await api(`/api/plany/${idResetu}`);
+    o.zapisany.plan.sloty[0].cwiczenieId = "EX-0011";
+    o.zapisany.plan.sloty[1].cwiczenieId = "EX-0016";
+    o.zapisany.plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
+    await api(`/api/plany/${idResetu}`, "PUT",
+      { plan: o.zapisany.plan, dataStartu: "2026-09-01", status: "wysłany", zmieniony: o.zapisany.zmieniony });
+    const tokenResetu = (await api(`/api/plany/${idResetu}/link`, "POST")).token;
+    await api(`/api/klient/${tokenResetu}/odczucie`, "POST",
+      { positionId: "D1-S01", tydzien: 1, feedback: "OK", ciezarWykonany: 70, powtorzeniaWykonane: 5 });
+    await api(`/api/klient/${tokenResetu}/dzien`, "POST", { tydzien: 1, dzien: 1 });
+    const stanResetu = async () => await api(`/api/plany/${idResetu}`);
+
+    await s.goto(`${ADRES}/?plan=${PLAN}`, { waitUntil: "networkidle" });
+    await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
+    await s.locator("#lista-klientow .pozycja", { hasText: "Reset Ekran" }).getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-klient:not(.ukryty)");
+    await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-plan:not(.ukryty)");
+    await s.waitForTimeout(400);
+
+    const przedResetem = (await stanResetu()).zapisany;
+    const nWykonan = przedResetem.wykonania.length;
+    await s.locator("#resetuj-plan").click();
+    await s.waitForSelector("#modal:not(.ukryty)");
+    const oknoResetu = await s.locator("#modal-body").innerText();
+    const fokusNaAnuluj = await s.evaluate(() => document.activeElement?.textContent === "Anuluj");
+    sprawdz("„↺ Resetuj plan” pyta o potwierdzenie i mówi, co zniknie, a co zostaje (Enter = Anuluj)",
+      /1 ukończony trening/.test(oknoResetu) && new RegExp(`${nWykonan} zapisan`).test(oknoResetu)
+        && /\d+ ocen[ay]? klienta/.test(oknoResetu)
+        && /Zostaje cały plan/.test(oknoResetu) && /nie da się cofnąć/.test(oknoResetu) && fokusNaAnuluj,
+      oknoResetu.replace(/\n+/g, " | ").slice(0, 160));
+    await s.locator("#modal-body").getByRole("button", { name: "Anuluj" }).click();
+    const poAnuluj = await stanResetu();
+    sprawdz("„Anuluj” niczego nie rusza",
+      nWykonan > 0 && poAnuluj.zapisany.wykonania.length === nWykonan && poAnuluj.zapisany.ukonczoneDni.length === 1,
+      `${poAnuluj.zapisany.wykonania.length} z ${nWykonan} wykonań`);
+
+    await s.locator("#resetuj-plan").click();
+    await s.waitForSelector("#modal:not(.ukryty)");
+    await s.locator("#modal-body").getByRole("button", { name: /Resetuj plan/ }).click();
+    await s.waitForSelector("#modal.ukryty", { state: "attached", timeout: 8000 }).catch(() => null);
+    await s.waitForTimeout(300);
+    const poResecie = await stanResetu();
+    const klientPo = await api(`/api/klient/${tokenResetu}`);
+    sprawdz("po resecie: klient zaczyna od początku, plan trenera zostaje, start od dziś",
+      poResecie.zapisany.wykonania.length === 0 && poResecie.zapisany.ukonczoneDni.length === 0
+        && !poResecie.zapisany.plan.sloty[0].tygodnie?.["1"]?.feedback
+        && poResecie.zapisany.plan.sloty[0].cwiczenieId === "EX-0011" && poResecie.zapisany.plan.serieMaksymalne.length === 1
+        && poResecie.zapisany.dataStartu !== "2026-09-01"
+        && klientPo.tygodnie[0].dni[0].cwiczenia[0].feedback === null
+        && /zresetowany/.test(await s.locator("#zapis").innerText()),
+      `${poResecie.zapisany.wykonania.length} wykonań, start ${poResecie.zapisany.dataStartu}`);
+  }
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon

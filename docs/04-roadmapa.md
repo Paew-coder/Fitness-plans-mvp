@@ -812,6 +812,16 @@ Trener: „możemy dodać funkcję taką, że jak wprowadzam zmiany, to nie wpł
 * Baza: wersja 7 (`plan_klienta_json`, `pozycje_klienta_json`, `zmiany_od`; kopia przed migracją jak zawsze). Logika: `konsola/wersja-robocza.ts`; zapis w `magazyn.zapisz` (widok trenera / widok klienta); trasy `/zatwierdz`, `/odrzuc`.
 * Testy: `testy/wersja-robocza.test.ts` (logika i cała droga przez serwer, 17), migracja, testy API zaktualizowane o zatwierdzanie; przeglądy ekranów (pasek, Zatwierdź, Odrzuć, ⌘Z) i klienta.
 
+**57. „↺ Resetuj plan” i „Wybierz szablon” — 10.10.2026.**
+
+Trener: „z poziomu konsoli chcę mieć przycisk, który resetuje plan, żeby ktoś mógł zacząć go od początku — z pytaniem o potwierdzenie, żeby nie zrobić tego przypadkiem. W miejscu »Szablon z Base44« samo »Wybierz szablon«”.
+
+* **↺ Resetuj plan** w nagłówku planu. Okno mówi, co zniknie — wpisy klienta z tego cyklu: ukończone treningi, zapisane wykonania (ciężary, serie), oceny, ciężary i TOP SETY wybrane przez klienta, 1RM wyliczone z jego treningu — i co zostaje: cały plan trenera (ćwiczenia, serie, powtórzenia, RPE, ciężary wpisane na sztywno), serie maksymalne, waga klienta. Pole „Ustaw start na dziś” (zaznaczone, gdy start jest w przeszłości). „Tego nie da się cofnąć”; fokus na „Anuluj”, więc Enter nic nie resetuje; jedyne wyjścia: „Resetuj plan — od początku” albo „Anuluj”.
+* Przy czekających zmianach (wersja robocza) reset czyści wpisy klienta w obu wersjach, a zmiany trenera dalej czekają. Historia cofania startuje od nowa — ⌘Z nie przywróciłby wykonań, które leżą poza planem.
+* Serwer: `POST /api/plany/:id/reset` (`magazyn.resetujPostep`, `bezWpisowKlienta` w `wersja-robocza.ts`), data startu sprawdzana jak przy zapisie.
+* „Szablon z Base44” → **„Wybierz szablon”**.
+* Testy: reset przez serwer (wpisy klienta i 1RM z treningu znikają w obu wersjach, plan trenera i czekająca zmiana zostają, data startu, zła data — odmowa), przegląd ekranów (okno, „Anuluj” nic nie rusza, reset, start od dziś).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
