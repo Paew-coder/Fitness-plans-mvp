@@ -296,6 +296,13 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
+## Numer pozycji (Lp.) w wierszu (od 10.10.2026)
+
+Numer w kolumnie Lp. (kropkowane podkreślenie) to lista A1–H4: dotknięcie
+i wybór, np. B1 → A2, żeby dzień szedł A1, A2, B1. Wspólna litera to
+superseria (u klienta jedna grupa), litera A — miejsce boju głównego (jak
+w arkuszu). Ten sam numer dwa razy w dniu daje ostrzeżenie w kontroli planu.
+
 ## Cofanie zmian w planie (od 10.10.2026)
 
 **↶ Cofnij** w prawym dolnym rogu planu albo **⌘Z / Ctrl+Z** cofa ostatnią zmianę

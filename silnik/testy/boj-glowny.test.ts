@@ -98,3 +98,37 @@ describe("progresja i kopiowanie nie gubią wyboru klienta", () => {
     assert.deepEqual(poKopii[2]!.topSetKlienta, { feedback: "za trudne", kg: 110 });
   });
 });
+
+/**
+ * Numeracja ustawiana przez trenera (10.10.2026): „żeby w dniu 1 było A1 i A2,
+ * a dopiero później B1”. Numer niesie znaczenie — litera A to miejsce boju.
+ */
+describe("A1 i A2 — superseria na pozycji boju", () => {
+  const zA2 = (cwiczenie: string) => plan((x) => {
+    x.sloty[1]!.lp = "A2.";
+    x.sloty[1]!.cwiczenieId = cwiczenie;
+  });
+  const kody = (p: Plan) => sprawdzPlan(p, przeliczPlan(p)).map((u) => u.kod);
+
+  test("A2 z ćwiczeniem złożonym (coeff 1,0) liczy się jak bój — progresja bloku", () => {
+    assert.deepEqual([b1(zA2(FRONT), 1).serie, b1(zA2(FRONT), 1).powtorzenia], [6, 6]);
+  });
+
+  test("akcesorium w A2 liczy się jak akcesorium i nie dostaje ostrzeżenia „pierwsze miejsce dnia”", () => {
+    const p = zA2(SLDL);
+    assert.equal(b1(p, 1).serie, 3);
+    assert.equal(kody(p).includes("POZYCJA_A_BEZ_BOJU"), false);
+  });
+
+  test("ten sam numer dwa razy w dniu — ostrzeżenie z numerem i dniem", () => {
+    const p = plan((x) => { x.sloty[1]!.lp = "A1."; });
+    const u = sprawdzPlan(p, przeliczPlan(p)).find((x) => x.kod === "NUMERACJA_POWTORZONA");
+    assert.deepEqual(u?.pozycje, ["dzień 1: A1"]);
+    assert.equal(kody(plan()).includes("NUMERACJA_POWTORZONA"), false);
+  });
+
+  test("numer bez kropki albo małą literą to ten sam numer", () => {
+    const p = plan((x) => { x.sloty[1]!.lp = "a1"; });
+    assert.ok(kody(p).includes("NUMERACJA_POWTORZONA"));
+  });
+});

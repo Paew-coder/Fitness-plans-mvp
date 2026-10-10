@@ -101,6 +101,11 @@ export function drugiBlok(tydzien: Tydzien): boolean {
   return tydzien >= 4;
 }
 
+/** Numer pozycji bez kropki i spacji, wielkimi literami: „a2.” → „A2”, brak → „”. */
+export function numerLp(lp: string | null | undefined): string {
+  return (lp ?? "").trim().replace(/\.$/, "").toUpperCase();
+}
+
 /** Pozycja A — miejsce boju głównego w numeracji arkusza. */
 export function pozycjaBoju(lp: string): boolean {
   return lp.trim().toUpperCase().startsWith("A");
