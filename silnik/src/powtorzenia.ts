@@ -35,7 +35,8 @@ export function powtorzeniaBazowe(coeff: Coeff, czesc: CzescPlanu): number {
  * bez sensu, bo ktoś powtarza to samo. W tego typu ćwiczeniu powinno być od T1
  * do T6 10–15 powtórzeń”. Restart w T4 ma sens przy ciężarze: blok II podnosi
  * RPE, czyli kilogramy. Przy masie ciała nie ma czego dociążyć — rosnąć mogą
- * tylko powtórzenia, więc rosną przez cały cykl. Deload (T7) jak T6.
+ * tylko powtórzenia, więc rosną przez cały cykl. Deload (T7) wraca do T1 —
+ * patrz `przeliczPlan`.
  */
 export function offsetCyklu(tydzien: Tydzien): number {
   return Math.min(tydzien, 6) - 1;

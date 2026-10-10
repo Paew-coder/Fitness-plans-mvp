@@ -148,7 +148,9 @@ T1–T3 ma 10–12, a na T4–T6 znowu 10–12, co jest bez sensu, bo ktoś powt
 samo — powinno być od T1 do T6 10–15”. Restart w T4 ma sens przy ciężarze (blok II
 podnosi RPE, czyli kilogramy); przy masie ciała rosnąć mogą tylko powtórzenia.
 Dla progresji „masa ciała” offset idzie przez cały cykl: `offsetCyklu` = T1 0 …
-T6 5 (deload jak T6), z tym samym obcięciem do 15. Eksport wpisuje te powtórzenia
+T6 5, z tym samym obcięciem do 15. Deload przy masie ciała wraca do powtórzeń
+z T1 (trener: „deload może wracać liczbą powtórzeń do T1”) — RPE o 1 niżej nic
+nie ujmuje, gdy nie ma ciężaru; z ciężarem deload zostaje „jak T6, RPE o 1 niżej”. Eksport wpisuje te powtórzenia
 do arkusza wprost, bo formuła arkusza zaczęłaby blok od nowa.
 
 Bój główny ma własną tabelę — `PROGRESJA_BOJU` w `szablon-boju.ts`, dwie kolumny wg tej samej `CzescPlanu`: `objętość` to cz.1 trenera (6×6 @6,5 → … → 6×3 @7,5), `intensywność` to cz.2 (6×4 @7 → … → 6×2 @8).
