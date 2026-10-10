@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS plan (
   plan_klienta_json    TEXT,
   pozycje_klienta_json TEXT,
   zmiany_od            TEXT,
+  -- Kiedy trener zresetował plan (od wersji 8) — telefon porzuca postęp sprzed.
+  reset_od             TEXT,
   PRIMARY KEY (trener_id, id),
   FOREIGN KEY (trener_id, klient_id) REFERENCES klient(trener_id, id) ON DELETE CASCADE
 );

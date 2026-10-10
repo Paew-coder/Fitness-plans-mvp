@@ -838,6 +838,15 @@ Trener: „w trakcie treningu, jeżeli ktoś ma na panelu »dobierz ciężar«, 
 * Panel serii: gdy stoi „dobierz” (brak 1RM albo ręczne ustawienie bez wpisu trenera), zamiast oceny jedno zdanie: „Za lekko albo za ciężko? Nic nie klikaj — zmień ciężar w następnej serii i wpisz go. Ocena pojawi się, gdy ciężar będzie już ustalony.” Gdy ciężar jest już policzony z pierwszej serii, ocena wraca. TOP SET bez 1RM — tak samo. Masa ciała (ocena zmienia powtórzenia) i lista ćwiczeń — bez zmian. SW `trening-v66`.
 * Przegląd klienta: przy dobieraniu brak oceny i jest zdanie; po pierwszej serii ocena wraca.
 
+**60. Reset planu czyści też postęp treningu w telefonie — 10.10.2026.**
+
+Trener: „po zresetowaniu planu usunęły mi się zapisane ciężary, ale serie zostały zapisane — byłem nadal w serii 2 z 6 i musiałem znowu dobrać ciężar, czyli nie zresetował się plan całkowicie”.
+
+* Przyczyna: postęp prowadzonego treningu (zrobione serie, bieżąca seria, oceny serii, korekty) żyje w pamięci telefonu, kluczowany planem, tygodniem i dniem. Reset czyścił bazę, a telefon wznawiał trening tam, gdzie stał — z ciężarem do dobrania, bo 1RM z treningu zniknęło.
+* Teraz reset zapisuje znacznik (`reset_od`, baza w wersji 8), widok klienta go niesie, a telefon porzuca postęp sprzed resetu — trening zaczyna się od pierwszej serii. Baner „Skąd wziąć ciężary” wraca rozwinięty, jak przy nowym planie.
+* Zadania z kolejki offline niosą znacznik, który telefon widział; zapis sprzed resetu serwer odrzuca (409 z wyjaśnieniem), zamiast przywrócić to, co trener wyczyścił. Zadania bez znacznika (starsza wersja aplikacji) przechodzą jak dotąd. SW `trening-v67`.
+* Przegląd klienta (sekcja 30): dwie serie w prowadzeniu, reset, ponowne wejście — „Seria 1 z 9 · zrobione 0” zamiast „zrobione 2”; zapis ze starym znacznikiem — 409, z bieżącym — przechodzi. Testy: znacznik w widoku, odmowa, zgodność wstecz, migracja.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

@@ -302,7 +302,9 @@ jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i b
 Okno potwierdzenia wylicza, co zniknie (ukończone treningi, wykonania, oceny,
 ciężary wybrane przez klienta, 1RM z jego treningu) i co zostaje (cały plan
 trenera, serie maksymalne, waga klienta); opcjonalnie ustawia start na dziś.
-Nie da się tego cofnąć.
+Nie da się tego cofnąć. Telefon klienta po resecie zaczyna trening od pierwszej
+serii (znacznik `reset_od`), a zaległe zapisy z kolejki offline sprzed resetu
+serwer odrzuca.
 
 ## Wersja robocza — zmiany czekają na zatwierdzenie (od 10.10.2026)
 
