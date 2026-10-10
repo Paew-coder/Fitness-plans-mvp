@@ -745,3 +745,26 @@ body.wyszukiwarka-otwarta { overflow: hidden; }
 }
 .karta-cw .glowny { font: inherit; padding: .6rem 1rem; border-radius: 7px; border: none;
   background: var(--akcent); color: #fff; width: 100%; cursor: pointer; }
+
+/* ── cofanie zmian w planie (10.10.2026) ─────────────────────────── */
+/* Na dole po prawej — nad kolumną stresu, którą się tylko czyta, a nie nad
+   strzałkami i polami. Plan ma pod spodem zapas, żeby ostatni wiersz dało się
+   wysunąć spod przycisku. */
+#ekran-plan { padding-bottom: 4.5rem; }
+.cofanie[hidden], .cofanie button[hidden] { display: none; }
+.cofanie {
+  position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 30; display: flex; gap: .4rem; max-width: calc(100vw - 2rem);
+}
+.cofanie button {
+  display: flex; align-items: center; gap: .35rem; min-height: 2.75rem; padding: .45rem .9rem;
+  border-radius: 999px; border: 1px solid var(--linia); background: var(--plaszczyzna); color: var(--tekst);
+  font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+}
+.cofanie button:disabled { opacity: .5; cursor: default; }
+#cofnij { min-width: 0; }
+.cofnij-opis {
+  font-weight: 400; color: var(--tekst-slaby); max-width: 22rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 760px) { .cofnij-opis { max-width: 9rem; } }

@@ -618,6 +618,7 @@ $("#usun-klienta").onclick = async () => {
 async function otworzPlan(id) {
   obraz = await api(`/api/plany/${id}`);
   tydzien = 1;
+  historia.idPlanu = null;   // otwarty na nowo — cofanie zaczyna się od tego stanu
   rysujPlan();
 }
 
@@ -636,6 +637,13 @@ async function otworzPlan(id) {
  * co innego.
  */
 function przejmijOdKlienta(mojPlan, swiezyPlan) {
+  przepiszWpisyKlienta(mojPlan, swiezyPlan);
+  mojPlan.serieMaksymalne = swiezyPlan.serieMaksymalne;
+  return mojPlan;
+}
+
+/** Oceny, ciężary i TOP SETY klienta z `swiezyPlan` na `mojPlan` — tydzień po tygodniu. */
+function przepiszWpisyKlienta(mojPlan, swiezyPlan) {
   const swiezeSloty = new Map(swiezyPlan.sloty.map((s) => [s.positionId, s]));
   for (const slot of mojPlan.sloty) {
     const swiezy = swiezeSloty.get(slot.positionId);
@@ -652,11 +660,164 @@ function przejmijOdKlienta(mojPlan, swiezyPlan) {
       }
     }
   }
-  mojPlan.serieMaksymalne = swiezyPlan.serieMaksymalne;
   return mojPlan;
 }
 
-function zapiszPozniej() {
+/*
+ * ── Cofanie zmian w planie (10.10.2026) ─────────────────────────────
+ *
+ * Trener: „chciałbym móc cofać dodane ćwiczenie — np. klawiszem cofania
+ * od razu”. ↶ Cofnij (⌘Z / Ctrl+Z) i ↷ Ponów (⇧⌘Z / Ctrl+Y), do 50 kroków,
+ * w obrębie otwartego planu.
+ *
+ * Krok to stan planu sprzed zmiany (plan, data startu, status). Zmiany
+ * z tabeli idą przez `zapiszPozniej` — seria szybkich zmian (pisanie w polu)
+ * to jeden krok. Zmiany robione przez serwer (wypełnienie tygodni, szablon,
+ * losowanie, asystent, 1RM, status) zmieniają tylko plan, więc też wracają
+ * zapisem poprzedniego stanu — `sledzZmianySerwera` łapie je w `rysujPlan`.
+ * Wyjątek: ▲▼ przenosi razem ze slotem wykonania klienta, które leżą poza
+ * planem — tu krokiem jest przestawienie w drugą stronę.
+ *
+ * Cofnięcie nigdy nie zabiera tego, co wpisał klient: oceny, jego ciężary
+ * i TOP SETY zostają z bieżącego planu.
+ */
+const historia = {
+  idPlanu: null, obraz: null, stan: null, wstecz: [], naprzod: [],
+  wSerii: false, numerZapisu: 0, przywracanie: false, zajete: false, opisSerwera: null,
+};
+const MAKS_KROKOW = 50;
+const migawka = () => JSON.stringify({
+  plan: obraz.zapisany.plan, dataStartu: obraz.zapisany.dataStartu, status: obraz.zapisany.status,
+});
+
+function zacznijHistorie() {
+  Object.assign(historia, {
+    idPlanu: obraz.zapisany.id, obraz, stan: migawka(), wstecz: [], naprzod: [],
+    wSerii: false, opisSerwera: null,
+  });
+  rysujCofanie();
+}
+
+function dopiszKrok(krok) {
+  historia.wstecz.push(krok);
+  if (historia.wstecz.length > MAKS_KROKOW) historia.wstecz.shift();
+  historia.naprzod = [];
+  rysujCofanie();
+}
+
+/** Następna zmiana przez serwer dostanie ten opis na przycisku „Cofnij”. */
+const opiszZmianeSerwera = (opis) => { historia.opisSerwera = opis; };
+
+/** Po `rysujPlan`: czy serwer podmienił plan (szablon, tygodnie, losowanie…)? */
+function sledzZmianySerwera() {
+  if (!obraz || obraz.zapisany.id !== historia.idPlanu) { zacznijHistorie(); return; }
+  if (obraz === historia.obraz) return;
+  const teraz = migawka();
+  if (teraz !== historia.stan && !historia.wSerii) {
+    dopiszKrok({ stan: historia.stan, opis: historia.opisSerwera ?? "zmiana w planie" });
+  }
+  Object.assign(historia, { obraz, stan: teraz, opisSerwera: null });
+}
+
+/** Slot obok w tym samym dniu — tak samo jak liczy serwer w `/przenies`. */
+function sasiedniSlot(positionId, kierunek) {
+  const sloty = obraz.zapisany.plan.sloty;
+  const slot = sloty.find((s) => s.positionId === positionId);
+  if (!slot) return null;
+  const wDniu = sloty.filter((s) => s.dzien === slot.dzien);
+  return wDniu[wDniu.indexOf(slot) + (kierunek === "gora" ? -1 : 1)] ?? null;
+}
+
+/** ▲▼ — przestawienie na serwerze; krok do cofnięcia to przestawienie z powrotem. */
+async function przestaw(positionId, kierunek, { doHistorii = true } = {}) {
+  const cel = sasiedniSlot(positionId, kierunek);
+  const slot = obraz.zapisany.plan.sloty.find((s) => s.positionId === positionId);
+  obraz = await api(`/api/plany/${obraz.zapisany.id}/przenies`, {
+    method: "POST",
+    body: { positionId, kierunek },
+  });
+  const krok = cel && {
+    przestaw: { positionId: cel.positionId, kierunek: kierunek === "gora" ? "dol" : "gora" },
+    opis: `${slot?.lp?.replace(/\.$/, "") || "ćwiczenie"} ${kierunek === "gora" ? "wyżej" : "niżej"}`,
+  };
+  if (doHistorii && krok) dopiszKrok(krok);
+  Object.assign(historia, { obraz, stan: migawka() });
+  rysujDni();
+  rysujAnalize();
+  return krok;
+}
+
+/** Krok z jednego stosu na drugi: wykonuje go i odkłada krok odwrotny. */
+async function przejdz(skad, dokad) {
+  if (historia.zajete || !skad.length || !obraz) return;
+  const krok = skad.pop();
+  historia.zajete = true;
+  rysujCofanie();
+  try {
+    if (krok.przestaw) {
+      const odwrotny = await przestaw(krok.przestaw.positionId, krok.przestaw.kierunek, { doHistorii: false });
+      if (odwrotny) dokad.push({ ...odwrotny, opis: krok.opis });
+    } else {
+      dokad.push({ stan: migawka(), opis: krok.opis });
+      const zapisany = JSON.parse(krok.stan);
+      przepiszWpisyKlienta(zapisany.plan, obraz.zapisany.plan);
+      Object.assign(obraz.zapisany, zapisany);
+      historia.przywracanie = true;
+      try { zapiszPozniej(); } finally { historia.przywracanie = false; }
+      Object.assign(historia, { stan: migawka(), wSerii: false });
+      rysujPlan();
+    }
+  } catch (err) {
+    skad.push(krok);
+    alert(err.message);
+  } finally {
+    historia.zajete = false;
+    rysujCofanie();
+  }
+}
+const cofnij = () => przejdz(historia.wstecz, historia.naprzod);
+const ponow = () => przejdz(historia.naprzod, historia.wstecz);
+
+function rysujCofanie() {
+  const pasek = $("#cofanie");
+  if (!pasek) return;
+  const ostatni = historia.wstecz.at(-1);
+  pasek.hidden = !historia.wstecz.length && !historia.naprzod.length;
+  $("#cofnij").disabled = !ostatni || historia.zajete;
+  $("#cofnij-opis").textContent = ostatni?.opis ?? "";
+  $("#cofnij").title = ostatni ? `Cofnij: ${ostatni.opis} (⌘Z / Ctrl+Z)` : "Nie ma czego cofnąć";
+  $("#ponow").hidden = !historia.naprzod.length;
+  $("#ponow").disabled = historia.zajete;
+  $("#ponow").title = historia.naprzod.length
+    ? `Ponów: ${historia.naprzod.at(-1).opis} (⇧⌘Z / Ctrl+Y)` : "";
+}
+
+$("#cofnij").onclick = cofnij;
+$("#ponow").onclick = ponow;
+document.addEventListener("keydown", (e) => {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+  const klawisz = e.key.toLowerCase();
+  const wstecz = klawisz === "z" && !e.shiftKey;
+  const naprzod = (klawisz === "z" && e.shiftKey) || (klawisz === "y" && e.ctrlKey && !e.metaKey);
+  if (!wstecz && !naprzod) return;
+  if ($("#ekran-plan").classList.contains("ukryty") || !$("#modal").classList.contains("ukryty")) return;
+  if (document.querySelector(".wyszukiwarka-tlo, .karta-cw-tlo")) return;
+  // W polu tekstowym cofa przeglądarka — to, co się w nim pisało. Lista
+  // wyboru i przyciski cofania nie mają, więc tam cofa plan.
+  if (e.target.closest?.('textarea, [contenteditable="true"], input:not([type="checkbox"]):not([type="radio"])')) return;
+  e.preventDefault();
+  if (wstecz) cofnij();
+  else ponow();
+});
+
+function zapiszPozniej(opis = null) {
+  if (obraz !== historia.obraz && obraz?.zapisany.id === historia.idPlanu) historia.obraz = obraz;
+  if (!historia.przywracanie && !historia.wSerii && historia.stan) {
+    dopiszKrok({ stan: historia.stan, opis: opis ?? "zmiana w planie" });
+    historia.wSerii = true;
+  }
+  historia.opisSerwera = null;
+  const numer = ++historia.numerZapisu;
   $("#zapis").textContent = "zapisywanie…";
   clearTimeout(czekaZapis);
   czekaZapis = setTimeout(async () => {
@@ -680,6 +841,9 @@ function zapiszPozniej() {
         obraz.zapisany.zmieniony = err.aktualny.zapisany.zmieniony;
         obraz = await wyslij();
       }
+      historia.obraz = obraz;
+      // Krok skończony, gdy po nim nic więcej nie czeka na zapis.
+      if (numer === historia.numerZapisu) Object.assign(historia, { stan: migawka(), wSerii: false });
       $("#zapis").textContent = "zapisano";
       rysujAnalize();
       rysujDni();
@@ -731,6 +895,7 @@ function rysujPlan() {
   rysujPorownanie();
   rysujModuly();
   rysujSerieMax(true);
+  sledzZmianySerwera();
 }
 
 /**
@@ -1041,6 +1206,7 @@ function rysujPropozycje1RM() {
 
     const przyjmij = el("button", "", "Przyjmij");
     przyjmij.onclick = async () => {
+      opiszZmianeSerwera(`1RM ${cwiczenie(p.cwiczenieId)?.nazwa ?? ""}`.trim());
       obraz = await api(`/api/plany/${obraz.zapisany.id}/1rm`, {
         method: "POST",
         body: { cwiczenieId: p.cwiczenieId, oneRM: p.oneRM },
@@ -1151,6 +1317,7 @@ $("#czesc-planu").onchange = (e) => {
     + "we wszystkich sześciu tygodniach?\n\nOK — przepisz. Anuluj — zostaw wpisane.")) {
     poZapisie = async () => {
       try {
+        opiszZmianeSerwera("progresja bojów");
         obraz = await api(`/api/plany/${obraz.zapisany.id}/tygodnie`, {
           method: "POST", body: { tryb: "progresja-bojow" },
         });
@@ -1646,14 +1813,7 @@ function rysujSlot(slot, pusty) {
     ]) {
       const b = el("button", "mikro", znak);
       b.title = `Przenieś ${tytul}`;
-      b.onclick = async () => {
-        obraz = await api(`/api/plany/${obraz.zapisany.id}/przenies`, {
-          method: "POST",
-          body: { positionId: slot.positionId, kierunek },
-        });
-        rysujDni();
-        rysujAnalize();
-      };
+      b.onclick = () => przestaw(slot.positionId, kierunek);
       strzalki.append(b);
     }
     /*
@@ -1801,7 +1961,7 @@ function rysujSlot(slot, pusty) {
     const poprzednie = slot.cwiczenieId;
     slot.cwiczenieId = id || null;
     zapytajOPodmiane(slot, poprzednie);
-    zapiszPozniej();
+    zapiszPozniej(`${slot.lp?.replace(/\.$/, "") || "ćwiczenie"} · ${id ? cwiczenie(id)?.nazwa ?? id : "usunięte ćwiczenie"}`);
     /*
      * Przerysowanie od razu, nie po powrocie z serwera.
      *
@@ -2561,6 +2721,7 @@ function pokazPropozycje({ propozycja, uzycie, nadpisze, komunikatZdrowotny }) {
       "Wstawienie propozycji je zastąpi. Na pewno?")) return;
     wstaw.disabled = true;
     try {
+      opiszZmianeSerwera("wstawienie z asystenta");
       obraz = await api(`/api/plany/${obraz.zapisany.id}/ai-wstaw`, {
         method: "POST",
         body: { propozycja },
@@ -2641,6 +2802,7 @@ async function wypelnijTygodnie(tryb, positionId) {
   if (!confirm(`${opis}\n\nOceny klienta i ręcznie ustawione ciężary zostają. Na pewno?`)) return;
 
   try {
+    opiszZmianeSerwera(tryb === "kopiuj" ? "rozniesienie na tygodnie" : "wypełnienie tygodni");
     obraz = await api(`/api/plany/${obraz.zapisany.id}/tygodnie`, {
       method: "POST",
       body: { tryb, zrodlo: tydzien, positionId },
@@ -2678,6 +2840,7 @@ $("#status-wybor").onchange = async (e) => {
   }
 
   try {
+    opiszZmianeSerwera(`status: ${nowy}`);
     obraz = await api(`/api/plany/${obraz.zapisany.id}`, { method: "PUT", body: { status: nowy } });
     rysujPlan();
   } catch (err) {
@@ -2849,6 +3012,7 @@ function wypelnijListeSzablonow(szablony) {
       return;
     }
     try {
+      opiszZmianeSerwera(`szablon „${sz.nazwa}”`);
       obraz = await api(`/api/plany/${obraz.zapisany.id}/szablon`, {
         method: "POST", body: { szablonId: sz.id },
       });
@@ -2886,6 +3050,7 @@ async function dobierzCwiczenia(odNowa) {
   // Najpierw dokończony zapis trenera — inaczej spóźniony zapis nadpisałby losowanie.
   const wykonaj = async () => {
     try {
+      opiszZmianeSerwera(odNowa ? "losowanie ćwiczeń od nowa" : "losowanie ćwiczeń");
       const { dobor, ...nowy } = await api(`/api/plany/${obraz.zapisany.id}/dobierz`, {
         method: "POST", body: { odNowa },
       });
