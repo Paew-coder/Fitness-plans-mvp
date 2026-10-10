@@ -1406,13 +1406,56 @@ function legendaPlanu() {
   d.append(lista);
   d.append(el("p", "legenda-dopisek",
     "Puste pole ciężaru liczy się samo — z 1RM, RPE i ocen klienta."));
+  d.append(el("p", "legenda-dopisek",
+    "Backspace na liście ćwiczenia albo kategorii — usuwa wybór. ↶ Cofnij (⌘Z) — cofa ostatnią zmianę."));
   d.ontoggle = () => {
     try { localStorage.setItem(KLUCZ_LEGENDY, d.open ? "0" : "1"); } catch { /* bez pamięci */ }
   };
   return d;
 }
 
+/*
+ * Fokus przez przerysowanie tabeli (10.10.2026). Po każdym zapisie tabela
+ * dni rysuje się od nowa i fokus ginął: po Backspace na liście nie dało się
+ * od razu wybrać czegoś innego z klawiatury, a Tab między polami gubił się,
+ * gdy w połowie przyszła odpowiedź serwera. Pamiętamy wiersz (positionId),
+ * komórkę (klasa i kolejność) i pole w komórce — i oddajemy fokus tam samo.
+ * iPad bez klawiatury tego nie odczuje: Safari nie otwiera klawiatury
+ * ekranowej na fokus spoza dotknięcia.
+ */
+const POLA_FOKUSU = "input, select, button, textarea";
+function zapamietajFokus() {
+  const a = document.activeElement;
+  const tr = a?.closest?.("#dni tr[data-position]");
+  const td = a?.closest?.("td");
+  if (!tr || !td) return null;
+  const komorki = [...tr.children].filter((k) => k.className === td.className);
+  let start = null, koniec = null;
+  try { start = a.selectionStart; koniec = a.selectionEnd; } catch { /* pole liczby */ }
+  return {
+    position: tr.dataset.position, klasa: td.className, komorka: komorki.indexOf(td),
+    pole: [...td.querySelectorAll(POLA_FOKUSU)].indexOf(a), tag: a.tagName, wartosc: a.value, start, koniec,
+  };
+}
+function przywrocFokus(f) {
+  if (!f || document.activeElement?.closest?.("#dni tr[data-position]")) return;
+  const tr = document.querySelector(`#dni tr[data-position="${CSS.escape(f.position)}"]`);
+  const td = tr && [...tr.children].filter((k) => k.className === f.klasa)[f.komorka];
+  const pole = td && [...td.querySelectorAll(POLA_FOKUSU)][f.pole];
+  if (!pole || pole.tagName !== f.tag || pole.disabled) return;
+  pole.focus({ preventScroll: true });
+  if (f.start !== null && pole.value === f.wartosc) {
+    try { pole.setSelectionRange(f.start, f.koniec); } catch { /* pole liczby */ }
+  }
+}
+
 function rysujDni() {
+  const fokus = zapamietajFokus();
+  rysujDniBezFokusu();
+  przywrocFokus(fokus);
+}
+
+function rysujDniBezFokusu() {
   const kontener = $("#dni");
   kontener.replaceChildren();
   const wyliczonyTydzien = wyliczonyTydzienNr(tydzien);
@@ -1794,10 +1837,28 @@ function przelaczTopSet(slot) {
   rysujDni();
 }
 
+/**
+ * Backspace / Delete na liście wyboru czyści ją — ćwiczenie albo kategorię
+ * (trener, 10.10.2026: „usuwanie ćwiczenia klawiszem backspace — nazwy
+ * ćwiczenia albo nazwy kategorii”). Cofa się jak każda zmiana: ⌘Z.
+ * Po przerysowaniu tabeli fokus wraca na tę samą listę w tym samym wierszu,
+ * żeby od razu dało się cofnąć albo wybrać coś innego z klawiatury.
+ */
+function czyscKlawiszem(lista, positionId, selektor, wyczysc) {
+  lista.addEventListener("keydown", (e) => {
+    if ((e.key !== "Backspace" && e.key !== "Delete") || e.metaKey || e.ctrlKey || e.altKey) return;
+    e.preventDefault();
+    if (!lista.value) return;
+    wyczysc();
+    document.querySelector(`#dni tr[data-position="${positionId}"] ${selektor}`)?.focus();
+  });
+}
+
 function rysujSlot(slot, pusty) {
   const wyliczony = slotWyliczony(slot.positionId);
   const litera = (slot.lp || "").charAt(0);
   const wiersz = el("tr", `${"BDbd".includes(litera) ? "grupa-b" : ""} ${pusty ? "pusty" : ""}`);
+  wiersz.dataset.position = slot.positionId;
 
   const komorkaLp = el("td", "lp");
   // Numer i znaczniki (TS, RPE) jeden pod drugim. Obok numeru wychodziły poza
@@ -1981,6 +2042,7 @@ function rysujSlot(slot, pusty) {
     cwiczenia, kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "",
     wybraneId: slot.cwiczenieId, api, naWybor: ustaw,
   });
+  czyscKlawiszem(wybor, slot.positionId, "td.cwiczenie select", () => ustaw(""));
   wybor.onchange = () => {
     if (wybor.value === SZUKAJ) {
       wybor.value = slot.cwiczenieId ?? "";
@@ -2033,6 +2095,11 @@ function rysujSlot(slot, pusty) {
     slot.kategoriaSzkieletu = wyborSzkieletu.value || null;
     zapiszPozniej();
   };
+  czyscKlawiszem(wyborSzkieletu, slot.positionId, "td.szkielet select", () => {
+    slot.kategoriaSzkieletu = null;
+    zapiszPozniej(`${slot.lp?.replace(/\.$/, "") || "pozycja"} · bez kategorii`);
+    rysujDni();   // lista ćwiczeń w wierszu przestaje być zawężona kategorią
+  });
   komorkaSzkieletu.append(wyborSzkieletu);
   wiersz.append(komorkaSzkieletu);
 

@@ -1087,11 +1087,65 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await poleSerii.fill(String(Number(serieWczesniej || 3) + 2));
   await poleSerii.press("Tab");
   await zapisano();
+  await s.waitForTimeout(150);
+  const fokusPoTab = await s.evaluate(() => {
+    const a = document.activeElement as HTMLElement | null;
+    const tr = a?.closest("tr");
+    const pola = tr ? [...tr.querySelectorAll("td.liczba input")] : [];
+    return { wTabeli: !!a?.closest("#dni"), ktore: pola.indexOf(a as Element) };
+  });
+  sprawdz("Tab między polami: po zapisie i przerysowaniu tabeli fokus zostaje w następnym polu",
+    fokusPoTab.wTabeli && fokusPoTab.ktore === 1, JSON.stringify(fokusPoTab));
   await s.locator("#cofnij").click();
   await zapisano();
   await s.waitForTimeout(200);
   sprawdz("zmieniona liczba serii wraca po „Cofnij”",
     await wiersz(0).locator("td.liczba input").first().inputValue() === serieWczesniej, serieWczesniej);
+  // Backspace na liście: usuwa ćwiczenie, potem kategorię; ⌘Z przywraca.
+  // Na świeżo dodanym ćwiczeniu — bez historii klienta (przy historii
+  // konsola najpierw pyta, od którego tygodnia usunąć, i to jest osobna rzecz).
+  const pozycja0 = await listy().nth(pustyDoCofania).evaluate((x) => x.closest("tr")?.getAttribute("data-position") ?? null);
+  const cwiczenie0 = opcjaDoDodania;
+  const wierszPoz = s.locator(`#dni tr[data-position="${pozycja0}"]`);
+  const slot0 = async () => (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === pozycja0);
+  await wierszPoz.locator("td.cwiczenie select").selectOption(cwiczenie0);
+  await zapisano();
+  await wierszPoz.locator("td.cwiczenie select").focus();
+  await s.keyboard.press("Backspace");
+  await zapisano();
+  const fokusNaLiscie = await s.evaluate((p: string | null) =>
+    document.activeElement?.matches(`#dni tr[data-position="${p}"] td.cwiczenie select`) ?? false, pozycja0);
+  sprawdz("Backspace na liście ćwiczenia usuwa ćwiczenie z wiersza (zapisane), fokus zostaje na liście",
+    !!pozycja0 && await wierszPoz.locator("td.cwiczenie select").inputValue() === "" && !(await slot0())?.cwiczenieId
+      && fokusNaLiscie,
+    `${nazwaDodanego} → ${(await slot0())?.cwiczenieId ?? "pusto"} · fokus ${fokusNaLiscie ? "na liście" : "zgubiony"}`);
+  await s.keyboard.press("ControlOrMeta+z");
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("⌘Z po Backspace przywraca usunięte ćwiczenie",
+    await wierszPoz.locator("td.cwiczenie select").inputValue() === cwiczenie0 && (await slot0())?.cwiczenieId === cwiczenie0);
+  const kategoriaPrzed = (await slot0())?.kategoriaSzkieletu ?? "";
+  const kategoriaNowa = katalogCwiczen.find((c: any) => c.id === cwiczenie0)?.kategoria;
+  if (!kategoriaPrzed) {
+    await wierszPoz.locator("td.szkielet select").selectOption(kategoriaNowa);
+    await zapisano();
+  }
+  await wierszPoz.locator("td.szkielet select").focus();
+  await s.keyboard.press("Backspace");
+  await zapisano();
+  sprawdz("Backspace na liście kategorii usuwa kategorię (pełna baza), ćwiczenie zostaje",
+    await wierszPoz.locator("td.szkielet select").inputValue() === "" && !(await slot0())?.kategoriaSzkieletu
+      && (await slot0())?.cwiczenieId === cwiczenie0,
+    `${kategoriaPrzed || kategoriaNowa} → ${(await slot0())?.kategoriaSzkieletu ?? "pełna baza"}`);
+  // Cofamy po kolei: Backspace kategorii, ustawienie kategorii, dodanie ćwiczenia.
+  for (let i = 0; i < (kategoriaPrzed ? 2 : 3); i++) {
+    await s.locator("#cofnij").click();
+    await zapisano();
+  }
+  await s.waitForTimeout(200);
+  sprawdz("kolejne „Cofnij” przywracają kategorię i zdejmują dodane ćwiczenie",
+    ((await slot0())?.kategoriaSzkieletu ?? "") === kategoriaPrzed && !(await slot0())?.cwiczenieId);
+
   sprawdz("po cofnięciu wszystkiego plan w bazie jest dokładnie taki jak przed",
     bezDat(await zBazy()) === planPrzedCofaniem);
 
