@@ -333,6 +333,18 @@ describe("reset planu — klient zaczyna od początku", () => {
     assert.equal(t.zapisany.dataStartu, "2026-10-10");
   });
 
+  test("znacznik resetu: telefon go dostaje, zapis sprzed resetu — odmowa, bieżący i bez znacznika — przechodzą", async () => {
+    const k = await klientR();
+    assert.ok(k.resetOd, "widok klienta bez znacznika resetu");
+    const zapis = (resetOd: unknown) => api(`/api/klient/${tokenResetu}/odczucie`, "POST",
+      { planId: RESET, ...(resetOd === undefined ? {} : { resetOd }), positionId: "D1-S01", tydzien: 2, feedback: "OK" });
+    const stary = await zapis(null);
+    assert.equal(stary.kod, 409);
+    assert.match(stary.dane.blad, /zresetował/);
+    assert.equal((await zapis(k.resetOd)).kod, 200);
+    assert.equal((await zapis(undefined)).kod, 200, "starsza aplikacja bez znacznika");
+  });
+
   test("bez daty w żądaniu data startu zostaje; zła data — odmowa", async () => {
     assert.equal((await api(`/api/plany/${RESET}/reset`, "POST", {})).dane.zapisany.dataStartu, "2026-10-10");
     assert.equal((await api(`/api/plany/${RESET}/reset`, "POST", { dataStartu: "2026-02-30" })).kod, 400);

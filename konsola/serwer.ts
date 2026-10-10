@@ -830,6 +830,8 @@ function pozycjaListyKlientow(trenerId: number, klient: magazyn.Klient) {
   };
 }
 
+const ZAPIS_SPRZED_RESETU = "Trener zresetował plan — ten zapis jest sprzed resetu, więc go pominąłem.";
+
 /**
  * Zmiany trenera, które czekają na zatwierdzenie (`wersja-robocza.ts`) —
  * do paska nad planem: od kiedy, ile i jakie. `null`, gdy nic nie czeka.
@@ -1149,6 +1151,8 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     // Klient musi wiedzieć, którego cyklu dotyczy to, co widzi — inaczej ocena
     // wysłana po zmianie planu nie ma jak trafić tam, gdzie należy.
     planId: zapisany.id,
+    // Znacznik „↺ Resetuj plan”: telefon porzuca postęp treningu sprzed niego.
+    resetOd: zapisany.resetOd ?? null,
     klient: zapisany.klient,
     wersja: zapisany.wersja,
     dataStartu: zapisany.dataStartu,
@@ -1917,6 +1921,14 @@ const serwer = createServer(async (req, res) => {
        * Zapis idzie tam, gdzie należy, a na ekran wraca zawsze cykl aktywny,
        * żeby telefon sam przeszedł na nowy plan.
        */
+      /**
+       * Zapis sprzed resetu planu (10.10.2026). Telefon dokłada do zadania
+       * znacznik resetu, który widział; kolejka offline mogła trzymać zadanie
+       * sprzed „↺ Resetuj plan” — wpuszczone, przywróciłoby to, co trener
+       * właśnie wyczyścił. Zadania bez znacznika (starsza aplikacja) przechodzą.
+       */
+      const sprzedResetu = (cialoZadania: Record<string, unknown>, cel: magazyn.ZapisanyPlan) =>
+        "resetOd" in cialoZadania && (cialoZadania.resetOd ?? null) !== (cel.resetOd ?? null);
       const doZapisu = (cialoZadania: Record<string, unknown>) => {
         const planId = cialoZadania.planId;
         if (!planId || planId === zapisany.id) return zapisany;
@@ -1982,6 +1994,7 @@ const serwer = createServer(async (req, res) => {
         if (tydzien === null) return blad(res, "Numer tygodnia musi być z zakresu 1–6");
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        if (sprzedResetu(cialoZadania, cel)) return blad(res, ZAPIS_SPRZED_RESETU, 409);
         // Slot bez ćwiczenia to nie to samo co brak slotu: szkielet ma zawsze
         // 5 dni po 12 pozycji. Zapis w pusty slot brałby się tylko ze spóźnionej
         // kolejki po tym, jak trener wyjął stamtąd ćwiczenie — i przykleiłby
@@ -2107,6 +2120,7 @@ const serwer = createServer(async (req, res) => {
         if (kg === null) return blad(res, "Ciężar TOP SETU musi być z zakresu 0–1000 kg.");
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        if (sprzedResetu(cialoZadania, cel)) return blad(res, ZAPIS_SPRZED_RESETU, 409);
         const slot = cel.plan.sloty.find((s) => s.positionId === positionId);
         if (!slot?.cwiczenieId) return blad(res, "Nie ma takiego ćwiczenia");
         const topSet = tydzienWyliczony(przeliczPlan(cel.plan), tydzien)
@@ -2134,6 +2148,7 @@ const serwer = createServer(async (req, res) => {
         }
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        if (sprzedResetu(cialoZadania, cel)) return blad(res, ZAPIS_SPRZED_RESETU, 409);
         if (!tygodniePlanu(cel.plan).includes(tydzien as 1)) {
           return blad(res, "Tego tygodnia nie ma w planie");
         }
@@ -2212,6 +2227,7 @@ const serwer = createServer(async (req, res) => {
         }
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        if (sprzedResetu(cialoZadania, cel)) return blad(res, ZAPIS_SPRZED_RESETU, 409);
         /*
          * 1RM z treningu (kalibracja) nie przepada pod serią maksymalną.
          *

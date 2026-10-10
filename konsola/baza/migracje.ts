@@ -303,6 +303,19 @@ function doWersji7(d: DatabaseSync): void {
   }
 }
 
+/**
+ * Wersja 8 — znacznik resetu planu (10.10.2026).
+ *
+ * Trener zresetował plan, a telefon klienta wznowił trening w połowie: postęp
+ * prowadzonego treningu (zrobione serie, bieżąca seria) żyje w pamięci
+ * telefonu, a reset czyścił tylko bazę. `reset_od` — kiedy plan zresetowano;
+ * telefon porzuca lokalny postęp sprzed tej chwili, a serwer odrzuca zaległe
+ * zapisy z kolejki offline sprzed resetu.
+ */
+function doWersji8(d: DatabaseSync): void {
+  if (!maKolumne(d, "plan", "reset_od")) d.exec("ALTER TABLE plan ADD COLUMN reset_od TEXT");
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -310,4 +323,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 5, opis: "RPE TOP SETU osobno na każdy tydzień", wykonaj: doWersji5 },
   { doWersji: 6, opis: "wykonanie pamięta wszystkie serie, nie tylko najcięższą", wykonaj: doWersji6 },
   { doWersji: 7, opis: "wersja robocza planu — zmiany trenera czekają na zatwierdzenie", wykonaj: doWersji7 },
+  { doWersji: 8, opis: "znacznik resetu planu — telefon zaczyna trening od nowa", wykonaj: doWersji8 },
 ];

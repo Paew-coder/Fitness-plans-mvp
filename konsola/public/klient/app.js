@@ -30,6 +30,8 @@ const otwarteWykonania = new Set();   // positionId z rozwiniętymi polami „co
  * Zmienna trzyma stan także wtedy, gdy telefon nie da zapisać nic do pamięci
  * (tryb prywatny) — inaczej każde przerysowanie rozwijałoby baner z powrotem.
  */
+/** Cykl i jego reset — po „↺ Resetuj plan” baner wraca rozwinięty, jak przy nowym planie. */
+const kluczZwiniecia = () => `${widok?.planId}${widok?.resetOd ? `@${widok.resetOd}` : ""}`;
 let pomiaryZwinieteW = (() => {
   try { return localStorage.getItem(KLUCZ_ZWINIECIA_POMIAROW); } catch { return null; }
 })();
@@ -189,7 +191,9 @@ async function wyslij(sciezka, dane, zmienLokalnie, { odswiez = true } = {}) {
   // Zadanie zapamiętuje cykl, którego dotyczy. Klient bywa offline przez kilka
   // dni; gdy w międzyczasie trener wyśle kolejny plan, ocena ma trafić do tego
   // treningu, który się faktycznie odbył, a nie do nowego cyklu.
-  kolejka.dodaj({ sciezka, dane: { ...dane, planId: widok?.planId ?? null } });
+  // I znacznik resetu planu, który telefon widział — zapis sprzed „↺ Resetuj
+  // plan” serwer odrzuci, zamiast przywrócić wyczyszczony trening.
+  kolejka.dodaj({ sciezka, dane: { ...dane, planId: widok?.planId ?? null, resetOd: widok?.resetOd ?? null } });
   await synchronizuj(odswiez);
 }
 
@@ -286,7 +290,7 @@ function rysuj({ pomiary = true } = {}) {
   // ciężarach wisiał przez cały cykl w każdym planie z choćby jednym plankiem.
   const brakuje = widok.doZmierzenia.filter((p) => !p.oneRM && !p.bezSerii);
   $("#pomiary-baner").classList.toggle("ukryty", brakuje.length === 0);
-  $("#pomiary-baner").open = pomiaryZwinieteW !== String(widok.planId);
+  $("#pomiary-baner").open = pomiaryZwinieteW !== kluczZwiniecia();
   // Zwinięty baner to jedna linijka — liczba zostaje, żeby było widać, że
   // sprawa nie jest zamknięta. Krótko, jak „0 z 1” przy tygodniu: dłuższe
   // „brakuje w 6 ćwiczeniach” łamało się na telefonie w pół frazy.
@@ -2061,7 +2065,10 @@ function krokiDnia(d) {
  * tygodnia, numer kroku ze starego nie znaczy już nic.
  */
 function prowadzenieTegoDnia(d) {
+  // Po „↺ Resetuj plan” (10.10.2026) postęp sprzed resetu nie pasuje — klient
+  // zaczyna trening od pierwszej serii, a nie tam, gdzie stał przed resetem.
   const pasuje = (p) => p && p.planId === widok.planId
+    && (p.resetOd ?? null) === (widok.resetOd ?? null)
     && p.tydzien === biezacy.tydzien && p.dzien === d.dzien;
   if (pasuje(prowadzenie)) return prowadzenie;
   try {
@@ -2073,6 +2080,7 @@ function prowadzenieTegoDnia(d) {
 function wczytajProwadzenie(d) {
   prowadzenie = prowadzenieTegoDnia(d) ?? {
     planId: widok.planId,
+    resetOd: widok.resetOd ?? null,
     tydzien: biezacy.tydzien,
     dzien: d.dzien,
     krok: 0,          // seria na ekranie — nie postęp; postęp to `zrobione`
@@ -2966,7 +2974,7 @@ $("#do-pomiarow").onclick = () => otworz("#ekran-pomiary");
 // W chwili kliknięcia `open` ma jeszcze stan sprzed przełączenia.
 $("#pomiary-baner > summary").addEventListener("click", () => {
   const zwija = $("#pomiary-baner").open;
-  pomiaryZwinieteW = zwija ? String(widok?.planId) : null;
+  pomiaryZwinieteW = zwija ? kluczZwiniecia() : null;
   try {
     if (zwija) localStorage.setItem(KLUCZ_ZWINIECIA_POMIAROW, pomiaryZwinieteW);
     else localStorage.removeItem(KLUCZ_ZWINIECIA_POMIAROW);

@@ -121,6 +121,11 @@ export type ZapisanyPlan = {
    */
   wersjaKlienta?: { plan: Plan; pozycje: MapaPozycji; od: string };
   /**
+   * Kiedy trener zresetował plan („↺ Resetuj plan”). Telefon porzuca lokalny
+   * postęp treningu sprzed tej chwili, serwer — zaległe zapisy sprzed niej.
+   */
+  resetOd?: string;
+  /**
    * Odczyt dla telefonu klienta: `plan` to wersja, którą klient widzi, a
    * pozycje wykonań — jego. Zapis takiego obiektu idzie jako zapis klienta.
    */
@@ -310,6 +315,7 @@ type WierszPlanu = {
   plan_klienta_json: string | null;
   pozycje_klienta_json: string | null;
   zmiany_od: string | null;
+  reset_od: string | null;
 };
 
 /** Plany zawsze czytamy razem z nazwą klienta — bez niej nie ma czego pokazać. */
@@ -391,6 +397,7 @@ function zWiersza(w: WierszPlanu, widok: Widok = "trener"): ZapisanyPlan {
     oddech: w.oddech_json ? JSON.parse(w.oddech_json) : undefined,
     bieg: w.bieg_json ? JSON.parse(w.bieg_json) : undefined,
     plan: dlaKlienta && wersjaKlienta ? wersjaKlienta.plan : JSON.parse(w.plan_json) as Plan,
+    ...(w.reset_od ? { resetOd: w.reset_od } : {}),
     ...(dlaKlienta ? { widok: "klient" as const } : wersjaKlienta ? { wersjaKlienta } : {}),
   };
 }
@@ -547,8 +554,8 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
       INSERT INTO plan (trener_id, id, klient_id, wersja, status, data_startu,
                         utworzony, zmieniony, poprzedni_id,
                         oddech_json, bieg_json, plan_json,
-                        plan_klienta_json, pozycje_klienta_json, zmiany_od)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        plan_klienta_json, pozycje_klienta_json, zmiany_od, reset_od)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (trener_id, id) DO UPDATE SET
         klient_id = excluded.klient_id, wersja = excluded.wersja, status = excluded.status,
         data_startu = excluded.data_startu, zmieniony = excluded.zmieniony,
@@ -557,7 +564,9 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
         plan_json = excluded.plan_json,
         plan_klienta_json = excluded.plan_klienta_json,
         pozycje_klienta_json = excluded.pozycje_klienta_json,
-        zmiany_od = excluded.zmiany_od
+        zmiany_od = excluded.zmiany_od,
+        -- Obiekt bez znacznika (zbudowany od nowa) nie gasi resetu z bazy.
+        reset_od = COALESCE(excluded.reset_od, plan.reset_od)
     `).run(
       pelny.trenerId, pelny.id, pelny.klientId, pelny.wersja, pelny.status,
       pelny.dataStartu, pelny.utworzony, pelny.zmieniony,
@@ -568,6 +577,7 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
       planKlienta ? JSON.stringify(planKlienta) : null,
       planKlienta && !bezPrzestawien(mapa) ? JSON.stringify(mapa) : null,
       planKlienta ? zmianyOd : null,
+      pelny.resetOd ?? null,
     );
 
     // Wpisy klienta podmieniamy w całości — lista w obiekcie jest źródłem prawdy.
@@ -628,6 +638,8 @@ export function resetujPostep(
     plan: bezWpisowKlienta(uKlienta.plan),
     wykonania: [],
     ukonczoneDni: [],
+    // Telefon trzyma postęp treningu u siebie — ten znacznik każe go porzucić.
+    resetOd: new Date().toISOString(),
     ...(dataStartu !== undefined ? { dataStartu } : {}),
   });
   return wczytaj(trenerId, id);
