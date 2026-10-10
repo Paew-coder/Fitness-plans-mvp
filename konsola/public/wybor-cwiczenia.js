@@ -109,6 +109,30 @@ export function szukajCwiczen(cwiczenia, { zapytanie = "", kategoria = "", zrodl
   return wyniki.sort((a, b) => ocena(a) - ocena(b) || a.nazwa.length - b.nazwa.length || a.nazwa.localeCompare(b.nazwa, "pl"));
 }
 
+/**
+ * Przycisk filmów ćwiczenia: „▶” albo „▶ 3” przy kilku nagraniach; `null`, gdy
+ * nie ma czego pokazać. Link YouTube z arkusza (ćwiczenie BAZY bez wpisu
+ * w filmach) też liczy się jako film — serwer da go w podglądzie.
+ */
+export function opisFilmow(c) {
+  if (c?.filmow > 0) {
+    return {
+      etykieta: c.filmow > 1 ? `▶ ${c.filmow}` : "▶",
+      tytul: c.filmow > 1 ? `Filmy: ${c.filmow} nagrania — podgląd` : "Podgląd filmu",
+    };
+  }
+  if (c?.filmZArkusza) return { etykieta: "▶", tytul: "Podgląd filmu z linku w arkuszu" };
+  return null;
+}
+
+/** Karta ćwiczenia z filmami nad bieżącym ekranem (ta sama co u klienta). */
+export async function podgladFilmow(id, przycisk, api) {
+  try {
+    const karta = await api(`/api/karta-cwiczenia?id=${encodeURIComponent(id)}`);
+    if (karta) otworzKarteCwiczenia(karta, przycisk, { tekstZamkniecia: "Zamknij podgląd" });
+  } catch { /* api pokazało błąd */ }
+}
+
 let otwarta = null;
 
 /**
@@ -183,13 +207,6 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
     naWybor(c.id);
   };
 
-  const podglad = async (c, przycisk) => {
-    try {
-      const karta = await api(`/api/karta-cwiczenia?id=${encodeURIComponent(c.id)}`);
-      if (karta) otworzKarteCwiczenia(karta, przycisk, { tekstZamkniecia: "Zamknij podgląd" });
-    } catch { /* api pokazało błąd */ }
-  };
-
   const rysuj = () => {
     lista.replaceChildren();
     const ile = wyniki.length;
@@ -213,11 +230,12 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
         opis.append(z);
       }
       li.append(opis);
-      if (c.filmow > 0) {
-        const p = el("button", "wyszukiwarka-film", c.filmow > 1 ? `▶ ${c.filmow}` : "▶");
+      const filmy = opisFilmow(c);
+      if (filmy) {
+        const p = el("button", "wyszukiwarka-film", filmy.etykieta);
         p.type = "button";
-        p.title = c.filmow > 1 ? `Podgląd: ${c.filmow} nagrania` : "Podgląd filmu";
-        p.onclick = (e) => { e.stopPropagation(); podglad(c, p); };
+        p.title = filmy.tytul;
+        p.onclick = (e) => { e.stopPropagation(); podgladFilmow(c.id, p, api); };
         li.append(p);
       }
       li.onclick = () => wybierz(c);

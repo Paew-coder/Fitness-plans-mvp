@@ -13,7 +13,9 @@ import assert from "node:assert/strict";
 import { katalog } from "../src/katalog.ts";
 import { BAZA_CWICZEN } from "../src/dane/cwiczenia.ts";
 import { FILMY_CWICZEN, ZRODLA_WIDEO } from "../src/dane/filmy.ts";
-import { filmyCwiczenia, kartaCwiczenia, sprawdzFilmy, wideoCwiczenia, type WpisWideo } from "../src/wideo.ts";
+import {
+  filmyCwiczenia, idZLinkuYoutube, kartaCwiczenia, kartaPodgladu, sprawdzFilmy, wideoCwiczenia, type WpisWideo,
+} from "../src/wideo.ts";
 import { dobierzCwiczenia } from "../src/dobor-cwiczen.ts";
 import type { Plan } from "../src/plan.ts";
 
@@ -121,6 +123,42 @@ describe("biblioteki Theory of Motion i Catalyst Athletics", () => {
         if (s.cwiczenieId) assert.equal(katalog.poId(s.cwiczenieId)!.biblioteka, undefined, s.cwiczenieId);
       }
     }
+  });
+});
+
+describe("podgląd filmów w konsoli (▶ przy ćwiczeniu w planie, 10.10.2026)", () => {
+  test("id filmu z każdej postaci linku YouTube; inne adresy — nic", () => {
+    for (const link of ["https://youtu.be/t5Ft8OMG_D8", "https://youtu.be/t5Ft8OMG_D8?si=abc",
+      "https://www.youtube.com/watch?v=t5Ft8OMG_D8&t=3", "https://youtube.com/shorts/t5Ft8OMG_D8",
+      "https://www.youtube.com/embed/t5Ft8OMG_D8", "https://m.youtube.com/watch?feature=x&v=t5Ft8OMG_D8"]) {
+      assert.equal(idZLinkuYoutube(link), "t5Ft8OMG_D8", link);
+    }
+    for (const link of [undefined, "", "https://vimeo.com/123456789", "https://example.com/watch?v=t5Ft8OMG_D8",
+      "https://youtu.be/krotkie"]) {
+      assert.equal(idZLinkuYoutube(link), null, String(link));
+    }
+  });
+
+  test("ćwiczenie z filmami: ta sama karta, co u klienta", () => {
+    const c = katalog.poId("EX-0011")!;
+    assert.deepEqual(kartaPodgladu(c), kartaCwiczenia(c));
+  });
+
+  test("ćwiczenie BAZY tylko z linkiem w arkuszu: link jako film w karcie — u klienta dalej link", () => {
+    const c = katalog.poId("EX-0062")!;
+    assert.equal(kartaCwiczenia(c), null, "klient: bez karty, zwykły link");
+    const k = kartaPodgladu(c)!;
+    assert.equal(k.filmy.length, 1);
+    assert.equal(k.wideo?.youtubeId, idZLinkuYoutube(c.film));
+    assert.equal(k.wideo?.link, c.film);
+    assert.match(k.wideo!.zrodlo.nazwa, /arkusz/);
+    assert.equal(k.nazwa, c.nazwa);
+  });
+
+  test("ćwiczenie bez filmu i bez linku — brak karty", () => {
+    const bez = katalog.bazaTrenera.find((c) => !c.film && filmyCwiczenia(c.id).length === 0)!;
+    assert.ok(bez, "w BAZIE są ćwiczenia bez filmu");
+    assert.equal(kartaPodgladu(bez), null);
   });
 });
 

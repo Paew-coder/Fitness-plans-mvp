@@ -237,12 +237,21 @@ button.mikro.wlaczony { color: var(--akcent); border-color: var(--akcent); font-
   font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .04em;
 }
 td.cwiczenie { white-space: nowrap; }
-td.cwiczenie select { width: calc(100% - 2.2rem); min-width: 12rem; }
-button.szukaj-cwiczenia {
-  width: 1.9rem; height: 1.9rem; margin-left: .3rem; padding: 0; vertical-align: middle;
+/* lista + 🔎 + ▶ w jednym rzędzie; lista bierze resztę miejsca. `width: 0`
+   nie jest pomyłką: lista ma długą opcję „🔎 Szukaj w całej bazie…” i bez
+   tego jej naturalna szerokość rozpychała tabelę poza ekran telefonu i iPada
+   w pionie. Szerokość daje `flex-grow`, dolną granicę — `min-width`. */
+td.cwiczenie .wybor-cwiczenia { display: flex; align-items: center; gap: .3rem; }
+td.cwiczenie .wybor-cwiczenia select { flex: 1 1 0; width: 0; min-width: 12rem; }
+button.szukaj-cwiczenia, button.filmy-cwiczenia {
+  flex: none; width: 1.9rem; height: 1.9rem; padding: 0; vertical-align: middle;
   border: 1px solid var(--linia); border-radius: 5px; background: var(--plaszczyzna);
   font-size: .85rem; cursor: pointer;
 }
+/* ▶ / ▶ 3 — filmy wybranego ćwiczenia; szerszy przy liczbie nagrań */
+button.filmy-cwiczenia { width: auto; min-width: 1.9rem; padding: 0 .4rem; color: var(--akcent); white-space: nowrap; }
+button.filmy-cwiczenia:disabled { color: var(--tekst-blady); opacity: .45; cursor: default; }
+button.filmy-cwiczenia.pusty { visibility: hidden; }
 td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
 td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
 td.ciezar { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
@@ -579,7 +588,13 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
   table.sloty { min-width: 0; font-size: .82rem; }
   table.sloty th, table.sloty td { padding: .35rem .25rem; }
   table.sloty td.cwiczenie { width: 99%; }
-  table.sloty td.cwiczenie select { min-width: 0; width: calc(100% - 2.2rem); }
+  /* Na telefonie lista na całą szerokość komórki, 🔎 i ▶ linijkę niżej —
+     obok siebie zostawiały liście 18 px. Wiersz i tak ma wysokość trzech
+     rzędów przycisków w kolumnie Lp., więc druga linijka go nie wydłuża. */
+  table.sloty td.cwiczenie .wybor-cwiczenia { flex-wrap: wrap; gap: .2rem; }
+  table.sloty td.cwiczenie .wybor-cwiczenia select { flex: 1 0 100%; min-width: 0; }
+  table.sloty td.cwiczenie button.szukaj-cwiczenia { width: 2.1rem; min-width: 2.1rem; }
+  table.sloty td.cwiczenie button.filmy-cwiczenia { min-width: 2.1rem; padding: 0 .25rem; }
   table.sloty td.liczba input { width: 2.4rem; }
   table.sloty td.ciezar input.pole-ciezaru { width: 3.2rem; }
   table.sloty.bieg { min-width: 0; }
@@ -642,6 +657,8 @@ td.ciezar .zrobione {
      wymieniała pola tabeli po nazwie i przegapiła pole w oknie „Połącz
      klienta": lista wyjątków zawsze jest o jeden krótsza, niż trzeba. */
   select, input:not([type="checkbox"]) { min-height: 2.25rem; }
+  button.szukaj-cwiczenia, button.filmy-cwiczenia { height: 2.25rem; min-width: 2.25rem; }
+  button.szukaj-cwiczenia { width: 2.25rem; }
   /* `flex: none` nie jest ozdobą: kratka TOP SETU stoi w pasku ustawionym
      na flex i bez tego ściskała się z powrotem do 16 px szerokości. */
   input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; }
@@ -653,6 +670,7 @@ td.ciezar .zrobione {
 @media (max-width: 900px) {
   table.sloty th.szkielet, table.sloty td.szkielet,
   table.sloty th.stres, table.sloty td.stres { display: none; }
+  td.cwiczenie .wybor-cwiczenia select { min-width: 9rem; }
 }
 
 /* ── objaśnienia widoczne, nie w dymkach ────────────────────────── */

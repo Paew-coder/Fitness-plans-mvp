@@ -766,6 +766,14 @@ Trener: „przygotuj bazę ćwiczeń na bazie kanału Theory of Motion Exercise 
 * Weryfikacja: `silnik/narzedzia/weryfikacja-bibliotek.py arkusz` → arkusz z grupami, linkami do filmów i listami decyzji (OK, USUŃ = ukryte, poprawki, przypięcie poradnika, odpięcie filmu) → `zastosuj`. Kolejny import nie nadpisuje decyzji trenera. Narzędzia importu: `silnik/narzedzia/import-bibliotek/`.
 * Sprawdzone: testy silnika i konsoli, `przeglad-ekranow` (13b: wyszukiwarka, podgląd, slot, eksport i import), `przeglad-filmu` (6 nagrań przy wyciskaniu, poradnik, cała karta na ekranie), `przeglad-klienta`. Ręcznie: odtwarzanie pokazu i poradnika na iPhonie/iPadzie i komputerze. Opis: `docs/08-biblioteki-cwiczen.md`.
 
+**52. Filmy wybranych ćwiczeń jednym dotknięciem w planie — 10.10.2026.**
+
+Trener (zrzut z iPada, edycja planu): „na etapie wyboru ćwiczenia chciałbym, żeby była szybsza możliwość zobaczenia, jakie filmy są załączone do wybranych przeze mnie ćwiczeń”.
+
+* Obok 🔎 w każdym wierszu **▶** z liczbą nagrań („▶ 6” przy wyciskaniu, „▶ 2” przy Goblet Squat) — otwiera kartę tego ćwiczenia z przyciskami *Pokaz* / *Poradnik*, bez wyszukiwarki; „Zamknij podgląd” wraca do planu bez zmian. Bez filmu przycisk wyszarzony, w pustym wierszu niewidoczny.
+* Ćwiczenia BAZY bez wpisu w filmach, ale z linkiem YouTube w arkuszu (72), też grają w karcie — `kartaPodgladu` / `idZLinkuYoutube` w `wideo.ts`, pole `filmZArkusza` w `/api/cwiczenia`. U klienta bez zmian (tam tylko filmy sprawdzone oEmbedem).
+* Układ: lista + 🔎 + ▶ w jednym rzędzie (lista bez naturalnej szerokości, żeby długa opcja nie rozpychała tabeli); na telefonie przyciski linijkę pod listą. Sprawdzone: przegląd ekranów (stan ▶ w każdym wierszu, karta z wiersza, telefon i iPad bez wystawania poza ekran), testy silnika i konsoli.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
