@@ -1316,6 +1316,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     /dobierz/i.test(panelDoboru) && /mieć jeszcze [\d–]+ w zapasie/.test(panelDoboru)
     && !panelDoboru.includes("brak 1RM"),
     panelDoboru.replace(/\n/g, " ").slice(0, 120));
+  // Trener, 10.10.2026: przy „dobierz ciężar” bez „za lekko / za ciężko” —
+  // nie ma ciężaru z planu, do którego ocena by się odnosiła.
+  sprawdz("przy dobieraniu ciężaru nie ma oceny „za lekko / za ciężko”, jest zdanie, co zrobić",
+    await panel.locator(".ocena-w-panelu").count() === 0
+      && /zmień ciężar w następnej serii/.test(await panel.locator(".bez-oceny-doboru").innerText().catch(() => "")),
+    await panel.locator(".bez-oceny-doboru").innerText().catch(() => "brak zdania"));
 
   await polaPanelu.nth(0).fill("60");
   await polaPanelu.nth(1).fill(String(wioslowanie.powtorzenia));
@@ -1339,6 +1345,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("druga seria ma już ciężar — ten, który klient podniósł",
     drugaSeria.includes("60 kg") && await seriaNaPanelu() === "2 z 3",
     drugaSeria.replace(/\n/g, " ").slice(0, 70));
+  sprawdz("gdy ciężar już jest, ocena „za trudne / za łatwe” wraca",
+    await panel.locator(".ocena-w-panelu .ocena-przycisk").count() === 2
+      && await panel.locator(".bez-oceny-doboru").count() === 0);
   sprawdz("i mówi, skąd go wzięła",
     drugaSeria.includes("Policzone z Twojej serii"),
     await panel.locator(".kalibracja").innerText().catch(() => "brak notki"));
