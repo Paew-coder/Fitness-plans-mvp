@@ -18,6 +18,9 @@ import type { DaneBiegowe } from "../silnik/src/bieg.ts";
 import { baza } from "./baza/polaczenie.ts";
 import { idKlienta, idPlanu } from "./nazwy.ts";
 import type { SeriaWykonana } from "./serie-wykonane.ts";
+import {
+  bezPrzestawien, kanonicznie, naKlienta, odwrocMape, przeniesWpisyKlienta, przestaw, type MapaPozycji,
+} from "./wersja-robocza.ts";
 
 export { trenerDomyslny } from "./baza/polaczenie.ts";
 export { idKlienta, idPlanu } from "./nazwy.ts";
@@ -110,7 +113,21 @@ export type ZapisanyPlan = {
   /** Moduł biegowy — pięć pól z zakładki BIEG. */
   bieg?: DaneBiegowe;
   plan: Plan;
+  /**
+   * Wersja robocza (10.10.2026, `wersja-robocza.ts`): gdy zmiany trenera czekają
+   * na zatwierdzenie — plan, który widzi klient, mapa przestawień ▲▼ i od kiedy
+   * zmiany czekają. Tylko w odczycie dla trenera; zapis bierze ten stan z bazy.
+   */
+  wersjaKlienta?: { plan: Plan; pozycje: MapaPozycji; od: string };
+  /**
+   * Odczyt dla telefonu klienta: `plan` to wersja, którą klient widzi, a
+   * pozycje wykonań — jego. Zapis takiego obiektu idzie jako zapis klienta.
+   */
+  widok?: "klient";
 };
+
+/** Kto czyta plan: trener (domyślnie) albo telefon klienta. */
+export type Widok = "trener" | "klient";
 
 /** Nowy klucz dostępu. 192 bity losowości — nie do zgadnięcia. */
 export function nowyToken(): string {
@@ -289,6 +306,9 @@ type WierszPlanu = {
   oddech_json: string | null;
   bieg_json: string | null;
   plan_json: string;
+  plan_klienta_json: string | null;
+  pozycje_klienta_json: string | null;
+  zmiany_od: string | null;
 };
 
 /** Plany zawsze czytamy razem z nazwą klienta — bez niej nie ma czego pokazać. */
@@ -314,8 +334,13 @@ function odczytajSerie(json: string | null): SeriaWykonana[] | undefined {
 }
 
 /** Wiersz z bazy → obiekt, którego oczekuje reszta aplikacji. */
-function zWiersza(w: WierszPlanu): ZapisanyPlan {
+function zWiersza(w: WierszPlanu, widok: Widok = "trener"): ZapisanyPlan {
   const d = baza();
+  const mapa: MapaPozycji = w.pozycje_klienta_json ? JSON.parse(w.pozycje_klienta_json) : {};
+  const wersjaKlienta = w.plan_klienta_json
+    ? { plan: JSON.parse(w.plan_klienta_json) as Plan, pozycje: mapa, od: w.zmiany_od ?? w.zmieniony }
+    : undefined;
+  const dlaKlienta = widok === "klient";
   const wykonania = d.prepare(
     `SELECT position_id, tydzien, data, cwiczenie_id, ciezar_wykonany,
             powtorzenia_wykonane, serie_json, feedback
@@ -347,7 +372,8 @@ function zWiersza(w: WierszPlanu): ZapisanyPlan {
     zmieniony: w.zmieniony,
     poprzedniId: w.poprzedni_id ?? undefined,
     wykonania: wykonania.map((x) => ({
-      positionId: x.position_id,
+      // W bazie pozycje planu trenera; klient przy czekających zmianach widzi swoje.
+      positionId: dlaKlienta ? naKlienta(mapa, x.position_id) : x.position_id,
       tydzien: x.tydzien,
       data: x.data,
       cwiczenieId: x.cwiczenie_id ?? undefined,
@@ -363,7 +389,8 @@ function zWiersza(w: WierszPlanu): ZapisanyPlan {
     waga: wagaKlienta(w.trener_id, w.klient_id),
     oddech: w.oddech_json ? JSON.parse(w.oddech_json) : undefined,
     bieg: w.bieg_json ? JSON.parse(w.bieg_json) : undefined,
-    plan: JSON.parse(w.plan_json) as Plan,
+    plan: dlaKlienta && wersjaKlienta ? wersjaKlienta.plan : JSON.parse(w.plan_json) as Plan,
+    ...(dlaKlienta ? { widok: "klient" as const } : wersjaKlienta ? { wersjaKlienta } : {}),
   };
 }
 
@@ -374,19 +401,19 @@ export function lista(trenerId: number): ZapisanyPlan[] {
   return wiersze.map(zWiersza);
 }
 
-export function wczytaj(trenerId: number, id: string): ZapisanyPlan | null {
+export function wczytaj(trenerId: number, id: string, widok: Widok = "trener"): ZapisanyPlan | null {
   const w = baza().prepare(
     `${WYBOR_PLANU} WHERE p.trener_id = ? AND p.id = ?`,
   ).get(trenerId, id) as WierszPlanu | undefined;
-  return w ? zWiersza(w) : null;
+  return w ? zWiersza(w, widok) : null;
 }
 
 /** Wszystkie cykle klienta, od najstarszego. To jest jego historia. */
-export function planyKlienta(trenerId: number, klientId: string): ZapisanyPlan[] {
+export function planyKlienta(trenerId: number, klientId: string, widok: Widok = "trener"): ZapisanyPlan[] {
   const wiersze = baza().prepare(
     `${WYBOR_PLANU} WHERE p.trener_id = ? AND p.klient_id = ? ORDER BY p.wersja`,
   ).all(trenerId, klientId) as WierszPlanu[];
-  return wiersze.map(zWiersza);
+  return wiersze.map((w) => zWiersza(w, widok));
 }
 
 /**
@@ -396,7 +423,7 @@ export function planyKlienta(trenerId: number, klientId: string): ZapisanyPlan[]
  * nie widzi nigdy: plan w trakcie układania to nie jest coś, po czym można
  * trenować, a link jest stały i działa cały czas.
  */
-export function aktywnyPlan(trenerId: number, klientId: string): ZapisanyPlan | null {
+export function aktywnyPlan(trenerId: number, klientId: string, widok: Widok = "trener"): ZapisanyPlan | null {
   // Cykl, w którym klient **już pracuje**, a który wrócił do szkicu — bo trener
   // otworzył go, żeby poprawić. Wtedy nie wolno cofnąć telefonu do poprzedniego
   // cyklu: klient zobaczyłby stary plan ze starymi ciężarami i wziąłby go za
@@ -427,7 +454,7 @@ export function aktywnyPlan(trenerId: number, klientId: string): ZapisanyPlan | 
      ORDER BY CASE p.status WHEN 'wysłany' THEN 0 ELSE 1 END, p.wersja DESC
      LIMIT 1
   `).get(trenerId, klientId) as WierszPlanu | undefined;
-  return w ? zWiersza(w) : null;
+  return w ? zWiersza(w, widok) : null;
 }
 
 // ── zapis ────────────────────────────────────────────────────────────
@@ -441,7 +468,14 @@ export function aktywnyPlan(trenerId: number, klientId: string): ZapisanyPlan | 
  *
  * Wagi nie dotyka: należy do klienta, nie do planu. Od niej jest `zapiszWage`.
  */
-export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
+export type OpcjeZapisu = {
+  /** ▲▼: pozycje, których treść trener właśnie zamienił — do mapy wersji klienta. */
+  przestawienie?: [string, string];
+  /** Koniec czekania: „zatwierdz” — klient widzi plan trenera, „odrzuc” — plan wraca do wersji klienta. */
+  wersjaKlienta?: "zatwierdz" | "odrzuc";
+};
+
+export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): ZapisanyPlan {
   const d = baza();
   const teraz = new Date().toISOString();
 
@@ -464,24 +498,75 @@ export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
 
   d.exec("BEGIN");
   try {
+    // ── wersja robocza (`wersja-robocza.ts`) ──────────────────────────
+    const byl = d.prepare(`
+      SELECT status, plan_json, plan_klienta_json, pozycje_klienta_json, zmiany_od
+        FROM plan WHERE trener_id = ? AND id = ?
+    `).get(pelny.trenerId, pelny.id) as Pick<WierszPlanu,
+      "status" | "plan_json" | "plan_klienta_json" | "pozycje_klienta_json" | "zmiany_od"> | undefined;
+    let planTrenera = pelny.plan;
+    let planKlienta: Plan | null = byl?.plan_klienta_json ? JSON.parse(byl.plan_klienta_json) : null;
+    let mapa: MapaPozycji = byl?.pozycje_klienta_json ? JSON.parse(byl.pozycje_klienta_json) : {};
+    let zmianyOd = byl?.zmiany_od ?? null;
+    let wykonania = pelny.wykonania ?? [];
+
+    if (zapisany.widok === "klient") {
+      // Zapis z telefonu: do wersji, którą klient widzi — i to samo do planu
+      // trenera, żeby trener widział oceny przy pracy, a zatwierdzenie ich nie zgubiło.
+      if (planKlienta && byl) {
+        const naTrenera = odwrocMape(mapa);
+        planTrenera = przeniesWpisyKlienta(planKlienta, pelny.plan, JSON.parse(byl.plan_json),
+          (pozycja) => naTrenera[pozycja] ?? pozycja);
+        planKlienta = pelny.plan;
+        wykonania = wykonania.map((w) => ({ ...w, positionId: naTrenera[w.positionId] ?? w.positionId }));
+      }
+    } else if (opcje.wersjaKlienta) {
+      planKlienta = null;
+    } else {
+      // Zapis trenera. Plan, który klient już ma (wysłany albo zakończony),
+      // zmienia się dopiero po zatwierdzeniu — pierwsza zmiana odkłada kopię.
+      const uKlienta = byl && byl.status !== "szkic";
+      if (!planKlienta && uKlienta && kanonicznie(pelny.plan) !== kanonicznie(JSON.parse(byl.plan_json))) {
+        planKlienta = JSON.parse(byl.plan_json);
+        mapa = {};
+        zmianyOd = teraz;
+      }
+      if (planKlienta && opcje.przestawienie) mapa = przestaw(mapa, ...opcje.przestawienie);
+      // Szkic klient i tak nie widzi — cofnięcie do szkicu kończy czekanie
+      // (jak dotąd: poprawki w szkicu, potem „wysłany” pokazuje wszystko).
+      // A gdy trener cofnął wszystkie zmiany, nie ma na co czekać.
+      if (planKlienta && (pelny.status === "szkic"
+        || (bezPrzestawien(mapa) && kanonicznie(planKlienta) === kanonicznie(planTrenera)))) {
+        planKlienta = null;
+      }
+    }
+    if (!planKlienta) { mapa = {}; zmianyOd = null; }
+
     d.prepare(`
       INSERT INTO plan (trener_id, id, klient_id, wersja, status, data_startu,
                         utworzony, zmieniony, poprzedni_id,
-                        oddech_json, bieg_json, plan_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        oddech_json, bieg_json, plan_json,
+                        plan_klienta_json, pozycje_klienta_json, zmiany_od)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (trener_id, id) DO UPDATE SET
         klient_id = excluded.klient_id, wersja = excluded.wersja, status = excluded.status,
         data_startu = excluded.data_startu, zmieniony = excluded.zmieniony,
         poprzedni_id = excluded.poprzedni_id,
         oddech_json = excluded.oddech_json, bieg_json = excluded.bieg_json,
-        plan_json = excluded.plan_json
+        plan_json = excluded.plan_json,
+        plan_klienta_json = excluded.plan_klienta_json,
+        pozycje_klienta_json = excluded.pozycje_klienta_json,
+        zmiany_od = excluded.zmiany_od
     `).run(
       pelny.trenerId, pelny.id, pelny.klientId, pelny.wersja, pelny.status,
       pelny.dataStartu, pelny.utworzony, pelny.zmieniony,
       pelny.poprzedniId ?? null,
       pelny.oddech ? JSON.stringify(pelny.oddech) : null,
       pelny.bieg ? JSON.stringify(pelny.bieg) : null,
-      JSON.stringify(pelny.plan),
+      JSON.stringify(planTrenera),
+      planKlienta ? JSON.stringify(planKlienta) : null,
+      planKlienta && !bezPrzestawien(mapa) ? JSON.stringify(mapa) : null,
+      planKlienta ? zmianyOd : null,
     );
 
     // Wpisy klienta podmieniamy w całości — lista w obiekcie jest źródłem prawdy.
@@ -492,7 +577,7 @@ export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
                              serie_json, feedback)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    for (const w of pelny.wykonania ?? []) {
+    for (const w of wykonania) {
       wstawWykonanie.run(
         pelny.trenerId, pelny.id, w.positionId, w.tydzien, w.data,
         w.cwiczenieId ?? null,
@@ -516,7 +601,30 @@ export function zapisz(zapisany: ZapisanyPlan): ZapisanyPlan {
     throw blad;
   }
 
-  return { ...pelny, waga: wagaKlienta(pelny.trenerId, pelny.klientId) };
+  // Świeży odczyt w tym samym widoku, w którym przyszedł zapis — z wersją
+  // klienta i mapą pozycji takimi, jakie właśnie trafiły do bazy.
+  return wczytaj(pelny.trenerId, pelny.id, zapisany.widok === "klient" ? "klient" : "trener")
+    ?? { ...pelny, waga: wagaKlienta(pelny.trenerId, pelny.klientId) };
+}
+
+/** Zatwierdzenie zmian trenera: klient widzi odtąd plan trenera. */
+export function zatwierdzZmiany(zapisany: ZapisanyPlan): ZapisanyPlan {
+  return zapisz({ ...zapisany, widok: undefined }, { wersjaKlienta: "zatwierdz" });
+}
+
+/**
+ * Odrzucenie zmian trenera: plan wraca do wersji, którą widzi klient — razem
+ * z tym, co klient w międzyczasie wpisał. Wykonania wracają na pozycje klienta.
+ */
+export function odrzucZmiany(zapisany: ZapisanyPlan): ZapisanyPlan {
+  const w = zapisany.wersjaKlienta;
+  if (!w) return zapisany;
+  return zapisz({
+    ...zapisany,
+    widok: undefined,
+    plan: w.plan,
+    wykonania: (zapisany.wykonania ?? []).map((x) => ({ ...x, positionId: naKlienta(w.pozycje, x.positionId) })),
+  }, { wersjaKlienta: "odrzuc" });
 }
 
 export function usun(trenerId: number, id: string): void {

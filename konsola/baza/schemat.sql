@@ -74,6 +74,12 @@ CREATE TABLE IF NOT EXISTS plan (
   oddech_json  TEXT,
   bieg_json    TEXT,
   plan_json    TEXT    NOT NULL,
+  -- Wersja robocza (od wersji 7): gdy zmiany trenera czekają na zatwierdzenie,
+  -- klient widzi tę kopię; pusto = widzi plan_json. Mapa przestawień ▲▼ i od
+  -- kiedy zmiany czekają. Szczegóły: wersja-robocza.ts.
+  plan_klienta_json    TEXT,
+  pozycje_klienta_json TEXT,
+  zmiany_od            TEXT,
   PRIMARY KEY (trener_id, id),
   FOREIGN KEY (trener_id, klient_id) REFERENCES klient(trener_id, id) ON DELETE CASCADE
 );

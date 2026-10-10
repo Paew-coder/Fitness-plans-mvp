@@ -612,3 +612,10 @@ danych z `docs/03-architektura.md`.
   wyłącznie tuż po dotknięciu ekranu, a klient trzyma wtedy sztangę.
 - Kalendarza z datami treningów i przesuwaniem ich na inny dzień
   (punkt 2 z [`docs/05-base44-co-przeniesc.md`](../docs/05-base44-co-przeniesc.md)).
+
+## Plan zatwierdzony przez trenera (od 10.10.2026)
+
+Telefon pokazuje plan w wersji, którą trener zatwierdził. Gdy trener poprawia
+plan w konsoli, klient trenuje dalej na poprzedniej wersji — nic mu nie znika
+w połowie treningu — a zmiany zobaczy po zatwierdzeniu. Jego oceny i ciężary
+z tego czasu zostają w obu wersjach. Szczegóły: `konsola/wersja-robocza.ts`.

@@ -659,6 +659,25 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   // pokazać jako informację.
   // Zapis trenera trafia wtedy na 409 i przejmuje wpis klienta — ten 409
   // w konsoli przeglądarki jest oczekiwany, jak przy ocenie wyżej.
+  // Plan jest u klienta, więc TOP SET dodany przez trenera czeka na
+  // zatwierdzenie (wersja robocza, 10.10.2026) — klient go jeszcze nie ma.
+  const pasekZmian = s.locator("#zmiany-klienta");
+  const tokenTS = linkKlienta.token;
+  const tsUKlienta = async () => JSON.stringify(await api(`/api/klient/${tokenTS}`)).includes('"positionId":"D1-S01"')
+    && (await api(`/api/klient/${tokenTS}`)).tygodnie?.[1]?.dni?.[0]?.topSety?.length > 0;
+  sprawdz("plan u klienta: zmiany trenera czekają — pasek „Zmiany czekają na zatwierdzenie” z listą",
+    await pasekZmian.isVisible() && /\d+ zmian/.test(await s.locator("#zmiany-klienta-liczba").innerText())
+      && !(await tsUKlienta()),
+    `${await s.locator("#zmiany-klienta-liczba").innerText().catch(() => "brak paska")} · TOP SET u klienta: ${await tsUKlienta()}`);
+  await s.locator("#zmiany-klienta-szczegoly summary").click();
+  const listaZmian = await s.locator("#zmiany-klienta-lista li").allInnerTexts();
+  sprawdz("lista zmian mówi, co się zmieniło", listaZmian.some((t) => /TOP SET|Plan:/.test(t)), listaZmian.slice(0, 4).join(" | "));
+  await s.locator("#zatwierdz-zmiany").click();
+  await s.waitForFunction(() => (document.querySelector("#zmiany-klienta") as HTMLElement)?.hidden === true,
+    null, { timeout: 8000 }).catch(() => null);
+  sprawdz("„Zatwierdź” pokazuje zmiany klientowi i chowa pasek",
+    !(await pasekZmian.isVisible()) && await tsUKlienta() && (await zBazy()).zmianyDlaKlienta === null);
+
   const bledyPrzedTopSetem = bledyPrzegladarki.length;
   await api(`/api/klient/${linkKlienta.token}/topset`, "POST",
     { positionId: "D1-S01", tydzien: 2, feedback: "za trudne", kg: 100 });
@@ -1172,16 +1191,56 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   };
   const uKlienta = znajdz(zKlienta);
   const lpWBazie = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === doNumeru?.position)?.lp;
-  sprawdz("B1 → A2: zapisane, u klienta w grupie A (superseria z A1), przycisk „Cofnij” opisuje zmianę",
-    !!doNumeru && lpWBazie === "A2." && await listaNumeru.inputValue() === "A2." && uKlienta?.grupa === "A"
-      && /B1 → A2/.test((await s.locator("#cofnij-opis").textContent()) ?? ""),
-    `${doNumeru?.position}: ${lpWBazie} · u klienta ${uKlienta?.lp} grupa ${uKlienta?.grupa} · ${await s.locator("#cofnij-opis").textContent()}`);
+  await s.locator("#zmiany-klienta-szczegoly summary").click().catch(() => null);
+  const zmianaNumeru = (await s.locator("#zmiany-klienta-lista li").allInnerTexts()).find((t) => /numer B1 → A2/.test(t));
+  sprawdz("B1 → A2: zapisane, przycisk „Cofnij” opisuje zmianę; u klienta czeka na zatwierdzenie",
+    !!doNumeru && lpWBazie === "A2." && await listaNumeru.inputValue() === "A2." && uKlienta?.grupa === "B"
+      && /B1 → A2/.test((await s.locator("#cofnij-opis").textContent()) ?? "") && !!zmianaNumeru,
+    `${doNumeru?.position}: ${lpWBazie} · u klienta ${uKlienta?.lp} grupa ${uKlienta?.grupa} · ${zmianaNumeru ?? "brak na liście zmian"}`);
+  await s.locator("#zatwierdz-zmiany").click();
+  await s.waitForFunction(() => (document.querySelector("#zmiany-klienta") as HTMLElement)?.hidden === true,
+    null, { timeout: 8000 }).catch(() => null);
+  const poZatwierdzeniu = znajdz(await api(`/api/klient/${(await api(`/api/plany/${PLAN}/link`, "POST")).token}`));
+  sprawdz("po „Zatwierdź” u klienta A2 w grupie A (superseria z A1)",
+    poZatwierdzeniu?.lp === "A2." && poZatwierdzeniu?.grupa === "A", `${poZatwierdzeniu?.lp} grupa ${poZatwierdzeniu?.grupa}`);
   await s.locator("#cofnij").click();
   await zapisano();
   await s.waitForTimeout(200);
   sprawdz("„Cofnij” przywraca numer B1",
     (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === doNumeru?.position)?.lp === "B1."
       && await listaNumeru.inputValue() === "B1.");
+
+  // „Odrzuć zmiany”: plan wraca do wersji klienta; ⌘Z przywraca odrzucone;
+  // cofnięcie ostatniej zmiany do wersji klienta chowa pasek samo.
+  await s.locator("#zatwierdz-zmiany").click();
+  await s.waitForFunction(() => (document.querySelector("#zmiany-klienta") as HTMLElement)?.hidden === true,
+    null, { timeout: 8000 }).catch(() => null);
+  const seriePrzed = await wiersz(0).locator("td.liczba input").first().inputValue();
+  await wiersz(0).locator("td.liczba input").first().fill(String(Number(seriePrzed || 3) + 1));
+  await wiersz(0).locator("td.liczba input").first().press("Tab");
+  await zapisano();
+  const pasekPoZmianie = await s.locator("#zmiany-klienta").isVisible();
+  await s.locator("#odrzuc-zmiany").click();
+  await s.waitForFunction(() => (document.querySelector("#zmiany-klienta") as HTMLElement)?.hidden === true,
+    null, { timeout: 8000 }).catch(() => null);
+  await s.waitForTimeout(200);
+  sprawdz("„Odrzuć zmiany” przywraca plan do wersji klienta i chowa pasek",
+    pasekPoZmianie && !(await s.locator("#zmiany-klienta").isVisible())
+      && await wiersz(0).locator("td.liczba input").first().inputValue() === seriePrzed
+      && (await zBazy()).zmianyDlaKlienta === null,
+    `${seriePrzed} → ${await wiersz(0).locator("td.liczba input").first().inputValue()}`);
+  await s.locator("body").click({ position: { x: 5, y: 5 } });
+  await s.keyboard.press("ControlOrMeta+z");
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("⌘Z po „Odrzuć” przywraca odrzucone zmiany (znów czekają)",
+    await wiersz(0).locator("td.liczba input").first().inputValue() !== seriePrzed
+      && await s.locator("#zmiany-klienta").isVisible());
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("cofnięcie do wersji klienta — nic nie czeka, pasek znika sam",
+    !(await s.locator("#zmiany-klienta").isVisible()) && (await zBazy()).zmianyDlaKlienta === null);
 
   sprawdz("po cofnięciu wszystkiego plan w bazie jest dokładnie taki jak przed",
     bezDat(await zBazy()) === planPrzedCofaniem);
