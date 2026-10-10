@@ -264,7 +264,9 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
    * podaje go tylko deload, który nie ma szablonu, a zaczyna od tego, gdzie
    * cykl się skończył.
    */
-  const wyliczSlot = (slot: SlotPlanu, tydzien: TydzienCyklu, wzor?: SlotWyliczony): SlotWyliczony => {
+  const wyliczSlot = (
+    slot: SlotPlanu, tydzien: TydzienCyklu, wzor?: SlotWyliczony, wzorT1?: SlotWyliczony,
+  ): SlotWyliczony => {
     const p = parametry(slot, tydzien);
     // Deload bierze ćwiczenie z T6: podmiana z T4–T6 trwa do końca cyklu.
     const p6: ParametryTygodnia = wzor ? parametry(slot, 6) : {};
@@ -313,8 +315,15 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // Pauzowane wyciskanie i przysiad mają własną progresję (02.10.2026) —
     // patrz `PROGRESJA_PAUZY`; ciężar liczy się wtedy jak przy boju, z RPE.
     const pauza = pauzaSlotu(slot, cwiczenie.id, plan.czescPlanu);
+    // Deload przy masie ciała wraca do powtórzeń z T1 (trener, 10.10.2026:
+    // „deload może wracać liczbą powtórzeń do T1”). RPE o 1 niżej nic tu nie
+    // ujmuje — ciężaru nie ma — więc ulżyć mogą tylko powtórzenia. Z T1 tego
+    // samego ćwiczenia (po podmianie w T4–T6 — z automatu dla T1).
+    const powtorzeniaDeloadu = (w: SlotWyliczony) => cwiczenie.progresja !== "masa ciała" ? w.powtorzenia
+      : wzorT1?.cwiczenie?.id === cwiczenie.id ? wzorT1.powtorzenia
+        : powtorzeniaAkcesorium({ coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: 1, przezCalyCykl: true });
     const szablon = wzor
-      ? { serie: wzor.serie, powtorzenia: wzor.powtorzenia, rpe: rpeDeloadu(wzor.rpe) }
+      ? { serie: wzor.serie, powtorzenia: powtorzeniaDeloadu(wzor), rpe: rpeDeloadu(wzor.rpe) }
       : parametrySzablonu(slot, tydzien as Tydzien, cwiczenie, plan.czescPlanu);
 
     const serie = p.serie ?? szablon.serie!;
@@ -475,9 +484,11 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
   // i porównania cykli liczą się z pracy, a deload z definicji jej nie ma.
   const tygodnieDodatkowe: TydzienWyliczony[] = [];
   const t6 = wyliczone.get(6)!;
+  const t1 = wyliczone.get(1)!;
   if (plan.deload) {
     const sloty = plan.sloty.map((slot) =>
-      wyliczSlot(slot, TYDZIEN_DELOADU, t6.sloty.find((s) => s.positionId === slot.positionId)));
+      wyliczSlot(slot, TYDZIEN_DELOADU, t6.sloty.find((s) => s.positionId === slot.positionId),
+        t1.sloty.find((s) => s.positionId === slot.positionId)));
     tygodnieDodatkowe.push({
       tydzien: TYDZIEN_DELOADU,
       rodzaj: "deload",

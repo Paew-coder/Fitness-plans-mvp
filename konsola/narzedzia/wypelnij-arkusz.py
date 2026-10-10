@@ -205,7 +205,7 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
 
 
 OPIS_TYGODNIA = {
-    "deload": "Deload: serie i powtórzenia jak w T6, RPE o 1 niżej, bez TOP SETU.",
+    "deload": "Deload: serie i powtórzenia jak w T6, RPE o 1 niżej, bez TOP SETU; przy masie ciała powtórzenia jak w T1.",
     "maksy": "Maksy: 1 × 1 @ RPE 10, wszystkie boje jednego dnia. "
              "Ciężar to obecne 1RM — punkt odniesienia; wynik wpisz obok.",
 }

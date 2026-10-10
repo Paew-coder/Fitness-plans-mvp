@@ -1610,7 +1610,7 @@ function rysujDniBezFokusu() {
   kontener.append(legendaPlanu());
   if (tydzien === TYDZIEN_DELOADU) {
     kontener.append(el("p", "wskazowka opis-po-cyklu",
-      "Deload: serie i powtórzenia jak w T6, RPE o 1 niżej, bez TOP SETU. "
+      "Deload: serie i powtórzenia jak w T6, RPE o 1 niżej, bez TOP SETU; przy masie ciała powtórzenia jak w T1. "
       + "Ciężar liczy się z tabeli; każdą liczbę możesz poprawić ręcznie."));
   }
 
