@@ -99,6 +99,26 @@ export function przeniesWpisyKlienta(
   return cel;
 }
 
+/**
+ * Plan bez wpisów klienta — do „Resetuj plan” (10.10.2026): oceny, ciężary
+ * i TOP SETY klienta znikają z tygodni, a 1RM wyliczone z jego treningu
+ * (`kalibracja`) z serii maksymalnych. Serie maksymalne wpisane wprost zostają,
+ * tylko bez pamięci o zastąpionej kalibracji — tamtego treningu już nie ma.
+ * Parametry trenera (serie, powtórzenia, RPE, ciężar na sztywno) bez zmian.
+ */
+export function bezWpisowKlienta(plan: Plan): Plan {
+  const czysty = structuredClone(plan);
+  for (const slot of czysty.sloty) {
+    for (const tydzien of Object.values(slot.tygodnie ?? {})) {
+      for (const pole of POLA_KLIENTA) delete (tydzien as any)?.[pole];
+    }
+  }
+  czysty.serieMaksymalne = czysty.serieMaksymalne
+    .filter((s) => !s.kalibracja)
+    .map(({ zastapionaKalibracja, ...s }) => s);
+  return czysty;
+}
+
 /** Tydzień slotu bez wpisów klienta — to, co ustawia trener. */
 function parametryTrenera(tydzien: Record<string, unknown> | undefined): string {
   const { feedback, ciezarKlienta, topSetKlienta, ...reszta } = tydzien ?? {};

@@ -296,6 +296,14 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
+## Resetuj plan (od 10.10.2026)
+
+**↺ Resetuj plan** w nagłówku planu: klient zaczyna cykl od pierwszego treningu.
+Okno potwierdzenia wylicza, co zniknie (ukończone treningi, wykonania, oceny,
+ciężary wybrane przez klienta, 1RM z jego treningu) i co zostaje (cały plan
+trenera, serie maksymalne, waga klienta); opcjonalnie ustawia start na dziś.
+Nie da się tego cofnąć.
+
 ## Wersja robocza — zmiany czekają na zatwierdzenie (od 10.10.2026)
 
 Plan, który klient już ma, zmienia się u klienta dopiero po zatwierdzeniu.

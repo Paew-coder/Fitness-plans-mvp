@@ -795,3 +795,16 @@ body.wyszukiwarka-otwarta { overflow: hidden; }
   margin-left: .5rem; padding: 0 .35rem; border-radius: 3px; font-size: .72rem; font-weight: 600;
   background: var(--uwaga-tlo); color: var(--uwaga); vertical-align: middle;
 }
+
+/* ── „Resetuj plan” (10.10.2026) ─────────────────────────────────── */
+button.niebezpieczny { background: var(--zle); border-color: var(--zle); color: #fff; font-weight: 600; }
+button.niebezpieczny:disabled { opacity: .6; }
+#resetuj-plan { color: var(--zle); }
+.lista-resetu { margin: .3rem 0 .6rem; padding-left: 1.2rem; }
+/* Zwykłe zdanie z polem wyboru obok — nie nagłówek pola (globalne `label`
+   to słupek z etykietą wielkimi literami). */
+label.pole-resetu {
+  flex-direction: row; align-items: center; gap: .55rem; margin: .6rem 0;
+  font-family: var(--sans); font-size: .92rem; letter-spacing: normal; text-transform: none;
+  color: var(--tekst); cursor: pointer;
+}
