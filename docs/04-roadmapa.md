@@ -801,6 +801,17 @@ Trener: „co mogę zrobić, żeby w dniu 1 było ćwiczenie A1 i A2 i dopiero p
 * Kontrola planu: ostrzeżenie „pierwsze miejsce dnia bez boju” tylko dla A1 (akcesorium w A2 przy boju to normalna superseria); nowe ostrzeżenie o tym samym numerze dwa razy w dniu. Serwer przyjmuje numer jako krótki tekst.
 * Testy silnika (A2 z bojem i z akcesorium, powtórzony numer), kształtu planu, przegląd ekranów (B1 → A2 zapisane, u klienta grupa A, „Cofnij”).
 
+**56. Wersja robocza planu — zmiany czekają na zatwierdzenie — 10.10.2026.**
+
+Trener: „możemy dodać funkcję taką, że jak wprowadzam zmiany, to nie wpływa to na aktualne plany klientów, chyba że to zatwierdzę?”.
+
+* Plan, który klient już ma (wysłany albo zakończony): pierwsza zmiana trenera odkłada kopię tego, co klient widzi. Telefon czyta odtąd tę kopię; konsola pracuje jak dotąd na planie trenera — tabela, ▲▼, tygodnie, szablon, losowanie, asystent, 1RM, eksport i cofanie bez zmian. Szkic (klient go nie widzi) zapisuje się od razu, jak dotąd; powrót do szkicu kończy czekanie.
+* Nad planem pasek „Zmiany czekają na zatwierdzenie” — od kiedy, lista zmian (dodane / usunięte / podmienione ćwiczenie, parametry T1–T6, numer, przestawienie, ustawienia planu) i dwa przyciski: **✓ Zatwierdź — pokaż klientowi** albo **Odrzuć zmiany** (plan wraca do wersji klienta; ⌘Z przywraca odrzucone). Cofnięcie wszystkich zmian do wersji klienta chowa pasek samo. W kartotece przy cyklu znacznik „zmiany czekają”.
+* Wpisy klienta w czasie czekania (oceny, jego ciężary, TOP SETY, serie maksymalne, wykonania) idą do obu wersji — trener widzi je przy pracy, a zatwierdzenie ani odrzucenie ich nie zabiera. ▲▼ przy czekających zmianach: mapa pozycji, żeby wykonania stały u klienta i u trenera przy właściwych ćwiczeniach.
+* Od razu, bez zatwierdzania: data startu, status i moduły oddech/bieg.
+* Baza: wersja 7 (`plan_klienta_json`, `pozycje_klienta_json`, `zmiany_od`; kopia przed migracją jak zawsze). Logika: `konsola/wersja-robocza.ts`; zapis w `magazyn.zapisz` (widok trenera / widok klienta); trasy `/zatwierdz`, `/odrzuc`.
+* Testy: `testy/wersja-robocza.test.ts` (logika i cała droga przez serwer, 17), migracja, testy API zaktualizowane o zatwierdzanie; przeglądy ekranów (pasek, Zatwierdź, Odrzuć, ⌘Z) i klienta.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

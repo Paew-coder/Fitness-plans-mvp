@@ -777,3 +777,21 @@ body.wyszukiwarka-otwarta { overflow: hidden; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 @media (max-width: 760px) { .cofnij-opis { max-width: 9rem; } }
+
+/* ── wersja robocza: zmiany czekają na zatwierdzenie (10.10.2026) ──── */
+.zmiany-klienta[hidden] { display: none; }
+.zmiany-klienta {
+  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .6rem 1rem;
+  margin: 0 0 1rem; padding: .75rem .95rem; border-radius: 8px;
+  border: 1px solid var(--uwaga); background: var(--uwaga-tlo); color: var(--tekst);
+}
+.zmiany-klienta-tekst { flex: 1 1 22rem; font-size: .9rem; line-height: 1.45; }
+.zmiany-klienta-tekst details { margin-top: .3rem; }
+.zmiany-klienta-tekst summary { cursor: pointer; color: var(--akcent); font-weight: 600; }
+.zmiany-klienta-tekst ul { margin: .35rem 0 0; padding-left: 1.1rem; font-size: .85rem; }
+.zmiany-klienta-akcje { display: flex; flex-wrap: wrap; gap: .5rem; }
+.zmiany-klienta-akcje button { min-height: 2.5rem; }
+.znacznik-zmian {
+  margin-left: .5rem; padding: 0 .35rem; border-radius: 3px; font-size: .72rem; font-weight: 600;
+  background: var(--uwaga-tlo); color: var(--uwaga); vertical-align: middle;
+}

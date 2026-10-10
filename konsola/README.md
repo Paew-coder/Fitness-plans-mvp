@@ -296,6 +296,16 @@ zestaw jednostek jest stały — przy N biegach w tygodniu pierwsze N z listy:
 Minuty rosną przez cykl (T4 lżejszy) i zależą od liczby biegów w tygodniu — wzory
 jak w arkuszu. Klient widzi jedno i drugie na telefonie, w zakładce *Oddech i bieg*.
 
+## Wersja robocza — zmiany czekają na zatwierdzenie (od 10.10.2026)
+
+Plan, który klient już ma, zmienia się u klienta dopiero po zatwierdzeniu.
+Pierwsza zmiana trenera odkłada kopię tego, co klient widzi; nad planem pojawia
+się pasek **„Zmiany czekają na zatwierdzenie”** z listą zmian i przyciskami
+**✓ Zatwierdź — pokaż klientowi** / **Odrzuć zmiany**. Oceny i ciężary klienta
+z czasu czekania trafiają do obu wersji. Szkic zapisuje się od razu (klient go
+nie widzi); data startu, status i moduły oddech/bieg — też od razu. Logika:
+[`wersja-robocza.ts`](wersja-robocza.ts), testy: `testy/wersja-robocza.test.ts`.
+
 ## Numer pozycji (Lp.) w wierszu (od 10.10.2026)
 
 Numer w kolumnie Lp. (kropkowane podkreślenie) to lista A1–H4: dotknięcie

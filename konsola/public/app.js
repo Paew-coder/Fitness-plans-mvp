@@ -367,6 +367,11 @@ function rysujCykle(plany) {
       nazwa.append(znacznik);
     }
     const status = el("span", `odznaka ${p.status.replace(/[łą]/g, "l")}`, p.status);
+    if (p.zmianyCzekaja) {
+      const czeka = el("span", "znacznik-zmian", "zmiany czekają");
+      czeka.title = "Zmiany trenera czekają na zatwierdzenie — klient trenuje na poprzedniej wersji";
+      nazwa.append(czeka);
+    }
 
     const opisCyklu = p.cykl.doStartu !== null ? ` · start za ${p.cykl.doStartu} dni`
       : p.cykl.tydzien === null ? ""
@@ -1453,7 +1458,64 @@ function rysujDni() {
   const fokus = zapamietajFokus();
   rysujDniBezFokusu();
   przywrocFokus(fokus);
+  rysujZmianyKlienta();
 }
+
+/*
+ * ── Wersja robocza: pasek „Zmiany czekają na zatwierdzenie” (10.10.2026) ──
+ *
+ * Trener: „jak wprowadzam zmiany, to nie wpływa to na aktualne plany
+ * klientów, chyba że to zatwierdzę”. Przy planie, który klient już ma,
+ * serwer trzyma jego wersję osobno (`wersja-robocza.ts`), a tu pokazujemy,
+ * co czeka, i dajemy dwa wyjścia. Szkic klient i tak nie widzi — tam paska nie ma.
+ */
+function rysujZmianyKlienta() {
+  const pasek = $("#zmiany-klienta");
+  const z = obraz?.zmianyDlaKlienta;
+  pasek.hidden = !z;
+  if (!z) return;
+  const od = new Date(z.od);
+  const dzis = od.toDateString() === new Date().toDateString();
+  $("#zmiany-klienta-opis").textContent = `Klient trenuje na wersji sprzed zmian (czekają od ${dzis ? "" : `${od.toLocaleDateString("pl-PL")} `}`
+    + `${od.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}).`;
+  $("#zmiany-klienta-liczba").textContent = z.liczba === 0 ? "Pokaż zmiany"
+    : `${z.liczba} ${odmiana(z.liczba, ["zmiana", "zmiany", "zmian"])} — pokaż`;
+  const lista = $("#zmiany-klienta-lista");
+  lista.replaceChildren(...z.zmiany.map((t) => el("li", "", t)),
+    ...(z.wiecej ? [el("li", "wskazowka", `…i ${z.wiecej} więcej`)] : []),
+    ...(z.liczba === 0 ? [el("li", "wskazowka", "Zmiany w ustawieniach, których lista nie rozpisuje.")] : []));
+}
+
+/** Najpierw dokończony zapis trenera — zatwierdzenie ma objąć ostatnią zmianę. */
+function poZapisieTrenera(wykonaj) {
+  if ($("#zapis").textContent === "zapisywanie…") poZapisie = wykonaj;
+  else wykonaj();
+}
+
+$("#zatwierdz-zmiany").onclick = () => poZapisieTrenera(async () => {
+  try {
+    obraz = await api(`/api/plany/${obraz.zapisany.id}/zatwierdz`, { method: "POST" });
+    rysujPlan();
+    $("#zapis").textContent = "zatwierdzone — klient widzi zmiany";
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+$("#odrzuc-zmiany").onclick = () => {
+  if (!confirm("Odrzucić zmiany? Plan wróci do wersji, którą widzi klient — razem z tym, "
+    + "co klient w tym czasie wpisał.\n\n↶ Cofnij (⌘Z) przywróci Twoje zmiany.")) return;
+  poZapisieTrenera(async () => {
+    try {
+      opiszZmianeSerwera("odrzucenie zmian");
+      obraz = await api(`/api/plany/${obraz.zapisany.id}/odrzuc`, { method: "POST" });
+      rysujPlan();
+      $("#zapis").textContent = "zmiany odrzucone";
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+};
 
 function rysujDniBezFokusu() {
   const kontener = $("#dni");

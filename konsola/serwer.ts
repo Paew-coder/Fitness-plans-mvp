@@ -28,6 +28,7 @@ import { bladSrodowiskaPythona } from "./blad-pythona.ts";
 import { BladArkusza, wczytajPlanZArkusza, type WynikWczytania } from "./wczytaj-arkusz.ts";
 import { bladKsztaltuPlanu, bladKsztaltuPropozycji, bladDatyStartu }
   from "./ksztalt-planu.ts";
+import { podsumujZmiany } from "./wersja-robocza.ts";
 import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
 import { adresyLokalnejSieci } from "./adresy.ts";
@@ -801,6 +802,8 @@ function kartotekaKlienta(trenerId: number, klientId: string) {
       status: zapisany.status,
       dataStartu: zapisany.dataStartu,
       zmieniony: zapisany.zmieniony,
+      // Zmiany trenera czekają na zatwierdzenie — klient ich jeszcze nie widzi.
+      zmianyCzekaja: Boolean(zapisany.wersjaKlienta),
       cwiczen: zapisany.plan.sloty.filter((slot) => slot.cwiczenieId).length,
       cykl: cyklWCzasie(zapisany),
       realizacja: realizacja(zapisany, klient),
@@ -827,6 +830,17 @@ function pozycjaListyKlientow(trenerId: number, klient: magazyn.Klient) {
   };
 }
 
+/**
+ * Zmiany trenera, które czekają na zatwierdzenie (`wersja-robocza.ts`) —
+ * do paska nad planem: od kiedy, ile i jakie. `null`, gdy nic nie czeka.
+ */
+function zmianyDlaKlienta(zapisany: magazyn.ZapisanyPlan) {
+  const w = zapisany.wersjaKlienta;
+  if (!w) return null;
+  const zmiany = podsumujZmiany(w.plan, zapisany.plan, w.pozycje, (id) => katalog.poId(id)?.nazwa ?? id);
+  return { od: w.od, liczba: zmiany.length, zmiany: zmiany.slice(0, 40), wiecej: Math.max(0, zmiany.length - 40) };
+}
+
 /** Pełny obraz planu dla interfejsu: wynik, uwagi, gotowość. */
 function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   const klient = magazyn.wczytajKlienta(zapisany.trenerId, zapisany.klientId);
@@ -834,8 +848,11 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
   const uwagi = sprawdzPlan(zapisany.plan, wynik, {
     cwiczeniaZPoprzedniegoCyklu: magazyn.cwiczeniaZPoprzedniegoCyklu(zapisany),
   });
+  // Wersja klienta zostaje na serwerze — konsola dostaje z niej tylko listę zmian.
+  const { wersjaKlienta, ...bezWersjiKlienta } = zapisany;
   return {
-    zapisany,
+    zapisany: bezWersjiKlienta,
+    zmianyDlaKlienta: zmianyDlaKlienta(zapisany),
     klient,
     wynik,
     uwagi,
@@ -1345,9 +1362,10 @@ const serwer = createServer(async (req, res) => {
     // ── lista planów ─────────────────────────────────────────────────
     if (sciezka === "/api/plany" && req.method === "GET") {
       const plany = magazyn.lista(trenerId).map((zapisany) => {
-        const { plan, wykonania, ukonczoneDni, waga, ...reszta } = zapisany;
+        const { plan, wykonania, ukonczoneDni, waga, wersjaKlienta, ...reszta } = zapisany;
         return {
           ...reszta,
+          zmianyCzekaja: Boolean(wersjaKlienta),
           cwiczen: plan.sloty.filter((s) => s.cwiczenieId).length,
           realizacja: realizacja(zapisany),
           cykl: cyklWCzasie(zapisany),
@@ -1648,7 +1666,17 @@ const serwer = createServer(async (req, res) => {
             : w.positionId === cel.positionId ? { ...w, positionId: slot.positionId }
               : w);
 
-        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan, wykonania })));
+        return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan, wykonania },
+          { przestawienie: [slot.positionId, cel.positionId] })));
+      }
+
+      // Wersja robocza (10.10.2026): zatwierdzenie pokazuje klientowi zmiany
+      // trenera, odrzucenie przywraca plan do wersji klienta (z jego wpisami).
+      if (akcja === "/zatwierdz" && req.method === "POST") {
+        return json(res, obrazPlanu(magazyn.zatwierdzZmiany(zapisany)));
+      }
+      if (akcja === "/odrzuc" && req.method === "POST") {
+        return json(res, obrazPlanu(magazyn.odrzucZmiany(zapisany)));
       }
 
       // Link należy do klienta, nie do planu — raz wysłany działa przez
@@ -1821,7 +1849,9 @@ const serwer = createServer(async (req, res) => {
       const osoba = magazyn.klientPoTokenie(token!);
       if (!osoba) return blad(res, "Link nieaktualny. Poproś trenera o nowy.", 404);
 
-      const aktywny = magazyn.aktywnyPlan(osoba.trenerId, osoba.id);
+      // Widok klienta: przy czekających zmianach trenera — wersja, którą klient
+      // ma zatwierdzoną (`wersja-robocza.ts`), a zapis idzie do obu wersji.
+      const aktywny = magazyn.aktywnyPlan(osoba.trenerId, osoba.id, "klient");
       let zapisany = aktywny;
 
       if (!zapisany) {
@@ -1849,7 +1879,7 @@ const serwer = createServer(async (req, res) => {
           // znaczyłoby dopisanie treningu do nieswojego planu.
           return blad(res, "Nie masz jeszcze aktywnego planu.", 409);
         }
-        const wskazany = magazyn.wczytaj(osoba.trenerId, String(zCiala.planId));
+        const wskazany = magazyn.wczytaj(osoba.trenerId, String(zCiala.planId), "klient");
         if (!wskazany || wskazany.klientId !== osoba.id) {
           // Ta sama odpowiedź na „cyklu nie ma" i na „cykl nie jest twój",
           // ta sama co przy aktywnym planie: cudzy identyfikator nie ma się
@@ -1879,7 +1909,7 @@ const serwer = createServer(async (req, res) => {
       const doZapisu = (cialoZadania: Record<string, unknown>) => {
         const planId = cialoZadania.planId;
         if (!planId || planId === zapisany.id) return zapisany;
-        const stary = magazyn.wczytaj(osoba.trenerId, String(planId));
+        const stary = magazyn.wczytaj(osoba.trenerId, String(planId), "klient");
         if (!stary || stary.klientId !== osoba.id) return null;
         return stary;
       };
@@ -1904,7 +1934,7 @@ const serwer = createServer(async (req, res) => {
        * Klient widzi to, co jego: własne cykle, własne 1RM, własną frekwencję.
        */
       if (akcja === "/historia" && req.method === "GET") {
-        const cykle = magazyn.planyKlienta(osoba.trenerId, osoba.id)
+        const cykle = magazyn.planyKlienta(osoba.trenerId, osoba.id, "klient")
           // Szkiców klient nie widzi nigdzie — także w historii.
           .filter((p) => p.status !== "szkic");
         const historia = historiaKlienta(cykle.map((p) => {
@@ -2142,7 +2172,7 @@ const serwer = createServer(async (req, res) => {
         magazyn.zapiszWage(osoba.trenerId, osoba.id, dzisiaj(), kg);
         // Przez `naEkran`, jak wszystkie zapisy: waga należy do klienta, więc
         // zapisuje się także wtedy, gdy aktywnego planu akurat nie ma.
-        return json(res, naEkran(magazyn.wczytaj(zapisany.trenerId, zapisany.id)!));
+        return json(res, naEkran(magazyn.wczytaj(zapisany.trenerId, zapisany.id, "klient")!));
       }
 
       if (akcja === "/serie" && req.method === "POST") {

@@ -390,6 +390,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   zapisany.plan.sloty[0].cwiczenieId = null;
   await api(`/api/plany/${PLAN}`, "PUT",
     { plan: zapisany.plan, dataStartu: zapisany.dataStartu, status: zapisany.status });
+  // Plan jest u klienta — zmiana trenera dociera do telefonu po zatwierdzeniu
+  // (wersja robocza, 10.10.2026). Tu trener zatwierdza od razu.
+  await api(`/api/plany/${PLAN}/zatwierdz`, "POST");
 
   await kontekst.setOffline(false);
   await s.waitForTimeout(2500);
@@ -712,6 +715,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     plan: zPodmiana.plan, dataStartu: zPodmiana.dataStartu, status: "wysłany",
     zmieniony: zPodmiana.zmieniony,
   });
+  await api(`/api/plany/${planDoPodmiany}/zatwierdz`, "POST");
 
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
@@ -1598,6 +1602,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     zapisany.plan.rozgrzewki = [{ dzien: 1, tekst: "5 min rower\n2 × 10 dead bug" }];
     await api(`/api/plany/${idRecznego}`, "PUT", { plan: zapisany.plan, dataStartu: null,
       status: "wysłany", zmieniony: zapisany.zmieniony });
+    await api(`/api/plany/${idRecznego}/zatwierdz`, "POST");   // plan u klienta — zmiana po zatwierdzeniu
   }
   await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
   await rozwinTydzien(s.locator("#tygodnie .tydzien").nth(1));

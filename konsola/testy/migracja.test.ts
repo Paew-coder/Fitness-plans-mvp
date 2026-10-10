@@ -141,7 +141,15 @@ describe("migracja v1 → v2", () => {
     // Liczba wpisana wprost, żeby podniesienie wersji było decyzją, a nie
     // skutkiem ubocznym — test ma wtedy zapytać, czy migracja rzeczywiście jest.
     // 6: wykonanie pamięta wszystkie serie, nie tylko najcięższą (23.09.2026).
-    assert.equal(w, 6);
+    // 7: wersja robocza planu — zmiany trenera czekają na zatwierdzenie (10.10.2026).
+    assert.equal(w, 7);
+  });
+
+  test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {
+    const kolumny = (polaczenie.baza().prepare("PRAGMA table_info(plan)").all() as { name: string }[]).map((k) => k.name);
+    for (const k of ["plan_klienta_json", "pozycje_klienta_json", "zmiany_od"]) assert.ok(kolumny.includes(k), k);
+    const czeka = polaczenie.baza().prepare("SELECT COUNT(*) AS n FROM plan WHERE plan_klienta_json IS NOT NULL").get() as { n: number };
+    assert.equal(czeka.n, 0);
   });
 
   test("z nazw w planach powstali klienci", () => {

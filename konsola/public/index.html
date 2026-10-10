@@ -149,6 +149,23 @@
     </div>
   </header>
 
+  <!-- Wersja robocza (10.10.2026): zmiany trenera przy planie, który klient
+       już ma, czekają tu na zatwierdzenie — klient trenuje na poprzedniej. -->
+  <section id="zmiany-klienta" class="zmiany-klienta" hidden>
+    <div class="zmiany-klienta-tekst">
+      <strong>Zmiany czekają na zatwierdzenie.</strong>
+      <span id="zmiany-klienta-opis"></span>
+      <details id="zmiany-klienta-szczegoly">
+        <summary id="zmiany-klienta-liczba"></summary>
+        <ul id="zmiany-klienta-lista"></ul>
+      </details>
+    </div>
+    <div class="zmiany-klienta-akcje">
+      <button type="button" id="zatwierdz-zmiany" class="glowny">✓ Zatwierdź — pokaż klientowi</button>
+      <button type="button" id="odrzuc-zmiany">Odrzuć zmiany</button>
+    </div>
+  </section>
+
   <div class="pasek-ustawien">
     <!-- Grupy przycisków NIE mogą stać w <label>. Kliknięcie w label uruchamia
          jego kontrolkę, czyli pierwszy przycisk w środku — przez co kliknięcie

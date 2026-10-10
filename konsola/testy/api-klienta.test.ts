@@ -406,6 +406,9 @@ describe("ciężar ustawiany ręcznie, którego trener nie wpisał", () => {
     const plan = (await api(`/api/plany/${planReczny}`)).dane.zapisany.plan;
     plan.sloty[2].tygodnie = { ...plan.sloty[2].tygodnie, 1: { ciezarOverride: 2.5 } };
     await api(`/api/plany/${planReczny}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    // Plan jest u klienta — zmiana trenera czeka na zatwierdzenie (wersja robocza).
+    assert.equal((await deadBug()).ciezar, 2, "klient widzi zmianę trenera przed zatwierdzeniem");
+    await api(`/api/plany/${planReczny}/zatwierdz`, "POST");
     const c = await deadBug();
     assert.equal(c.ciezar, 2.5);
     assert.equal(c.ciezarWybieraKlient, false);
@@ -527,6 +530,7 @@ describe("deload i tydzień maksów po cyklu", () => {
     plan.plan.deload = false;
     await api(`/api/plany/${planPo}`, "PUT",
       { plan: plan.plan, dataStartu: null, status: "wysłany", zmieniony: plan.zmieniony });
+    await api(`/api/plany/${planPo}/zatwierdz`, "POST");
     const { kod, dane } = await api(`/api/klient/${tokenPo}/odczucie`, "POST",
       { positionId: "D1-S01", tydzien: 7, feedback: "OK" });
     assert.equal(kod, 400);
@@ -957,6 +961,7 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     ];
     await api(`/api/plany/${PLAN}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
     await api(`/api/plany/${PLAN}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
+    await api(`/api/plany/${PLAN}/zatwierdz`, "POST");
     tokenPodmiany = (await api(`/api/plany/${PLAN}/link`, "POST")).dane.token;
     for (const tydzien of [1, 2]) {
       await api(`/api/klient/${tokenPodmiany}/odczucie`, "POST", {
@@ -985,6 +990,7 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     await api(`/api/plany/${PLAN}`, "PUT", {
       plan, dataStartu: null, status: "wysłany", zmieniony: teraz.zapisany.zmieniony,
     });
+    await api(`/api/plany/${PLAN}/zatwierdz`, "POST");
 
     const po = (await api(`/api/plany/${PLAN}`)).dane.propozycje1RM ?? [];
     assert.ok(!po.some((p: any) => /low bar/i.test(p.nazwa)),
