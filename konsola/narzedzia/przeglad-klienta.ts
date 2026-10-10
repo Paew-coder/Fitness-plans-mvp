@@ -2073,6 +2073,71 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       && notkaSplit.includes(`Na ${split.powtorzenia} powtórzeń z planu`),
     notkaSplit || "brak zdania");
 
+  // ── 30. „↺ Resetuj plan” w trakcie treningu (10.10.2026) ────────────
+  //
+  // Zgłoszone przez trenera: po resecie zniknęły zapisane ciężary, ale telefon
+  // został w serii 2 z 6 — postęp prowadzonego treningu żyje w telefonie,
+  // a reset czyścił tylko bazę. Teraz plan niesie znacznik resetu, a telefon
+  // porzuca postęp sprzed niego; zaległy zapis sprzed resetu serwer odrzuca.
+  {
+    await api("/api/plany", "POST", { klient: "Reset Telefon", wersja: 1 });
+    const idR = (await api("/api/plany")).find((p: any) => p.klient === "Reset Telefon").id;
+    const pR = (await api(`/api/plany/${idR}`)).zapisany;
+    pR.plan.sloty[0].cwiczenieId = "EX-0011";
+    pR.plan.sloty[1].cwiczenieId = "EX-0016";
+    pR.plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
+      { cwiczenieId: "EX-0016", ciezar: 80, powtorzenia: 5 }];
+    await api(`/api/plany/${idR}`, "PUT", { plan: pR.plan, dataStartu: null, status: "wysłany", zmieniony: pR.zmieniony });
+    const sciezkaR = (await api(`/api/plany/${idR}/link`, "POST")).sciezka;
+    const tokenR = sciezkaR.replace("/k/", "");
+    const doProwadzenia = async () => {
+      await s.goto(`${adres}${sciezkaR}`, { waitUntil: "networkidle" });
+      await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+      await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
+      await s.locator("#tygodnie .dzien-kafel").first().click();
+      await s.waitForSelector("#ekran-trening:not(.ukryty)");
+      await s.click("#prowadz");
+      await s.waitForSelector("#ekran-seria:not(.ukryty)");
+      await s.waitForSelector("#panel .panel-pola");
+    };
+    await doProwadzenia();
+    for (const kg of ["60", "60"]) {
+      await polaPanelu.nth(0).fill(kg);
+      await polaPanelu.nth(1).fill("6");
+      await panel.getByRole("button", { name: "Zakończ serię" }).click();
+      await s.waitForTimeout(600);
+      await panel.getByRole("button", { name: "Pomiń przerwę" }).click().catch(() => null);
+      await s.waitForSelector("#panel .panel-pola");
+    }
+    const przedResetem = await s.locator("#seria-postep").innerText();
+    const resetOdPrzed = (await api(`/api/klient/${tokenR}`)).resetOd ?? null;
+
+    await api(`/api/plany/${idR}/reset`, "POST", {});
+    await doProwadzenia();
+    const poResecie = await s.locator("#seria-postep").innerText();
+    const wPanelu = (await panel.locator(".kolumna-seria .wartosc").innerText()).replace(/\s+/g, " ").trim();
+    sprawdz("po „Resetuj plan” telefon zaczyna trening od pierwszej serii, nie tam, gdzie stał",
+      /zrobione 2/.test(przedResetem) && /^Seria 1 z \d+ · zrobione 0$/.test(poResecie) && wPanelu === "1 z 6",
+      `przed: ${przedResetem} → po: ${poResecie} · panel ${wPanelu}`);
+    const lista = await api(`/api/klient/${tokenR}`);
+    sprawdz("u klienta nie ma już wpisanych serii ani ukończonych treningów",
+      lista.tygodnie[0].dni[0].cwiczenia.every((c: any) => !c.ciezarWykonany && !(c.serieWykonane ?? []).some(Boolean))
+        && !!lista.resetOd && lista.resetOd !== resetOdPrzed);
+
+    // Zadanie z kolejki offline sprzed resetu (stary znacznik) — odrzucone;
+    // to samo z bieżącym znacznikiem przechodzi.
+    const stare = await fetch(`${adres}/api/klient/${tokenR}/odczucie`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ planId: idR, resetOd: resetOdPrzed, positionId: "D1-S01", tydzien: 1, feedback: "za trudne" }),
+    });
+    const biezace = await fetch(`${adres}/api/klient/${tokenR}/odczucie`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ planId: idR, resetOd: lista.resetOd, positionId: "D1-S01", tydzien: 1, feedback: "OK" }),
+    });
+    sprawdz("zaległy zapis sprzed resetu jest odrzucony, bieżący przechodzi",
+      stare.status === 409 && biezace.ok, `${stare.status} / ${biezace.status}`);
+  }
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

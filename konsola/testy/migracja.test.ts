@@ -142,7 +142,8 @@ describe("migracja v1 → v2", () => {
     // skutkiem ubocznym — test ma wtedy zapytać, czy migracja rzeczywiście jest.
     // 6: wykonanie pamięta wszystkie serie, nie tylko najcięższą (23.09.2026).
     // 7: wersja robocza planu — zmiany trenera czekają na zatwierdzenie (10.10.2026).
-    assert.equal(w, 7);
+    // 8: znacznik resetu planu — telefon zaczyna trening od nowa (10.10.2026).
+    assert.equal(w, 8);
   });
 
   test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {
