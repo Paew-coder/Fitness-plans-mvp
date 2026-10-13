@@ -735,11 +735,6 @@ function wskazowkaDoboru(c) {
 /** Na panelu stoi „dobierz” — ciężaru z planu jeszcze nie ma, klient go wybiera. */
 const dobieraCiezar = (c) => Boolean(c.dobierzCiezar || c.ciezarWybieraKlient);
 
-/** Zamiast „Za ciężko albo za lekko?” przy dobieraniu ciężaru — co zrobić zamiast oceny. */
-const bezOcenyPrzyDoborze = () => el("p", "drobne bez-oceny-doboru",
-  "Za lekko albo za ciężko? Nic nie klikaj — zmień ciężar w następnej serii i wpisz go. "
-  + "Ocena pojawi się, gdy ciężar będzie już ustalony.");
-
 /** Czy przy ćwiczeniu jest już pełna seria — ta, z której policzymy ciężar. */
 const seriaWpisana = (c) =>
   (c.serieWykonane ?? []).some((x) => x?.ciezar > 0 && x?.powtorzenia > 0)
@@ -2338,10 +2333,9 @@ function panelTopSetu(k, kroki) {
   ramkaRampy?.polacz(pole);
   let ocena = zapisany?.feedback ?? null;
   // TOP SET bez 1RM — klient sam dobiera ciężar jednego powtórzenia, więc tak
-  // jak przy seriach: bez „za ciężko / za lekko” (trener, 10.10.2026).
-  if (bezCiezaru) {
-    karta.append(bezOcenyPrzyDoborze());
-  } else {
+  // jak przy seriach: bez „za ciężko / za lekko” (trener, 10.10.2026) i bez
+  // zdania o ocenie — instrukcja doboru wyżej mówi, co zrobić (13.10.2026).
+  if (!bezCiezaru) {
     const blokOceny = el("div", "ocena-w-panelu");
     blokOceny.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
     blokOceny.append(el("p", "drobne podpowiedz-oceny",
@@ -2514,8 +2508,10 @@ function panelSerii(k, kroki, d) {
   // z planu, do którego by się odnosiła — a poszłaby do trenera i do kolejnych
   // tygodni jako korekta ciężaru, który klient sam wybrał. Za lekko? Dokłada
   // w następnej serii i ją wpisuje — od niej liczymy od nowa.
+  // Bez zdania w miejscu oceny (trener, 13.10.2026: „ten opis nie ma sensu na
+  // tym panelu, bo i tak nie mamy tutaj tych przycisków”) — co robić, mówi
+  // instrukcja doboru nad polami.
   if (!c.maks && !dobieraCiezar(c)) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
-  else if (dobieraCiezar(c)) karta.append(bezOcenyPrzyDoborze());
 
   const poprawka = prowadzenie.zrobione.includes(k.klucz);
   const zakoncz = el("button", "glowny szeroki", poprawka ? "Zapisz poprawkę" : "Zakończ serię");
