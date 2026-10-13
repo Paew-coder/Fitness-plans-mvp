@@ -847,6 +847,13 @@ Trener: „po zresetowaniu planu usunęły mi się zapisane ciężary, ale serie
 * Zadania z kolejki offline niosą znacznik, który telefon widział; zapis sprzed resetu serwer odrzuca (409 z wyjaśnieniem), zamiast przywrócić to, co trener wyczyścił. Zadania bez znacznika (starsza wersja aplikacji) przechodzą jak dotąd. SW `trening-v67`.
 * Przegląd klienta (sekcja 30): dwie serie w prowadzeniu, reset, ponowne wejście — „Seria 1 z 9 · zrobione 0” zamiast „zrobione 2”; zapis ze starym znacznikiem — 409, z bieżącym — przechodzi. Testy: znacznik w widoku, odmowa, zgodność wstecz, migracja.
 
+**61. Bez zdania „Za lekko albo za ciężko?” przy dobieraniu ciężaru — 13.10.2026.**
+
+Trener (zrzut panelu ze strzałką): „ten opis (za ciężko / za lekko…) nie ma sensu na tym panelu, bo i tak nie mamy tutaj tych przycisków. Musimy to jakoś zmienić”.
+
+* Zdanie z punktu 59 usunięte z panelu serii i z TOP SETU bez 1RM — w miejscu oceny nie ma nic. Co zrobić przy złym ciężarze, mówi już instrukcja doboru nad polami („Wpisz, co podniosłeś — z tej serii policzę Twoje ciężary na cały plan”) i opis RPE („Wyszło za lekko? Dołóż w następnej serii…”). SW `trening-v68`.
+* Przegląd klienta: przy dobieraniu nie ma oceny ani zdania o „za lekko / za ciężko” poza opisem RPE; po pierwszej serii ocena wraca.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
