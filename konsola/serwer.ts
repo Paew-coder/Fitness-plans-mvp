@@ -999,7 +999,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       progresja: cw.progresja,
       coeff: cw.coeff,
       // Dwubój rozgrzewa się do ciężaru pierwszej serii jak bój (16.10.2026).
-      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw.coeff) || !!s.dwuboj,
+      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw.coeff, cw.progresja) || !!s.dwuboj,
       bojSilowy: slotPlanu?.bojSilowy,
       maTopSet: !!ts,
     })) return null;

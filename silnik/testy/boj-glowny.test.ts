@@ -37,8 +37,20 @@ function plan(zmiana: (p: Plan) => void = () => {}): Plan {
 const b1 = (p: Plan, t: number) => przeliczPlan(p).tygodnie[t - 1]!.sloty[1]!;
 
 describe("front squat na B1", () => {
-  test("bez decyzji trenera — akcesorium, jak dotąd", () => {
-    assert.deepEqual([b1(plan(), 1).serie, b1(plan(), 1).rpe], [3, 8]);
+  // Trener, 16.10.2026: „ćwiczenia, które mają swoją własną progresję, zawsze
+  // mają ją mieć niezależnie od miejsca w rozpisce” (bench press na B1).
+  test("bez decyzji trenera — bój, jak na A1 (od 16.10.2026; wcześniej akcesorium)", () => {
+    assert.deepEqual([b1(plan(), 1).serie, b1(plan(), 1).powtorzenia, b1(plan(), 1).rpe], [6, 6, 6.5]);
+  });
+
+  test("„G” wyłączone — akcesorium z decyzji trenera", () => {
+    const p = plan((x) => { (x.sloty[1] as { bojGlowny?: boolean }).bojGlowny = false; });
+    assert.deepEqual([b1(p, 1).serie, b1(p, 1).rpe], [3, 8]);
+  });
+
+  test("złożone bez kilogramów (dipy na masie ciała) poza A — dalej swój automat", () => {
+    const p = plan((x) => { (x.sloty[1] as { cwiczenieId: string }).cwiczenieId = "EX-0056"; });
+    assert.deepEqual([b1(p, 1).serie, b1(p, 1).rpe, b1(p, 1).ciezar], [3, 8, "masa ciała"]);
   });
 
   test("z „G” — progresja boju: 6 × 6 @ 6,5, potem 5 × 6 @ 7", () => {

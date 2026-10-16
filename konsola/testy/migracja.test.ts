@@ -83,6 +83,13 @@ function zbudujStaraBaze(): void {
     serieMaksymalne: [],
     sloty: [
       { positionId: "D1-S01", dzien: 1, lp: "A1.", cwiczenieId: "EX-0011" },  // bench, coeff 1,0
+      // v9: przysiad na B1 z liczbami akcesorium z „wpisz progresję” (T1, T4),
+      // ręczną zmianą trenera (T2) i oceną klienta (T4); front squat na C1
+      // z „G” wyłączonym — akcesorium z decyzji trenera, bez zmian.
+      { positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId: "EX-0010",
+        tygodnie: { 1: { serie: 3, rpe: 8 }, 2: { serie: 4, rpe: 8 }, 4: { serie: 3, rpe: 9, feedback: "OK" } } },
+      { positionId: "D1-S03", dzien: 1, lp: "C1.", cwiczenieId: "EX-0089", bojGlowny: false,
+        tygodnie: { 1: { serie: 3, rpe: 8 } } },
       { positionId: "D2-S01", dzien: 2, lp: "A1.", cwiczenieId: "EX-0003" },  // Allah, coeff 0,5
       { positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: null },
     ],
@@ -143,7 +150,7 @@ describe("migracja v1 → v2", () => {
     // 6: wykonanie pamięta wszystkie serie, nie tylko najcięższą (23.09.2026).
     // 7: wersja robocza planu — zmiany trenera czekają na zatwierdzenie (10.10.2026).
     // 8: znacznik resetu planu — telefon zaczyna trening od nowa (10.10.2026).
-    assert.equal(w, 8);
+    assert.equal(w, 9);
   });
 
   test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {
@@ -313,3 +320,29 @@ describe("migracja v4 → v5: RPE TOP SETU per tydzień", () => {
   });
 });
 
+/**
+ * Migracja v8 → v9 na tych samych danych (16.10.2026): złożone z ciężarem
+ * są bojem na każdej pozycji, a liczby akcesorium wpisane automatem znikają.
+ */
+describe("migracja v8 → v9: bój poza pozycją A", () => {
+  function slot(id: string, positionId: string) {
+    const wiersz = polaczenie.baza()
+      .prepare("SELECT plan_json FROM plan WHERE trener_id = 1 AND id = ?")
+      .get(id) as { plan_json: string };
+    return JSON.parse(wiersz.plan_json).sloty.find((s: { positionId: string }) => s.positionId === positionId);
+  }
+
+  test("liczby akcesorium z „wpisz progresję” znikają — wchodzi progresja boju", () => {
+    const b1 = slot("zofia-k-4", "D1-S02");
+    assert.deepEqual(b1.tygodnie[1], {});
+    assert.deepEqual(b1.tygodnie[4], { feedback: "OK" }, "ocena klienta zostaje");
+  });
+
+  test("ręczna zmiana trenera zostaje", () => {
+    assert.deepEqual(slot("zofia-k-4", "D1-S02").tygodnie[2], { serie: 4, rpe: 8 });
+  });
+
+  test("„G” wyłączone — akcesorium z decyzji trenera, nietknięte", () => {
+    assert.deepEqual(slot("zofia-k-4", "D1-S03").tygodnie[1], { serie: 3, rpe: 8 });
+  });
+});

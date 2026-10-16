@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 import { katalog } from "../silnik/src/katalog.ts";
 import { przeliczPlan, numerTygodniaNaEkranie, TYGODNIE, type Plan, type TopSet } from "../silnik/src/plan.ts";
-import { bojGlownySlotu } from "../silnik/src/szablon-boju.ts";
+import { bojGlownySlotu, pozycjaBoju } from "../silnik/src/szablon-boju.ts";
 import { jestHipertrofia } from "../silnik/src/typy.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 import { bladBezWyjasnienia, bladSrodowiskaPythona, pierwszaLiniaBledu }
@@ -98,7 +98,7 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     // Do 26.09 szła tu funkcja z importu arkusza, która patrzy tylko na literę
     // A i `coeff` po cichu pomijała — więc powyższy komentarz nie był prawdą.
     // Teraz ta sama reguła co w silniku, razem z decyzją trenera („G").
-    const bojGlowny = bojGlownySlotu(slot, cwiczenie?.coeff);
+    const bojGlowny = bojGlownySlotu(slot, cwiczenie?.coeff, cwiczenie?.progresja);
 
     const tygodnie: Record<string, unknown> = {};
     for (const t of TYGODNIE) {
@@ -133,8 +133,11 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // ocenie (5 → 4 kg) arkusz zaokrągliłby z powrotem. Liczba wprost.
         // Dwubój (16.10.2026): ciężar z % 1RM — arkusz zna tylko RPE, więc
         // liczba wprost (RPE w arkuszu to wtedy odpowiednik dla stresu).
+        // Bój poza pozycją A (16.10.2026): arkusz liczy go jak akcesorium
+        // (ciężar trzymany z bloku), aplikacja — z RPE co tydzień. Liczba wprost.
         ciezar_reczny: p.ciezarOverride
-          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie || obliczony?.dwuboj)
+          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie || obliczony?.dwuboj
+            || (bojGlowny && !pozycjaBoju(slot.lp)))
             && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
