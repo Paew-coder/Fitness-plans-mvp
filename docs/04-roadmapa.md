@@ -872,6 +872,14 @@ Tekst zgodny z tym, jak aplikacja liczy: **kolejne tygodnie zmienia ocena** (prz
 * **Panel**: przy pierwszej serii ćwiczenia z ciężarem z planu — „Podniosłeś inny ciężar? Wpisz go — następną serię policzę od niego. Kolejne tygodnie zmienia ocena niżej.” Podpowiedź oceny przed ostatnią serią: „dopasuję następną serię i ciężar (powtórzenia) w kolejnych tygodniach”. Przy „dobierz” bez zmian — tam mówi instrukcja doboru. SW `trening-v70`.
 * Przegląd klienta: treść, miejsce przed prowadzeniem, zwinięcie zostaje, wyjątek „dobierz” w dniu z doborem, brak w dniu maksów; zdanie o wpisanym ciężarze tylko przy pierwszej serii i nie przy „dobierz”.
 
+**64. Dziewięć kolejnych ćwiczeń BAZY na masie ciała — 16.10.2026.**
+
+Trener (o liście ćwiczeń z `kg`, przy których i tak nie ma obciążenia): „wszystkie ćwiczenia, które wymieniłeś, powinny być z masą ciała”.
+
+* `kg` → `masa ciała`, skok 0: **Toes to bar** (EX-0191), **GHD flexion** (EX-0090), **Incline sit-ups** (EX-0113), **Supine pigeon abs** (EX-0189), **Back extension** (EX-0007), **Box jump** (EX-0036), **Horizontal jump** (EX-0104), **Seated broad jump** (EX-0176), **Extensive plyo jumps s/l** (EX-0085). Bez „dobierz ciężar” i bez serii maksymalnej; oceny zmieniają powtórzenia, powtórzenia rosną przez cały cykl (punkt 58).
+* Skoki dostają ten sam automat powtórzeń co reszta masy ciała (np. coeff 0,5 w części siłowej: T1 8 → T6 13). Gdy przy skokach ma być mniej powtórzeń, trener wpisuje je ręcznie w slocie.
+* Ćwiczeń BAZY bez serii maksymalnej: 38 (było 29). Test silnika pilnuje wszystkich dziewięciu.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
