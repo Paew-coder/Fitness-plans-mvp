@@ -839,7 +839,7 @@ function blokProbyMaksu(c) {
   blok.append(el("p", "proba-tytul", "Najpierw sprawdź swój maks"));
   blok.append(el("p", "", "Rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz "
     + "do najcięższego powtórzenia, które zrobisz czysto i szybko. Wpisz ten ciężar — od niego "
-    + "policzę ciężary na cały plan, a potem robisz już serie z planu."));
+    + "policzę ciężary na cały plan, następnie robisz już serie z planu."));
   const wiersz = el("div", "proba-pola");
   const pole = el("input");
   pole.type = "number"; pole.inputMode = "decimal"; pole.min = "0"; pole.step = "0.5";
