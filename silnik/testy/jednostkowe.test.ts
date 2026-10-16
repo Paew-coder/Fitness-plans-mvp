@@ -460,6 +460,16 @@ describe("katalog BAZY 5.17", () => {
     }
   });
 
+  // Trener, 16.10.2026: „wszystkie ćwiczenia, które wymieniłeś, powinny być
+  // z masą ciała” — przy nich też wisiało „dobierz ciężar”.
+  test("brzuch, wyprost grzbietu i skoki bez obciążenia na masie ciała", () => {
+    for (const nazwa of ["Toes to bar", "GHD flexion", "Incline sit-ups", "Supine pigeon abs",
+      "Back extension", "Box jump", "Horizontal jump", "Seated broad jump", "Extensive plyo jumps s/l"]) {
+      assert.equal(katalog.poNazwie(nazwa)?.progresja, "masa ciała", nazwa);
+      assert.equal(katalog.poNazwie(nazwa)?.skokKg, 0, nazwa);
+    }
+  });
+
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(bazaTrenera.wKategorii("Tricep").length, 9);
     assert.equal(bazaTrenera.wKategorii(null).length, 166);

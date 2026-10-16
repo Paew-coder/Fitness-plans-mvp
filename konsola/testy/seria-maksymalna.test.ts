@@ -46,13 +46,18 @@ describe("kiedy seria maksymalna ma sens", () => {
     }
   });
 
-  test("dotyczy 29 ćwiczeń ze 166 — nie jest to margines", () => {
+  test("dotyczy 38 ćwiczeń ze 166 — nie jest to margines", () => {
     // BAZA trenera; ćwiczenia z bibliotek filmów (09.10.2026) liczą się osobno.
     const bez = katalog.bazaTrenera.filter((c) => !seriaMaksymalnaMaSens(c.progresja));
     // 27.09.2026: +2 — Reverse Nordic i Glute crusher przeszły na masę ciała.
     // 04.10.2026: ±0 — Swiss ball leg curl na masę ciała, Bird dog row na kg.
     // 16.10.2026: +2 — oba dragonflagi ekscentryczne (B/l i S/l) na masę ciała.
-    assert.equal(bez.length, 29);
+    // 16.10.2026: +9 — brzuch, prost grzbietu i skoki bez obciążenia (Toes to bar,
+    // GHD flexion, Incline sit-ups, Supine pigeon abs, Back extension, Box jump,
+    // Horizontal jump, Seated broad jump, Extensive plyo jumps s/l).
+    assert.equal(bez.length, 38);
+    assert.ok(bez.some((c) => c.nazwa === "Toes to bar"));
+    assert.ok(bez.some((c) => c.nazwa === "Box jump"));
     assert.ok(bez.some((c) => c.nazwa === "S/l dragonflag eccentric"));
     assert.ok(bez.some((c) => c.nazwa === "B/l dragonflag eccentric"));
     assert.ok(bez.some((c) => c.nazwa === "Reverse Nordic"));
