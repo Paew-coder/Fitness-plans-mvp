@@ -186,25 +186,73 @@ export function idZLinkuYoutube(link: string | null | undefined): string | null 
 }
 
 /**
+ * Film z linku YouTube jako opis dla odtwarzacza — `null`, gdy link nie
+ * prowadzi do filmu YouTube. `nazwaZrodla` idzie do podpisu pod filmem.
+ */
+export function wideoZLinku(link: string | null | undefined, tytul: string, nazwaZrodla: string): Wideo | null {
+  const youtubeId = idZLinkuYoutube(link);
+  if (!youtubeId) return null;
+  return {
+    typ: "youtube", rola: "demonstracja", youtubeId, tytul, link: link!,
+    zrodlo: { nazwa: nazwaZrodla, platforma: "YouTube", url: null },
+  };
+}
+
+/**
  * Karta do podglądu w konsoli trenera (10.10.2026, przycisk ▶ przy ćwiczeniu
  * w planie). Jak `kartaCwiczenia`, a ćwiczenie BAZY bez wpisu w filmach,
  * ale z linkiem YouTube z arkusza, dostaje ten link jako film — trener widzi
- * go w tej samej karcie, zamiast wychodzić do YouTube. Aplikacja klienta
- * zostaje przy linku: tam idą tylko filmy sprawdzone oEmbedem.
+ * go w tej samej karcie, zamiast wychodzić do YouTube.
  */
 export function kartaPodgladu(
   c: Cwiczenie,
   wpisy: readonly WpisWideo[] = FILMY_CWICZEN,
   zrodla: readonly ZrodloWideo[] = ZRODLA_WIDEO,
 ): KartaCwiczenia | null {
+  return kartaZLinkiem(c, wpisy, zrodla, "link z arkusza (BAZA)");
+}
+
+/**
+ * Karta dla telefonu klienta — to samo co `kartaPodgladu`, z podpisem dla
+ * klienta. Trener, 16.10.2026: „przycisk film przenosi do YouTube zamiast
+ * otwierać film w aplikacji”. Do tej pory link z arkusza zostawał u klienta
+ * linkiem, bo w aplikacji grały tylko filmy sprawdzone oEmbedem. Sprawdzone
+ * 16.10.2026: 71 z 72 linków BAZY bez wpisu w filmach da się osadzić, jeden
+ * (Barbell row dead stop pins) jest niedostępny na YouTube. Film, którego nie
+ * da się odtworzyć, karta i tak opisuje w ramce i daje link do YouTube.
+ */
+export function kartaDlaKlienta(
+  c: Cwiczenie,
+  wpisy: readonly WpisWideo[] = FILMY_CWICZEN,
+  zrodla: readonly ZrodloWideo[] = ZRODLA_WIDEO,
+): KartaCwiczenia | null {
+  return kartaZLinkiem(c, wpisy, zrodla, "wybrany przez trenera");
+}
+
+/**
+ * Karta rozgrzewki dnia z filmem w aplikacji — gdy trener wkleił w konsoli
+ * link do YouTube. Inny link (albo żaden) — `null`, telefon zostaje przy linku.
+ */
+export function kartaRozgrzewki(link: string | null | undefined): KartaCwiczenia | null {
+  const wideo = wideoZLinku(link, "Rozgrzewka", "wybrany przez trenera");
+  if (!wideo) return null;
+  return {
+    cwiczenieId: "rozgrzewka", nazwa: "Rozgrzewka", nazwaEn: "Rozgrzewka", nazwaPl: null,
+    kategoria: "", rodzaj: null, miesnieGlowne: [], miesniePomocnicze: [], sprzet: [],
+    wideo, filmy: [wideo],
+  };
+}
+
+function kartaZLinkiem(
+  c: Cwiczenie,
+  wpisy: readonly WpisWideo[],
+  zrodla: readonly ZrodloWideo[],
+  nazwaZrodla: string,
+): KartaCwiczenia | null {
   const karta = kartaCwiczenia(c, wpisy, zrodla);
   if (karta?.filmy.length) return karta;
-  const youtubeId = idZLinkuYoutube(c.film);
-  if (!youtubeId) return karta;
-  const wideo: Wideo = {
-    typ: "youtube", rola: "demonstracja", youtubeId, tytul: c.nazwa, link: c.film!,
-    zrodlo: { nazwa: "link z arkusza (BAZA)", platforma: "YouTube", url: null },
-  };
+  const wideo = wideoZLinku(c.film, c.nazwa, nazwaZrodla);
+  if (!wideo) return karta;
   return {
     cwiczenieId: c.id, nazwa: c.nazwa, nazwaEn: c.nazwaEn ?? c.nazwa, nazwaPl: c.nazwaPl ?? null,
     kategoria: c.kategoria, rodzaj: c.rodzaj ?? null, miesnieGlowne: c.miesnieGlowne ?? [],

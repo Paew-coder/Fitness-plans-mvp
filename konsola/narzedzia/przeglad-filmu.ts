@@ -140,9 +140,22 @@ await zSerwerem(4241, async ({ adres, api }) => {
       await s.waitForSelector("#ekran-trening:not(.ukryty)");
       const karta = s.locator('#cwiczenia [data-position="D1-S01"]');
       const inna = s.locator('#cwiczenia [data-position="D1-S02"]');
-      sprawdz("na liście: przy wyciskaniu przycisk filmu w aplikacji, przy innym ćwiczeniu dotychczasowy link",
+      // Trener, 16.10.2026: „przycisk film przenosi do YouTube zamiast otwierać
+      // film w aplikacji” — link YouTube z arkusza też gra w karcie.
+      sprawdz("na liście: film w aplikacji przy wyciskaniu i przy ćwiczeniu z linkiem z arkusza",
         await karta.locator("button.film-karta").count() === 1
-          && await inna.locator('a.film[target="_blank"]').count() === 1);
+          && await inna.locator("button.film-karta").count() === 1
+          && await inna.locator('a.film[target="_blank"]').count() === 0);
+      await inna.locator("button.film-karta").click();
+      await s.waitForSelector(".karta-cw", { timeout: 8000 });
+      const filmZArkusza = await s.getAttribute(".karta-cw-film", "data-film");
+      const podpisZArkusza = await s.locator(".karta-cw-zrodlo").innerText().catch(() => "");
+      sprawdz("film z linku w arkuszu gra w karcie, podpis dla klienta (bez „arkusza”)",
+        filmZArkusza === "t5Ft8OMG_D8" && /wybrany przez trenera/.test(podpisZArkusza)
+          && !/arkusz/i.test(podpisZArkusza),
+        `${filmZArkusza} · ${podpisZArkusza}`);
+      await s.locator(".karta-cw-wroc").click();
+      await s.waitForSelector(".karta-cw", { state: "detached" });
 
       // Wpisane ciężary i powtórzenia przed otwarciem filmu.
       await karta.getByRole("button", { name: /zapisz, co poszło/ }).click();
