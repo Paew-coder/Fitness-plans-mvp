@@ -72,13 +72,15 @@ i propozycje 1RM z serii roboczych dwuboju nie działają celowo. Tydzień
 maksów domyślnie bierze też dwubój. Eksport: powtórzenia i ciężary wprost.
 
 **Bój główny przyciskiem „G"** — przy ćwiczeniu: podświetlone, gdy liczy się jak
-bój (progresja bloku, ciężar z RPE co tydzień). Od 16.10.2026 złożone z ciężarem
-(coeff 1,0, progresja kg albo dodatkowy ciężar) są bojem **na każdej pozycji** —
-bench press na B1 nie wymaga już „G”; złożone bez kilogramów (dipy, przysiad
-z asystą) — tylko w A. Kliknięcie zmienia rolę w obie strony, np. przysiad na
-B1 jako akcesorium. Plan wczytany z arkusza zostaje jak w arkuszu (złożone poza
-A z wyłączonym „G”); migracja bazy v9 zdjęła liczby akcesorium, które przy
-takich ćwiczeniach wpisał „wpisz progresję”.
+bój (progresja bloku, ciężar z RPE co tydzień). Od 16.10.2026 bojem są
+**przysiady, martwe ciągi i bench ze sztangą — na każdej pozycji** (lista
+`BOJE`: 9 z BAZY, 21 wariantów z bibliotek); bench na B1 nie wymaga już „G”.
+Pozostałe złożone (hip thrust, RDL, push press, podciąganie i dipy z obciążeniem,
+wykroki, Landmine core, Squat izo) liczą się jak akcesoria, także na A1.
+Pauzowane i dwubój — własne progresje. Kliknięcie „G” zmienia rolę w obie
+strony. Plan wczytany z arkusza zostaje jak w arkuszu (rozbieżność zapisana
+jako „G”); migracje bazy v9/v10 zdjęły liczby, które „wpisz progresję” wpisał
+przy starej roli ćwiczenia.
 
 **Cztery części planu** — siłowe *objętość (cz.1)* i *intensywność (cz.2)*
 oraz *hipertrofia (cz.1)* i *hipertrofia (cz.2)*, obie bez TOP SETU:

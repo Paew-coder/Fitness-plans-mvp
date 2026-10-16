@@ -13,8 +13,9 @@ import type { DatabaseSync } from "node:sqlite";
 import { idKlienta } from "../nazwy.ts";
 import { katalog } from "../../silnik/src/katalog.ts";
 import {
-  DWUBOJ, jestBojemGlownym, PAUZOWANE, pozycjaBoju, progresjaSlotu,
+  BOJE, czescBoju, DWUBOJ, PAUZOWANE, PROGRESJA_BOJU, pozycjaBoju, progresjaSlotu,
 } from "../../silnik/src/szablon-boju.ts";
+import type { CzescPlanu } from "../../silnik/src/typy.ts";
 
 export type Migracja = {
   /** Wersja, do której ta migracja doprowadza. */
@@ -320,12 +321,13 @@ function doWersji8(d: DatabaseSync): void {
 }
 
 /**
- * Wersja 9 — złożone z ciężarem są bojem na każdej pozycji (16.10.2026).
+ * Wersja 9 — boje na każdej pozycji, nie tylko w A (16.10.2026; od wersji 10
+ * bojem są tylko przysiady, martwe ciągi i bench — `BOJE`).
  *
  * Trener: „mam barbell bench press jako B1 i liczy mi się jako akcesorium —
  * zrób tak, żeby ćwiczenia, które mają swoją własną progresję, zawsze miały
  * ją niezależnie od miejsca w rozpisce”. Reguła żyje w silniku
- * (`jestBojemGlownym`), ale plany pamiętają liczby wpisane przyciskiem
+ * (`BOJE`), ale plany pamiętają liczby wpisane przyciskiem
  * „wpisz progresję”, gdy takie ćwiczenie było jeszcze akcesorium: 3 serie
  * i RPE akcesorium. Wpisane wygrywają z szablonem, więc bench na B1 wyszedłby
  * „3 × 6 @ 8” — ani bój, ani akcesorium.
@@ -352,13 +354,69 @@ function doWersji9(d: DatabaseSync): void {
       const c = slot.cwiczenieId ? katalog.poId(slot.cwiczenieId) : undefined;
       const lp = slot.lp ?? "";
       if (!c || slot.bojGlowny !== undefined || pozycjaBoju(lp)) continue;
-      if (PAUZOWANE[c.id] || DWUBOJ.has(c.id) || !jestBojemGlownym(lp, c.coeff, c.progresja)) continue;
+      if (PAUZOWANE[c.id] || DWUBOJ.has(c.id) || !BOJE.has(c.id)) continue;
       for (const t of [1, 2, 3, 4, 5, 6] as const) {
         const p = slot.tygodnie?.[t];
         if (!p || p.powtorzenia !== undefined) continue;
         const akcesorium = progresjaSlotu(lp, t);
         if (p.serie === akcesorium.serie && p.rpe === akcesorium.rpe) {
           delete p.serie;
+          delete p.rpe;
+          zmiana = true;
+        }
+      }
+    }
+    return { json: zmiana ? JSON.stringify(plan) : json, zmiana };
+  };
+
+  for (const wiersz of plany) {
+    const trenera = posprzataj(wiersz.plan_json);
+    const klienta = posprzataj(wiersz.plan_klienta_json);
+    if (!trenera.zmiana && !klienta.zmiana) continue;
+    zapisz.run(trenera.json, klienta.json, wiersz.trener_id, wiersz.id);
+  }
+}
+
+/**
+ * Wersja 10 — bojem tylko przysiady, martwe ciągi i bench (16.10.2026).
+ *
+ * Trener: „zostaw jako boje tylko przysiady, martwe ciągi, bench — te mniej
+ * oczywiste mogą liczyć się jako akcesoria”. Hip thrust, RDL, push press,
+ * podciąganie i dipy z obciążeniem, wykroki… były bojem w A (a przez chwilę,
+ * po wersji 9 — wszędzie). „Wpisz progresję” zostawił im liczby boju: serie,
+ * powtórzenia i RPE z szablonu boju. Wpisane wygrywają z szablonem, więc
+ * akcesorium wyszłoby z powtórzeniami boju.
+ *
+ * Migracja zdejmuje **tylko trójki identyczne z szablonem boju** dla części
+ * planu tego slotu. Ręczne zmiany trenera, oceny i ciężary klienta zostają;
+ * „G” trenera — też. Plan trenera i wersja, którą widzi klient.
+ */
+function doWersji10(d: DatabaseSync): void {
+  const plany = d.prepare("SELECT trener_id, id, plan_json, plan_klienta_json FROM plan").all() as
+    { trener_id: number; id: string; plan_json: string; plan_klienta_json: string | null }[];
+  const zapisz = d.prepare(
+    "UPDATE plan SET plan_json = ?, plan_klienta_json = ? WHERE trener_id = ? AND id = ?");
+
+  type Slot = { cwiczenieId?: string | null; bojGlowny?: boolean; bojSilowy?: boolean;
+    tygodnie?: Record<string, Record<string, unknown>> };
+  const posprzataj = (json: string | null): { json: string | null; zmiana: boolean } => {
+    if (!json) return { json, zmiana: false };
+    let plan: { czescPlanu?: CzescPlanu; sloty?: Slot[] };
+    try { plan = JSON.parse(json); } catch { return { json, zmiana: false }; }
+    const czesc = plan.czescPlanu ?? "objętość";
+    let zmiana = false;
+    for (const slot of plan.sloty ?? []) {
+      const c = slot.cwiczenieId ? katalog.poId(slot.cwiczenieId) : undefined;
+      if (!c || c.coeff !== 1 || slot.bojGlowny !== undefined) continue;
+      if (BOJE.has(c.id) || PAUZOWANE[c.id] || DWUBOJ.has(c.id)) continue;
+      const szablon = PROGRESJA_BOJU[czescBoju(czesc, slot.bojSilowy)];
+      for (const t of [1, 2, 3, 4, 5, 6] as const) {
+        const p = slot.tygodnie?.[t];
+        const b = szablon?.[t - 1];
+        if (!p || !b) continue;
+        if (p.serie === b.serie && p.powtorzenia === b.powtorzenia && p.rpe === b.rpe) {
+          delete p.serie;
+          delete p.powtorzenia;
           delete p.rpe;
           zmiana = true;
         }
@@ -383,5 +441,6 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 6, opis: "wykonanie pamięta wszystkie serie, nie tylko najcięższą", wykonaj: doWersji6 },
   { doWersji: 7, opis: "wersja robocza planu — zmiany trenera czekają na zatwierdzenie", wykonaj: doWersji7 },
   { doWersji: 8, opis: "znacznik resetu planu — telefon zaczyna trening od nowa", wykonaj: doWersji8 },
-  { doWersji: 9, opis: "złożone z ciężarem są bojem na każdej pozycji — bez liczb akcesorium", wykonaj: doWersji9 },
+  { doWersji: 9, opis: "boje na każdej pozycji — bez liczb akcesorium", wykonaj: doWersji9 },
+  { doWersji: 10, opis: "bojem tylko przysiady, martwe ciągi i bench — reszta bez liczb boju", wykonaj: doWersji10 },
 ];

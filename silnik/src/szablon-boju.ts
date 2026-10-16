@@ -112,57 +112,84 @@ export function pozycjaBoju(lp: string): boolean {
 }
 
 /**
- * Bój główny: ćwiczenie złożone (coeff 1,0) z ciężarem — **na każdej pozycji**.
+ * Bój główny: przysiady, martwe ciągi i wyciskanie leżąc ze sztangą (`BOJE`)
+ * — **na każdej pozycji w rozpisce**.
  *
- * Trener, 16.10.2026: „mam ćwiczenie barbell bench press jako B1 i liczy mi się
- * jako akcesorium — zrób tak, żeby ćwiczenia, które mają swoją własną
- * progresję, zawsze miały ją docelowo w planie niezależnie od miejsca
- * w rozpisce”. Do tego dnia bojem była tylko pozycja A (niżej — dlaczego
- * sama pozycja nie wystarczała); poza A trzeba było klikać „G”. Teraz
- * pozycja liczy się tylko przy złożonych bez kilogramów (dipy na masie ciała,
- * przysiad bułgarski z asystą) — tam bój w A jak dotąd, a gdzie indziej ich
- * własny automat powtórzeń. „G” dalej przestawia rolę w obie strony.
+ * Trener, 16.10.2026, dwa kroki tego samego dnia:
+ *   1. „mam ćwiczenie barbell bench press jako B1 i liczy mi się jako
+ *      akcesorium — zrób tak, żeby ćwiczenia, które mają swoją własną
+ *      progresję, zawsze miały ją docelowo w planie niezależnie od miejsca
+ *      w rozpisce”;
+ *   2. „zostaw jako boje tylko przysiady, martwe ciągi, bench — te mniej
+ *      oczywiste mogą liczyć się jako akcesoria”.
+ * Pozycja przestała więc decydować w ogóle. Reszta złożonych (coeff 1,0 —
+ * hip thrust, RDL, push press, podciąganie i dipy z obciążeniem, wykroki,
+ * Landmine core, Squat izo) liczy się jak akcesorium — także na A1. „G” dalej
+ * przestawia rolę w obie strony. Pauzowane i dwubój mają własne progresje
+ * (`PROGRESJA_PAUZY`, `PROGRESJA_DWUBOJU`).
  *
- * Historia reguły. Sama pozycja nie wystarcza i to jest tu sedno. Arkusz rozstrzygał o tym
- * miejscem w tabeli, bo trener wypełniał go ręcznie i po prostu nie wstawiał
- * w A1 ćwiczenia balansowego. Aplikacja pozwala wstawić tam cokolwiek —
- * i wstawiała: „SLDL balance" w A1 dostawał progresję bloku (6×6 na RPE 6,5)
- * i TOP SET na jedno powtórzenie. Dla ćwiczenia, które w BAZIE ma coeff 0,25
- * i progresję „ręczne ustawienie", jest to polecenie bez sensu.
+ * Lista, a nie `coeff` w BAZIE: coeff trenera rozstrzyga też o powtórzeniach
+ * akcesoriów i o stresie w analizie — jego obniżenie zmieniłoby więcej, niż
+ * trener chciał.
  *
- * Rozstrzyga `coeff` z BAZY, bo tam ta wiedza już jest: **1,0 mają dokładnie
- * te dziewiętnaście ćwiczeń złożonych** — przysiady, martwe ciągi, wyciskania
- * ze sztangą, podciąganie z obciążeniem, dipy, clean. Nic innego.
- *
- * **Wiosłowanie bojem głównym nie jest — rozstrzygnięte 22.09.2026.** Pytanie
- * wisiało otwarte od 20.09, a analiza aplikacji trenera z Base44 przyniosła
- * dowód w drugą stronę: tamtejsza klasyfikacja `diff_class` liczy `Barbell Row`
- * i `Pendlay Row` do ćwiczeń głównych, choć mają coeff 0,75. Trener zdecydował
- * inaczej: **wiosłowanie liczymy jako akcesorium**. Progi zostają tam, gdzie
- * były — bojem głównym jest wyłącznie ćwiczenie z coeff 1,0 stojące w pozycji A.
- * Wiosłowanie w pozycji A dostaje więc progresję akcesorium, czyli powtórzenia
- * liczone z `coeff` i RPE z bloku, a nie dwukolumnowy szablon boju.
+ * Historia: do 16.10.2026 bojem była pozycja A **i** coeff 1,0. Sama pozycja
+ * nie wystarczała — „SLDL balance" w A1 dostawał progresję bloku (6×6 na RPE
+ * 6,5) i TOP SET, choć w BAZIE ma coeff 0,25 i „ręczne ustawienie”.
+ * Wiosłowanie bojem nie jest — decyzja trenera z 22.09.2026, choć aplikacja
+ * z Base44 liczyła Barbell Row i Pendlay Row do ćwiczeń głównych.
  */
-export function jestBojemGlownym(lp: string, coeff?: Coeff, progresja?: Progresja): boolean {
-  if (coeff !== 1) return false;
-  return (progresja !== undefined && PROGRESJE_BOJU_WSZEDZIE.includes(progresja)) || pozycjaBoju(lp);
-}
+export const BOJE: ReadonlySet<string> = new Set([
+  // BAZA trenera
+  "EX-0010",   // Barbell back squat
+  "EX-0011",   // Barbell bench press
+  "EX-0013",   // Barbell low bar squat
+  "EX-0205",   // Barbell low bar squat paused 3sec (własna progresja pauzowana)
+  "EX-0022",   // Bench press paused 3sec (własna progresja pauzowana)
+  "EX-0053",   // Deadlift
+  "EX-0204",   // Sumo deadlift
+  "EX-0089",   // Front squat
+  "EX-0192",   // Trap bar deadlift
+  // Theory of Motion
+  "EX-1133",   // BB 1.5 Bench Press
+  "EX-1173",   // BB Constant Tension Sumo Deadlift
+  "EX-1174",   // BB Deadlift with Concentric Pause
+  "EX-1213",   // BB Paused Back Squat
+  "EX-1214",   // BB Paused Deadlift
+  "EX-1215",   // BB Paused Deadlifts - Below Knee
+  "EX-1760",   // High Handle Trap Bar Deadlift
+  "EX-2103",   // Paused Deadlift: Below Knee
+  "EX-3019",   // Trap Bar Deadlift with Concentric Pause
+  // Catalyst Athletics
+  "EX-3134",   // 1 1/4 Back Squat
+  "EX-3135",   // 1 1/4 Front Squat
+  "EX-3199",   // Chain Back Squat
+  "EX-3200",   // Chain Front Squat
+  "EX-3293",   // Front Squat + Back Squat
+  "EX-3325",   // Hatfield Squat
+  "EX-3382",   // Narrow-Stance Back Squat
+  "EX-3394",   // Parallel Back Squat
+  "EX-3395",   // Parallel Front Squat
+  "EX-3399",   // Pause Front Squat
+  "EX-3403",   // Pause Parallel Back Squat
+  "EX-3404",   // Pause Parallel Front Squat
+]);
 
-/** Progresje z kilogramami — przy nich bój obowiązuje na każdej pozycji (16.10.2026). */
-export const PROGRESJE_BOJU_WSZEDZIE: readonly Progresja[] = ["kg", "dodatkowy ciężar"];
+export function jestBojemGlownym(cwiczenie: { id: string } | null | undefined): boolean {
+  return !!cwiczenie && BOJE.has(cwiczenie.id);
+}
 
 /**
  * Bój główny w konkretnym slocie: decyzja trenera, a bez niej reguła wyżej.
  *
  * Trener, 26.09.2026: front squat stał u Marka X na B1 i liczył się jak
- * akcesorium — „chciałbym, żeby liczył się jak ćwiczenie główne". Reguła
- * zostaje (bez niej każdy przysiad z B1 w szablonach dostałby 6 × 6), ale
- * trener może ją przestawić przy ćwiczeniu w obie strony — przyciskiem „G".
+ * akcesorium — „chciałbym, żeby liczył się jak ćwiczenie główne". Od
+ * 16.10.2026 reguła nie patrzy na pozycję, a przycisk „G” dalej przestawia
+ * rolę w obie strony.
  */
 export function bojGlownySlotu(
-  slot: { lp: string; bojGlowny?: boolean }, coeff?: Coeff, progresja?: Progresja,
+  slot: { bojGlowny?: boolean }, cwiczenie: { id: string } | null | undefined,
 ): boolean {
-  return slot.bojGlowny ?? jestBojemGlownym(slot.lp, coeff, progresja);
+  return slot.bojGlowny ?? jestBojemGlownym(cwiczenie);
 }
 
 /**
@@ -365,8 +392,8 @@ export function parametrySzablonu(
     const p = PROGRESJA_PAUZY[pauza][czesc][tydzien - 1]!;
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }
-  return progresjaSlotu(slot.lp, tydzien, cwiczenie?.coeff,
-    czescBoju(czescPlanu, slot.bojSilowy), slot.bojGlowny, cwiczenie?.progresja);
+  return progresjaSlotu(slot.lp, tydzien, cwiczenie,
+    czescBoju(czescPlanu, slot.bojSilowy), slot.bojGlowny);
 }
 
 /**
@@ -383,14 +410,12 @@ export function parametrySzablonu(
 export function progresjaSlotu(
   lp: string,
   tydzien: Tydzien,
-  coeff?: Coeff,
+  cwiczenie?: { id: string } | null,
   czesc: CzescPlanu = "objętość",
   /** Decyzja trenera przy slocie (`SlotPlanu.bojGlowny`); pusto = reguła. */
   bojGlownyTrenera?: boolean,
-  /** Progresja ćwiczenia — z kilogramami bój obowiązuje na każdej pozycji. */
-  progresja?: Progresja,
 ): ParametryTygodnia {
-  if (bojGlownyTrenera ?? jestBojemGlownym(lp, coeff, progresja)) {
+  if (bojGlownyTrenera ?? jestBojemGlownym(cwiczenie)) {
     const p = PROGRESJA_BOJU[czesc][tydzien - 1]!;
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }

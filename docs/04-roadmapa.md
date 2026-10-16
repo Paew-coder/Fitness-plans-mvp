@@ -907,6 +907,16 @@ Trener: „rozpisuję teraz plan i mam ćwiczenie barbell bench press jako B1 i 
 * **Import z arkusza:** arkusz liczy bój tylko w A, więc takie ćwiczenie poza A wchodzi z wyłączonym „G” — plan zostaje tym, czym był w arkuszu. **Eksport:** bój poza A idzie z ciężarem wprost (arkusz trzymałby go z bloku jak akcesorium).
 * Testy: silnik (front squat na B1 — bój; „G” wyłączone — akcesorium; dipy na masie ciała poza A — swój automat), migracja v9 (liczby automatu znikają, ręczne i ocena zostają, „G” wyłączone nietknięte), eksport (bench na B1). Przegląd konsoli: przysiad przeniesiony na B1 z podświetlonym „G” i progresją boju, wyłączenie „G”.
 
+**68. Bojem tylko przysiady, martwe ciągi i bench — 16.10.2026.**
+
+Trener, po punkcie 67 (lista złożonych, które stały się bojem wszędzie): „zostaw jako boje tylko przysiady, martwe ciągi, bench — te mniej oczywiste mogą liczyć się jako akcesoria”.
+
+* **Reguła:** bój = ćwiczenie z listy `BOJE` (przysiady, martwe ciągi, bench ze sztangą — 9 z BAZY, w tym dwa pauzowane, i 21 wariantów z bibliotek), **na każdej pozycji**. Pozycja przestała decydować. Pozostałe złożone z coeff 1,0 — Hip thrust barbell, RDL, Push press, Pull up / Dips weighted, Pull up eccentric weighted, Walking lunges, Landmine core, Squat izo, Dips, Bulgarian squat assisted, jerki i hip lifty z bibliotek — liczą się jak akcesoria, także na A1. „G” dalej przestawia rolę w obie strony; pauzowane i dwubój — własne progresje.
+* **Lista zamiast obniżenia coeff w BAZIE:** coeff decyduje też o powtórzeniach akcesoriów i o stresie w analizie — trener chciał zmienić rolę, nie te liczby.
+* **Migracja bazy v10:** przy złożonych, które przestały być bojem, zdejmuje liczby boju wpisane przyciskiem „wpisz progresję” (trójka serie / powtórzenia / RPE identyczna z szablonem boju dla części planu). Ręczne zmiany trenera, oceny i ciężary klienta zostają; „G” trenera też. v9 (punkt 67) działa już według listy.
+* **Import z arkusza:** arkusz rozstrzyga pozycją, aplikacja ćwiczeniem — rozbieżność zapisuje się jako „G” (złożone z coeff 1,0 w A — bój jak w arkuszu; bój poza A — akcesorium). **Eksport:** gdy rola w aplikacji i pozycja w arkuszu się rozjeżdżają, ciężar idzie wprost; w pozycji A zawsze powtórzenia wprost.
+* Testy: silnik (bench na B1, deadlift na C1 — bój; push press, hip thrust, RDL, Squat izo, lunges, pull up weighted na A1 — akcesorium; lista bojów kompletna i tylko przysiady / martwe / bench z coeff 1,0), migracja v10, eksport (push press na A1). Przeglądy konsoli i telefonu bez zmian zielone.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
