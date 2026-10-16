@@ -8,6 +8,7 @@
 import type { CzescPlanu, Feedback, Kategoria, TrybAkcesoriow, Tydzien } from "./typy.ts";
 import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { katalog } from "./katalog.ts";
+import { jestBojemGlownym as bojWedlugReguly } from "./szablon-boju.ts";
 
 export const TYGODNIE_IMPORTU: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 export const SKROTY_TYGODNI = ["T1", "T2", "T3", "T4", "T5", "T6"] as const;
@@ -163,6 +164,13 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
         cwiczenieId: id,
         kategoriaSzkieletu: (s.kategoria_szkieletu as Kategoria | null) ?? null,
         tygodnie,
+        // Arkusz liczy bój tylko w pozycji A. Złożone z ciężarem poza A
+        // (np. bench press na B1) aplikacja od 16.10.2026 liczy jak bój —
+        // plan z arkusza zostaje tym, czym był: akcesorium z decyzji trenera
+        // („G” wyłączone), które trener może przestawić jednym kliknięciem.
+        ...(!jestBojemGlownym(s.lp)
+          && bojWedlugReguly(s.lp, katalog.poId(id)?.coeff, katalog.poId(id)?.progresja)
+          ? { bojGlowny: false } : {}),
       };
     });
 

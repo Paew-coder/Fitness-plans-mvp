@@ -1872,9 +1872,14 @@ function edytorRozgrzewki(dzien) {
 function bojGlowny(slot) {
   return slot.bojGlowny ?? bojGlownyZReguly(slot);
 }
+// Ta sama reguła co w silniku (`jestBojemGlownym`, 16.10.2026): złożone
+// z ciężarem — na każdej pozycji; bez kilogramów — tylko w A.
+const PROGRESJE_BOJU_WSZEDZIE = ["kg", "dodatkowy ciężar"];
 function bojGlownyZReguly(slot) {
   const c = cwiczenie(slot.cwiczenieId);
-  return (slot.lp || "").trim().toUpperCase().startsWith("A") && c?.coeff === 1;
+  if (c?.coeff !== 1) return false;
+  return PROGRESJE_BOJU_WSZEDZIE.includes(c.progresja)
+    || (slot.lp || "").trim().toUpperCase().startsWith("A");
 }
 
 /**

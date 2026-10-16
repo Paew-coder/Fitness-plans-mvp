@@ -72,7 +72,7 @@ export function zastosujProgresje(
       // Pauzowane mają progresję zależną od części planu, tak jak bój —
       // po zmianie części ich liczby też trzeba przepisać.
       // Dwubój tak samo (16.10.2026) — jego tabela też zależy od części.
-      if (opcje.tylkoBoje && !bojGlownySlotu(slot, coeff)
+      if (opcje.tylkoBoje && !bojGlownySlotu(slot, coeff, cwiczenie?.progresja)
         && !pauzaSlotu(slot, slot.cwiczenieId, plan.czescPlanu)
         && !dwubojSlotu(slot, slot.cwiczenieId)) return { ...slot };
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };

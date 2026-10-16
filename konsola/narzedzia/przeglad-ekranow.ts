@@ -191,6 +191,22 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const kolejnosc = (await zBazy()).zapisany.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId);
   sprawdz("strzałka przenosi ćwiczenie", kolejnosc[0] === "EX-0016", kolejnosc.join(" → "));
 
+  // Trener, 16.10.2026: „ćwiczenia, które mają swoją własną progresję, zawsze
+  // mają ją mieć niezależnie od miejsca w rozpisce” — przysiad na B1 to bój.
+  // T1 i T3 mają liczby wpisane wyżej ręcznie — T2 idzie z szablonu boju.
+  const b1PoPrzeniesieniu = (await zBazy()).wynik.tygodnie[1].sloty[1];
+  sprawdz("przysiad przeniesiony na B1 dalej liczy się jak bój — „G” podświetlone, T2 5 × 6 @ 7",
+    await wiersz(1).locator("td.lp button.wlaczony", { hasText: /^G$/ }).count() === 1
+      && b1PoPrzeniesieniu.serie === 5 && b1PoPrzeniesieniu.powtorzenia === 6 && b1PoPrzeniesieniu.rpe === 7,
+    `${b1PoPrzeniesieniu.cwiczenie?.nazwa} · ${b1PoPrzeniesieniu.serie}×${b1PoPrzeniesieniu.powtorzenia} @${b1PoPrzeniesieniu.rpe}`);
+  // Dalsze sekcje sprawdzają w tym wierszu akcesorium — trener wyłącza „G”.
+  await wiersz(1).hover();
+  await wiersz(1).locator("td.lp button", { hasText: /^G$/ }).click();
+  await zapisano();
+  sprawdz("„G” wyłączone: przysiad na B1 jako akcesorium z decyzji trenera",
+    (await zBazy()).zapisany.plan.sloty[1].bojGlowny === false
+      && (await zBazy()).wynik.tygodnie[0].sloty[1].serie === 3);
+
   // ── 7. progresja z szablonu i kopiowanie tygodnia ─────────────────
   //
   // A1 musi trzymać ćwiczenie ZŁOŻONE, bo od tego zależy, czy dostanie
