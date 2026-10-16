@@ -819,10 +819,12 @@ const OPIS_TYGODNIA = {
  * najcięższego czystego powtórzenia, a wpisane idzie jako seria maksymalna
  * (1 powtórzenie). Z niej serwer liczy cały plan; potem serie z planu.
  */
-const TEST_1RM_DWUBOJU = "Najcięższe czyste powtórzenie: rozgrzej się i dojdź do niego w kilku "
-  + "podejściach — szybko i bez łamania techniki. Wpisz ten ciężar, powtórzenia: 1.";
-const TOP_SET_DWUBOJU_BEZ_1RM = "Najpierw test 1RM — przy seriach tego ćwiczenia. "
-  + "Z niego policzę ciężar TOP SETU.";
+// Trener, 16.10.2026: „nie podoba mi się ten opis »najpierw test 1RM« —
+// mało naturalny”. Teraz językiem sali: „sprawdź swój maks”.
+const TEST_1RM_DWUBOJU = "Twój maks to najcięższe powtórzenie zrobione czysto i szybko. "
+  + "Rozgrzej się, dojdź do niego w kilku podejściach i wpisz ciężar — powtórzenia: 1.";
+const TOP_SET_DWUBOJU_BEZ_1RM = "Najpierw sprawdź swój maks — przy seriach tego ćwiczenia. "
+  + "Od niego policzę ciężar TOP SETU.";
 
 /**
  * Ćwiczenia, przy których test 1RM odbył się w tym treningu — po dojściu do
@@ -834,16 +836,16 @@ const kluczTestu = (c) => `${widok?.planId}:${biezacy?.tydzien}:${biezacy?.dzien
 
 function blokProbyMaksu(c) {
   const blok = el("div", "dobor proba-maksu");
-  blok.append(el("p", "proba-tytul", "Najpierw test 1RM"));
-  blok.append(el("p", "", "Rozgrzej się i w kilku podejściach dojdź do najcięższego czystego "
-    + "powtórzenia — szybko i bez łamania techniki. Wpisz ten ciężar: z niego policzę "
-    + "ciężary na cały plan, a potem robisz serie z planu."));
+  blok.append(el("p", "proba-tytul", "Najpierw sprawdź swój maks"));
+  blok.append(el("p", "", "Rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz "
+    + "do najcięższego powtórzenia, które zrobisz czysto i szybko. Wpisz ten ciężar — od niego "
+    + "policzę ciężary na cały plan, a potem robisz już serie z planu."));
   const wiersz = el("div", "proba-pola");
   const pole = el("input");
   pole.type = "number"; pole.inputMode = "decimal"; pole.min = "0"; pole.step = "0.5";
   pole.placeholder = "kg";
-  pole.setAttribute("aria-label", "Ciężar najcięższego czystego powtórzenia");
-  const zapisz = el("button", "glowny", "Zapisz 1RM");
+  pole.setAttribute("aria-label", "Twój maks w kilogramach");
+  const zapisz = el("button", "glowny", "Zapisz maks");
   zapisz.type = "button";
   const notka = el("p", "drobne proba-notka");
   zapisz.onclick = async () => {
@@ -1105,8 +1107,8 @@ function rysujJakTrenowac(t, d) {
       : []),
     // Dwubój bez 1RM (16.10.2026) — test pojedynczego w pierwszym treningu.
     ...(d.cwiczenia.some((c) => c.probaMaksu)
-      ? [punkt("„Test 1RM”", "przy rwaniu i zarzucie najpierw dojdź do najcięższego czystego",
-        "powtórzenia i wpisz je. Z niego policzę ciężary na cały plan.")]
+      ? [punkt("Rwanie i zarzut bez maksa", "najpierw dojdź do najcięższego powtórzenia, które",
+        "zrobisz czysto i szybko, i wpisz je. Od niego policzę ciężary na cały plan.")]
       : []),
   );
 }
@@ -1141,7 +1143,7 @@ function kolumnyZadania({
   }
   else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "dobierz");
   // Dwubój bez 1RM (16.10.2026): ciężar wyjdzie z testu pojedynczego.
-  else if (proba) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "test 1RM");
+  else if (proba) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "sprawdź maks");
   else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"));
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),

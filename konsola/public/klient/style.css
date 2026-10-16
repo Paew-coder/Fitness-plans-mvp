@@ -493,7 +493,7 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
 
 .kalibracja { margin: .45rem 0 0; font-size: .82rem; color: var(--ok); }
 
-/* Test 1RM dwuboju (16.10.2026): zdanie, pole kg × 1 i „Zapisz 1RM” w jednej
+/* „Sprawdź swój maks” przy dwuboju (16.10.2026): zdanie, pole kg × 1 i „Zapisz maks” w jednej
    linii — na wąskim telefonie przycisk schodzi pod pole. */
 .proba-maksu { margin-top: .6rem; }
 .proba-maksu .proba-tytul { font-weight: 700; color: var(--tekst); margin-bottom: .25rem; }

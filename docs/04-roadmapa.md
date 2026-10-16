@@ -891,6 +891,12 @@ Trener poprosił o sposób rozpisywania periodyzacji dla clean / snatch z blokie
 * **Konsola:** znacznik „D”, w kolumnie RPE procent (pole `procent` tygodnia, 20–120), TOP SET w % (`procentTygodni`), „wpisz progresję” i zmiana części planu przepisują dwubój. **Telefon:** „70 % 1RM” zamiast RPE, „test 1RM” i blok testu, ocena z dopiskiem o technice i szybkości, punkt w „Jak trenować”. **Eksport:** powtórzenia i ciężary wprost; TOP SET dwuboju idzie do arkusza z RPE najbliższym procentowi (arkusz nie zna procentów). SW `trening-v71`.
 * Testy: silnik (`dwuboj.test.ts` — lista, obie tabele, Snatch od własnego 1RM, procent trenera, ocena, brak 1RM, „G”, hipertrofia i „S”, deload, TOP SET, tydzień maksów, „wpisz progresję”), serwer (widok klienta, brak kalibracji, test 1RM liczy plan, bez propozycji, kształt procentu, lista ćwiczeń), eksport. Przeglądy: konsola (znacznik, procent, wpis, „G” w obie strony), telefon (sekcja 31: lista, „Jak trenować”, panel z testem, 70 kg po teście, bez rampy po teście, ocena z dopiskiem, seria maksymalna 100 × 1, ekran serii maksymalnych, szerokość telefonu).
 
+**66. Dwubój: „sprawdź swój maks” zamiast „test 1RM” — 16.10.2026.**
+
+Trener: „nie podoba mi się ten opis »najpierw test 1RM« przy ćwiczeniu Clean — mało naturalny jest”.
+
+* Językiem sali: w kolumnie ciężaru „sprawdź maks”, blok „Najpierw sprawdź swój maks” („rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz do najcięższego powtórzenia, które zrobisz czysto i szybko…”), przycisk „Zapisz maks”, w „Jak trenować” punkt „Rwanie i zarzut bez maksa”, na ekranie serii maksymalnych „Twój maks to najcięższe powtórzenie zrobione czysto i szybko…”. Działanie bez zmian. SW `trening-v72`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

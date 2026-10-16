@@ -620,12 +620,13 @@ plan w konsoli, klient trenuje dalej na poprzedniej wersji — nic mu nie znika
 w połowie treningu — a zmiany zobaczy po zatwierdzeniu. Jego oceny i ciężary
 z tego czasu zostają w obu wersjach. Szczegóły: `konsola/wersja-robocza.ts`.
 
-## Dwubój: procent 1RM i test 1RM (od 16.10.2026)
+## Dwubój: procent 1RM i „sprawdź swój maks” (od 16.10.2026)
 
 Przy rwaniu i zarzucie zamiast „RPE 8” stoi „70 % 1RM” — ciężar idzie wprost
-z procentu. Bez 1RM w kolumnie ciężaru jest „test 1RM”, a nad polami blok
-„Najpierw test 1RM”: klient dochodzi do najcięższego czystego powtórzenia,
-wpisuje ciężar i „Zapisz 1RM” — idzie to jako seria maksymalna × 1, a plan
+z procentu. Bez 1RM w kolumnie ciężaru jest „sprawdź maks”, a nad polami blok
+„Najpierw sprawdź swój maks” (trener: „najpierw test 1RM” było mało
+naturalne): klient dochodzi do najcięższego powtórzenia zrobionego czysto
+i szybko, wpisuje ciężar i „Zapisz maks” — idzie to jako seria maksymalna × 1, a plan
 przelicza się od razu (bez zasięgu — gdy wróci). Do tego czasu bez oceny
 i bez rampy; po teście w tym treningu rampy też nie ma (klient jest
 rozgrzany). Przy ocenie zdanie: „Oceniaj technikę i szybkość sztangi, nie
