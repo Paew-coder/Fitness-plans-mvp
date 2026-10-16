@@ -2201,25 +2201,28 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await s.waitForSelector("#ekran-trening:not(.ukryty)");
     const cleanNaLiscie = s.locator('#cwiczenia [data-position="D1-S01"]');
     const tekstListy = (await cleanNaLiscie.innerText()).replace(/\s+/g, " ");
-    sprawdz("lista: Clean bez 1RM — „test 1RM” zamiast ciężaru, 70 % 1RM zamiast RPE, bez rampy",
-      (await cleanNaLiscie.locator(".kolumna-ciezar").innerText()).includes("test 1RM")
+    // Trener, 16.10.2026: „najpierw test 1RM” było mało naturalne — „sprawdź swój maks”.
+    sprawdz("lista: Clean bez 1RM — „sprawdź maks” zamiast ciężaru, 70 % 1RM zamiast RPE, bez rampy",
+      (await cleanNaLiscie.locator(".kolumna-ciezar").innerText()).includes("sprawdź maks")
+        && (await cleanNaLiscie.locator(".proba-tytul").innerText()) === "Najpierw sprawdź swój maks"
+        && !/test 1RM/i.test(tekstListy)
         && (await cleanNaLiscie.locator(".rpe-linia").innerText()) === "70 % 1RM"
         && await cleanNaLiscie.locator(".proba-maksu").count() === 1
         && await cleanNaLiscie.locator(".rampa").count() === 0
         && !/RPE \d/.test(tekstListy),
       tekstListy.slice(0, 200));
-    sprawdz("„Jak trenować” mówi o teście 1RM przy rwaniu i zarzucie",
-      /„Test 1RM”.*najcięższego czystego/.test((await s.locator("#jak-trenowac").textContent()) ?? ""));
+    sprawdz("„Jak trenować” mówi, że przy rwaniu i zarzucie najpierw maks",
+      /Rwanie i zarzut bez maksa.*najcięższego powtórzenia/.test((await s.locator("#jak-trenowac").textContent()) ?? ""));
 
     await cleanNaLiscie.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
     await s.waitForSelector("#ekran-seria:not(.ukryty)");
-    sprawdz("panel: najpierw test 1RM, bez oceny i bez doboru według RPE",
+    sprawdz("panel: najpierw maks, bez oceny i bez doboru według RPE",
       await panel.locator(".proba-maksu").count() === 1
         && await panel.locator(".ocena-w-panelu").count() === 0
         && !(await panel.innerText()).includes("Weź taki ciężar"),
       (await panel.innerText()).replace(/\n/g, " ").slice(0, 200));
     await panel.locator(".proba-maksu input").fill("100");
-    await panel.getByRole("button", { name: "Zapisz 1RM" }).click();
+    await panel.getByRole("button", { name: "Zapisz maks" }).click();
     await s.waitForFunction(() => !document.querySelector("#panel .proba-maksu"), null, { timeout: 8000 })
       .catch(() => null);
     const poTescie = (await panel.innerText()).replace(/\s+/g, " ");
@@ -2248,7 +2251,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
     const pomiarClean = s.locator('#pomiary .pomiar[data-cwiczenie="EX-0046"]');
     sprawdz("serie maksymalne: przy dwuboju najcięższe czyste powtórzenie, nie seria do odmowy",
-      (await pomiarClean.locator(".proba-pomiaru").innerText()).includes("Najcięższe czyste powtórzenie")
+      (await pomiarClean.locator(".proba-pomiaru").innerText()).includes("najcięższe powtórzenie zrobione czysto i szybko")
         && !(await s.locator("#pomiary").innerText()).includes("Jedna seria do odmowy"),
       (await pomiarClean.innerText()).replace(/\n/g, " ").slice(0, 160));
   }
