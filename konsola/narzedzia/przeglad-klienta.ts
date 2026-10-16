@@ -1609,7 +1609,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // Przy okazji rozgrzewka dnia I (25.09.2026) — wpisana przez trenera.
   {
     const { zapisany } = await api(`/api/plany/${idRecznego}`);
-    zapisany.plan.rozgrzewki = [{ dzien: 1, tekst: "5 min rower\n2 × 10 dead bug" }];
+    zapisany.plan.rozgrzewki = [{ dzien: 1, tekst: "5 min rower\n2 × 10 dead bug",
+      film: "https://youtube.com/shorts/fL2C8V9-GVE" }];
     await api(`/api/plany/${idRecznego}`, "PUT", { plan: zapisany.plan, dataStartu: null,
       status: "wysłany", zmieniony: zapisany.zmieniony });
     await api(`/api/plany/${idRecznego}/zatwierdz`, "POST");   // plan u klienta — zmiana po zatwierdzeniu
@@ -1623,6 +1624,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await rozgrzewkaListy.getAttribute("open") !== null
     && (await rozgrzewkaListy.locator("li").allInnerTexts()).join(" | ") === "5 min rower | 2 × 10 dead bug",
     (await rozgrzewkaListy.innerText().catch(() => "brak")).replace(/\n/g, " | "));
+  // Trener, 16.10.2026: „przycisk film przenosi do YouTube zamiast otwierać
+  // film w aplikacji”. Samo otwarcie karty sprawdza przegląd filmu.
+  sprawdz("film rozgrzewki z YouTube otwiera się w aplikacji, nie na YouTube",
+    await rozgrzewkaListy.locator("button.film-karta").count() === 1
+      && await rozgrzewkaListy.locator('a[target="_blank"]').count() === 0);
   const deadBugT2 = s.locator('#cwiczenia [data-position="D1-S03"]');
   // „Jak klient dobierze ciężar w T1, to zostaje do końca planu" (26.09.2026).
   sprawdz("w T2 ciężar z T1 zostaje — „2 kg, jak w T1”, bez „dobierz”",

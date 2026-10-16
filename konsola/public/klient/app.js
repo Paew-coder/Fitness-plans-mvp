@@ -853,14 +853,10 @@ function kartaRozgrzewki(r, otwarta) {
   const lista = el("ul", "rozgrzewka-lista");
   for (const linia of r.linie) lista.append(el("li", "", linia));
   karta.append(lista);
-  // Tylko http(s) — serwer sprawdza to samo, a tu i tak nie ufamy.
-  if (r.film && /^https?:\/\//.test(r.film)) {
-    const a = el("a", "film", "▶ film");
-    a.href = r.film;
-    a.target = "_blank";
-    a.rel = "noopener";
-    karta.append(a);
-  }
+  // Film z YouTube gra w karcie w aplikacji (16.10.2026), inny link otwiera
+  // się jak dotąd. Tylko http(s) — serwer sprawdza to samo, a tu i tak nie ufamy.
+  const film = przyciskFilmu(r.film, r.karta);
+  if (film) karta.append(film);
   return karta;
 }
 

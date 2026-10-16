@@ -854,6 +854,14 @@ Trener (zrzut panelu ze strzałką): „ten opis (za ciężko / za lekko…) nie
 * Zdanie z punktu 59 usunięte z panelu serii i z TOP SETU bez 1RM — w miejscu oceny nie ma nic. Co zrobić przy złym ciężarze, mówi już instrukcja doboru nad polami („Wpisz, co podniosłeś — z tej serii policzę Twoje ciężary na cały plan”) i opis RPE („Wyszło za lekko? Dołóż w następnej serii…”). SW `trening-v68`.
 * Przegląd klienta: przy dobieraniu nie ma oceny ani zdania o „za lekko / za ciężko” poza opisem RPE; po pierwszej serii ocena wraca.
 
+**62. Dragonflag ekscentryczny na masie ciała; film z arkusza gra w aplikacji — 16.10.2026.**
+
+Trener: „ćwiczenie s/l dragonflag eccentric ma dopisane »dobierz ciężar«, mimo że ciężar nie jest tam wykorzystywany. Poza tym przycisk film przenosi do YouTube zamiast otwierać film w aplikacji”.
+
+* **S/l dragonflag eccentric** (EX-0174) i **B/l dragonflag eccentric** (EX-0006, ten sam ruch obunóż): `kg` → `masa ciała`, skok 0. Bez „dobierz ciężar” i bez serii maksymalnej; oceny zmieniają powtórzenia, powtórzenia rosną przez cały cykl (punkt 58). Ćwiczeń BAZY bez serii maksymalnej: 29 (było 27).
+* **Film w aplikacji**: ćwiczenia BAZY bez wpisu w filmach miały u klienta zwykły link do YouTube (w aplikacji grały tylko filmy sprawdzone oEmbedem). Sprawdzone 16.10.2026: 71 z 72 takich linków da się osadzić; jeden — **Barbell row dead stop pins** (EX-0017, `youtu.be/qelbH7YGpms`) — jest na YouTube niedostępny, do podmiany w arkuszu. Teraz link YouTube z arkusza gra w karcie w aplikacji (podpis „wybrany przez trenera”); film, którego nie da się odtworzyć, karta opisuje w ramce z linkiem do YouTube. Film rozgrzewki dnia — tak samo. Link spoza YouTube zostaje linkiem. SW `trening-v69`.
+* Testy: progresja obu dragonflagów, liczba ćwiczeń bez serii maksymalnej, karta klienta z linku (każde ćwiczenie BAZY z linkiem YouTube ma kartę), karta rozgrzewki, widok klienta. Przegląd filmu: przycisk karty przy ćwiczeniu z linkiem z arkusza, film `t5Ft8OMG_D8` w karcie, podpis bez „arkusza”; przegląd klienta: przycisk filmu w rozgrzewce.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
