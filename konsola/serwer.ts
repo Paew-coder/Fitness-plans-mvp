@@ -40,7 +40,7 @@ import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
 import { filmyCwiczenia, idZLinkuYoutube, kartaDlaKlienta, kartaPodgladu, kartaRozgrzewki } from "../silnik/src/wideo.ts";
-import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
+import { bojGlownySlotu, DWUBOJ, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
@@ -179,6 +179,8 @@ function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
         // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
         // i przestawia przy nich „G” między progresją pauzowaną a bojem.
         pauza: PAUZOWANE[c.id] ?? null,
+        // Dwubój (16.10.2026) — konsola pokazuje „D” i procent zamiast RPE.
+        dwuboj: DWUBOJ.has(c.id),
         // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
         // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
         filmow,
@@ -431,6 +433,9 @@ function propozycje1RM(
     // maksów wchodzi do nowego cyklu wprost (`serieZTygodniaMaksow`).
     const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
     if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
+    // Dwubój (16.10.2026) nie: seria techniczna na 70 % nic nie mówi o maksimum,
+    // a jego RPE to tylko odpowiednik procentu. 1RM daje próba pojedynczego.
+    if (slot.dwuboj) continue;
     // Ćwiczenie z wpisu, nie ze slotu. Po podmianie w środku cyklu slot mówi,
     // co klient robi **teraz** — a te kilogramy podniósł na czymś innym
     // i policzone jako nowe ćwiczenie wróciłyby na sztangę w kolejnym cyklu.
@@ -993,7 +998,8 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     if (!potrzebaRampy({
       progresja: cw.progresja,
       coeff: cw.coeff,
-      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw.coeff),
+      // Dwubój rozgrzewa się do ciężaru pierwszej serii jak bój (16.10.2026).
+      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw.coeff) || !!s.dwuboj,
       bojSilowy: slotPlanu?.bojSilowy,
       maTopSet: !!ts,
     })) return null;
@@ -1041,6 +1047,8 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
           .filter((s) => s.dzien === dzien && s.cwiczenie)
           .map((s) => ({
             positionId: s.positionId,
+            // Test 1RM dwuboju zapisuje się jako seria maksymalna ćwiczenia (16.10.2026).
+            cwiczenieId: s.cwiczenie!.id,
             lp: s.lp,
             grupa: (s.lp || "").charAt(0),
             nazwa: s.cwiczenie!.nazwa,
@@ -1060,6 +1068,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             serie: s.serie,
             powtorzenia: s.powtorzenia,
             rpe: s.rpe,
+            // Dwubój (16.10.2026): ciężar z % 1RM — telefon pokazuje procent
+            // zamiast RPE (RPE to wtedy tylko odpowiednik dla stresu).
+            dwuboj: !!s.dwuboj,
+            procent: s.dwuboj ? s.procent1RM : null,
             ciezar: s.ciezar,
             // Odczucie też należy do ćwiczenia, nie do miejsca: kopia
             // w parametrach tygodnia zostaje po podmianie przy slocie,
@@ -1082,7 +1094,11 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             // RPE, a pierwsza wpisana seria policzy resztę. Flaga zamiast
             // porównywania napisu w telefonie: komunikat silnika może się
             // kiedyś zmienić, a znaczenie zostaje.
-            dobierzCiezar: t.rodzaj !== "maksy" && s.ciezar === "— brak 1RM",
+            dobierzCiezar: t.rodzaj !== "maksy" && s.ciezar === "— brak 1RM" && !s.dwuboj,
+            // Dwubój bez 1RM (16.10.2026): zamiast doboru według RPE — próba
+            // najcięższego czystego powtórzenia w pierwszym treningu. Wpisana
+            // idzie jako seria maksymalna (1 powtórzenie) i liczy cały plan.
+            probaMaksu: t.rodzaj !== "maksy" && !!s.dwuboj && s.ciezar === "— brak 1RM",
             // Ciężar ustawiany ręcznie, a trener go jeszcze nie wpisał. Klient
             // dobiera go sam i zapisuje przy seriach; nic się z tego nie liczy
             // (to nie 1RM), ale trener widzi wpis w konsoli i może ustawić
@@ -1147,6 +1163,9 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
               rpe: seria.zastapionaKalibracja.kalibracja.rpe }
           : null,
         oneRM: slot?.oneRM || null,
+        // Dwubój: seria maksymalna to najcięższe czyste powtórzenie, nie seria
+        // do odmowy (16.10.2026) — telefon mówi to przy polach.
+        dwuboj: DWUBOJ.has(id),
         bezSerii: progresja ? dlaczegoBezSeriiMaksymalnej(progresja) : null,
       };
     });

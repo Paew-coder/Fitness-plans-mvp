@@ -2182,6 +2182,77 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       stare.status === 409 && biezace.ok, `${stare.status} / ${biezace.status}`);
   }
 
+  // ── 31. dwubój: procenty i test 1RM (16.10.2026) ──────────────────
+  // Trener: „to, co zaproponowałeś, mi się podoba … skok 1 kg, wdrażaj
+  // całość”. Clean bez 1RM: zamiast „dobierz” — test najcięższego czystego
+  // powtórzenia w pierwszym treningu; po zapisie plan w % 1RM.
+  {
+    await api("/api/plany", "POST", { klient: "Dwubój Telefon", wersja: 1 });
+    const idD = (await api("/api/plany")).find((p: any) => p.klient === "Dwubój Telefon").id;
+    const pD = (await api(`/api/plany/${idD}`)).zapisany;
+    pD.plan.sloty[0].cwiczenieId = "EX-0046";   // Clean
+    pD.plan.serieMaksymalne = [];
+    await api(`/api/plany/${idD}`, "PUT", { plan: pD.plan, dataStartu: null, status: "wysłany", zmieniony: pD.zmieniony });
+    const sciezkaD = (await api(`/api/plany/${idD}/link`, "POST")).sciezka;
+    await s.goto(`${adres}${sciezkaD}`, { waitUntil: "networkidle" });
+    await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+    await rozwinTydzien(s.locator("#tygodnie .tydzien").first());
+    await s.locator("#tygodnie .dzien-kafel").first().click();
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    const cleanNaLiscie = s.locator('#cwiczenia [data-position="D1-S01"]');
+    const tekstListy = (await cleanNaLiscie.innerText()).replace(/\s+/g, " ");
+    sprawdz("lista: Clean bez 1RM — „test 1RM” zamiast ciężaru, 70 % 1RM zamiast RPE, bez rampy",
+      (await cleanNaLiscie.locator(".kolumna-ciezar").innerText()).includes("test 1RM")
+        && (await cleanNaLiscie.locator(".rpe-linia").innerText()) === "70 % 1RM"
+        && await cleanNaLiscie.locator(".proba-maksu").count() === 1
+        && await cleanNaLiscie.locator(".rampa").count() === 0
+        && !/RPE \d/.test(tekstListy),
+      tekstListy.slice(0, 200));
+    sprawdz("„Jak trenować” mówi o teście 1RM przy rwaniu i zarzucie",
+      /„Test 1RM”.*najcięższego czystego/.test((await s.locator("#jak-trenowac").textContent()) ?? ""));
+
+    await cleanNaLiscie.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
+    await s.waitForSelector("#ekran-seria:not(.ukryty)");
+    sprawdz("panel: najpierw test 1RM, bez oceny i bez doboru według RPE",
+      await panel.locator(".proba-maksu").count() === 1
+        && await panel.locator(".ocena-w-panelu").count() === 0
+        && !(await panel.innerText()).includes("Weź taki ciężar"),
+      (await panel.innerText()).replace(/\n/g, " ").slice(0, 200));
+    await panel.locator(".proba-maksu input").fill("100");
+    await panel.getByRole("button", { name: "Zapisz 1RM" }).click();
+    await s.waitForFunction(() => !document.querySelector("#panel .proba-maksu"), null, { timeout: 8000 })
+      .catch(() => null);
+    const poTescie = (await panel.innerText()).replace(/\s+/g, " ");
+    sprawdz("po teście (100 kg) panel ma ciężar z planu: 70 kg na 70 % 1RM, pole stoi na 70",
+      await panel.locator(".proba-maksu").count() === 0
+        && (await panel.locator(".kolumna-ciezar .wartosc").innerText()).startsWith("70")
+        && (await panel.locator(".rpe-linia").innerText()) === "70 % 1RM"
+        && await polaPanelu.nth(0).inputValue() === "70",
+      poTescie.slice(0, 200));
+    sprawdz("po teście bez rozgrzewki rampą — klient właśnie doszedł do maksimum",
+      await panel.locator(".rampa").count() === 0);
+    sprawdz("ocena wraca, z podpowiedzią o technice i szybkości sztangi",
+      await panel.locator(".ocena-w-panelu").count() === 1
+        && (await panel.locator(".podpowiedz-dwuboju").innerText()).includes("technikę i szybkość sztangi"));
+    sprawdz("w konsoli 1RM z testu: seria maksymalna 100 × 1",
+      JSON.stringify((await api(`/api/plany/${idD}`)).zapisany.plan.serieMaksymalne)
+        === JSON.stringify([{ cwiczenieId: "EX-0046", ciezar: 100, powtorzenia: 1 }]));
+    sprawdz("panel dwuboju mieści się na telefonie bez przewijania w bok",
+      await s.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+
+    await s.click("#wroc-z-serii");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    await s.click("#wroc-z-treningu");
+    await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+    await s.click("#pokaz-pomiary");
+    await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
+    const pomiarClean = s.locator('#pomiary .pomiar[data-cwiczenie="EX-0046"]');
+    sprawdz("serie maksymalne: przy dwuboju najcięższe czyste powtórzenie, nie seria do odmowy",
+      (await pomiarClean.locator(".proba-pomiaru").innerText()).includes("Najcięższe czyste powtórzenie")
+        && !(await s.locator("#pomiary").innerText()).includes("Jedna seria do odmowy"),
+      (await pomiarClean.innerText()).replace(/\n/g, " ").slice(0, 160));
+  }
+
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`
     : "\n  błędów w przeglądarce: brak");

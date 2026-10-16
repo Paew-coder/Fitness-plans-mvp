@@ -493,6 +493,21 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
 
 .kalibracja { margin: .45rem 0 0; font-size: .82rem; color: var(--ok); }
 
+/* Test 1RM dwuboju (16.10.2026): zdanie, pole kg × 1 i „Zapisz 1RM” w jednej
+   linii — na wąskim telefonie przycisk schodzi pod pole. */
+.proba-maksu { margin-top: .6rem; }
+.proba-maksu .proba-tytul { font-weight: 700; color: var(--tekst); margin-bottom: .25rem; }
+.proba-pola { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
+.proba-pola input {
+  font: inherit; font-size: 1.2rem; text-align: center; width: 6rem;
+  padding: .6rem .3rem; border-radius: 10px;
+  border: 1px solid var(--linia); background: var(--karta-2); color: var(--tekst);
+}
+.proba-pola .razy { color: var(--tekst-slaby); font-size: .9rem; }
+.proba-pola button { flex: 1 1 8rem; }
+.proba-notka:empty { display: none; }
+.podpowiedz-dwuboju { margin: .1rem 0 .2rem; }
+
 details.rpe { margin-top: .6rem; font-size: .85rem; }
 details.rpe summary {
   cursor: pointer; color: var(--akcent); font-weight: 600; list-style: none;

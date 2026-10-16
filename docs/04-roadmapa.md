@@ -880,6 +880,17 @@ Trener (o liście ćwiczeń z `kg`, przy których i tak nie ma obciążenia): �
 * Skoki dostają ten sam automat powtórzeń co reszta masy ciała (np. coeff 0,5 w części siłowej: T1 8 → T6 13). Gdy przy skokach ma być mniej powtórzeń, trener wpisuje je ręcznie w slocie.
 * Ćwiczeń BAZY bez serii maksymalnej: 38 (było 29). Test silnika pilnuje wszystkich dziewięciu.
 
+**65. Dwubój olimpijski — rwanie i zarzut w % 1RM — 16.10.2026.**
+
+Trener poprosił o sposób rozpisywania periodyzacji dla clean / snatch z blokiem objętościowym i intensyfikującym. Po propozycji: „to, co zaproponowałeś, mi się podoba i może tak być … skok 1 kg, wdrażaj całość”.
+
+* **Dlaczego procenty:** tabela RPE zaczyna się od RPE 6 (76,5 % przy trójkach, 79,5 % przy dwójkach) — techniczna objętość na 70–75 % się w niej nie mieści; w dwuboju o ciężarze decyduje technika i szybkość, nie zapas powtórzeń.
+* **Tabela** (`PROGRESJA_DWUBOJU`): cz.1 objętość 6×3 @70 · 6×3 @72 · 5×3 @75 · 6×2 @75 · 6×2 @78 · 5×2 @80 %; cz.2 intensyfikacja 6×2 @80 · 6×2 @82 · 5×2 @85 · 8×1 @85 · 7×1 @88 · 5×1 @90 %. Deload 4×2 @70 %. TOP SET opcjonalny, tylko cz.2 od T4: 88 · 91 · 93 %. Hipertrofia — tabela objętościowa, „S” — siłowa tego etapu. Ciężar = 1RM tego ćwiczenia × % × korekta z ocen, skok 1 kg (przy Clean 1RM 100: 70 · 72 · 75 · 75 · 78 · 80 kg).
+* **Ćwiczenia** (`DWUBOJ`, 33): Clean i Clean pins z BAZY; z bibliotek rwanie i zarzut ze sztangą — pełne, power, z zawieszenia (hang, high/mid/low), z bloków, zarzut z podrzutem. Bez ciągów, martwych ciągów, ćwiczeń technicznych (muscle, tall, no jump, z pozycji mocy, segmentowe), kompleksów, hantli i kettlebelli. Na każdej pozycji; „G” robi zwykły bój.
+* **1RM:** od trenera, z serii maksymalnej klienta (przy dwuboju: najcięższe czyste powtórzenie, nie seria do odmowy) albo z tygodnia maksów (domyślnie bierze też dwubój). Bez 1RM klient robi w pierwszym treningu test pojedynczego — zapis jako seria maksymalna × 1 — zamiast doboru według RPE. Serie robocze dwuboju nie kalibrują 1RM i nie idą do propozycji 1RM (seria na 70 % nic nie mówi o maksimum).
+* **Konsola:** znacznik „D”, w kolumnie RPE procent (pole `procent` tygodnia, 20–120), TOP SET w % (`procentTygodni`), „wpisz progresję” i zmiana części planu przepisują dwubój. **Telefon:** „70 % 1RM” zamiast RPE, „test 1RM” i blok testu, ocena z dopiskiem o technice i szybkości, punkt w „Jak trenować”. **Eksport:** powtórzenia i ciężary wprost; TOP SET dwuboju idzie do arkusza z RPE najbliższym procentowi (arkusz nie zna procentów). SW `trening-v71`.
+* Testy: silnik (`dwuboj.test.ts` — lista, obie tabele, Snatch od własnego 1RM, procent trenera, ocena, brak 1RM, „G”, hipertrofia i „S”, deload, TOP SET, tydzień maksów, „wpisz progresję”), serwer (widok klienta, brak kalibracji, test 1RM liczy plan, bez propozycji, kształt procentu, lista ćwiczeń), eksport. Przeglądy: konsola (znacznik, procent, wpis, „G” w obie strony), telefon (sekcja 31: lista, „Jak trenować”, panel z testem, 70 kg po teście, bez rampy po teście, ocena z dopiskiem, seria maksymalna 100 × 1, ekran serii maksymalnych, szerokość telefonu).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

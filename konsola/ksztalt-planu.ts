@@ -84,6 +84,11 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
           || typeof k.cwiczenieId !== "string")) {
         return `${gdzie}, tydzień ${tydzien}: ciężar wybrany przez klienta jest uszkodzony`;
       }
+      // % 1RM przy dwuboju (16.10.2026) — z niego idzie ciężar.
+      if (parametry.procent != null && (!jestLiczba(parametry.procent)
+          || parametry.procent < 20 || parametry.procent > 120)) {
+        return `${gdzie}, tydzień ${tydzien}: procent 1RM musi być liczbą z zakresu 20–120`;
+      }
       // TOP SET z telefonu — ocena i ciężar, które czyta konsola.
       const ts = parametry.topSetKlienta;
       if (ts != null && (!jestObiektem(ts)
@@ -177,6 +182,17 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
         if (!jestLiczba(rpe)) {
           return `TOP SET ${i + 1}, tydzień ${tydzien}: RPE musi być liczbą`;
         }
+      }
+    }
+  }
+
+  // % 1RM TOP SETU przy dwuboju (16.10.2026), per tydzień jak RPE.
+  for (const [i, top] of (Array.isArray(plan.topSety) ? plan.topSety : []).entries()) {
+    if (!jestObiektem(top) || top.procentTygodni == null) continue;
+    if (!jestObiektem(top.procentTygodni)) return `TOP SET ${i + 1}: procent tygodni musi być obiektem`;
+    for (const [tydzien, procent] of Object.entries(top.procentTygodni)) {
+      if (!jestLiczba(procent) || procent < 20 || procent > 120) {
+        return `TOP SET ${i + 1}, tydzień ${tydzien}: procent 1RM musi być liczbą z zakresu 20–120`;
       }
     }
   }
