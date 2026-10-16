@@ -10,6 +10,11 @@ import assert from "node:assert/strict";
 
 import type { Plan } from "../src/plan.ts";
 import { przeliczPlan } from "../src/plan.ts";
+import { BOJE } from "../src/szablon-boju.ts";
+import { katalog } from "../src/katalog.ts";
+
+const PRZYSIAD = { id: "EX-0010" };     // Barbell back squat
+const WIOSLOWANIE = { id: "EX-0016" };  // akcesorium, coeff 0,75
 import {
   PROGRESJA_BOJU, RPE_AKCESORIUM, SERIE_AKCESORIUM,
   progresjaSlotu, skopiujTydzien, zastosujProgresje,
@@ -77,14 +82,14 @@ describe("progresja — liczby zgodne z szablonem 5.18", () => {
   });
 
   test("przełącznik części planu zmienia bój, nie tylko akcesoria", () => {
-    assert.deepEqual(progresjaSlotu("A1.", 1, 1), { serie: 6, powtorzenia: 6, rpe: 6.5 },
+    assert.deepEqual(progresjaSlotu("A1.", 1, PRZYSIAD), { serie: 6, powtorzenia: 6, rpe: 6.5 },
       "bez podania części planu zostaje objętość — tak było do tej pory");
-    assert.deepEqual(progresjaSlotu("A1.", 1, 1, "objętość"), { serie: 6, powtorzenia: 6, rpe: 6.5 });
-    assert.deepEqual(progresjaSlotu("A1.", 1, 1, "intensywność"), { serie: 6, powtorzenia: 4, rpe: 7 });
-    assert.deepEqual(progresjaSlotu("A1.", 6, 1, "intensywność"), { serie: 6, powtorzenia: 2, rpe: 8 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, PRZYSIAD, "objętość"), { serie: 6, powtorzenia: 6, rpe: 6.5 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, PRZYSIAD, "intensywność"), { serie: 6, powtorzenia: 4, rpe: 7 });
+    assert.deepEqual(progresjaSlotu("A1.", 6, PRZYSIAD, "intensywność"), { serie: 6, powtorzenia: 2, rpe: 8 });
     // Akcesorium części planu w tym miejscu nie czyta — powtórzenia liczy
     // automat, a on ma ją osobno.
-    assert.deepEqual(progresjaSlotu("B1.", 1, 0.5, "intensywność"), { serie: 3, rpe: 8 });
+    assert.deepEqual(progresjaSlotu("B1.", 1, WIOSLOWANIE, "intensywność"), { serie: 3, rpe: 8 });
   });
 
   test("akcesorium: trzy serie, RPE 8 w pierwszym bloku i 9 w drugim", () => {
@@ -102,7 +107,7 @@ describe("progresja — liczby zgodne z szablonem 5.18", () => {
 
   test("akcesorium nie dostaje powtórzeń — liczy je automat", () => {
     assert.equal(progresjaSlotu("C1.", 2).powtorzenia, undefined);
-    assert.equal(progresjaSlotu("A1.", 2, 1).powtorzenia, 6);
+    assert.equal(progresjaSlotu("A1.", 2, PRZYSIAD).powtorzenia, 6);
   });
 
   test("bojem głównym jest ćwiczenie złożone, nie samo miejsce w tabeli", () => {
@@ -114,9 +119,36 @@ describe("progresja — liczby zgodne z szablonem 5.18", () => {
      * po prostu nie wstawiał tam takich rzeczy; aplikacja pozwala, więc musi
      * patrzeć na ćwiczenie.
      */
-    assert.deepEqual(progresjaSlotu("A1.", 1, 1), { serie: 6, powtorzenia: 6, rpe: 6.5 });
-    assert.deepEqual(progresjaSlotu("A1.", 1, 0.25), { serie: 3, rpe: 8 });
-    assert.deepEqual(progresjaSlotu("A1.", 1, 0.75), { serie: 3, rpe: 8 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, PRZYSIAD), { serie: 6, powtorzenia: 6, rpe: 6.5 });
+    assert.deepEqual(progresjaSlotu("A1.", 1, { id: "EX-0183" }), { serie: 3, rpe: 8 }, "SLDL balance");
+    assert.deepEqual(progresjaSlotu("A1.", 1, WIOSLOWANIE), { serie: 3, rpe: 8 });
+  });
+
+  // Trener, 16.10.2026: bench na B1 liczył się jak akcesorium — „ćwiczenia,
+  // które mają swoją własną progresję, zawsze mają ją mieć niezależnie od
+  // miejsca w rozpisce”, a potem: „zostaw jako boje tylko przysiady, martwe
+  // ciągi, bench — te mniej oczywiste mogą liczyć się jako akcesoria”.
+  test("bojem są przysiady, martwe ciągi i bench — na każdej pozycji, inne złożone nie", () => {
+    assert.deepEqual(progresjaSlotu("B1.", 1, { id: "EX-0011" }), { serie: 6, powtorzenia: 6, rpe: 6.5 }, "bench na B1");
+    assert.deepEqual(progresjaSlotu("C1.", 1, { id: "EX-0053" }), { serie: 6, powtorzenia: 6, rpe: 6.5 }, "deadlift na C1");
+    for (const [id, nazwa] of [["EX-0165", "Push press"], ["EX-0102", "Hip thrust"], ["EX-0168", "RDL"],
+      ["EX-0186", "Squat izo"], ["EX-0201", "Walking lunges"], ["EX-0162", "Pull up weighted"]]) {
+      assert.deepEqual(progresjaSlotu("A1.", 1, { id: id! }), { serie: 3, rpe: 8 }, `${nazwa} na A1 — akcesorium`);
+    }
+  });
+
+  test("lista bojów: każdy to przysiad, martwy ciąg albo bench ze sztangą, coeff 1,0", () => {
+    for (const id of BOJE) {
+      const c = katalog.poId(id);
+      assert.ok(c, id);
+      assert.match(c.nazwa, /squat|deadlift|bench press/i, c.nazwa);
+      assert.equal(c.coeff, 1, c.nazwa);
+    }
+    // I żaden przysiad / martwy / bench z coeff 1,0 nie zgubił się po drodze.
+    const pominiete = katalog.wszystkie.filter((c) => c.coeff === 1 && c.progresja === "kg"
+      && /squat|deadlift|bench press/i.test(c.nazwa) && !/izo|jerk|push press|clean/i.test(c.nazwa)
+      && !BOJE.has(c.id));
+    assert.deepEqual(pominiete.map((c) => c.nazwa), []);
   });
 });
 

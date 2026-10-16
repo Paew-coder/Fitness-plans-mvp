@@ -98,7 +98,7 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     // Do 26.09 szła tu funkcja z importu arkusza, która patrzy tylko na literę
     // A i `coeff` po cichu pomijała — więc powyższy komentarz nie był prawdą.
     // Teraz ta sama reguła co w silniku, razem z decyzją trenera („G").
-    const bojGlowny = bojGlownySlotu(slot, cwiczenie?.coeff, cwiczenie?.progresja);
+    const bojGlowny = bojGlownySlotu(slot, cwiczenie);
 
     const tygodnie: Record<string, unknown> = {};
     for (const t of TYGODNIE) {
@@ -116,7 +116,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Masa ciała (10.10.2026) też: w aplikacji powtórzenia rosną T1–T6
         // bez restartu w T4, a formuła arkusza zaczęłaby blok od nowa.
         // Dwubój (16.10.2026) też — jego tabela jest tylko w aplikacji.
+        // Arkusz w pozycji A liczy bój i czeka na wpisane powtórzenia — także
+        // gdy aplikacja liczy tam akcesorium (16.10.2026: push press na A1).
         powtorzenia_reczne: bojGlowny || bezAutomatuArkusza || obliczony?.pauza || obliczony?.dwuboj
+          || pozycjaBoju(slot.lp)
           || cwiczenie.progresja === "masa ciała"
           ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
           : (p.powtorzenia ?? null),
@@ -133,11 +136,12 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // ocenie (5 → 4 kg) arkusz zaokrągliłby z powrotem. Liczba wprost.
         // Dwubój (16.10.2026): ciężar z % 1RM — arkusz zna tylko RPE, więc
         // liczba wprost (RPE w arkuszu to wtedy odpowiednik dla stresu).
-        // Bój poza pozycją A (16.10.2026): arkusz liczy go jak akcesorium
-        // (ciężar trzymany z bloku), aplikacja — z RPE co tydzień. Liczba wprost.
+        // Arkusz rozstrzyga o boju pozycją (A), aplikacja ćwiczeniem
+        // (16.10.2026). Gdy się rozjeżdżają — bój poza A, akcesorium w A —
+        // arkusz policzyłby ciężar inaczej. Liczba wprost.
         ciezar_reczny: p.ciezarOverride
           ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie || obliczony?.dwuboj
-            || (bojGlowny && !pozycjaBoju(slot.lp)))
+            || bojGlowny !== pozycjaBoju(slot.lp))
             && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz
