@@ -14,6 +14,7 @@ const KLUCZ_WIDOKU = `widok-${TOKEN}`;
 const KLUCZ_HISTORII = `historia-${TOKEN}`;
 const KLUCZ_INSTALACJI = `instalacja-${TOKEN}`;
 const KLUCZ_ZWINIECIA_POMIAROW = `pomiary-zwiniete-${TOKEN}`;
+const KLUCZ_ZWINIECIA_JAK = `jak-trenowac-zwiniete-${TOKEN}`;
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let widok = null;
@@ -34,6 +35,10 @@ const otwarteWykonania = new Set();   // positionId z rozwiniętymi polami „co
 const kluczZwiniecia = () => `${widok?.planId}${widok?.resetOd ? `@${widok.resetOd}` : ""}`;
 let pomiaryZwinieteW = (() => {
   try { return localStorage.getItem(KLUCZ_ZWINIECIA_POMIAROW); } catch { return null; }
+})();
+/** „Jak trenować” na ekranie dnia zwinięte raz zostaje zwinięte — patrz `rysujJakTrenowac`. */
+let jakTrenowacZwiniete = (() => {
+  try { return localStorage.getItem(KLUCZ_ZWINIECIA_JAK) === "1"; } catch { return false; }
 })();
 
 const $ = (s) => document.querySelector(s);
@@ -982,6 +987,8 @@ function rysujTrening() {
       kartaCwiczenia(c, stan),
     ]));
 
+  rysujJakTrenowac(t, d);
+
   $("#zakoncz").textContent = d.ukonczony ? "Trening zakończony ✓" : "Zakończ trening";
   $("#zakoncz").disabled = d.ukonczony;
 
@@ -995,6 +1002,48 @@ function rysujTrening() {
     : stan.tu
       ? `▶ Wróć do treningu — ${opisKroku(stan.tu, d)}`
       : "▶ Wszystkie serie zrobione — zakończ trening";
+}
+
+/**
+ * „Jak trenować” nad przyciskiem prowadzenia. Trener, 16.10.2026: „poinformować
+ * użytkownika, że wpisanie ciężaru powoduje dostosowanie ciężaru w reszcie
+ * planu, a alternatywą są przyciski za lekkie / za ciężkie … i że można robić
+ * trening, patrząc po prostu na listę ćwiczeń i oznaczać zrobione, ewentualnie
+ * przejść do prowadzenia — żeby jasno zaznaczyć, że nie jest konieczne
+ * wchodzenie w panele”.
+ *
+ * Zgodnie z tym, jak liczy aplikacja: kolejne tygodnie zmienia **ocena**;
+ * wpisany ciężar idzie do historii i do trenera (propozycja 1RM, decyduje
+ * trener), w prowadzeniu — do następnej serii. Na resztę planu przechodzi
+ * tylko przy „dobierz” (kalibracja, ciężar klienta przy ręcznym ustawieniu).
+ *
+ * Rozwinięte, dopóki klient raz nie zwinie — potem zostaje linijką.
+ * W dniu maksów nie ma ocen ani prowadzenia serii roboczych, więc go nie ma.
+ */
+function rysujJakTrenowac(t, d) {
+  const ramka = $("#jak-trenowac");
+  ramka.classList.toggle("ukryty", t?.rodzaj === "maksy");
+  ramka.open = !jakTrenowacZwiniete;
+  const punkt = (tytul, ...tresc) => {
+    const li = el("li");
+    li.append(el("strong", "", tytul), ` — ${tresc.filter(Boolean).join(" ")}`);
+    return li;
+  };
+  const zMasaCiala = d.cwiczenia.some((c) => c.ciezar === "masa ciała");
+  $("#jak-trenowac-tresc").replaceChildren(
+    punkt("Z listy", "rób ćwiczenia z tej listy, w swoim tempie, i odhaczaj zrobione przyciskiem",
+      "„OK” (albo „Za trudne” / „Za łatwe”, jeśli tak było). Ciężaru nie musisz wpisywać.",
+      "Na koniec dotknij „Zakończ trening”."),
+    punkt("Z prowadzeniem", "„▶ Prowadź mnie seria po serii” pokazuje każdą serię osobno,",
+      "z przerwą. Nie musisz z niego korzystać — do listy wrócisz w każdej chwili."),
+    punkt("Ciężar na kolejne tygodnie", "zmienia ocena: „Za trudne” — lżej, „Za łatwe” — ciężej"
+      + (zMasaCiala ? " (przy masie ciała — liczba powtórzeń)." : "."),
+      "Sam wpisany ciężar ich nie zmienia — zobaczy go trener."),
+    ...(d.cwiczenia.some(dobieraCiezar)
+      ? [punkt("Wyjątek: „dobierz”", "tam ciężar wybierasz sam. Z pierwszej wpisanej serii",
+        "policzę go na resztę planu.")]
+      : []),
+  );
 }
 
 /**
@@ -1516,12 +1565,15 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
   // bez „OK" (trener, 27.09.2026: „w panelach nie ma ono sensu", brak
   // kliknięcia i tak oznacza OK). Na liście „OK" zostaje.
   blok.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
+  // Trener, 16.10.2026: klient ma wiedzieć, że ocena sięga dalej niż ta seria.
+  const co = c.ciezar === "masa ciała" ? "powtórzenia" : "ciężar";
   blok.append(el("p", "drobne podpowiedz-oceny", !ostatnia
-    ? "Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię."
+    ? `Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię i ${co} `
+      + "w kolejnych tygodniach."
     : wczesniejsza
       ? `Ocena z serii ${wczesniejsza} („${ocenySerii[wczesniejsza]}”) zostaje dla kolejnych `
         + "tygodni. Kliknij, tylko jeśli ostatnia seria była inna."
-      : "Jeśli było OK — nic nie klikaj. Ocena zmienia ciężar w kolejnych tygodniach."));
+      : `Jeśli było OK — nic nie klikaj. Ocena zmienia ${co} w kolejnych tygodniach.`));
   const oceny = el("div", "oceny");
   const notka = el("p", "korekta-serii");
   const przyciski = [];
@@ -2494,6 +2546,14 @@ function panelSerii(k, kroki, d) {
       + `${podpowiedz.powtorzenia} powt.`));
   }
   karta.append(pola);
+  // Co robi wpisany ciężar (trener, 16.10.2026) — przy pierwszej serii
+  // ćwiczenia, gdy ciężar jest z planu. Przy „dobierz” mówi to instrukcja
+  // doboru („z tej serii policzę Twoje ciężary na cały plan”).
+  if (k.seria === 1 && !bezCiezaru && !c.maks && !dobieraCiezar(c) && typeof c.ciezar === "number") {
+    karta.append(el("p", "drobne wpisany-ciezar",
+      "Podniosłeś inny ciężar? Wpisz go — następną serię policzę od niego. "
+      + "Kolejne tygodnie zmienia ocena niżej."));
+  }
   // Klient dobiera ciężar: wpisany w pole przelicza rampę na kilogramy.
   ramkaRampy?.polacz(wCiezar);
 
@@ -2970,6 +3030,14 @@ $("#pomiary-baner > summary").addEventListener("click", () => {
   try {
     if (zwija) localStorage.setItem(KLUCZ_ZWINIECIA_POMIAROW, pomiaryZwinieteW);
     else localStorage.removeItem(KLUCZ_ZWINIECIA_POMIAROW);
+  } catch { /* pełna pamięć — zwinięcie trwa do zamknięcia aplikacji */ }
+});
+// „Jak trenować” — zwinięte raz zostaje zwinięte (też po kolejnych dniach).
+$("#jak-trenowac > summary").addEventListener("click", () => {
+  jakTrenowacZwiniete = $("#jak-trenowac").open;
+  try {
+    if (jakTrenowacZwiniete) localStorage.setItem(KLUCZ_ZWINIECIA_JAK, "1");
+    else localStorage.removeItem(KLUCZ_ZWINIECIA_JAK);
   } catch { /* pełna pamięć — zwinięcie trwa do zamknięcia aplikacji */ }
 });
 // Prosto w prowadzenie — tam każda seria ma własny panel z objaśnieniem, jak

@@ -142,6 +142,29 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       === "Za trudne | OK | Za łatwe",
     (await karty.first().locator(".oceny").innerText()).replace(/\n/g, " | "));
 
+  // Trener, 16.10.2026: klient ma wiedzieć, że panele nie są obowiązkowe,
+  // i co zmienia ciężar na kolejne tygodnie.
+  const jak = s.locator("#jak-trenowac");
+  const jakTekst = (await jak.textContent()) ?? "";
+  sprawdz("„Jak trenować” nad prowadzeniem: lista albo prowadzenie, ocena zmienia kolejne tygodnie",
+    await jak.isVisible() && await jak.getAttribute("open") !== null
+      && /Z listy.*odhaczaj zrobione przyciskiem „OK”/.test(jakTekst)
+      && /Z prowadzeniem.*Nie musisz z niego korzystać/.test(jakTekst)
+      && /Ciężar na kolejne tygodnie.*zmienia ocena/.test(jakTekst)
+      && jakTekst.includes("Sam wpisany ciężar ich nie zmienia — zobaczy go trener")
+      && !jakTekst.includes("Wyjątek"),
+    jakTekst.replace(/\s+/g, " ").slice(0, 160));
+  sprawdz("„Jak trenować” stoi przed przyciskiem prowadzenia",
+    await s.evaluate(() => !!(document.querySelector("#jak-trenowac")!
+      .compareDocumentPosition(document.querySelector("#prowadz")!) & Node.DOCUMENT_POSITION_FOLLOWING)));
+  await jak.locator("summary").click();
+  await s.click("#wroc-z-treningu");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.locator("#tygodnie .dzien-kafel").first().click();
+  await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  sprawdz("zwinięte „Jak trenować” zostaje zwinięte po powrocie do dnia",
+    await s.locator("#jak-trenowac:not([open])").count() === 1);
+
   // ── 3. ciężar na ekranie to ciężar policzony ──────────────────────
   // Umowa całej aplikacji: klient widzi dokładnie tę liczbę, którą policzył
   // silnik. Rozjazd tutaj znaczy, że ktoś trenuje wg innych liczb niż trener.
@@ -934,6 +957,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("po przerwie wchodzi pierwsza seria boju głównego",
     await seriaNaPanelu() === "1 z 6",
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
+  // Trener, 16.10.2026: co robi wpisany ciężar — przy pierwszej serii.
+  sprawdz("przy pierwszej serii zdanie, co robi wpisany inny ciężar",
+    /Podniosłeś inny ciężar\? Wpisz go — następną serię policzę od niego/
+      .test(await panel.locator(".wpisany-ciezar").innerText().catch(() => "")),
+    await panel.locator(".wpisany-ciezar").innerText().catch(() => "brak zdania"));
 
   // Seria wpisana na panelu ma trafić do trenera tą samą drogą, co z listy.
   const polaPanelu = panel.locator(".panel-pola input");
@@ -977,7 +1005,10 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("przed ostatnią serią ocena bez „OK” i bez obowiązku klikania",
     (await panel.locator(".ocena-w-panelu .ocena-przycisk").allInnerTexts()).join(" | ")
       === "Za trudne | Za łatwe"
-    && (await panel.locator(".podpowiedz-oceny").innerText()).startsWith("Jeśli jest OK — nic nie klikaj"),
+    && (await panel.locator(".podpowiedz-oceny").innerText()).startsWith("Jeśli jest OK — nic nie klikaj")
+    && (await panel.locator(".podpowiedz-oceny").innerText()).includes("ciężar w kolejnych tygodniach")
+    // Zdanie o wpisanym ciężarze tylko przy pierwszej serii — dalej to już wiadomo.
+    && await panel.locator(".wpisany-ciezar").count() === 0,
     (await panel.locator(".ocena-w-panelu").innerText().catch(() => "brak")).replace(/\n/g, " | "));
   sprawdz("kafelki serii mają podpis",
     (await panel.locator(".serie-wpisane").innerText()).startsWith("Poprzednie serie:"),
@@ -1322,6 +1353,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // tym panelu, bo i tak nie mamy tutaj tych przycisków”.
   sprawdz("przy dobieraniu ciężaru nie ma oceny „za lekko / za ciężko” ani zdania o niej",
     await panel.locator(".ocena-w-panelu").count() === 0
+      && await panel.locator(".wpisany-ciezar").count() === 0
       && !/za lekko|za ciężko/i.test(panelDoboru.replace(/Wyszło za lekko\?[^.]*\./, "")),
     panelDoboru.replace(/\n/g, " ").slice(0, 200));
 
@@ -1362,6 +1394,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.click("#wroc-z-serii");
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const kartaPrzysiadu = () => s.locator('#cwiczenia [data-position="D1-S03"]');
+  sprawdz("„Jak trenować” w dniu z „dobierz” mówi, że z pierwszej serii liczy się reszta planu",
+    /Wyjątek: „dobierz”.*Z pierwszej wpisanej serii policzę go na resztę planu/
+      .test((await s.locator("#jak-trenowac").textContent()) ?? ""));
   sprawdz("na liście ćwiczenie bez ciężaru ma instrukcję i pola na wierzchu",
     (await kartaPrzysiadu().innerText()).includes("Weź taki ciężar")
     && await kartaPrzysiadu().locator(".wykonanie-pola:not(.ukryty) input").count() > 0,
@@ -1709,6 +1744,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("tytuł mówi, co to za dzień",
     (await s.locator("#trening-tytul").innerText()) === "Dzień maksów · tydzień 8",
     await s.locator("#trening-tytul").innerText());
+  sprawdz("w dniu maksów bez „Jak trenować” — nie ma ocen ani serii roboczych",
+    !(await s.locator("#jak-trenowac").isVisible()));
   const kartyMaksow = s.locator("#cwiczenia .cwiczenie");
   const przysiadMaks = kartyMaksow.first();
   sprawdz("przy boju obecne 1RM, instrukcja próby i bez ocen „za łatwe”",
