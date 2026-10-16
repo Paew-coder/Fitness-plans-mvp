@@ -451,6 +451,15 @@ describe("katalog BAZY 5.17", () => {
     assert.equal(katalog.poId("EX-0035")?.skokKg, katalog.poNazwie("Dumbbell s/a row")?.skokKg);
   });
 
+  // Trener, 16.10.2026: „ćwiczenie s/l dragonflag eccentric ma dopisane
+  // »dobierz ciężar«, mimo że ciężar nie jest tam wykorzystywany”.
+  test("dragonflag ekscentryczny (S/l i B/l) na masie ciała — bez doboru ciężaru", () => {
+    for (const id of ["EX-0174", "EX-0006"]) {
+      assert.equal(katalog.poId(id)?.progresja, "masa ciała", id);
+      assert.equal(katalog.poId(id)?.skokKg, 0, id);
+    }
+  });
+
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(bazaTrenera.wKategorii("Tricep").length, 9);
     assert.equal(bazaTrenera.wKategorii(null).length, 166);

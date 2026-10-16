@@ -1111,9 +1111,26 @@ describe("rozgrzewka na początek dnia", () => {
     assert.equal(zapis.kod, 200);
     const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
     const { dane } = await api(`/api/klient/${token}`);
+    // Link, który nie prowadzi do filmu YouTube, zostaje linkiem — bez karty.
     assert.deepEqual(dane.tygodnie[2].dni[0].rozgrzewka,
-      { linie: ["5 min rower", "2 × 10 dead bug"], film: "https://youtu.be/abc" });
+      { linie: ["5 min rower", "2 × 10 dead bug"], film: "https://youtu.be/abc", karta: null });
     assert.equal(dane.tygodnie[2].dni[1].rozgrzewka, null, "dzień II bez rozgrzewki");
+  });
+
+  test("film rozgrzewki z YouTube gra w aplikacji — telefon dostaje kartę (16.10.2026)", async () => {
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Rozgrzewka Test").id;
+    const { zapisany } = (await api(`/api/plany/${id}`)).dane;
+    zapisany.plan.rozgrzewki = [{ dzien: 1, tekst: "5 min rower", film: "https://youtube.com/shorts/fL2C8V9-GVE" }];
+    const { kod } = await api(`/api/plany/${id}`, "PUT", { plan: zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: zapisany.zmieniony });
+    assert.equal(kod, 200);
+    await api(`/api/plany/${id}/zatwierdz`, "POST");
+    const token = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+    const { dane } = await api(`/api/klient/${token}`);
+    const r = dane.tygodnie[2].dni[0].rozgrzewka;
+    assert.equal(r.karta.nazwa, "Rozgrzewka");
+    assert.equal(r.karta.wideo.youtubeId, "fL2C8V9-GVE");
+    assert.equal(r.film, "https://youtube.com/shorts/fL2C8V9-GVE");
   });
 
   test("link spoza http(s) nie wejdzie do planu", async () => {
@@ -1272,7 +1289,7 @@ describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
     assert.ok(dane.some((c: any) => c.biblioteka === "catalyst") && dane.some((c: any) => c.biblioteka === "tom"));
   });
 
-  test("telefon dostaje kartę z opisem i filmem; inne ćwiczenie — dotychczasowy link", async () => {
+  test("telefon dostaje kartę z opisem i filmem; ćwiczenie z linkiem z arkusza — kartę z tym filmem", async () => {
     await api("/api/plany", "POST", { klient: "Film Test", wersja: 1 });
     const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Film Test").id;
     const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
@@ -1296,7 +1313,9 @@ describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
     // Ciężary i serie liczą się jak dotąd — film niczego w planie nie zmienia.
     assert.equal(typeof lawka.ciezar, "number");
     const rotacja = dzien.cwiczenia.find((c: any) => c.positionId === plan.sloty[1].positionId);
-    assert.equal(rotacja.karta, null);
+    // Od 16.10.2026 link YouTube z arkusza też gra w aplikacji, nie na YouTube.
+    assert.equal(rotacja.karta.wideo.youtubeId, "t5Ft8OMG_D8");
+    assert.equal(rotacja.karta.wideo.link, "https://youtu.be/t5Ft8OMG_D8");
     assert.equal(rotacja.film, "https://youtu.be/t5Ft8OMG_D8");
     const pomiar = dane.doZmierzenia.find((p: any) => p.cwiczenieId === "EX-0011");
     assert.equal(pomiar.karta.wideo.youtubeId, "ejI1Nlsul9k");

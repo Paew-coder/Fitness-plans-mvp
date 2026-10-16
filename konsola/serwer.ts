@@ -39,7 +39,7 @@ import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
-import { filmyCwiczenia, idZLinkuYoutube, kartaCwiczenia, kartaPodgladu } from "../silnik/src/wideo.ts";
+import { filmyCwiczenia, idZLinkuYoutube, kartaDlaKlienta, kartaPodgladu, kartaRozgrzewki } from "../silnik/src/wideo.ts";
 import { bojGlownySlotu, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
@@ -959,7 +959,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
   const rozgrzewka = (dzien: number) => {
     const r = zapisany.plan.rozgrzewki?.find((x) => x.dzien === dzien);
     const linie = (r?.tekst ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
-    return r && (linie.length > 0 || r.film) ? { linie, film: r.film ?? null } : null;
+    // Film rozgrzewki z YouTube też gra w aplikacji (16.10.2026).
+    return r && (linie.length > 0 || r.film)
+      ? { linie, film: r.film ?? null, karta: kartaRozgrzewki(r.film) }
+      : null;
   };
 
   const kalibracjaW = (cwiczenieId: string, positionId: string, tydzien: number) => {
@@ -1043,9 +1046,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             nazwa: s.cwiczenie!.nazwa,
             film: s.cwiczenie!.film ?? null,
             // Karta ćwiczenia z filmem w aplikacji (09.10.2026, test OPEX):
-            // opis i odtwarzacz zamiast linku do YouTube. `null` dla ćwiczeń
-            // bez wpisu w filmach — tam zostaje `film`.
-            karta: kartaCwiczenia(s.cwiczenie!),
+            // opis i odtwarzacz zamiast linku do YouTube. Od 16.10.2026 także
+            // dla linku YouTube z arkusza. `null` tylko bez filmu z YouTube —
+            // tam zostaje `film`.
+            karta: kartaDlaKlienta(s.cwiczenie!),
             jednostronne: s.cwiczenie!.jednostronne ?? false,
             // Skok ciężaru z BAZY — telefon zaokrągla do niego korektę ±5 %
             // w trakcie treningu (ocena przy serii, 26.09.2026).
@@ -1124,7 +1128,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
         cwiczenieId: id,
         nazwa: slot?.cwiczenie?.nazwa ?? id,
         film: slot?.cwiczenie?.film ?? null,
-        karta: slot?.cwiczenie ? kartaCwiczenia(slot.cwiczenie) : null,
+        karta: slot?.cwiczenie ? kartaDlaKlienta(slot.cwiczenie) : null,
         // Wpis z kalibracji to `1RM × 1` — prawda dla silnika, ale w polach
         // serii maksymalnej wyglądałby jak seria, której klient nie zrobił.
         // Pola zostają puste, a skąd jest 1RM, mówi `kalibracja`.

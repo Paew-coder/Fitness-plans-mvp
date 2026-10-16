@@ -106,7 +106,8 @@ NAZWA 14.
   ćwiczenia jednym dotknięciem — ta sama karta, co u klienta, z przyciskami
   nagrań. Na przycisku liczba nagrań („▶ 6”); ćwiczenie BAZY tylko z linkiem
   w arkuszu też gra w karcie (podpis „link z arkusza”); bez filmu — przycisk
-  wyszarzony. U klienta bez zmian: link z arkusza zostaje linkiem.
+  wyszarzony. U klienta od 16.10.2026 też: link YouTube z arkusza gra
+  w karcie w aplikacji (podpis „wybrany przez trenera”).
 - **Eksport do arkusza**: ćwiczenia spoza zakładki BAZA szablonu są
   dopisywane na jej końcu (nazwa, kategoria, part, coeff, skok, progresja,
   film, id), a nazwane zakresy BAZA_* / LISTA_* i formuły LISTY rozszerzane —

@@ -14,7 +14,8 @@ import { katalog } from "../src/katalog.ts";
 import { BAZA_CWICZEN } from "../src/dane/cwiczenia.ts";
 import { FILMY_CWICZEN, ZRODLA_WIDEO } from "../src/dane/filmy.ts";
 import {
-  filmyCwiczenia, idZLinkuYoutube, kartaCwiczenia, kartaPodgladu, sprawdzFilmy, wideoCwiczenia, type WpisWideo,
+  filmyCwiczenia, idZLinkuYoutube, kartaCwiczenia, kartaDlaKlienta, kartaPodgladu, kartaRozgrzewki,
+  sprawdzFilmy, wideoCwiczenia, type WpisWideo,
 } from "../src/wideo.ts";
 import { dobierzCwiczenia } from "../src/dobor-cwiczen.ts";
 import type { Plan } from "../src/plan.ts";
@@ -144,15 +145,46 @@ describe("podgląd filmów w konsoli (▶ przy ćwiczeniu w planie, 10.10.2026)"
     assert.deepEqual(kartaPodgladu(c), kartaCwiczenia(c));
   });
 
-  test("ćwiczenie BAZY tylko z linkiem w arkuszu: link jako film w karcie — u klienta dalej link", () => {
+  test("ćwiczenie BAZY tylko z linkiem w arkuszu: link jako film w karcie", () => {
     const c = katalog.poId("EX-0062")!;
-    assert.equal(kartaCwiczenia(c), null, "klient: bez karty, zwykły link");
+    assert.equal(kartaCwiczenia(c), null, "bez wpisu w filmach");
     const k = kartaPodgladu(c)!;
     assert.equal(k.filmy.length, 1);
     assert.equal(k.wideo?.youtubeId, idZLinkuYoutube(c.film));
     assert.equal(k.wideo?.link, c.film);
     assert.match(k.wideo!.zrodlo.nazwa, /arkusz/);
     assert.equal(k.nazwa, c.nazwa);
+  });
+
+  // Trener, 16.10.2026: „przycisk film przenosi do YouTube zamiast otwierać
+  // film w aplikacji”.
+  test("klient: link YouTube z arkusza też gra w karcie — podpis bez słowa „arkusz”", () => {
+    const c = katalog.poId("EX-0174")!;
+    assert.match(c.film!, /youtube\.com\/shorts\//);
+    const k = kartaDlaKlienta(c)!;
+    assert.equal(k.wideo?.youtubeId, "fL2C8V9-GVE");
+    assert.equal(k.wideo?.link, c.film);
+    assert.doesNotMatch(k.wideo!.zrodlo.nazwa, /arkusz|BAZA/);
+    assert.equal(k.wideo!.zrodlo.platforma, "YouTube");
+    // Ćwiczenie z wpisami w filmach — bez zmian, ta sama karta co dotąd.
+    const lawka = katalog.poId("EX-0011")!;
+    assert.deepEqual(kartaDlaKlienta(lawka), kartaCwiczenia(lawka));
+  });
+
+  test("każde ćwiczenie BAZY z linkiem YouTube ma u klienta kartę z filmem", () => {
+    const zLinkiem = katalog.bazaTrenera.filter((c) => idZLinkuYoutube(c.film));
+    assert.ok(zLinkiem.length > 100);
+    for (const c of zLinkiem) assert.ok(kartaDlaKlienta(c)?.wideo, c.nazwa);
+  });
+
+  test("rozgrzewka: link YouTube → karta z filmem; inny link albo brak → bez karty", () => {
+    const k = kartaRozgrzewki("https://youtu.be/t5Ft8OMG_D8")!;
+    assert.equal(k.nazwa, "Rozgrzewka");
+    assert.equal(k.wideo?.youtubeId, "t5Ft8OMG_D8");
+    assert.deepEqual(k.filmy, [k.wideo]);
+    assert.equal(kartaRozgrzewki("https://vimeo.com/123456"), null);
+    assert.equal(kartaRozgrzewki("https://youtu.be/abc"), null, "złe id filmu");
+    assert.equal(kartaRozgrzewki(null), null);
   });
 
   test("ćwiczenie bez filmu i bez linku — brak karty", () => {

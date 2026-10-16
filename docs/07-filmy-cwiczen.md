@@ -82,8 +82,10 @@ techniki). `filmyCwiczenia(id)` zwraca najpierw pokazy, potem poradniki;
 - `sprawdzFilmy()` pilnuje spójności, gdy wpisów będą setki: istniejące
   ćwiczenie, znane źródło i rola, ten sam film najwyżej raz przy ćwiczeniu,
   unikalne id, poprawne id YouTube.
-- Ćwiczenia bez wpisu zostają przy dotychczasowym linku `film` z arkusza
-  (otwiera YouTube w nowej karcie) — jak przed testem.
+- Ćwiczenia bez wpisu, ale z linkiem YouTube w arkuszu: od 16.10.2026 ten
+  link gra w tej samej karcie (`kartaDlaKlienta`, podpis „wybrany przez
+  trenera”), tak samo film rozgrzewki dnia (`kartaRozgrzewki`). Link spoza
+  YouTube zostaje linkiem (nowa karta przeglądarki).
 
 ## 4. Karta ćwiczenia w aplikacji klienta
 
@@ -123,7 +125,8 @@ TOP SECIE) i przy seriach maksymalnych.
 pod adresem https z nagłówkami jak w produkcji), na telefonie i komputerze:
 
 - ćwiczenie w bibliotece (raz, EX-0011, z filmem) i w planie;
-- przycisk filmu przy wyciskaniu, zwykły link przy innym ćwiczeniu;
+- przycisk filmu przy wyciskaniu i przy ćwiczeniu z linkiem z arkusza
+  (ten film gra w karcie, podpis bez słowa „arkusz”);
 - karta: nazwy, mięśnie, sprzęt, kategoria, podpis źródła; cała na ekranie;
 - ramka: `youtube-nocookie.com/embed/ejI1Nlsul9k`, `playsinline=1`,
   `enablejsapi=1`, `origin`, polityka Referera;
