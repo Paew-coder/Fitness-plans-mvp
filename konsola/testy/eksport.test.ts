@@ -72,6 +72,18 @@ describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
     [[6, 3, 70], [6, 3, 72], [5, 3, 75], [6, 2, 75], [6, 2, 78], [5, 2, 80]]);
   });
 
+  test("bench press na B1 to bój — powtórzenia i ciężar wprost, arkusz liczyłby akcesorium (16.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.sloty[1]!.cwiczenieId = "EX-0011";   // B1. Barbell bench press
+    zapisany.plan.serieMaksymalne.push({ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 });
+    const wynik = przeliczPlan(zapisany.plan);
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual([1, 2, 3].map((t) => [pole(dane, "D1-S02", t).serie, pole(dane, "D1-S02", t).powtorzenia_reczne,
+      pole(dane, "D1-S02", t).ciezar_reczny]),
+    [1, 2, 3].map((t) => [6 - (t > 1 ? 1 : 0), wynik.tygodnie[t - 1]!.sloty[1]!.powtorzenia,
+      wynik.tygodnie[t - 1]!.sloty[1]!.ciezar]));
+  });
+
   test("serie i RPE lecą policzone, nawet gdy trener ich nie ruszył", () => {
     const zapisany = planDomyslny();
     const wynik = przeliczPlan(zapisany.plan);

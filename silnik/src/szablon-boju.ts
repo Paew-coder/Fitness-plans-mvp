@@ -19,7 +19,7 @@
  * otwiera drugi blok.
  */
 import type { ParametryTygodnia } from "./plan.ts";
-import type { Coeff, CzescPlanu, Tydzien } from "./typy.ts";
+import type { Coeff, CzescPlanu, Progresja, Tydzien } from "./typy.ts";
 import { jestHipertrofia } from "./typy.ts";
 
 export type ParametryBoju = { serie: number; powtorzenia: number; rpe: number };
@@ -112,9 +112,18 @@ export function pozycjaBoju(lp: string): boolean {
 }
 
 /**
- * Bój główny: pozycja A **i** ćwiczenie złożone.
+ * Bój główny: ćwiczenie złożone (coeff 1,0) z ciężarem — **na każdej pozycji**.
  *
- * Sama pozycja nie wystarcza i to jest tu sedno. Arkusz rozstrzygał o tym
+ * Trener, 16.10.2026: „mam ćwiczenie barbell bench press jako B1 i liczy mi się
+ * jako akcesorium — zrób tak, żeby ćwiczenia, które mają swoją własną
+ * progresję, zawsze miały ją docelowo w planie niezależnie od miejsca
+ * w rozpisce”. Do tego dnia bojem była tylko pozycja A (niżej — dlaczego
+ * sama pozycja nie wystarczała); poza A trzeba było klikać „G”. Teraz
+ * pozycja liczy się tylko przy złożonych bez kilogramów (dipy na masie ciała,
+ * przysiad bułgarski z asystą) — tam bój w A jak dotąd, a gdzie indziej ich
+ * własny automat powtórzeń. „G” dalej przestawia rolę w obie strony.
+ *
+ * Historia reguły. Sama pozycja nie wystarcza i to jest tu sedno. Arkusz rozstrzygał o tym
  * miejscem w tabeli, bo trener wypełniał go ręcznie i po prostu nie wstawiał
  * w A1 ćwiczenia balansowego. Aplikacja pozwala wstawić tam cokolwiek —
  * i wstawiała: „SLDL balance" w A1 dostawał progresję bloku (6×6 na RPE 6,5)
@@ -134,9 +143,13 @@ export function pozycjaBoju(lp: string): boolean {
  * Wiosłowanie w pozycji A dostaje więc progresję akcesorium, czyli powtórzenia
  * liczone z `coeff` i RPE z bloku, a nie dwukolumnowy szablon boju.
  */
-export function jestBojemGlownym(lp: string, coeff?: Coeff): boolean {
-  return pozycjaBoju(lp) && coeff === 1;
+export function jestBojemGlownym(lp: string, coeff?: Coeff, progresja?: Progresja): boolean {
+  if (coeff !== 1) return false;
+  return (progresja !== undefined && PROGRESJE_BOJU_WSZEDZIE.includes(progresja)) || pozycjaBoju(lp);
 }
+
+/** Progresje z kilogramami — przy nich bój obowiązuje na każdej pozycji (16.10.2026). */
+export const PROGRESJE_BOJU_WSZEDZIE: readonly Progresja[] = ["kg", "dodatkowy ciężar"];
 
 /**
  * Bój główny w konkretnym slocie: decyzja trenera, a bez niej reguła wyżej.
@@ -147,9 +160,9 @@ export function jestBojemGlownym(lp: string, coeff?: Coeff): boolean {
  * trener może ją przestawić przy ćwiczeniu w obie strony — przyciskiem „G".
  */
 export function bojGlownySlotu(
-  slot: { lp: string; bojGlowny?: boolean }, coeff?: Coeff,
+  slot: { lp: string; bojGlowny?: boolean }, coeff?: Coeff, progresja?: Progresja,
 ): boolean {
-  return slot.bojGlowny ?? jestBojemGlownym(slot.lp, coeff);
+  return slot.bojGlowny ?? jestBojemGlownym(slot.lp, coeff, progresja);
 }
 
 /**
@@ -339,7 +352,7 @@ export function procentTopSetuDwuboju(czesc: CzescPlanu, tydzien: Tydzien, bojSi
 export function parametrySzablonu(
   slot: { lp: string; bojGlowny?: boolean; bojSilowy?: boolean },
   tydzien: Tydzien,
-  cwiczenie: { id: string; coeff?: Coeff } | null | undefined,
+  cwiczenie: { id: string; coeff?: Coeff; progresja?: Progresja } | null | undefined,
   czescPlanu: CzescPlanu,
 ): ParametryTygodnia {
   if (dwubojSlotu(slot, cwiczenie?.id)) {
@@ -353,7 +366,7 @@ export function parametrySzablonu(
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }
   return progresjaSlotu(slot.lp, tydzien, cwiczenie?.coeff,
-    czescBoju(czescPlanu, slot.bojSilowy), slot.bojGlowny);
+    czescBoju(czescPlanu, slot.bojSilowy), slot.bojGlowny, cwiczenie?.progresja);
 }
 
 /**
@@ -374,8 +387,10 @@ export function progresjaSlotu(
   czesc: CzescPlanu = "objętość",
   /** Decyzja trenera przy slocie (`SlotPlanu.bojGlowny`); pusto = reguła. */
   bojGlownyTrenera?: boolean,
+  /** Progresja ćwiczenia — z kilogramami bój obowiązuje na każdej pozycji. */
+  progresja?: Progresja,
 ): ParametryTygodnia {
-  if (bojGlownyTrenera ?? jestBojemGlownym(lp, coeff)) {
+  if (bojGlownyTrenera ?? jestBojemGlownym(lp, coeff, progresja)) {
     const p = PROGRESJA_BOJU[czesc][tydzien - 1]!;
     return { serie: p.serie, powtorzenia: p.powtorzenia, rpe: p.rpe };
   }

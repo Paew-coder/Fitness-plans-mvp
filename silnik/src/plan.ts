@@ -105,8 +105,9 @@ export type SlotPlanu = {
    */
   trybCiezaru?: TrybAkcesoriow;
   /**
-   * Bój główny z decyzji trenera — w obie strony. Pusto = reguła: pozycja A
-   * i ćwiczenie złożone (`jestBojemGlownym`). Patrz `bojGlownySlotu`.
+   * Bój główny z decyzji trenera — w obie strony. Pusto = reguła: złożone
+   * z ciężarem na każdej pozycji, bez kilogramów — w A (`jestBojemGlownym`).
+   * Patrz `bojGlownySlotu`.
    */
   bojGlowny?: boolean;
   /**
@@ -310,7 +311,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       } as SlotWyliczony;
     }
 
-    const bojGlowny = bojGlownySlotu(slot, cwiczenie.coeff);
+    const bojGlowny = bojGlownySlotu(slot, cwiczenie.coeff, cwiczenie.progresja);
     const odczucia = Object.fromEntries(
       TYGODNIE.map((t) => [t, parametry(slot, t).feedback]),
     ) as Partial<Record<Tydzien, Feedback | undefined>>;
@@ -474,7 +475,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         // Bój siłowy w hipertrofii niesie RPE TOP SETU części siłowej.
         const slotZrodla = plan.sloty.find((s) => s.positionId === t.slotPositionId);
         const silowy = !!slotZrodla?.bojSilowy && !!zrodlo?.cwiczenie
-          && bojGlownySlotu(slotZrodla, zrodlo.cwiczenie.coeff);
+          && bojGlownySlotu(slotZrodla, zrodlo.cwiczenie.coeff, zrodlo.cwiczenie.progresja);
         // Dwubój (16.10.2026): TOP SET w % 1RM — w bloku intensyfikującym od T4.
         const procent = zrodlo?.dwuboj
           ? t.procentTygodni?.[tydzien]

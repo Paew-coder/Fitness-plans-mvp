@@ -897,6 +897,16 @@ Trener: „nie podoba mi się ten opis »najpierw test 1RM« przy ćwiczeniu Cle
 
 * Językiem sali: w kolumnie ciężaru „sprawdź maks”, blok „Najpierw sprawdź swój maks” („rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz do najcięższego powtórzenia, które zrobisz czysto i szybko… następnie robisz już serie z planu” — końcówka wg trenera), przycisk „Zapisz maks”, w „Jak trenować” punkt „Rwanie i zarzut bez maksa”, na ekranie serii maksymalnych „Twój maks to najcięższe powtórzenie zrobione czysto i szybko…”. Działanie bez zmian. SW `trening-v72`.
 
+**67. Ćwiczenia z własną progresją — na każdej pozycji — 16.10.2026.**
+
+Trener: „rozpisuję teraz plan i mam ćwiczenie barbell bench press jako B1 i liczy mi się jako akcesorium — zrób tak, żeby ćwiczenia, które mają swoją własną progresję, zawsze miały ją docelowo w planie niezależnie od miejsca w rozpisce”.
+
+* **Reguła boju** (`jestBojemGlownym`): złożone z ciężarem (coeff 1,0, progresja `kg` albo `dodatkowy ciężar`) — bój na każdej pozycji. Złożone bez kilogramów (Dips na masie ciała, Bulgarian squat assisted) — jak dotąd tylko w A; poza A ich własny automat. Pauzowane i dwubój — już wcześniej na każdej pozycji. „G” dalej przestawia rolę w obie strony (wyłączone = akcesorium z decyzji trenera). Konsola liczy tę samą regułę (`bojGlownyZReguly`).
+* Teraz bojem są więc wszędzie m.in.: Barbell bench press, back / low bar / front squat, Deadlift, Sumo, Trap bar, RDL, Hip thrust barbell, Push press, Pull up / Dips weighted, Walking lunges, Landmine core, Squat izo (15 sek) i 42 ćwiczenia z coeff 1,0 z bibliotek.
+* **Migracja bazy v9:** przy takich ćwiczeniach poza A zdejmuje liczby akcesorium wpisane przyciskiem „wpisz progresję” (3 serie i dokładnie RPE akcesorium, bez powtórzeń) — inaczej bench na B1 wyszedłby „3 × 6 @ 8”. Ręczne zmiany trenera, oceny i ciężary klienta zostają; plan trenera i wersja klienta.
+* **Import z arkusza:** arkusz liczy bój tylko w A, więc takie ćwiczenie poza A wchodzi z wyłączonym „G” — plan zostaje tym, czym był w arkuszu. **Eksport:** bój poza A idzie z ciężarem wprost (arkusz trzymałby go z bloku jak akcesorium).
+* Testy: silnik (front squat na B1 — bój; „G” wyłączone — akcesorium; dipy na masie ciała poza A — swój automat), migracja v9 (liczby automatu znikają, ręczne i ocena zostają, „G” wyłączone nietknięte), eksport (bench na B1). Przegląd konsoli: przysiad przeniesiony na B1 z podświetlonym „G” i progresją boju, wyłączenie „G”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

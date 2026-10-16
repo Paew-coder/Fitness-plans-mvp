@@ -12,6 +12,9 @@
 import type { DatabaseSync } from "node:sqlite";
 import { idKlienta } from "../nazwy.ts";
 import { katalog } from "../../silnik/src/katalog.ts";
+import {
+  DWUBOJ, jestBojemGlownym, PAUZOWANE, pozycjaBoju, progresjaSlotu,
+} from "../../silnik/src/szablon-boju.ts";
 
 export type Migracja = {
   /** Wersja, do której ta migracja doprowadza. */
@@ -316,6 +319,62 @@ function doWersji8(d: DatabaseSync): void {
   if (!maKolumne(d, "plan", "reset_od")) d.exec("ALTER TABLE plan ADD COLUMN reset_od TEXT");
 }
 
+/**
+ * Wersja 9 — złożone z ciężarem są bojem na każdej pozycji (16.10.2026).
+ *
+ * Trener: „mam barbell bench press jako B1 i liczy mi się jako akcesorium —
+ * zrób tak, żeby ćwiczenia, które mają swoją własną progresję, zawsze miały
+ * ją niezależnie od miejsca w rozpisce”. Reguła żyje w silniku
+ * (`jestBojemGlownym`), ale plany pamiętają liczby wpisane przyciskiem
+ * „wpisz progresję”, gdy takie ćwiczenie było jeszcze akcesorium: 3 serie
+ * i RPE akcesorium. Wpisane wygrywają z szablonem, więc bench na B1 wyszedłby
+ * „3 × 6 @ 8” — ani bój, ani akcesorium.
+ *
+ * Migracja zdejmuje **tylko te liczby, które wpisał automat** — 3 serie
+ * i dokładnie RPE akcesorium z tej pozycji i tygodnia, bez wpisanych
+ * powtórzeń. Liczby zmienione ręcznie przez trenera, oceny i ciężary klienta
+ * zostają. Plan trenera i wersja, którą widzi klient.
+ */
+function doWersji9(d: DatabaseSync): void {
+  const plany = d.prepare("SELECT trener_id, id, plan_json, plan_klienta_json FROM plan").all() as
+    { trener_id: number; id: string; plan_json: string; plan_klienta_json: string | null }[];
+  const zapisz = d.prepare(
+    "UPDATE plan SET plan_json = ?, plan_klienta_json = ? WHERE trener_id = ? AND id = ?");
+
+  type Slot = { lp?: string; cwiczenieId?: string | null; bojGlowny?: boolean;
+    tygodnie?: Record<string, Record<string, unknown>> };
+  const posprzataj = (json: string | null): { json: string | null; zmiana: boolean } => {
+    if (!json) return { json, zmiana: false };
+    let plan: { sloty?: Slot[] };
+    try { plan = JSON.parse(json); } catch { return { json, zmiana: false }; }
+    let zmiana = false;
+    for (const slot of plan.sloty ?? []) {
+      const c = slot.cwiczenieId ? katalog.poId(slot.cwiczenieId) : undefined;
+      const lp = slot.lp ?? "";
+      if (!c || slot.bojGlowny !== undefined || pozycjaBoju(lp)) continue;
+      if (PAUZOWANE[c.id] || DWUBOJ.has(c.id) || !jestBojemGlownym(lp, c.coeff, c.progresja)) continue;
+      for (const t of [1, 2, 3, 4, 5, 6] as const) {
+        const p = slot.tygodnie?.[t];
+        if (!p || p.powtorzenia !== undefined) continue;
+        const akcesorium = progresjaSlotu(lp, t);
+        if (p.serie === akcesorium.serie && p.rpe === akcesorium.rpe) {
+          delete p.serie;
+          delete p.rpe;
+          zmiana = true;
+        }
+      }
+    }
+    return { json: zmiana ? JSON.stringify(plan) : json, zmiana };
+  };
+
+  for (const wiersz of plany) {
+    const trenera = posprzataj(wiersz.plan_json);
+    const klienta = posprzataj(wiersz.plan_klienta_json);
+    if (!trenera.zmiana && !klienta.zmiana) continue;
+    zapisz.run(trenera.json, klienta.json, wiersz.trener_id, wiersz.id);
+  }
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -324,4 +383,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 6, opis: "wykonanie pamięta wszystkie serie, nie tylko najcięższą", wykonaj: doWersji6 },
   { doWersji: 7, opis: "wersja robocza planu — zmiany trenera czekają na zatwierdzenie", wykonaj: doWersji7 },
   { doWersji: 8, opis: "znacznik resetu planu — telefon zaczyna trening od nowa", wykonaj: doWersji8 },
+  { doWersji: 9, opis: "złożone z ciężarem są bojem na każdej pozycji — bez liczb akcesorium", wykonaj: doWersji9 },
 ];
