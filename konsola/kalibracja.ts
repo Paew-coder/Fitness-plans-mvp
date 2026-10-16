@@ -57,6 +57,9 @@ export function skalibruj(
   const slot = wynik.tygodnie[seria.tydzien - 1]?.sloty
     .find((s) => s.positionId === seria.positionId);
   if (!slot?.cwiczenie || !(slot.rpe > 0)) return null;
+  // Dwubój (16.10.2026) nie kalibruje się z serii roboczej — jego RPE to tylko
+  // odpowiednik procentu. Bez 1RM klient wpisuje próbę pojedynczego.
+  if (slot.dwuboj) return null;
   const id = slot.cwiczenie.id;
 
   const wpisy = plan.serieMaksymalne.filter((s) => s.cwiczenieId === id);

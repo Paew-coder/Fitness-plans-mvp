@@ -115,7 +115,8 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // im powtórzenia automatem akcesorium (8 zamiast 3).
         // Masa ciała (10.10.2026) też: w aplikacji powtórzenia rosną T1–T6
         // bez restartu w T4, a formuła arkusza zaczęłaby blok od nowa.
-        powtorzenia_reczne: bojGlowny || bezAutomatuArkusza || obliczony?.pauza
+        // Dwubój (16.10.2026) też — jego tabela jest tylko w aplikacji.
+        powtorzenia_reczne: bojGlowny || bezAutomatuArkusza || obliczony?.pauza || obliczony?.dwuboj
           || cwiczenie.progresja === "masa ciała"
           ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
           : (p.powtorzenia ?? null),
@@ -130,8 +131,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Pauzowane (02.10.2026): arkusz liczyłby im ciężar jak akcesorium
         // (trzymany z bloku), konsola — z RPE co tydzień. Mały ciężar po
         // ocenie (5 → 4 kg) arkusz zaokrągliłby z powrotem. Liczba wprost.
+        // Dwubój (16.10.2026): ciężar z % 1RM — arkusz zna tylko RPE, więc
+        // liczba wprost (RPE w arkuszu to wtedy odpowiednik dla stresu).
         ciezar_reczny: p.ciezarOverride
-          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie)
+          ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie || obliczony?.dwuboj)
             && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz

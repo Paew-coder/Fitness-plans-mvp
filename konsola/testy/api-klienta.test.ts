@@ -1321,3 +1321,74 @@ describe("karta ćwiczenia z filmem OPEX (09.10.2026)", () => {
     assert.equal(pomiar.karta.wideo.youtubeId, "ejI1Nlsul9k");
   });
 });
+
+/*
+ * Dwubój — rwanie i zarzut w % 1RM (trener, 16.10.2026: „to, co
+ * zaproponowałeś, mi się podoba … skok 1 kg, wdrażaj całość”). Bez 1RM klient
+ * robi test pojedynczego w pierwszym treningu, a nie dobiera ciężaru z RPE.
+ */
+describe("dwubój na telefonie", () => {
+  let id = "";
+  let t = "";
+  const clean = async () => (await api(`/api/klient/${t}`)).dane.tygodnie[0].dni[0].cwiczenia
+    .find((c: any) => c.cwiczenieId === "EX-0046");
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Dwubój Test", wersja: 1 });
+    id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Dwubój Test").id;
+    const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0046";   // Clean
+    plan.serieMaksymalne = [];
+    assert.equal((await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" })).kod, 200);
+    t = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+  });
+
+  test("bez 1RM: procent zamiast RPE i test 1RM zamiast doboru według RPE", async () => {
+    const c = await clean();
+    assert.deepEqual([c.dwuboj, c.procent, c.probaMaksu, c.dobierzCiezar, c.ciezar],
+      [true, 70, true, false, "— brak 1RM"]);
+    const pomiar = (await api(`/api/klient/${t}`)).dane.doZmierzenia.find((p: any) => p.cwiczenieId === "EX-0046");
+    assert.equal(pomiar.dwuboj, true);
+  });
+
+  test("seria robocza bez 1RM nie kalibruje — RPE dwuboju to tylko odpowiednik", async () => {
+    await api(`/api/klient/${t}/odczucie`, "POST", {
+      positionId: "D1-S01", tydzien: 1, serie: [{ ciezar: 60, powtorzenia: 3 }],
+    });
+    assert.equal((await clean()).ciezar, "— brak 1RM");
+  });
+
+  test("test 1RM (1 powtórzenie) liczy cały plan: 100 kg → 70 kg w T1", async () => {
+    const { kod } = await api(`/api/klient/${t}/serie`, "POST", { cwiczenieId: "EX-0046", ciezar: 100, powtorzenia: 1 });
+    assert.equal(kod, 200);
+    const c = await clean();
+    assert.deepEqual([c.ciezar, c.probaMaksu], [70, false]);
+  });
+
+  test("serie robocze dwuboju nie idą do propozycji 1RM", async () => {
+    await api(`/api/klient/${t}/odczucie`, "POST", {
+      positionId: "D1-S01", tydzien: 2, serie: [{ ciezar: 90, powtorzenia: 3 }],
+    });
+    const { dane } = await api(`/api/plany/${id}`);
+    assert.equal(dane.propozycje1RM.some((p: any) => p.cwiczenieId === "EX-0046"), false);
+  });
+
+  test("procent w planie: liczba 20–120, inaczej odmowa", async () => {
+    const { zapisany } = (await api(`/api/plany/${id}`)).dane;
+    zapisany.plan.sloty[0].tygodnie = { 1: { procent: 65 } };
+    const ok = await api(`/api/plany/${id}`, "PUT", { plan: zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: zapisany.zmieniony });
+    assert.equal(ok.kod, 200);
+    const po = (await api(`/api/plany/${id}`)).dane;
+    po.zapisany.plan.sloty[0].tygodnie = { 1: { procent: 500 } };
+    const zle = await api(`/api/plany/${id}`, "PUT", { plan: po.zapisany.plan, dataStartu: null,
+      status: "wysłany", zmieniony: po.zapisany.zmieniony });
+    assert.equal(zle.kod, 400);
+  });
+
+  test("lista ćwiczeń konsoli zna dwubój", async () => {
+    const lista = (await api("/api/cwiczenia")).dane;
+    assert.equal(lista.find((c: any) => c.id === "EX-0046").dwuboj, true);
+    assert.equal(lista.find((c: any) => c.id === "EX-0010").dwuboj, false);
+  });
+});

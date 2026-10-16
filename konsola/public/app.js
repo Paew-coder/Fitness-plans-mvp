@@ -1300,10 +1300,12 @@ $("#tryb-akcesoriow").onchange = (e) => {
  */
 function bojeZWpisanymiLiczbami() {
   // Pauzowane też — ich progresja zależy od części planu tak jak bój.
-  return obraz.zapisany.plan.sloty.some((s) => s.cwiczenieId && (bojGlowny(s) || liczonyPauza(s))
+  // Dwubój też (16.10.2026) — jego tabela zależy od części.
+  return obraz.zapisany.plan.sloty.some((s) => s.cwiczenieId
+    && (bojGlowny(s) || liczonyPauza(s) || liczonyDwuboj(s))
     && [1, 2, 3, 4, 5, 6].some((t) => {
       const p = s.tygodnie?.[t];
-      return p && (p.serie != null || p.powtorzenia != null || p.rpe != null);
+      return p && (p.serie != null || p.powtorzenia != null || p.rpe != null || p.procent != null);
     }));
 }
 
@@ -1665,18 +1667,26 @@ function rysujDniBezFokusu() {
        * wyczyszczenie wraca do szablonu. Dotyczy tygodnia, który stoi na
        * ekranie — tak samo jak serie i powtórzenia niżej.
        */
+      // Dwubój (16.10.2026): TOP SET w % 1RM, nie w RPE — to samo pole,
+      // inna jednostka i inny wpis w planie (`procentTygodni`).
+      const wProcentach = Boolean(zrodlo && liczonyDwuboj(zrodlo));
+      const polePlanu = wProcentach ? "procentTygodni" : "rpeTygodni";
+      const zSzablonu = wProcentach ? wyliczony?.procent : wyliczony?.rpe;
       const rpe = el("input");
-      rpe.type = "number"; rpe.step = "0.5"; rpe.min = "5"; rpe.max = "10";
+      rpe.type = "number";
+      rpe.step = wProcentach ? "1" : "0.5";
+      rpe.min = wProcentach ? "20" : "5";
+      rpe.max = wProcentach ? "120" : "10";
       rpe.style.width = "4rem";
-      rpe.placeholder = wyliczony?.rpe != null ? String(wyliczony.rpe) : "—";
-      rpe.value = top.rpeTygodni?.[tydzien] ?? "";
+      rpe.placeholder = zSzablonu != null ? String(zSzablonu) : "—";
+      rpe.value = top[polePlanu]?.[tydzien] ?? "";
       rpe.title = wyliczony?.rpe == null
-        ? `W T${tydzien} szablon nie przewiduje TOP SETU. Wpisz RPE, jeśli mimo to ma tu być.`
-        : `RPE w T${tydzien}. Puste = z szablonu (${wyliczony.rpe}).`;
+        ? `W T${tydzien} szablon nie przewiduje TOP SETU. Wpisz ${wProcentach ? "% 1RM" : "RPE"}, jeśli mimo to ma tu być.`
+        : `${wProcentach ? "% 1RM" : "RPE"} w T${tydzien}. Puste = z szablonu (${zSzablonu}).`;
       rpe.onchange = () => {
-        top.rpeTygodni = top.rpeTygodni ?? {};
-        if (rpe.value === "") delete top.rpeTygodni[tydzien];
-        else top.rpeTygodni[tydzien] = Number(rpe.value);
+        top[polePlanu] = top[polePlanu] ?? {};
+        if (rpe.value === "") delete top[polePlanu][tydzien];
+        else top[polePlanu][tydzien] = Number(rpe.value);
         zapiszPozniej();
         rysujDni();
       };
@@ -1694,7 +1704,7 @@ function rysujDniBezFokusu() {
       if (odKlienta) klient.title = "Ocena i ciężar TOP SETU wpisane przez klienta w tym tygodniu.";
       pasek.append(el("span", "etykieta", "TOP SET"),
         el("span", "", `${(zrodlo?.lp || "").replace(/\.$/, "")} ${nazwa}`.trim()),
-        el("span", "", "RPE"), rpe, klient,
+        el("span", "", wProcentach ? "% 1RM" : "RPE"), rpe, klient,
         el("span", "wynik", typeof wyliczony?.ciezar === "number"
           ? `${liczba(wyliczony.ciezar)} kg`
           : (wyliczony?.rpe == null ? `w T${tydzien} bez TOP SETU` : (wyliczony?.ciezar || "—"))),
@@ -1879,6 +1889,14 @@ function liczonyPauza(slot) {
 }
 
 /**
+ * Dwubój — rwanie i zarzut (16.10.2026): progresja w % 1RM na każdej pozycji,
+ * także w hipertrofii (tam tabela objętościowa). Ta sama reguła co w silniku
+ * (`dwubojSlotu`): nie, gdy trener ustawił „G”.
+ */
+const dwubojowe = (slot) => Boolean(cwiczenie(slot.cwiczenieId)?.dwuboj);
+const liczonyDwuboj = (slot) => dwubojowe(slot) && slot.bojGlowny === undefined;
+
+/**
  * „G” przy pauzowanym: zwykły bój ↔ progresja pauzowana. Bez trzeciego stanu
  * („akcesorium”) — trener wybrał, że pauzowane liczy się swoją progresją
  * zawsze, a „G” ma tylko robić z niego zwykły bój.
@@ -1886,8 +1904,9 @@ function liczonyPauza(slot) {
 function przelaczBojPauzy(slot) {
   if (slot.bojGlowny === true) delete slot.bojGlowny;
   else slot.bojGlowny = true;
+  // Ten sam przełącznik przy dwuboju — procent też należy do jego progresji.
   for (const p of Object.values(slot.tygodnie ?? {})) {
-    delete p.serie; delete p.powtorzenia; delete p.rpe;
+    delete p.serie; delete p.powtorzenia; delete p.rpe; delete p.procent;
   }
   zapiszPozniej();
   rysujDni();
@@ -2100,7 +2119,14 @@ function rysujSlot(slot, pusty) {
      *
      * Bój główny i tak zawsze liczy z RPE, więc przy nim tego nie pokazujemy.
      */
-    if (!poCyklu && pauzowane(slot) && !planHipertroficzny()) {
+    if (!poCyklu && dwubojowe(slot)) {
+      const g = el("button", `mikro ${slot.bojGlowny === true ? "wlaczony" : ""}`, "G");
+      g.title = slot.bojGlowny === true
+        ? "Liczone jak zwykły bój główny — kliknij, żeby wrócić do progresji dwuboju"
+        : "Dwubój: ciężar z % 1RM (cz.1 blok objętościowy, cz.2 intensyfikujący). Kliknij, żeby liczyć jak zwykły bój";
+      g.onclick = () => przelaczBojPauzy(slot);
+      strzalki.append(g);
+    } else if (!poCyklu && pauzowane(slot) && !planHipertroficzny()) {
       const g = el("button", `mikro ${slot.bojGlowny === true ? "wlaczony" : ""}`, "G");
       g.title = slot.bojGlowny === true
         ? "Liczone jak zwykły bój główny — kliknij, żeby wrócić do progresji pauzowanej"
@@ -2115,7 +2141,7 @@ function rysujSlot(slot, pusty) {
       g.onclick = () => przelaczBojGlowny(slot);
       strzalki.append(g);
     }
-    if (bojGlowny(slot) && planHipertroficzny() && !poCyklu) {
+    if ((bojGlowny(slot) || liczonyDwuboj(slot)) && planHipertroficzny() && !poCyklu) {
       const silowy = el("button", `mikro ${slot.bojSilowy ? "wlaczony" : ""}`, "S");
       silowy.title = slot.bojSilowy
         ? "Bój siłowy — kliknij, żeby liczyć go hipertroficznie jak resztę planu"
@@ -2124,7 +2150,7 @@ function rysujSlot(slot, pusty) {
       strzalki.append(silowy);
     }
     // Pauzowane i tak liczy ciężar z RPE co tydzień, jak bój.
-    if (!bojGlowny(slot) && !liczonyPauza(slot) && !poCyklu) {
+    if (!bojGlowny(slot) && !liczonyPauza(slot) && !liczonyDwuboj(slot) && !poCyklu) {
       const przelaczTryb = el("button", `mikro ${slot.trybCiezaru === "licz z RPE" ? "wlaczony" : ""}`, "R");
       przelaczTryb.title = slot.trybCiezaru === "licz z RPE"
         ? "Wróć do trybu z planu (ciężar trzymany z bloku)"
@@ -2150,6 +2176,12 @@ function rysujSlot(slot, pusty) {
     const znacznik = el("span", "znacznik-tryb znacznik-pauza", "P");
     znacznik.title = "Pauzowane — własna progresja z Twojej periodyzacji: "
       + "cz.1 jak Blok I, cz.2 jak Blok II, T6 jak T5. „G” zrobi z niego zwykły bój.";
+    numer.append(znacznik);
+  }
+  if (liczonyDwuboj(slot)) {
+    const znacznik = el("span", "znacznik-tryb znacznik-dwuboj", "D");
+    znacznik.title = "Dwubój — ciężar z % 1RM: cz.1 blok objętościowy, cz.2 intensyfikujący "
+      + "(hipertrofia: objętościowy). Zamiast RPE wpisujesz procent. „G” zrobi z niego zwykły bój.";
     numer.append(znacznik);
   }
   if (slot.trybCiezaru === "licz z RPE") {
@@ -2315,9 +2347,18 @@ function rysujSlot(slot, pusty) {
     "1",
     String(wyliczony?.powtorzenia ?? ""),
   ));
-  const komorkaRpe = poleLiczbowe(
-    parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", String(wyliczony?.rpe ?? ""));
+  // Dwubój (16.10.2026): w kolumnie RPE procent 1RM — z niego idzie ciężar.
+  const dwuboj = wyliczony?.dwuboj || liczonyDwuboj(slot);
+  const komorkaRpe = dwuboj
+    ? poleLiczbowe(parametry.procent, (v) => { parametry.procent = v; }, "1",
+      String(wyliczony?.procent1RM ?? ""))
+    : poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", String(wyliczony?.rpe ?? ""));
   komorkaRpe.classList.add("rpe");
+  if (dwuboj) {
+    komorkaRpe.classList.add("procent");
+    komorkaRpe.title = "% 1RM w tym tygodniu. Puste = z tabeli dwuboju.";
+    komorkaRpe.append(el("span", "jednostka", "%"));
+  }
   wiersz.append(komorkaRpe);
 
   const komorkaC = komorkaCiezaru(parametry, wyliczony);

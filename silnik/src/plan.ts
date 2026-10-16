@@ -13,7 +13,10 @@ import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
-import { bojGlownySlotu, czescBoju, parametrySzablonu, pauzaSlotu, type RodzajPauzy } from "./szablon-boju.ts";
+import {
+  bojGlownySlotu, czescBoju, DELOAD_DWUBOJU, DWUBOJ, dwubojSlotu, parametrySzablonu, pauzaSlotu,
+  procentTopSetuDwuboju, type RodzajPauzy,
+} from "./szablon-boju.ts";
 import { rpeTopSetu, zwyczajowyTopSet } from "./top-set.ts";
 import {
   bilansTygodnia,
@@ -26,7 +29,7 @@ import {
   type SlotObliczony,
   type TrybJednostronnych,
 } from "./stres.ts";
-import { procent1RM, rozwiaz1RM, type SeriaMaksymalna } from "./rpe.ts";
+import { procent1RM, rozwiaz1RM, rpeDlaProcentu, type SeriaMaksymalna } from "./rpe.ts";
 
 export const TYGODNIE: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 
@@ -56,6 +59,11 @@ export type ParametryTygodnia = {
   /** Puste = automat powtórzeń akcesoriów. Bój główny wymaga wpisu. */
   powtorzenia?: number;
   rpe?: number;
+  /**
+   * % 1RM — tylko przy dwuboju (`PROGRESJA_DWUBOJU`, 16.10.2026). Tam ciężar
+   * liczy się z procentu, nie z RPE; przy innych ćwiczeniach pole nic nie robi.
+   */
+  procent?: number;
   /** Podmiana ćwiczenia w T4–T6. */
   cwiczenieIdOverride?: string;
   /** 1RM wpisany ręcznie dla podmienionego ćwiczenia (kolumna AA). */
@@ -119,6 +127,8 @@ export type SlotPlanu = {
 export type TopSet = {
   dzien: number;
   wlaczony: boolean;
+  /** % 1RM TOP SETU przy dwuboju, osobno na każdy tydzień. Puste = szablon. */
+  procentTygodni?: Partial<Record<Tydzien, number>>;
   /**
    * RPE wpisane ręcznie, osobno na każdy tydzień. Puste = liczba z szablonu
    * (`PROGRESJA_TOP_SETU`), która rośnie o pół stopnia na tydzień.
@@ -193,6 +203,11 @@ export type SlotWyliczony = {
   stres: Stres;
   /** Liczone progresją pauzowaną (`PROGRESJA_PAUZY`) — konsola to pokazuje. */
   pauza?: RodzajPauzy;
+  /**
+   * Dwubój — ciężar z % 1RM (`procent1RM` to wtedy procent z planu), a RPE
+   * jest tylko odpowiednikiem dla stresu. Konsola i telefon pokazują procent.
+   */
+  dwuboj?: true;
   /** Mały ciężar przesunięty po ocenie o krok, którego arkusz nie robi (`widocznaZmiana`). */
   zmianaPoOcenie?: true;
 };
@@ -204,6 +219,8 @@ export type TopSetWyliczony = {
   cwiczenie: Cwiczenie | null;
   /** `null` = w tym tygodniu TOP SETU nie ma. W szablonie tak jest w T1. */
   rpe: number | null;
+  /** Przy dwuboju: % 1RM TOP SETU (RPE to wtedy tylko odpowiednik). */
+  procent?: number;
   ciezar: WynikCiezaru;
 };
 
@@ -315,6 +332,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // Pauzowane wyciskanie i przysiad mają własną progresję (02.10.2026) —
     // patrz `PROGRESJA_PAUZY`; ciężar liczy się wtedy jak przy boju, z RPE.
     const pauza = pauzaSlotu(slot, cwiczenie.id, plan.czescPlanu);
+    // Dwubój (16.10.2026): progresja w % 1RM, deload 4 × 2 na 70 %.
+    const dwuboj = dwubojSlotu(slot, cwiczenie.id);
     // Deload przy masie ciała wraca do powtórzeń z T1 (trener, 10.10.2026:
     // „deload może wracać liczbą powtórzeń do T1”). RPE o 1 niżej nic tu nie
     // ujmuje — ciężaru nie ma — więc ulżyć mogą tylko powtórzenia. Z T1 tego
@@ -322,15 +341,15 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     const powtorzeniaDeloadu = (w: SlotWyliczony) => cwiczenie.progresja !== "masa ciała" ? w.powtorzenia
       : wzorT1?.cwiczenie?.id === cwiczenie.id ? wzorT1.powtorzenia
         : powtorzeniaAkcesorium({ coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: 1, przezCalyCykl: true });
-    const szablon = wzor
-      ? { serie: wzor.serie, powtorzenia: powtorzeniaDeloadu(wzor), rpe: rpeDeloadu(wzor.rpe) }
+    const szablon: ParametryTygodnia = wzor
+      ? (dwuboj ? { ...DELOAD_DWUBOJU }
+        : { serie: wzor.serie, powtorzenia: powtorzeniaDeloadu(wzor), rpe: rpeDeloadu(wzor.rpe) })
       : parametrySzablonu(slot, tydzien as Tydzien, cwiczenie, plan.czescPlanu);
 
     const serie = p.serie ?? szablon.serie!;
     const efektywne = serieEfektywne(
       serie, cwiczenie.jednostronne, plan.liczenieJednostronnych ?? "jak w arkuszu",
     );
-    const rpe = p.rpe ?? szablon.rpe!;
     const powtorzenia =
       p.powtorzenia ??
       szablon.powtorzenia ??
@@ -342,6 +361,12 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         // Masa ciała: T1–T6 bez restartu w T4 (trener, 10.10.2026).
         przezCalyCykl: cwiczenie.progresja === "masa ciała",
       });
+    // Dwubój: procent z planu albo wpisany przez trenera; RPE tylko jako
+    // odpowiednik do stresu — wpisane RPE nic tu nie zmienia.
+    const procentDwuboju = dwuboj ? (p.procent ?? szablon.procent!) : undefined;
+    const rpe = procentDwuboju !== undefined
+      ? rpeDlaProcentu(powtorzenia, procentDwuboju)
+      : p.rpe ?? szablon.rpe!;
 
     const zmienione = cwiczenieIdOverride !== undefined && cwiczenieIdOverride !== slot.cwiczenieId;
     const oneRM = rozwiaz1RM(cwiczenie.id, plan.serieMaksymalne);
@@ -365,10 +390,11 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
 
     const kontekst = {
       tydzien: tydzien as Tydzien,
-      jestBojemGlownym: bojGlowny || pauza !== null,
+      jestBojemGlownym: bojGlowny || pauza !== null || dwuboj,
       trybAkcesoriow: slot.trybCiezaru ?? plan.trybAkcesoriow,
       powtorzenia,
       rpe,
+      ...(procentDwuboju !== undefined ? { procent: procentDwuboju } : {}),
       skokKg: cwiczenie.skokKg,
       progresja: cwiczenie.progresja,
       oneRM,
@@ -393,7 +419,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       serieEfektywne: efektywne,
       powtorzenia,
       rpe,
-      procent1RM: procent1RM(powtorzenia, rpe),
+      procent1RM: procentDwuboju ?? procent1RM(powtorzenia, rpe),
       oneRM,
       mnoznik,
       ciezar: p.ciezarOverride ?? przeniesiony?.kg ?? policzony,
@@ -402,6 +428,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         ? { ciezarZrodlo: { tydzien: przeniesiony.tydzien, kto: przeniesiony.kto } } : {}),
       stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
       ...(pauza ? { pauza } : {}),
+      ...(dwuboj ? { dwuboj: true as const } : {}),
       ...(zmianaPoOcenie && p.ciezarOverride === undefined && !przeniesiony ? { zmianaPoOcenie: true } : {}),
     };
   };
@@ -448,17 +475,26 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         const slotZrodla = plan.sloty.find((s) => s.positionId === t.slotPositionId);
         const silowy = !!slotZrodla?.bojSilowy && !!zrodlo?.cwiczenie
           && bojGlownySlotu(slotZrodla, zrodlo.cwiczenie.coeff);
-        const rpe = t.rpeTygodni?.[tydzien] ?? rpeTopSetu(czescBoju(plan.czescPlanu, silowy), tydzien);
+        // Dwubój (16.10.2026): TOP SET w % 1RM — w bloku intensyfikującym od T4.
+        const procent = zrodlo?.dwuboj
+          ? t.procentTygodni?.[tydzien]
+            ?? procentTopSetuDwuboju(plan.czescPlanu, tydzien, slotZrodla?.bojSilowy)
+          : undefined;
+        const rpe = procent !== undefined
+          ? (procent === null ? null : rpeDlaProcentu(1, procent))
+          : t.rpeTygodni?.[tydzien] ?? rpeTopSetu(czescBoju(plan.czescPlanu, silowy), tydzien);
         const cwiczenie = rpe === null ? null : (zrodlo?.cwiczenie ?? null);
         return {
           dzien: t.dzien,
           positionId: t.slotPositionId,
           cwiczenie,
           rpe,
+          ...(procent != null ? { procent } : {}),
           ciezar: cwiczenie
             ? obliczCiezarTopSetu({
                 oneRM: zrodlo!.oneRM,
                 rpe: rpe!,
+                ...(procent != null ? { procent } : {}),
                 skokKg: cwiczenie.skokKg,
                 progresja: cwiczenie.progresja,
               })
@@ -627,7 +663,8 @@ export function domyslneCwiczeniaMaksow(t6: TydzienWyliczony): string[] {
   const wynik: string[] = [];
   for (const s of t6.sloty) {
     const c = s.cwiczenie;
-    if (c && zwyczajowyTopSet(c.nazwa) && !wynik.includes(c.id)) wynik.push(c.id);
+    // Dwubój też (16.10.2026) — T8 to jego test 1RM, tak jak przy bojach.
+    if (c && (zwyczajowyTopSet(c.nazwa) || DWUBOJ.has(c.id)) && !wynik.includes(c.id)) wynik.push(c.id);
   }
   return wynik;
 }

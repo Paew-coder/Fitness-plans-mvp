@@ -813,6 +813,66 @@ const OPIS_TYGODNIA = {
 };
 
 /**
+ * Test 1RM dwuboju (trener, 16.10.2026). Przy rwaniu i zarzucie seria do
+ * odmowy nie ma sensu i jest ryzykowna, a dobór według RPE nie działa —
+ * plan stoi w procentach. Bez 1RM klient w pierwszym treningu dochodzi do
+ * najcięższego czystego powtórzenia, a wpisane idzie jako seria maksymalna
+ * (1 powtórzenie). Z niej serwer liczy cały plan; potem serie z planu.
+ */
+const TEST_1RM_DWUBOJU = "Najcięższe czyste powtórzenie: rozgrzej się i dojdź do niego w kilku "
+  + "podejściach — szybko i bez łamania techniki. Wpisz ten ciężar, powtórzenia: 1.";
+const TOP_SET_DWUBOJU_BEZ_1RM = "Najpierw test 1RM — przy seriach tego ćwiczenia. "
+  + "Z niego policzę ciężar TOP SETU.";
+
+/**
+ * Ćwiczenia, przy których test 1RM odbył się w tym treningu — po dojściu do
+ * maksimum klient jest rozgrzany, więc rampy do serii roboczych już nie
+ * pokazujemy. Pamięć tej sesji wystarczy: rampa i tak znika po 1. serii.
+ */
+const poTescie1RM = new Set();
+const kluczTestu = (c) => `${widok?.planId}:${biezacy?.tydzien}:${biezacy?.dzien}:${c.positionId}`;
+
+function blokProbyMaksu(c) {
+  const blok = el("div", "dobor proba-maksu");
+  blok.append(el("p", "proba-tytul", "Najpierw test 1RM"));
+  blok.append(el("p", "", "Rozgrzej się i w kilku podejściach dojdź do najcięższego czystego "
+    + "powtórzenia — szybko i bez łamania techniki. Wpisz ten ciężar: z niego policzę "
+    + "ciężary na cały plan, a potem robisz serie z planu."));
+  const wiersz = el("div", "proba-pola");
+  const pole = el("input");
+  pole.type = "number"; pole.inputMode = "decimal"; pole.min = "0"; pole.step = "0.5";
+  pole.placeholder = "kg";
+  pole.setAttribute("aria-label", "Ciężar najcięższego czystego powtórzenia");
+  const zapisz = el("button", "glowny", "Zapisz 1RM");
+  zapisz.type = "button";
+  const notka = el("p", "drobne proba-notka");
+  zapisz.onclick = async () => {
+    const kg = Number(String(pole.value).replace(",", "."));
+    if (!(kg > 0)) { pole.focus(); return; }
+    zapisz.disabled = true;
+    poTescie1RM.add(kluczTestu(c));
+    await wyslij("/serie", { cwiczenieId: c.cwiczenieId, ciezar: kg, powtorzenia: 1 }, () => {
+      const p = widok?.doZmierzenia.find((x) => x.cwiczenieId === c.cwiczenieId);
+      if (p) { p.ciezar = kg; p.powtorzenia = 1; p.oneRM = kg; }
+    }, { odswiez: false });
+    // Ciężary liczy serwer — bez zasięgu test czeka w kolejce, a plan się
+    // przeliczy, gdy wróci połączenie.
+    const swiezy = dzienBiezacy()?.cwiczenia.find((x) => x.positionId === c.positionId);
+    if (swiezy?.probaMaksu) {
+      zapisz.disabled = false;
+      notka.textContent = `✓ Zapisane: ${liczba(kg)} kg. Ciężary policzę, gdy wróci zasięg.`;
+      return;
+    }
+    if (!$("#ekran-seria").classList.contains("ukryty")) rysujPanel();
+    else rysujTrening();
+  };
+  pole.onkeydown = (e) => { if (e.key === "Enter") zapisz.click(); };
+  wiersz.append(pole, el("span", "razy", "kg × 1"), zapisz);
+  blok.append(wiersz, notka);
+  return blok;
+}
+
+/**
  * Próba maksymalna — co zrobić i co wpisać. Ciężar w planie to obecne 1RM:
  * punkt odniesienia, nie polecenie. Wynik wchodzi do kolejnego cyklu.
  */
@@ -1043,6 +1103,11 @@ function rysujJakTrenowac(t, d) {
       ? [punkt("Wyjątek: „dobierz”", "tam ciężar wybierasz sam. Z pierwszej wpisanej serii",
         "policzę go na resztę planu.")]
       : []),
+    // Dwubój bez 1RM (16.10.2026) — test pojedynczego w pierwszym treningu.
+    ...(d.cwiczenia.some((c) => c.probaMaksu)
+      ? [punkt("„Test 1RM”", "przy rwaniu i zarzucie najpierw dojdź do najcięższego czystego",
+        "powtórzenia i wpisz je. Z niego policzę ciężary na cały plan.")]
+      : []),
   );
 }
 
@@ -1057,7 +1122,7 @@ function rysujJakTrenowac(t, d) {
  */
 function kolumnyZadania({
   seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne, podpisCiezaru = "Ciężar",
-  dopisekCiezaru = null, dopisekPowtorzen = null,
+  dopisekCiezaru = null, dopisekPowtorzen = null, procent = null, proba = false,
 }) {
   const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
@@ -1075,6 +1140,8 @@ function kolumnyZadania({
     kolumna("kolumna-ciezar", podpisCiezaru, liczba(ciezar), "kg", dopisekCiezaru);
   }
   else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "dobierz");
+  // Dwubój bez 1RM (16.10.2026): ciężar wyjdzie z testu pojedynczego.
+  else if (proba) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "test 1RM");
   else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"));
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
@@ -1082,7 +1149,9 @@ function kolumnyZadania({
   blok.append(siatka);
   // Samo „RPE 8", bez „2 w zapasie" — trener: dopisek zbędny. Co znaczy
   // RPE, mówi „Co to jest RPE?" tam, gdzie klient dobiera ciężar.
-  if (rpe) blok.append(el("div", "rpe-linia", `RPE ${liczba(rpe)}`));
+  // Dwubój (16.10.2026): procent 1RM zamiast RPE — z niego idzie ciężar.
+  if (procent) blok.append(el("div", "rpe-linia", `${liczba(procent)} % 1RM`));
+  else if (rpe) blok.append(el("div", "rpe-linia", `RPE ${liczba(rpe)}`));
   return blok;
 }
 
@@ -1247,8 +1316,11 @@ function kartaTopSetu(ts, d, stan) {
     ? `${liczba(ts.ciezar)} kg`
     : ts.ciezar === "— brak 1RM" ? "dobierz" : String(ts.ciezar || "—")));
   karta.append(wiersz);
-  karta.append(el("div", "drobne", `1 powtórzenie · RPE ${liczba(ts.rpe)}`));
-  if (ts.ciezar === "— brak 1RM") karta.append(el("div", "drobne", jakDobrac(1, ts.rpe)));
+  karta.append(el("div", "drobne", `1 powtórzenie · ${ts.procent
+    ? `${liczba(ts.procent)} % 1RM` : `RPE ${liczba(ts.rpe)}`}`));
+  if (ts.ciezar === "— brak 1RM") {
+    karta.append(el("div", "drobne", ts.procent ? TOP_SET_DWUBOJU_BEZ_1RM : jakDobrac(1, ts.rpe)));
+  }
   const klucz = `topset-${ts.positionId}`;
   const rampa = d.cwiczenia.find((c) => c.positionId === ts.positionId)?.rampa;
   if (rampa?.przed === "topset" && !d.ukonczony && !stan?.zrobione.has(klucz)) {
@@ -1329,6 +1401,7 @@ function kartaCwiczenia(c, stan = null) {
     ciezar: c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    procent: c.procent, proba: c.probaMaksu,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
     dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
@@ -1336,11 +1409,14 @@ function kartaCwiczenia(c, stan = null) {
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
+  if (c.probaMaksu) karta.append(blokProbyMaksu(c));
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
   // Rampa przed pierwszą serią roboczą — dopóki ćwiczenie nie jest zaczęte.
-  if (c.rampa?.przed === "seria" && ile === 0 && !seriaWpisana(c) && !dzienBiezacy()?.ukonczony) {
+  // Przy teście 1RM dwuboju nie: sam test to dochodzenie do ciężaru.
+  if (c.rampa?.przed === "seria" && ile === 0 && !seriaWpisana(c) && !dzienBiezacy()?.ukonczony
+    && !c.probaMaksu && !poTescie1RM.has(kluczTestu(c))) {
     karta.append(blokRampy(c.rampa));
   }
 
@@ -1509,7 +1585,8 @@ function naPowtorzeniaPlanu(kg, powt, c) {
   const t = widok?.tabelaRPE;
   const plan = Number(c.powtorzenia);
   const rpe = Number(c.rpe);
-  if (!t || !(kg > 0) || !(powt > 0) || !(plan > 0) || powt === plan || c.maks) return null;
+  // Dwubój (16.10.2026): RPE to tylko odpowiednik procentu — nie przeliczamy.
+  if (!t || !(kg > 0) || !(powt > 0) || !(plan > 0) || powt === plan || c.maks || c.procent) return null;
   const zrobione = t[powt]?.[rpe];
   const docelowe = t[plan]?.[rpe];
   if (!zrobione || !docelowe) return null;
@@ -1567,6 +1644,11 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
   blok.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
   // Trener, 16.10.2026: klient ma wiedzieć, że ocena sięga dalej niż ta seria.
   const co = c.ciezar === "masa ciała" ? "powtórzenia" : "ciężar";
+  // Dwubój (16.10.2026): o ciężarze decyduje technika i szybkość sztangi.
+  if (c.dwuboj) {
+    blok.append(el("p", "drobne podpowiedz-dwuboju",
+      "Oceniaj technikę i szybkość sztangi, nie zmęczenie."));
+  }
   blok.append(el("p", "drobne podpowiedz-oceny", !ostatnia
     ? `Jeśli jest OK — nic nie klikaj. Jeśli nie, dopasuję następną serię i ${co} `
       + "w kolejnych tygodniach."
@@ -1681,7 +1763,7 @@ async function czyNaPewnoLatwe(c, tydzien) {
   const zapas = wZapasie(c.rpe);
   const ostatnia = Number(zapas.split("–").pop());
   const slowo = zapas === "1" ? "powtórzenie" : ostatnia <= 4 ? "powtórzenia" : "powtórzeń";
-  const rpe = Number(c.rpe) > 0 && Number(c.rpe) < 10
+  const rpe = !c.procent && Number(c.rpe) > 0 && Number(c.rpe) < 10
     ? `W tym tygodniu celujemy w RPE ${liczba(c.rpe)}, czyli ${zapas} ${slowo} `
       + "w zapasie. Jeśli tyle mniej więcej Ci zostało, ćwiczenie jest "
       + "dokładnie takie, jakie ma być."
@@ -2052,6 +2134,7 @@ function krokiDnia(d) {
     // Karta z filmem także przy TOP SECIE (09.10.2026) — to samo ćwiczenie.
     karta: d.cwiczenia.find((c) => c.positionId === ts.positionId)?.karta ?? null,
     rpe: ts.rpe,
+    procent: ts.procent ?? null,
     nazwa: ts.cwiczenie.nazwa,
     ciezar: ts.ciezar,
     przerwa: ts.przerwaSekundy ?? PRZERWA_GDY_BRAK,
@@ -2354,9 +2437,10 @@ function panelTopSetu(k, kroki) {
   karta.append(gloweczka(k.lp || "", k.nazwa, null, k.karta ?? null));
   const bezCiezaru = k.ciezar === "— brak 1RM";
   karta.append(kolumnyZadania({
-    ciezar: k.ciezar, dobierz: bezCiezaru, powtorzenia: 1, rpe: k.rpe,
+    ciezar: k.ciezar, dobierz: bezCiezaru && !k.procent, proba: bezCiezaru && !!k.procent,
+    powtorzenia: 1, rpe: k.rpe, procent: k.procent,
   }));
-  if (bezCiezaru) karta.append(el("p", "dobor", jakDobrac(1, k.rpe)));
+  if (bezCiezaru) karta.append(el("p", "dobor", k.procent ? TOP_SET_DWUBOJU_BEZ_1RM : jakDobrac(1, k.rpe)));
   const d = dzienBiezacy();
   const rampa = d?.cwiczenia.find((c) => c.positionId === k.slotTopSetu)?.rampa;
   const ramkaRampy = rampa?.przed === "topset" && !prowadzenie.zrobione.includes(k.klucz)
@@ -2444,6 +2528,7 @@ function panelSerii(k, kroki, d) {
     seria: k.seria, zSerii: k.zSerii, ciezar: zPola ?? c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     powtorzenia: powtZPola ?? c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    procent: c.procent, proba: c.probaMaksu,
     dopisekPowtorzen: powtZPola !== null && c.powtorzenia ? `w planie ${c.powtorzenia}` : null,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
@@ -2456,11 +2541,13 @@ function panelSerii(k, kroki, d) {
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);
   if (c.dobierzCiezar) karta.append(doborCiezaru(c));
+  if (c.probaMaksu) karta.append(blokProbyMaksu(c));
   if (wlasnyCiezarDoWpisania(c)) karta.append(wskazowkaWlasnegoCiezaru());
   if (c.maks) karta.append(wskazowkaMaksu(c));
   if (c.kalibracja) karta.append(notkaKalibracji(c.kalibracja));
   // Rampa przed pierwszą serią roboczą (bez TOP SETU przy tym ćwiczeniu).
-  const ramkaRampy = c.rampa?.przed === "seria" && k.seria === 1 && !prowadzenie.zrobione.includes(k.klucz)
+  const ramkaRampy = !c.probaMaksu && !poTescie1RM.has(kluczTestu(c)) && c.rampa?.przed === "seria" && k.seria === 1
+    && !prowadzenie.zrobione.includes(k.klucz)
     ? blokRampy(c.rampa) : null;
   if (ramkaRampy) karta.append(ramkaRampy);
 
@@ -2567,7 +2654,10 @@ function panelSerii(k, kroki, d) {
   // Bez zdania w miejscu oceny (trener, 13.10.2026: „ten opis nie ma sensu na
   // tym panelu, bo i tak nie mamy tutaj tych przycisków”) — co robić, mówi
   // instrukcja doboru nad polami.
-  if (!c.maks && !dobieraCiezar(c)) karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
+  // Przy teście 1RM dwuboju też bez oceny — nie ma jeszcze ciężaru z planu.
+  if (!c.maks && !dobieraCiezar(c) && !c.probaMaksu) {
+    karta.append(ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt));
+  }
 
   const poprawka = prowadzenie.zrobione.includes(k.klucz);
   const zakoncz = el("button", "glowny szeroki", poprawka ? "Zapisz poprawkę" : "Zakończ serię");
@@ -2754,7 +2844,7 @@ function rysujPomiary() {
   const kontener = $("#pomiary");
   kontener.replaceChildren();
 
-  if (widok.doZmierzenia.some((p) => !p.bezSerii)) {
+  if (widok.doZmierzenia.some((p) => !p.bezSerii && !p.dwuboj)) {
     kontener.append(el("p", "wskazowka-pomiarow",
       `Jedna seria do odmowy, przy dobrej technice. Najwyżej ${MAKS_POWTORZEN} `
       + "powtórzeń — jeśli wychodzi więcej, dołóż kilogramów i spróbuj ponownie. "
@@ -2834,6 +2924,8 @@ function kartaPomiaru(p) {
     return karta;
   }
 
+  // Dwubój (16.10.2026): nie seria do odmowy, tylko najcięższe czyste powtórzenie.
+  if (p.dwuboj) karta.append(el("p", "powod proba-pomiaru", TEST_1RM_DWUBOJU));
   karta.append(zrodlo1RM(p));
 
   const naglowki = el("div", "etykiety");
@@ -2844,7 +2936,8 @@ function kartaPomiaru(p) {
   const wCiezar = el("input");
   const wPowt = el("input");
   for (const [input, wartosc, tytul] of [
-    [wCiezar, p.ciezar, "kg"], [wPowt, p.powtorzenia, "powt."],
+    // Dwubój: test to jedno powtórzenie — pole stoi od razu z jedynką.
+    [wCiezar, p.ciezar, "kg"], [wPowt, p.powtorzenia ?? (p.dwuboj ? 1 : null), "powt."],
   ]) {
     input.type = "number";
     input.inputMode = "decimal";

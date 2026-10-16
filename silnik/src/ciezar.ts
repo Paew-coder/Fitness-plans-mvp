@@ -67,6 +67,8 @@ export type KontekstCiezaru = {
   mnoznikBazowy?: number;
   /** Bez `widocznaZmiana` — tak, jak liczy arkusz. Do porównania w planie. */
   bezWidocznejZmiany?: boolean;
+  /** % 1RM wprost (dwubój, 16.10.2026) — zamiast procentu z tabeli RPE. */
+  procent?: number;
 };
 
 /** Tygodnie, w których akcesoria mogą dziedziczyć ciężar z tygodnia bazowego bloku. */
@@ -115,7 +117,7 @@ export function obliczCiezar(k: KontekstCiezaru): WynikCiezaru {
   const baza = zmienione ? (k.oneRMReczny ?? 0) : k.oneRM;
   if (!baza) return zmienione ? "— ustaw ręcznie" : "— brak 1RM";
 
-  const procent = procent1RM(k.powtorzenia, k.rpe);
+  const procent = k.procent ?? procent1RM(k.powtorzenia, k.rpe);
   if (procent === null) return "— ustaw ręcznie";
 
   const z = mround((baza * procent * k.mnoznik) / 100, skok);
@@ -132,12 +134,14 @@ export function obliczCiezar(k: KontekstCiezaru): WynikCiezaru {
 export function obliczCiezarTopSetu(args: {
   oneRM: number;
   rpe: number;
+  /** % 1RM wprost (dwubój) — zamiast procentu z tabeli RPE. */
+  procent?: number;
   skokKg: number;
   progresja: Progresja;
 }): WynikCiezaru {
   if (PROGRESJE_BEZ_CIEZARU.includes(args.progresja)) return "—" as WynikCiezaru;
   if (!args.oneRM) return "— brak 1RM";
-  const procent = procent1RM(1, args.rpe);
+  const procent = args.procent ?? procent1RM(1, args.rpe);
   if (procent === null) return "— ustaw ręcznie";
   return mround((args.oneRM * procent) / 100, Math.max(args.skokKg, SKOK_MINIMALNY));
 }

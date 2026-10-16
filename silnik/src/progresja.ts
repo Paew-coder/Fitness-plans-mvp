@@ -19,7 +19,7 @@ import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
 import type { Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { bojGlownySlotu, parametrySzablonu, pauzaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, dwubojSlotu, parametrySzablonu, pauzaSlotu } from "./szablon-boju.ts";
 
 export {
   PROGRESJA_BOJU, SERIE_AKCESORIUM, RPE_AKCESORIUM,
@@ -71,8 +71,10 @@ export function zastosujProgresje(
       const coeff = cwiczenie?.coeff;
       // Pauzowane mają progresję zależną od części planu, tak jak bój —
       // po zmianie części ich liczby też trzeba przepisać.
+      // Dwubój tak samo (16.10.2026) — jego tabela też zależy od części.
       if (opcje.tylkoBoje && !bojGlownySlotu(slot, coeff)
-        && !pauzaSlotu(slot, slot.cwiczenieId, plan.czescPlanu)) return { ...slot };
+        && !pauzaSlotu(slot, slot.cwiczenieId, plan.czescPlanu)
+        && !dwubojSlotu(slot, slot.cwiczenieId)) return { ...slot };
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
       for (const t of TYGODNIE) {
         tygodnie[t] = {

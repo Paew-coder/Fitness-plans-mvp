@@ -215,6 +215,15 @@ Tabela decyzyjna — powtórzona za `01-analiza-zrodel.md`, bo to najczęstsze �
 
 `mround(x, k)` = `Math.round(x / k) * k`. W T1 mnożnik = 1, więc wzór jest jednolity dla wszystkich sześciu tygodni.
 
+**Dwubój — procent zamiast RPE (16.10.2026).** Przy rwaniu i zarzucie
+(`DWUBOJ` w `szablon-boju.ts`) kontekst niesie `procent` i ciężar to
+`1RM × procent × AC`, bez tabeli RPE — ta zaczyna się od 76,5 % przy
+trójkach, a dwubój pracuje technicznie na 70–75 %. RPE slotu to wtedy
+`rpeDlaProcentu(powtorzenia, procent)` — tylko do stresu. Tabele:
+`PROGRESJA_DWUBOJU` (cz.1 objętość, cz.2 intensyfikacja), `DELOAD_DWUBOJU`
+(4 × 2 @ 70 %), `PROGRESJA_TOP_SETU_DWUBOJU` (88 / 91 / 93 % w T4–T6 cz.2).
+Skok tych ćwiczeń: 1 kg. Szczegóły: `docs/04-roadmapa.md`, punkt 65.
+
 ---
 
 ## 8. `stresSlotu` — trzy osie

@@ -16,6 +16,26 @@ export function procent1RM(powtorzenia: number, rpe: number): number | null {
 }
 
 /**
+ * RPE z tabeli najbliższe danemu %1RM przy tej liczbie powtórzeń — w drugą
+ * stronę niż `procent1RM`. Dla progresji w procentach (dwubój, 16.10.2026):
+ * ciężar idzie wprost z procentu, a RPE służy już tylko stresowi tygodnia.
+ * Poniżej tabeli (np. 3 powtórzenia przy 70 %) wychodzi 6 — jej początek.
+ */
+export function rpeDlaProcentu(powtorzenia: number, procent: number): number {
+  let najblizsze = 6;
+  let roznica = Infinity;
+  for (let rpe = 6; rpe <= 10; rpe += 0.5) {
+    const p = procent1RM(powtorzenia, rpe);
+    if (p === null) continue;
+    if (Math.abs(p - procent) < roznica) {
+      roznica = Math.abs(p - procent);
+      najblizsze = rpe;
+    }
+  }
+  return najblizsze;
+}
+
+/**
  * 1RM z serii maksymalnej. Seria do odmowy = RPE 10.
  * Odpowiednik START!E: `ciężar / (%1RM przy RPE 10 / 100)`, zaokrąglone do 0,1 kg.
  * Zwraca `null`, gdy powtórzenia wypadają poza tabelę (arkusz pokazuje wtedy "powt. 1–15").
