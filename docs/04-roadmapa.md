@@ -862,6 +862,16 @@ Trener: „ćwiczenie s/l dragonflag eccentric ma dopisane »dobierz ciężar«,
 * **Film w aplikacji**: ćwiczenia BAZY bez wpisu w filmach miały u klienta zwykły link do YouTube (w aplikacji grały tylko filmy sprawdzone oEmbedem). Sprawdzone 16.10.2026: 71 z 72 takich linków da się osadzić; jeden — **Barbell row dead stop pins** (EX-0017, `youtu.be/qelbH7YGpms`) — jest na YouTube niedostępny, do podmiany w arkuszu. Teraz link YouTube z arkusza gra w karcie w aplikacji (podpis „wybrany przez trenera”); film, którego nie da się odtworzyć, karta opisuje w ramce z linkiem do YouTube. Film rozgrzewki dnia — tak samo. Link spoza YouTube zostaje linkiem. SW `trening-v69`.
 * Testy: progresja obu dragonflagów, liczba ćwiczeń bez serii maksymalnej, karta klienta z linku (każde ćwiczenie BAZY z linkiem YouTube ma kartę), karta rozgrzewki, widok klienta. Przegląd filmu: przycisk karty przy ćwiczeniu z linkiem z arkusza, film `t5Ft8OMG_D8` w karcie, podpis bez „arkusza”; przegląd klienta: przycisk filmu w rozgrzewce.
 
+**63. „Jak trenować” na ekranie dnia; co robi wpisany ciężar — 16.10.2026.**
+
+Trener: „poinformować użytkownika o tym, że wpisanie przez niego w panelu ciężaru powoduje dostosowanie ciężaru w reszcie planu, a alternatywą jest któryś z przycisków za lekkie / za ciężkie … ewentualnie informacja, że można robić trening, patrząc po prostu na listę ćwiczeń, i oznaczać zrobione ćwiczenia, ewentualnie przejść do prowadzenia — żeby jasno zaznaczyć, że nie jest konieczne wchodzenie w panele”.
+
+Tekst zgodny z tym, jak aplikacja liczy: **kolejne tygodnie zmienia ocena** (przy masie ciała — powtórzenia). Wpisany ciężar, gdy ciężar jest z planu, idzie do historii i do trenera (propozycja 1RM — decyduje trener), a w prowadzeniu do następnej serii; na resztę planu przechodzi tylko przy „dobierz” (kalibracja z pierwszej serii, ciężar klienta przy ręcznym ustawieniu).
+
+* **Ekran dnia — „Jak trenować”** (zwijany baner nad „▶ Prowadź mnie seria po serii”): z listy (odhaczanie „OK”, ciężaru nie trzeba wpisywać, „Zakończ trening”), z prowadzeniem (nieobowiązkowe, powrót do listy w każdej chwili), co zmienia ciężar na kolejne tygodnie; w dniu z „dobierz” — wyjątek. Rozwinięty, dopóki klient raz go nie zwinie (pamięć telefonu). W dniu maksów go nie ma.
+* **Panel**: przy pierwszej serii ćwiczenia z ciężarem z planu — „Podniosłeś inny ciężar? Wpisz go — następną serię policzę od niego. Kolejne tygodnie zmienia ocena niżej.” Podpowiedź oceny przed ostatnią serią: „dopasuję następną serię i ciężar (powtórzenia) w kolejnych tygodniach”. Przy „dobierz” bez zmian — tam mówi instrukcja doboru. SW `trening-v70`.
+* Przegląd klienta: treść, miejsce przed prowadzeniem, zwinięcie zostaje, wyjątek „dobierz” w dniu z doborem, brak w dniu maksów; zdanie o wpisanym ciężarze tylko przy pierwszej serii i nie przy „dobierz”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

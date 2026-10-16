@@ -620,6 +620,15 @@ plan w konsoli, klient trenuje dalej na poprzedniej wersji — nic mu nie znika
 w połowie treningu — a zmiany zobaczy po zatwierdzeniu. Jego oceny i ciężary
 z tego czasu zostają w obu wersjach. Szczegóły: `konsola/wersja-robocza.ts`.
 
+## „Jak trenować” na ekranie dnia (od 16.10.2026)
+
+Nad przyciskiem prowadzenia zwijany baner: trenować można z samej listy
+(odhaczyć „OK”, ciężaru nie trzeba wpisywać), prowadzenie seria po serii jest
+nieobowiązkowe. Ciężar na kolejne tygodnie zmienia ocena „Za trudne / Za
+łatwe”; wpisany ciężar zobaczy trener, a w prowadzeniu następna seria idzie
+od niego. Wyjątek — „dobierz”: z pierwszej wpisanej serii liczy się reszta
+planu. Zwinięty raz zostaje zwinięty. Szczegóły: roadmapa, punkt 63.
+
 ## Dobieranie ciężaru bez oceny „za lekko / za ciężko” (od 10.10.2026)
 
 Gdy na panelu stoi **„dobierz”** — klient jeszcze nie robił tego ćwiczenia

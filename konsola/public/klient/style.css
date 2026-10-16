@@ -141,6 +141,13 @@ details.baner:not([open]) { background: var(--karta); border-color: var(--linia)
 details.baner:not([open]) > .baner-naglowek { margin-bottom: -1rem; padding-bottom: 1rem; }
 details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); }
 
+/* „Jak trenować” na ekranie dnia (16.10.2026) — ten sam zwijany baner. */
+.jak-lista { margin: .6rem 0 0 1.1rem; padding: 0; font-size: .88rem; line-height: 1.45;
+  color: var(--tekst-slaby); }
+.jak-lista li + li { margin-top: .35rem; }
+.jak-lista strong { color: var(--tekst); font-weight: 600; }
+.wpisany-ciezar { margin: .35rem 0 0; }
+
 /* ── tygodnie i dni ─────────────────────────────────────────────── */
 .tydzien { border-bottom: 1px solid var(--linia); }
 .tydzien[open] { padding-bottom: .6rem; }
