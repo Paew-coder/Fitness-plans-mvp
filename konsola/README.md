@@ -57,6 +57,20 @@ pyta o przepisanie także ich liczb. Eksport wpisuje do arkusza powtórzenia
 i ciężary wprost (arkusz tej progresji nie zna). Silnik: `PROGRESJA_PAUZY`,
 `pauzaSlotu` w `szablon-boju.ts`.
 
+**Dwubój — rwanie i zarzut w % 1RM** (od 16.10.2026). Clean, Clean pins
+i 31 wersji rwania i zarzutu z bibliotek (pełne, power, z zawieszenia,
+z bloków, zarzut z podrzutem) liczą się własną tabelą w procentach, na każdej
+pozycji. Cz.1 (blok objętościowy): 6×3 @70 · 6×3 @72 · 5×3 @75 · 6×2 @75 ·
+6×2 @78 · 5×2 @80 %. Cz.2 (intensyfikujący): 6×2 @80 · 6×2 @82 · 5×2 @85 ·
+8×1 @85 · 7×1 @88 · 5×1 @90 %. Deload 4×2 @70 %, TOP SET (opcjonalny) w cz.2
+od T4: 88 · 91 · 93 %. Hipertrofia — tabela objętościowa („S” — siłowa tego
+etapu). Skok 1 kg. W tabeli przy Lp. znacznik „D”, w kolumnie RPE stoi
+procent (wpisany idzie do planu jako `procent`); „G” przełącza na zwykły bój
+i z powrotem. Bez 1RM klient robi w pierwszym treningu test najcięższego
+czystego powtórzenia (zapis jako seria maksymalna × 1); dobór z RPE
+i propozycje 1RM z serii roboczych dwuboju nie działają celowo. Tydzień
+maksów domyślnie bierze też dwubój. Eksport: powtórzenia i ciężary wprost.
+
 **Bój główny przyciskiem „G"** — przy ćwiczeniu: podświetlone, gdy liczy się jak
 bój (progresja bloku, ciężar z RPE co tydzień). Kliknięcie zmienia rolę w obie
 strony, np. front squat na B1 jako bój, przysiad na A1 jako akcesorium.

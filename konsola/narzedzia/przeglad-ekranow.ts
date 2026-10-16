@@ -1748,6 +1748,46 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await a1T1()).serie === 5
       && (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].bojGlowny === undefined);
 
+  // Dwubój (16.10.2026): Clean na A1 — znacznik „D”, w kolumnie RPE procent
+  // 1RM (z tabeli: T1 70 %), wpisany procent idzie do planu, „G” robi bój.
+  // Pozycja ma kategorię z szablonu (wyciskanie) — na chwilę pełna baza.
+  const kategoriaA1 = await wierszA1.locator("td.szkielet select").inputValue();
+  await wierszA1.locator("td.szkielet select").selectOption("");
+  await s.waitForTimeout(800);
+  await tabelaD1.locator("td.cwiczenie select").first().selectOption("EX-0046");
+  await s.waitForTimeout(1500);
+  const dwubojT1 = await a1T1();
+  const poleProcentu = wierszA1.locator("td.rpe.procent input");
+  sprawdz("Clean na A1: znacznik „D”, 6 × 3 i w kolumnie RPE procent 1RM (70 %)",
+    await wierszA1.locator(".znacznik-dwuboj").count() === 1
+      && dwubojT1.serie === 6 && dwubojT1.powtorzenia === 3 && dwubojT1.procent1RM === 70
+      && await poleProcentu.getAttribute("placeholder") === "70"
+      && (await wierszA1.locator("td.rpe.procent").innerText()).includes("%"),
+    `${dwubojT1.cwiczenie?.nazwa} · ${dwubojT1.serie}×${dwubojT1.powtorzenia} · ${dwubojT1.procent1RM} %`);
+  await poleProcentu.fill("65");
+  await poleProcentu.dispatchEvent("change");
+  await s.waitForTimeout(1500);
+  const poWpisie = (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].tygodnie?.[1];
+  sprawdz("wpisany procent idzie do planu, a nie do RPE",
+    poWpisie?.procent === 65 && poWpisie?.rpe === undefined && (await a1T1()).procent1RM === 65,
+    JSON.stringify(poWpisie));
+  await wierszA1.getByRole("button", { name: "G", exact: true }).click();
+  await s.waitForTimeout(1500);
+  const dwubojJakBoj = await a1T1();
+  sprawdz("„G” przy dwuboju: zwykły bój (6 × 6 na RPE), bez „D” i bez wpisanego procentu",
+    dwubojJakBoj.serie === 6 && dwubojJakBoj.powtorzenia === 6 && !dwubojJakBoj.dwuboj
+      && await wierszA1.locator(".znacznik-dwuboj").count() === 0
+      && (await api(`/api/plany/${PLAN_NIEGOTOWY}`)).zapisany.plan.sloty[0].tygodnie?.[1]?.procent === undefined,
+    `${dwubojJakBoj.serie}×${dwubojJakBoj.powtorzenia} @${dwubojJakBoj.rpe}`);
+  await wierszA1.getByRole("button", { name: "G", exact: true }).click();
+  await s.waitForTimeout(1500);
+  sprawdz("drugie „G” wraca do progresji dwuboju",
+    (await a1T1()).dwuboj === true && await wierszA1.locator(".znacznik-dwuboj").count() === 1);
+  await tabelaD1.locator("td.cwiczenie select").first().selectOption("EX-0022");
+  await s.waitForTimeout(1500);
+  await wierszA1.locator("td.szkielet select").selectOption(kategoriaA1);
+  await s.waitForTimeout(800);
+
   // Rozgrzewka dnia (25.09.2026): pusta to sam przycisk, wpisana idzie do planu.
   await s.locator("#dni .dzien").first().getByRole("button", { name: "+ rozgrzewka" }).click();
   const edytor = s.locator("#dni .dzien").first().locator(".rozgrzewka-trenera");

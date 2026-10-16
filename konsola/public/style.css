@@ -239,6 +239,9 @@ button.mikro.wlaczony { color: var(--akcent); border-color: var(--akcent); font-
   background: var(--uwaga-tlo); color: var(--uwaga);
   font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .04em;
 }
+/* Dwubój (16.10.2026): procent zamiast RPE w tej samej kolumnie. */
+td.rpe.procent { white-space: nowrap; }
+td.rpe.procent .jednostka { margin-left: .2rem; color: var(--tekst-slaby); font-size: .8rem; }
 .znacznik-topset {
   padding: 0 .25rem; border-radius: 3px;
   background: var(--akcent-tlo); color: var(--akcent);

@@ -228,6 +228,111 @@ export function pauzaSlotu(
 }
 
 /**
+ * Dwubój olimpijski — rwanie i zarzut — własna progresja w % 1RM.
+ *
+ * Trener, 16.10.2026, o propozycji periodyzacji clean / snatch: „to, co
+ * zaproponowałeś, mi się podoba i może tak być … skok 1 kg, wdrażaj całość”.
+ *
+ * Dlaczego procenty, a nie RPE jak reszta planu:
+ * - tabela RPE zaczyna się od 6, czyli od 76,5 % przy trójkach i 79,5 % przy
+ *   dwójkach — techniczna objętość na 70–75 % się w niej nie mieści;
+ * - w dwuboju o ciężarze decyduje technika i szybkość sztangi, nie „ile
+ *   zostało w zapasie” — trenerzy dwuboju piszą w procentach.
+ *
+ * Ciężar = 1RM tego ćwiczenia × procent × korekta z ocen, zaokrąglone do
+ * skoku (1 kg — talerzyki w dwuboju). RPE slotu liczy się z procentu
+ * (`rpeDlaProcentu`) i służy tylko stresowi tygodnia.
+ *
+ * Kto: pełne, siłowe (power), z zawieszenia (hang, high/mid/low) i z bloków
+ * wersje rwania i zarzutu ze sztangą oraz zarzut z podrzutem — każda od
+ * własnego 1RM. Bez ciągów, martwych ciągów, ćwiczeń technicznych (muscle,
+ * tall, no jump, z pozycji mocy, segmentowe), kompleksów i wersji z hantlami
+ * czy kettlebellem. Na każdej pozycji, jak pauzowane; „G” robi z ćwiczenia
+ * zwykły bój. W planach hipertroficznych — tabela objętościowa (rwanie po
+ * 12 powtórzeń nie ma sensu); „S” daje tabelę części siłowej tego etapu.
+ */
+export const DWUBOJ: ReadonlySet<string> = new Set([
+  // BAZA trenera
+  "EX-0046",   // Clean
+  "EX-0047",   // Clean pins (z bloków)
+  // Theory of Motion
+  "EX-1143",   // BB Clean and Jerk
+  "EX-1186",   // BB High Hang Clean
+  "EX-1192",   // BB High Hang Snatch
+  "EX-1204",   // BB Mid Hang Clean
+  "EX-1242",   // BB Snatch
+  "EX-1761",   // High Hang Clean
+  "EX-1763",   // High Hang Power Clean
+  "EX-1764",   // High Hang Power Snatch
+  "EX-1765",   // High Hang Snatch
+  "EX-1767",   // High Hang Squat Clean
+  "EX-1768",   // High Hang Squat Snatch
+  "EX-2004",   // Low Hang Clean
+  "EX-2005",   // Low Hang Power Clean
+  "EX-2006",   // Low Hang Power Snatch
+  "EX-2007",   // Low Hang Snatch
+  "EX-2037",   // Mid Hang Clean
+  "EX-2040",   // Mid Hang Power Clean
+  "EX-2041",   // Mid Hang Power Snatch
+  "EX-2042",   // Mid Hang Snatch
+  "EX-2143",   // Power Clean
+  "EX-2145",   // Power Snatch
+  "EX-2630",   // Snatch
+  // Catalyst Athletics
+  "EX-3178",   // Block Clean & Jerk
+  "EX-3185",   // Block Power Clean
+  "EX-3186",   // Block Power Snatch
+  "EX-3187",   // Block Snatch
+  "EX-3316",   // Hang Clean
+  "EX-3320",   // Hang Power Clean
+  "EX-3321",   // Hang Power Snatch
+  "EX-3322",   // Hang Snatch
+  "EX-3421",   // Power Clean - Jerk
+]);
+
+export type ParametryDwuboju = { serie: number; powtorzenia: number; procent: number };
+const d = (serie: number, powtorzenia: number, procent: number): ParametryDwuboju =>
+  ({ serie, powtorzenia, procent });
+
+/**
+ * Blok objętościowy (cz. 1): 18 powtórzeń w T1 do 10 w T6, 70 → 80 %.
+ * Blok intensyfikujący (cz. 2): dwójki 80–85 %, od T4 pojedyncze 85–90 %.
+ * T4 otwiera drugą połowę bloku — jak w całym planie.
+ */
+export const PROGRESJA_DWUBOJU: Record<"objętość" | "intensywność", readonly ParametryDwuboju[]> = {
+  "objętość": [d(6, 3, 70), d(6, 3, 72), d(5, 3, 75), d(6, 2, 75), d(6, 2, 78), d(5, 2, 80)],
+  "intensywność": [d(6, 2, 80), d(6, 2, 82), d(5, 2, 85), d(8, 1, 85), d(7, 1, 88), d(5, 1, 90)],
+};
+
+/** Deload dwuboju (T7) — w obu blokach 4 × 2 na 70 %, bez TOP SETU. */
+export const DELOAD_DWUBOJU: ParametryDwuboju = d(4, 2, 70);
+
+/**
+ * TOP SET dwuboju — najcięższa pojedyncza tygodnia przed pojedynczymi
+ * z tabeli: tylko w bloku intensyfikującym, od T4. Opcjonalny — stoi, gdy
+ * trener postawi przy ćwiczeniu TOP SET. `null` = w tym tygodniu go nie ma.
+ */
+export const PROGRESJA_TOP_SETU_DWUBOJU: Record<"objętość" | "intensywność", readonly (number | null)[]> = {
+  "objętość": [null, null, null, null, null, null],
+  "intensywność": [null, null, null, 88, 91, 93],
+};
+
+/** Czy ten slot liczy się progresją dwuboju: ćwiczenie z listy, a trener nie ustawił „G”. */
+export function dwubojSlotu(slot: { bojGlowny?: boolean }, cwiczenieId: string | null | undefined): boolean {
+  return !!cwiczenieId && DWUBOJ.has(cwiczenieId) && slot.bojGlowny === undefined;
+}
+
+/** Tabela dwuboju dla części planu — hipertrofia bierze objętościową, chyba że „S”. */
+export function czescDwuboju(czesc: CzescPlanu, bojSilowy?: boolean): "objętość" | "intensywność" {
+  return czescBoju(czesc, bojSilowy) === "intensywność" ? "intensywność" : "objętość";
+}
+
+/** % 1RM TOP SETU dwuboju z szablonu; `null` = w tym tygodniu go nie ma. */
+export function procentTopSetuDwuboju(czesc: CzescPlanu, tydzien: Tydzien, bojSilowy?: boolean): number | null {
+  return PROGRESJA_TOP_SETU_DWUBOJU[czescDwuboju(czesc, bojSilowy)][tydzien - 1] ?? null;
+}
+
+/**
  * Parametry tygodnia wg szablonu dla konkretnego slotu: progresja pauzowana,
  * bój albo akcesorium. Jedno miejsce dla planu i przycisku „wpisz progresję”.
  */
@@ -237,6 +342,10 @@ export function parametrySzablonu(
   cwiczenie: { id: string; coeff?: Coeff } | null | undefined,
   czescPlanu: CzescPlanu,
 ): ParametryTygodnia {
+  if (dwubojSlotu(slot, cwiczenie?.id)) {
+    const p = PROGRESJA_DWUBOJU[czescDwuboju(czescPlanu, slot.bojSilowy)][tydzien - 1]!;
+    return { serie: p.serie, powtorzenia: p.powtorzenia, procent: p.procent };
+  }
   const pauza = pauzaSlotu(slot, cwiczenie?.id, czescPlanu);
   if (pauza) {
     const czesc = czescBoju(czescPlanu, slot.bojSilowy) as "objętość" | "intensywność";

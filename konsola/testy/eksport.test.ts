@@ -62,6 +62,16 @@ describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
       "ciężar z RPE co tydzień, nie trzymany z bloku jak u akcesorium");
   });
 
+  test("dwubój idzie z powtórzeniami i ciężarem wprost — arkusz nie zna procentów (16.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.sloty[1]!.cwiczenieId = "EX-0046";   // B1. Clean
+    zapisany.plan.serieMaksymalne.push({ cwiczenieId: "EX-0046", ciezar: 100, powtorzenia: 1 });
+    const dane = daneDoArkusza(zapisany);
+    assert.deepEqual([1, 2, 3, 4, 5, 6].map((t) => [pole(dane, "D1-S02", t).serie,
+      pole(dane, "D1-S02", t).powtorzenia_reczne, pole(dane, "D1-S02", t).ciezar_reczny]),
+    [[6, 3, 70], [6, 3, 72], [5, 3, 75], [6, 2, 75], [6, 2, 78], [5, 2, 80]]);
+  });
+
   test("serie i RPE lecą policzone, nawet gdy trener ich nie ruszył", () => {
     const zapisany = planDomyslny();
     const wynik = przeliczPlan(zapisany.plan);
