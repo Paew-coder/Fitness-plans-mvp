@@ -9,6 +9,7 @@ import type { CzescPlanu, Feedback, Kategoria, TrybAkcesoriow, Tydzien } from ".
 import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { katalog } from "./katalog.ts";
 import { jestBojemGlownym as bojWedlugReguly } from "./szablon-boju.ts";
+import { PAUZOWANE, DWUBOJ } from "./szablon-boju.ts";
 
 export const TYGODNIE_IMPORTU: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 export const SKROTY_TYGODNI = ["T1", "T2", "T3", "T4", "T5", "T6"] as const;
@@ -119,6 +120,20 @@ export function jestBojemGlownym(lp: string): boolean {
 }
 
 /**
+ * „G” przy slocie z arkusza tam, gdzie reguła aplikacji rozjeżdża się
+ * z arkuszem. W A arkusz liczył bój tylko przy ćwiczeniu złożonym (tak było
+ * w aplikacji do 16.10.2026, sprawdzone przeciwko plikom) — takie zostaje
+ * bojem; bój aplikacji poza A był w arkuszu akcesorium. Pauzowane i dwubój
+ * mają własną progresję, „G” by ją wyłączył — bez zmian.
+ */
+function bojJakWArkuszu(lp: string, id: string): { bojGlowny?: boolean } {
+  const c = katalog.poId(id);
+  if (!c || PAUZOWANE[id] || DWUBOJ.has(id)) return {};
+  const wArkuszu = jestBojemGlownym(lp) && c.coeff === 1;
+  return wArkuszu === bojWedlugReguly(c) ? {} : { bojGlowny: wArkuszu };
+}
+
+/**
  * Buduje plan do przeliczenia z tego, co trener wpisał w arkuszu.
  *
  * Powtórzenia bierzemy z arkusza wtedy, gdy wpisał je trener — czyli przy boju
@@ -164,13 +179,12 @@ export function planZArkusza(z: ZrzutArkusza): Plan {
         cwiczenieId: id,
         kategoriaSzkieletu: (s.kategoria_szkieletu as Kategoria | null) ?? null,
         tygodnie,
-        // Arkusz liczy bój tylko w pozycji A. Złożone z ciężarem poza A
-        // (np. bench press na B1) aplikacja od 16.10.2026 liczy jak bój —
-        // plan z arkusza zostaje tym, czym był: akcesorium z decyzji trenera
-        // („G” wyłączone), które trener może przestawić jednym kliknięciem.
-        ...(!jestBojemGlownym(s.lp)
-          && bojWedlugReguly(s.lp, katalog.poId(id)?.coeff, katalog.poId(id)?.progresja)
-          ? { bojGlowny: false } : {}),
+        // Arkusz liczy bój po pozycji (A), aplikacja od 16.10.2026 po
+        // ćwiczeniu (przysiady, martwe ciągi, bench — na każdej pozycji).
+        // Plan z arkusza zostaje tym, czym był: rozbieżność zapisujemy jako
+        // decyzję trenera („G”), którą da się przestawić jednym kliknięciem.
+        // Złożone (coeff 1,0) w A — bój jak w arkuszu; bój poza A — akcesorium.
+        ...bojJakWArkuszu(s.lp, id),
       };
     });
 

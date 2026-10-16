@@ -164,7 +164,7 @@ Dotyczy wszystkiego, co **nie jest bojem głównym**. Bojem głównym jest pozyc
 ```ts
 type KontekstCiezaru = {
   tydzien: 1|2|3|4|5|6;
-  jestBojemGlownym: boolean;        // coeff 1,0 z ciężarem na każdej pozycji (od 16.10.2026; wcześniej tylko 'A')
+  jestBojemGlownym: boolean;        // przysiady, martwe ciągi, bench (`BOJE`) na każdej pozycji; do 16.10.2026: 'A' i coeff 1,0
   trybAkcesoriow: 'trzymaj z bloku' | 'licz z RPE';   // slot.trybCiezaru ?? plan.trybAkcesoriow
   oneRM: number;                    // 0 = brak
   oneRMReczny?: number;             // gdy ćwiczenie podmienione w T4–T6

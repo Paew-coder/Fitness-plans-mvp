@@ -90,6 +90,10 @@ function zbudujStaraBaze(): void {
         tygodnie: { 1: { serie: 3, rpe: 8 }, 2: { serie: 4, rpe: 8 }, 4: { serie: 3, rpe: 9, feedback: "OK" } } },
       { positionId: "D1-S03", dzien: 1, lp: "C1.", cwiczenieId: "EX-0089", bojGlowny: false,
         tygodnie: { 1: { serie: 3, rpe: 8 } } },
+      // v10: push press na A1 — był bojem, „wpisz progresję” zostawił mu
+      // liczby boju (T1), trener zmienił T2 ręcznie.
+      { positionId: "D2-S02", dzien: 2, lp: "A2.", cwiczenieId: "EX-0165",
+        tygodnie: { 1: { serie: 6, powtorzenia: 6, rpe: 6.5 }, 2: { serie: 5, powtorzenia: 5, rpe: 8 } } },
       { positionId: "D2-S01", dzien: 2, lp: "A1.", cwiczenieId: "EX-0003" },  // Allah, coeff 0,5
       { positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: null },
     ],
@@ -150,7 +154,7 @@ describe("migracja v1 → v2", () => {
     // 6: wykonanie pamięta wszystkie serie, nie tylko najcięższą (23.09.2026).
     // 7: wersja robocza planu — zmiany trenera czekają na zatwierdzenie (10.10.2026).
     // 8: znacznik resetu planu — telefon zaczyna trening od nowa (10.10.2026).
-    assert.equal(w, 9);
+    assert.equal(w, 10);
   });
 
   test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {
@@ -344,5 +348,30 @@ describe("migracja v8 → v9: bój poza pozycją A", () => {
 
   test("„G” wyłączone — akcesorium z decyzji trenera, nietknięte", () => {
     assert.deepEqual(slot("zofia-k-4", "D1-S03").tygodnie[1], { serie: 3, rpe: 8 });
+  });
+});
+
+/**
+ * Migracja v9 → v10 (16.10.2026): bojem tylko przysiady, martwe ciągi i bench.
+ * Push press wraca do akcesoriów — liczby boju z „wpisz progresję” znikają.
+ */
+describe("migracja v9 → v10: bojem tylko przysiady, martwe ciągi, bench", () => {
+  function slot(id: string, positionId: string) {
+    const wiersz = polaczenie.baza()
+      .prepare("SELECT plan_json FROM plan WHERE trener_id = 1 AND id = ?")
+      .get(id) as { plan_json: string };
+    return JSON.parse(wiersz.plan_json).sloty.find((s: { positionId: string }) => s.positionId === positionId);
+  }
+
+  test("liczby boju z „wpisz progresję” przy push pressie znikają", () => {
+    assert.deepEqual(slot("zofia-k-4", "D2-S02").tygodnie[1], {});
+  });
+
+  test("ręczna zmiana trenera zostaje", () => {
+    assert.deepEqual(slot("zofia-k-4", "D2-S02").tygodnie[2], { serie: 5, powtorzenia: 5, rpe: 8 });
+  });
+
+  test("przysiad na B1 dalej bez liczb akcesorium (v9) — jest bojem", () => {
+    assert.deepEqual(slot("zofia-k-4", "D1-S02").tygodnie[1], {});
   });
 });

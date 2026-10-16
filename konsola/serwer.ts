@@ -40,7 +40,7 @@ import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
 import { filmyCwiczenia, idZLinkuYoutube, kartaDlaKlienta, kartaPodgladu, kartaRozgrzewki } from "../silnik/src/wideo.ts";
-import { bojGlownySlotu, DWUBOJ, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
+import { BOJE, bojGlownySlotu, DWUBOJ, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
@@ -181,6 +181,8 @@ function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
         pauza: PAUZOWANE[c.id] ?? null,
         // Dwubój (16.10.2026) — konsola pokazuje „D” i procent zamiast RPE.
         dwuboj: DWUBOJ.has(c.id),
+        // Bój główny z reguły (przysiady, martwe ciągi, bench) — „G” podświetlone.
+        boj: BOJE.has(c.id),
         // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
         // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
         filmow,
@@ -999,7 +1001,7 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
       progresja: cw.progresja,
       coeff: cw.coeff,
       // Dwubój rozgrzewa się do ciężaru pierwszej serii jak bój (16.10.2026).
-      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw.coeff, cw.progresja) || !!s.dwuboj,
+      bojGlowny: bojGlownySlotu(slotPlanu ?? s, cw) || !!s.dwuboj,
       bojSilowy: slotPlanu?.bojSilowy,
       maTopSet: !!ts,
     })) return null;
