@@ -895,7 +895,7 @@ Trener poprosił o sposób rozpisywania periodyzacji dla clean / snatch z blokie
 
 Trener: „nie podoba mi się ten opis »najpierw test 1RM« przy ćwiczeniu Clean — mało naturalny jest”.
 
-* Językiem sali: w kolumnie ciężaru „sprawdź maks”, blok „Najpierw sprawdź swój maks” („rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz do najcięższego powtórzenia, które zrobisz czysto i szybko…”), przycisk „Zapisz maks”, w „Jak trenować” punkt „Rwanie i zarzut bez maksa”, na ekranie serii maksymalnych „Twój maks to najcięższe powtórzenie zrobione czysto i szybko…”. Działanie bez zmian. SW `trening-v72`.
+* Językiem sali: w kolumnie ciężaru „sprawdź maks”, blok „Najpierw sprawdź swój maks” („rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz do najcięższego powtórzenia, które zrobisz czysto i szybko… następnie robisz już serie z planu” — końcówka wg trenera), przycisk „Zapisz maks”, w „Jak trenować” punkt „Rwanie i zarzut bez maksa”, na ekranie serii maksymalnych „Twój maks to najcięższe powtórzenie zrobione czysto i szybko…”. Działanie bez zmian. SW `trening-v72`.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
