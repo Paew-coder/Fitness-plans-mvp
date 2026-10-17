@@ -16,6 +16,7 @@ import assert from "node:assert/strict";
 import { przeliczPlan } from "../../silnik/src/plan.ts";
 import { pustyPlan } from "../uklad-planu.ts";
 import { daneDoArkusza } from "../eksport-xlsx.ts";
+import { katalog } from "../../silnik/src/katalog.ts";
 import type { ZapisanyPlan } from "../magazyn.ts";
 
 /** Plan, w którym trener wybrał ćwiczenia i nic poza tym nie ustawił. */
@@ -39,6 +40,20 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("własne ćwiczenie trenera idzie do zakładki BAZA arkusza (17.10.2026)", () => {
+    katalog.ustawWlasne([{ id: "WL-0001", nazwa: "Pallof press z pauzą", kategoria: "Core", part: "c",
+      coeff: 0.5, skokKg: 1, progresja: "kg" }]);
+    try {
+      const zapisany = planDomyslny();
+      zapisany.plan.sloty[1]!.cwiczenieId = "WL-0001";
+      const wpis = daneDoArkusza(zapisany).cwiczenia_bazy.find((c) => c.id === "WL-0001");
+      assert.deepEqual([wpis?.nazwa, wpis?.kategoria, wpis?.coeff, wpis?.progresja],
+        ["Pallof press z pauzą", "Core", 0.5, "kg"]);
+    } finally {
+      katalog.ustawWlasne([]);
+    }
+  });
+
   test("1RM zmienione serią w środku cyklu — tygodnie idą liczbami wprost (17.10.2026)", () => {
     const zapisany = planDomyslny();
     zapisany.plan.serieMaksymalne[0] = { cwiczenieId: "EX-0010", ciezar: 130, powtorzenia: 1,

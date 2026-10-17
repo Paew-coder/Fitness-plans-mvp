@@ -65,6 +65,12 @@ export type Cwiczenie = {
    */
   biblioteka?: "tom" | "catalyst";
   /**
+   * Dodane przez trenera w konsoli (17.10.2026) — leży w bazie danych, nie
+   * w plikach, i wchodzi do katalogu przy starcie serwera. Generator go nie
+   * losuje — trener wybiera je ręcznie.
+   */
+  wlasne?: true;
+  /**
    * Trener usunął ćwiczenie z wyboru (arkusz weryfikacji bibliotek). Zostaje
    * w danych, bo mogło już trafić do planu — plan dalej się otwiera i eksportuje,
    * tylko wyszukiwarka go nie podsuwa.

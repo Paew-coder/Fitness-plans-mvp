@@ -1016,6 +1016,72 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     goblet?.id);
   sprawdz("w wierszu widać, że to ćwiczenie z biblioteki", /\(biblioteka\)/.test(opisWyboru), opisWyboru);
 
+  // ── własne ćwiczenie (17.10.2026) ───────────────────────────────────
+  // Trener: „możliwość wpisywania własnej nazwy ćwiczenia podczas tworzenia
+  // planu — razem z coeff, part, kategorią itp.”. Z listy w wierszu,
+  // odmowa przy zajętej nazwie, zapis do planu, poprawka przez ✎.
+  const pustyDlaWlasnego = await s.locator("#dni tr td.cwiczenie select").evaluateAll(
+    (lista: HTMLSelectElement[]) => lista.findIndex((x) => x.value === ""));
+  await wiersz(pustyDlaWlasnego).locator("td.cwiczenie select").selectOption("__wlasne__");
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  const formularz = s.locator(".formularz-cwiczenia");
+  await formularz.locator('input[name="nazwa"]').fill("Barbell back squat");
+  await formularz.locator('select[name="kategoria"]').selectOption("Core");
+  await formularz.locator('select[name="part"]').selectOption("c");
+  await formularz.locator('select[name="coeff"]').selectOption("0.5");
+  await formularz.locator('button[type="submit"]').click();
+  await s.waitForFunction(() => /już jest/.test(document.querySelector(".formularz-blad")?.textContent ?? ""),
+    null, { timeout: 5000 });
+  sprawdz("zajęta nazwa — odmowa w okienku, pola zostają",
+    await formularz.isVisible() && await formularz.locator('select[name="coeff"]').inputValue() === "0.5",
+    await formularz.locator(".formularz-blad").textContent() ?? "");
+  await formularz.locator('input[name="nazwa"]').fill("Pallof press przegląd");
+  await formularz.locator('input[name="jednostronne"]').check();
+  await formularz.locator('button[type="submit"]').click();
+  // Zapis ćwiczenia idzie na serwer, dopiero potem plan — czekamy, aż okienko
+  // zniknie, inaczej „zapisano” byłoby jeszcze z poprzedniego zapisu.
+  await formularz.waitFor({ state: "detached", timeout: 5000 });
+  await zapisano();
+  const zWlasnym = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.cwiczenieId?.startsWith("WL-"));
+  const wlasneZSerwera = await (await fetch(`${ADRES}/api/cwiczenia-wlasne`)).json();
+  sprawdz("własne ćwiczenie zapisane z polami z okienka i wstawione do planu",
+    !!zWlasnym && (await s.locator(".formularz-cwiczenia").count()) === 0
+      && wlasneZSerwera[0]?.nazwa === "Pallof press przegląd" && wlasneZSerwera[0]?.kategoria === "Core"
+      && wlasneZSerwera[0]?.coeff === 0.5 && wlasneZSerwera[0]?.jednostronne === true,
+    JSON.stringify(wlasneZSerwera[0] ?? null));
+  const wierszWlasnego = s.locator("#dni tr").filter({ has: s.locator("button.edytuj-wlasne") });
+  const opisWlasnego = await wierszWlasnego.locator("td.cwiczenie select").evaluate(
+    (x: HTMLSelectElement) => x.selectedOptions[0]?.textContent ?? "");
+  sprawdz("w wierszu „· własne” i ✎ do poprawki",
+    /Pallof press przegląd.*własne/.test(opisWlasnego) && (await wierszWlasnego.count()) === 1, opisWlasnego);
+  await wierszWlasnego.locator("button.edytuj-wlasne").click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  sprawdz("✎ otwiera okienko z wpisanymi polami",
+    await formularz.locator('input[name="nazwa"]').inputValue() === "Pallof press przegląd"
+      && await formularz.locator('input[name="jednostronne"]').isChecked());
+  await formularz.locator('select[name="coeff"]').selectOption("0.25");
+  await formularz.locator('button[type="submit"]').click();
+  await formularz.waitFor({ state: "detached", timeout: 5000 });
+  await zapisano();
+  const poPoprawce = await (await fetch(`${ADRES}/api/cwiczenia-wlasne`)).json();
+  const slotPoPoprawce = (await zBazy()).wynik.tygodnie[0].sloty.find((x: any) => x.cwiczenie?.id === poPoprawce[0]?.id);
+  sprawdz("poprawka coeff liczy się w planie od razu", poPoprawce[0]?.coeff === 0.25
+    && slotPoPoprawce?.cwiczenie?.coeff === 0.25, `${poPoprawce[0]?.coeff} / ${slotPoPoprawce?.cwiczenie?.coeff}`);
+  // Wyszukiwarka: „nie ma na liście?” otwiera okienko z wpisaną nazwą.
+  await wiersz(0).locator("button.szukaj-cwiczenia").click();
+  await s.waitForSelector(".wyszukiwarka", { timeout: 5000 });
+  await s.fill(".wyszukiwarka-pole", "Moje nowe ćwiczenie");
+  await s.locator(".wyszukiwarka-wlasne").click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  sprawdz("„Nie ma na liście?” w wyszukiwarce — okienko z wpisaną nazwą",
+    await formularz.locator('input[name="nazwa"]').inputValue() === "Moje nowe ćwiczenie");
+  await s.keyboard.press("Escape");
+  await s.waitForTimeout(200);
+  // Ćwiczenie z listy zostaje do usunięcia przez dalsze sekcje — usuwamy
+  // własne z wiersza, żeby liczby wierszy w kolejnych kontrolach się zgadzały.
+  await wierszWlasnego.locator("td.cwiczenie select").selectOption("");
+  await zapisano();
+
   // ▶ przy ćwiczeniu w wierszu (10.10.2026): filmy wybranego ćwiczenia jednym
   // dotknięciem. Liczba = nagrania w karcie, bez filmu — wyszarzony, pusty
   // wiersz — niewidoczny (kolumna się nie przesuwa).

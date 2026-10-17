@@ -433,6 +433,22 @@ function doWersji10(d: DatabaseSync): void {
   }
 }
 
+/**
+ * Wersja 11 — ćwiczenia dodane przez trenera w konsoli (17.10.2026). Nowa
+ * tabela, nic się nie przenosi. Ta sama definicja co w schemacie.
+ */
+function doWersji11(d: DatabaseSync): void {
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS cwiczenie_wlasne (
+      id        TEXT    PRIMARY KEY,
+      trener_id INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
+      dane_json TEXT    NOT NULL,
+      utworzone TEXT    NOT NULL,
+      zmienione TEXT    NOT NULL
+    );
+  `);
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -443,4 +459,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 8, opis: "znacznik resetu planu — telefon zaczyna trening od nowa", wykonaj: doWersji8 },
   { doWersji: 9, opis: "boje na każdej pozycji — bez liczb akcesorium", wykonaj: doWersji9 },
   { doWersji: 10, opis: "bojem tylko przysiady, martwe ciągi i bench — reszta bez liczb boju", wykonaj: doWersji10 },
+  { doWersji: 11, opis: "własne ćwiczenia trenera", wykonaj: doWersji11 },
 ];
