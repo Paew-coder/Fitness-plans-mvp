@@ -917,6 +917,16 @@ Trener, po punkcie 67 (lista złożonych, które stały się bojem wszędzie): �
 * **Import z arkusza:** arkusz rozstrzyga pozycją, aplikacja ćwiczeniem — rozbieżność zapisuje się jako „G” (złożone z coeff 1,0 w A — bój jak w arkuszu; bój poza A — akcesorium). **Eksport:** gdy rola w aplikacji i pozycja w arkuszu się rozjeżdżają, ciężar idzie wprost; w pozycji A zawsze powtórzenia wprost.
 * Testy: silnik (bench na B1, deadlift na C1 — bój; push press, hip thrust, RDL, Squat izo, lunges, pull up weighted na A1 — akcesorium; lista bojów kompletna i tylko przysiady / martwe / bench z coeff 1,0), migracja v10, eksport (push press na A1). Przeglądy konsoli i telefonu bez zmian zielone.
 
+**69. Ćwiczenia naprzemienne liczone na stronę — 17.10.2026.**
+
+Trener: „gorilla row robi się naprzemian, ale w bazie mamy je jako ćwiczenie jednostronne, przez co wychodzi tam mała liczba powtórzeń (np. 8), a chciałbym, żeby to było liczone tak, że 8 robi jedna ręka, czyli łącznie 16 — chyba trzeba poprawić to i tego typu ćwiczenia na dwustronne”.
+
+* Było odwrotnie: Gorilla row stało jako **dwustronne**, więc „8” znaczyło 8 łącznie. To, czego trener chce („8 na rękę, łącznie 16”), w aplikacji to oznaczenie „jednostronne” — serie i powtórzenia **na stronę**, z dopiskiem „na stronę” u klienta. Tak już stały „alternating” z BAZY (Arnold press, Dumbbell bench / OH / incline press alternating).
+* **BAZA** (`jednostronne.json`, potwierdzone): Gorilla row, Seesaw press, Seated seesaw press (nogi proste), Bear renegade row. Jednostronnych w BAZIE: 35 (było 31).
+* **Biblioteki** (`jednostronne: "tak"`): 16 naprzemiennych z hantlami / kettlebellami — seesaw press i row (2DB, 2KB, half kneeling, staggered), renegade row (w tym z kolan i ISO).
+* Liczenie serii bez zmian („jak w arkuszu” — 3 serie, nie 6). Liczba powtórzeń z automatu też bez zmian — zmienia się jej znaczenie: na stronę.
+* Do decyzji trenera (nie ruszone): Kettlebell march, Dead bug / Bird dog (wcześniej „nie”), naprzemienne z masą ciała z bibliotek (shoulder taps, prone alternating superman, alternating lying leg raise).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
