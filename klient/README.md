@@ -554,13 +554,19 @@ Ikona i pełny ekran nic nie dają, jeśli klient do końca cyklu otwiera link
 z SMS-a. **Nikt sam nie odkrywa, że stronę da się dodać do ekranu głównego** —
 na iPhonie to schowane pod ikoną udostępniania, na Androidzie w menu.
 
-Aplikacja mówi o tym sama, ale pod trzema warunkami, żeby to była podpowiedź,
-a nie naganianie:
+Aplikacja mówi o tym sama — od 17.10.2026 tak (trener: „nie ma informacji
+o możliwości dodania skrótu, tak jak było wcześniej — dodaj z powrotem
+z możliwością chowania go”):
 
-1. **dopiero po pierwszym domkniętym treningu** — zanim się do czegokolwiek
-   przyda, proszenie o miejsce na ekranie głównym jest bezczelne;
-2. **raz** — „nie teraz" znaczy nigdy więcej;
-3. **nigdy**, gdy aplikacja jest już dodana.
+1. **od pierwszego wejścia w link**, jako rozwinięty baner „Dodaj trening do
+   ekranu głównego” (wcześniej dopiero po pierwszym treningu i tylko raz —
+   po resecie planu albo „nie teraz” nie było jej wcale);
+2. **„Schowaj” albo dotknięcie nagłówka** zwija ją do jednej linijki i tak
+   zostaje; dotknięcie linijki rozwija ją z powrotem;
+3. **nigdy**, gdy aplikacja jest już dodana (otwarta z ikony).
+
+Instrukcja zależy od urządzenia: iPhone — ikona udostępniania na dole,
+iPad — u góry, potem „Do ekranu początkowego”; Android — przycisk albo menu (⋮).
 
 Android pozwala zrobić to jednym przyciskiem i tak też jest zrobione. iOS nie
 daje na to żadnego mechanizmu, więc tam zostaje napisanie wprost, w co dotknąć —
