@@ -88,6 +88,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   await s.goto(`${adres}${sciezka}`, { waitUntil: "networkidle" });
 
+  // Trener, 17.10.2026: „usuńmy na razie zakładkę »twój postęp« — dodamy ją
+  // kiedyś, jak będzie lepiej dopracowana”. U klienta przycisku nie ma; ekran
+  // zostaje i dalsze sekcje sprawdzają go po włączeniu przełącznika.
+  sprawdz("„Twój postęp” schowany — przycisku na liście tygodni nie ma",
+    await s.locator("#pokaz-postep").count() === 1 && !(await s.locator("#pokaz-postep").isVisible()));
+  await s.evaluate(() => localStorage.setItem("postep-widoczny", "1"));
+  await s.reload({ waitUntil: "networkidle" });
+
   // ── 1. wejście z linku ────────────────────────────────────────────
   sprawdz("link otwiera plan klienta",
     (await s.locator("#tytul").innerText()).includes(KLIENT),
