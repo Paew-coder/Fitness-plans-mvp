@@ -947,6 +947,13 @@ Trener (zrzut karty Clean): „opis powinien być bardziej w stylu: stopniowo zw
 
 * Blok „Najpierw sprawdź swój maks” — dokładnie to zdanie. Tym samym językiem ekran serii maksymalnych („…dynamicznie i z zachowaniem dobrej techniki. Wpisz ten ciężar — powtórzenia: 1.”) i punkt „Rwanie i zarzut bez maksa” w „Jak trenować”. SW `trening-v76`.
 
+**72. „✕” przy podpowiedzi o ekranie głównym — 17.10.2026.**
+
+Trener: „poza opcją chowania tej informacji o ekranie głównym dodajmy też x, którym się ją usuwa”.
+
+* „✕” w nagłówku banera (na samym końcu, za strzałką zwijania) usuwa podpowiedź na dobre — pamięć telefonu, także po ponownym otwarciu. „Schowaj” i dotknięcie nagłówka dalej tylko zwijają. Tytuł skrócony do „Dodaj do ekranu głównego”, żeby z krzyżykiem mieścił się w jednej linii na wąskim telefonie (360 px). SW `trening-v77`.
+* Przegląd klienta: „✕” usuwa od razu i podpowiedź nie wraca po ponownym otwarciu.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
