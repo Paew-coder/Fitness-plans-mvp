@@ -40,6 +40,21 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("RPE 7,5 → 10 przy akcesorium („↗”, tryb z RPE) — ciężary wprost, RPE i powtórzenia też (17.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.sloty[1]!.trybCiezaru = "licz z RPE";
+    zapisany.plan.sloty[1]!.tygodnie = Object.fromEntries([7.5, 8, 8.5, 9, 9.5, 10]
+      .map((rpe, i) => [i + 1, { rpe, powtorzenia: 8 }]));
+    const wynik = przeliczPlan(zapisany.plan);
+    const dane = daneDoArkusza(zapisany);
+    for (const t of [1, 3, 6]) {
+      const w = pole(dane, "D1-S02", t);
+      const s = wynik.tygodnie[t - 1]!.sloty[1]!;
+      assert.deepEqual([w.ciezar_reczny, w.rpe, w.powtorzenia_reczne], [s.ciezar, s.rpe, 8], `T${t}`);
+    }
+    assert.ok((wynik.tygodnie[5]!.sloty[1]!.ciezar as number) > (wynik.tygodnie[0]!.sloty[1]!.ciezar as number));
+  });
+
   test("własne ćwiczenie trenera idzie do zakładki BAZA arkusza (17.10.2026)", () => {
     katalog.ustawWlasne([{ id: "WL-0001", nazwa: "Pallof press z pauzą", kategoria: "Core", part: "c",
       coeff: 0.5, skokKg: 1, progresja: "kg" }]);

@@ -1408,8 +1408,10 @@ function legendaPlanu() {
     ["G", "bój główny — podświetlone, gdy ćwiczenie liczy się jak bój; klik zmienia rolę"],
     ["S", "bój siłowy w hipertrofii — progresja i TOP SET jak w części siłowej"],
     ["R", "licz ciężar akcesorium z RPE"],
+    ["↗", "RPE 7,5 → 10 (T1–T6) przy stałych powtórzeniach — ciężar rośnie z RPE"],
     ["TS", "przy numerze: ćwiczenie ma TOP SET"],
     ["RPE", "przy numerze: ciężar liczony z RPE"],
+    ["RPE↗", "przy numerze: RPE 7,5 → 10 i stałe powtórzenia"],
     ["●", "ciężar wpisany na sztywno — wyczyść pole, żeby wrócić do liczonego"],
     ["↔", "ciężar na stronę"],
     ["+5%", "korekta z ocen klienta"],
@@ -1907,6 +1909,45 @@ const dwubojowe = (slot) => Boolean(cwiczenie(slot.cwiczenieId)?.dwuboj);
 const liczonyDwuboj = (slot) => dwubojowe(slot) && slot.bojGlowny === undefined;
 
 /**
+ * RPE 7,5 → 10 (17.10.2026). Trener: „przycisk, który będzie wpisywał
+ * w danym ćwiczeniu samo RPE od 1 tygodnia — 7,5, przeskok o 0,5, tak żeby
+ * w 6 tygodniu było RPE 10 — i to, że wtedy ciężar liczy się na podstawie RPE”.
+ *
+ * Wpisuje liczby, a nie ukrytą regułę: trener widzi je w tabeli i może
+ * poprawić każdą. Powtórzenia stają się stałe — z T1 (wpisane albo z planu)
+ * do tygodni, w których trener nic nie wpisał — bo przy rosnących
+ * powtórzeniach rosnące RPE nie podniosłoby ciężaru. Akcesorium dostaje „R”
+ * (ciężar z RPE co tydzień, nie trzymany z bloku); bój i pauzowane liczą
+ * z RPE i tak.
+ */
+const RPE_ROSNACE = [7.5, 8, 8.5, 9, 9.5, 10];
+function rpeRosnaceMozliwe(slot) {
+  const c = cwiczenie(slot.cwiczenieId);
+  return !!c && ["kg", "dodatkowy ciężar"].includes(c.progresja) && !liczonyDwuboj(slot);
+}
+const maRpeRosnace = (slot) => RPE_ROSNACE.every((rpe, i) => slot.tygodnie?.[i + 1]?.rpe === rpe);
+function przelaczRpeRosnace(slot) {
+  const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
+  slot.tygodnie ??= {};
+  if (maRpeRosnace(slot)) {
+    for (let t = 1; t <= 6; t++) delete slot.tygodnie[t]?.rpe;
+    delete slot.trybCiezaru;
+    zapiszPozniej(`${lp} · bez RPE 7,5 → 10`);
+  } else {
+    const t1 = wyliczonyTydzienNr(1)?.sloty.find((s) => s.positionId === slot.positionId);
+    const powtorzenia = slot.tygodnie[1]?.powtorzenia ?? t1?.powtorzenia;
+    RPE_ROSNACE.forEach((rpe, i) => {
+      const p = (slot.tygodnie[i + 1] ??= {});
+      p.rpe = rpe;
+      if (powtorzenia && p.powtorzenia === undefined) p.powtorzenia = powtorzenia;
+    });
+    if (!bojGlowny(slot) && !liczonyPauza(slot)) slot.trybCiezaru = "licz z RPE";
+    zapiszPozniej(`${lp} · RPE 7,5 → 10`);
+  }
+  rysujDni();
+}
+
+/**
  * „G” przy pauzowanym: zwykły bój ↔ progresja pauzowana. Bez trzeciego stanu
  * („akcesorium”) — trener wybrał, że pauzowane liczy się swoją progresją
  * zawsze, a „G” ma tylko robić z niego zwykły bój.
@@ -2173,6 +2214,20 @@ function rysujSlot(slot, pusty) {
       };
       strzalki.append(przelaczTryb);
     }
+    // ↗ — RPE 7,5 → 10 przy stałych powtórzeniach (trener, 17.10.2026: „przyda
+    // mi się do ćwiczeń, w których będę chciał zostawić daną liczbę powtórzeń
+    // i progresować ciężarem”). Tylko przy ćwiczeniach na kilogramy; dwubój
+    // ma procenty, nie RPE.
+    if (!poCyklu && rpeRosnaceMozliwe(slot)) {
+      const wlaczone = maRpeRosnace(slot);
+      const rosnace = el("button", `mikro ${wlaczone ? "wlaczony" : ""}`, "↗");
+      rosnace.title = wlaczone
+        ? "Zdejmij RPE 7,5 → 10 — RPE i tryb ciężaru wracają do planu, powtórzenia zostają"
+        : "RPE 7,5 → 10 od T1 do T6 (co 0,5), ciężar liczony z RPE, powtórzenia stałe — progresja ciężarem";
+      rosnace.setAttribute("aria-label", rosnace.title);
+      rosnace.onclick = () => przelaczRpeRosnace(slot);
+      strzalki.append(rosnace);
+    }
     komorkaLp.append(strzalki);
   }
   if (jestTopSetem(slot)) {
@@ -2194,7 +2249,11 @@ function rysujSlot(slot, pusty) {
       + "(hipertrofia: objętościowy). Zamiast RPE wpisujesz procent. „G” zrobi z niego zwykły bój.";
     numer.append(znacznik);
   }
-  if (slot.trybCiezaru === "licz z RPE") {
+  if (maRpeRosnace(slot)) {
+    const znacznik = el("span", "znacznik-tryb", "RPE↗");
+    znacznik.title = "RPE 7,5 → 10 od T1 do T6, powtórzenia stałe — ciężar rośnie z RPE";
+    numer.append(znacznik);
+  } else if (slot.trybCiezaru === "licz z RPE") {
     const znacznik = el("span", "znacznik-tryb", "RPE");
     znacznik.title = "Ciężar liczony z RPE co tydzień, nie trzymany z bloku";
     numer.append(znacznik);
