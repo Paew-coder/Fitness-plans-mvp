@@ -546,7 +546,19 @@ const zeZnakiem = (n) => `${n > 0 ? "+" : ""}${liczba(n)}`;
  * Oddech i bieg — to, co klient robi między treningami na siłowni.
  * Trener wypełnia dane w konsoli; tutaj są tylko do czytania.
  */
+/**
+ * „Twój postęp” schowany (trener, 17.10.2026: „usuńmy na razie zakładkę
+ * »twój postęp« z treningu — dodamy ją kiedyś, jak będzie lepiej
+ * dopracowana”). Ekran i jego kod zostają — wraca jednym przełącznikiem.
+ * W pamięci telefonu `postep-widoczny` = „1” pokazuje go (przegląd klienta
+ * i podgląd trenera), u klientów go nie ma.
+ */
+const POSTEP_WIDOCZNY = (() => {
+  try { return localStorage.getItem("postep-widoczny") === "1"; } catch { return false; }
+})();
+
 function rysujModuly() {
+  $("#pokaz-postep").classList.toggle("ukryty", !POSTEP_WIDOCZNY);
   const m = widok.moduly;
   const dawka = m?.oddech?.dawka ?? null;
   const tygodnie = m?.bieg?.tygodnie ?? [];
@@ -1110,9 +1122,11 @@ function rysujJakTrenowac(t, d) {
       : []),
     // Dwubój bez 1RM (16.10.2026) — test pojedynczego w pierwszym treningu.
     ...(d.cwiczenia.some((c) => c.probaMaksu)
+      // Trener, 17.10.2026: „które jesteś w stanie zrobić dynamicznie…”;
+      // dwa zdania zamiast przecinka przed „i wpisz je”.
       ? [punkt("Rwanie i zarzut bez maksa", "najpierw stopniowo dojdź do najcięższego powtórzenia,",
-        "które zrobisz dynamicznie i z dobrą techniką, i wpisz je — na jego podstawie będą policzone",
-        "ciężary w reszcie planu.")]
+        "które jesteś w stanie zrobić dynamicznie i z zachowaniem dobrej techniki. Wpisz je —",
+        "na jego podstawie będą policzone ciężary w reszcie planu.")]
       : []),
   );
 }

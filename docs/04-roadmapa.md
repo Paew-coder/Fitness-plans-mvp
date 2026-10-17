@@ -954,6 +954,13 @@ Trener: „poza opcją chowania tej informacji o ekranie głównym dodajmy też 
 * „✕” w nagłówku banera (na samym końcu, za strzałką zwijania) usuwa podpowiedź na dobre — pamięć telefonu, także po ponownym otwarciu. „Schowaj” i dotknięcie nagłówka dalej tylko zwijają. Tytuł skrócony do „Dodaj do ekranu głównego”, żeby z krzyżykiem mieścił się w jednej linii na wąskim telefonie (360 px). SW `trening-v77`.
 * Przegląd klienta: „✕” usuwa od razu i podpowiedź nie wraca po ponownym otwarciu.
 
+**73. „Twój postęp” schowany; poprawka zdania o maksie — 17.10.2026.**
+
+Trener: „usuńmy na razie zakładkę »twój postęp« z treningu — dodamy ją kiedyś, jak będzie lepiej dopracowana”, oraz w „Jak trenować”: „powinno być »powtórzenia, które jesteś w stanie zrobić dynamicznie…«, a przed »i wpisz je« chyba nie powinno być przecinka”.
+
+* **„Twój postęp”:** przycisk na liście tygodni schowany. Ekran, jego kod i dane zostają — wraca jednym przełącznikiem (`POSTEP_WIDOCZNY` w `klient/app.js`; w pamięci telefonu `postep-widoczny` = „1” pokazuje go — tak robi przegląd klienta, który dalej sprawdza ten ekran). Konsola trenera bez zmian.
+* **Zdanie:** „Rwanie i zarzut bez maksa — najpierw stopniowo dojdź do najcięższego powtórzenia, które jesteś w stanie zrobić dynamicznie i z zachowaniem dobrej techniki. Wpisz je — na jego podstawie będą policzone ciężary w reszcie planu.” Dwa zdania zamiast przecinka przed „i wpisz je” (przecinek zamykał wtrącone zdanie podrzędne, ale tak czyta się prościej). SW `trening-v78`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
