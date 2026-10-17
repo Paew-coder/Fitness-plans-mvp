@@ -3061,7 +3061,9 @@ async function wyslijPomiar(p, karta, ciezar, powtorzenia) {
  *   1. od pierwszego wejścia w link — rozwinięta;
  *   2. „Schowaj” albo dotknięcie nagłówka zwija ją do jednej linijki
  *      i tak zostaje (pamięć telefonu); dotknięcie linijki rozwija ją z powrotem;
- *   3. nigdy, gdy aplikacja jest już dodana (otwarta z ikony).
+ *   3. nigdy, gdy aplikacja jest już dodana (otwarta z ikony);
+ *   4. „✕” w nagłówku usuwa ją na dobre (trener, 17.10.2026: „poza opcją
+ *      chowania dodajmy też x, którym się ją usuwa”).
  * Dawne „Nie teraz” (ten sam klucz w pamięci) liczy się jak zwinięcie.
  *
  * Android daje na to zdarzenie i przycisk. iOS nie daje nic — tam zostaje
@@ -3080,9 +3082,12 @@ addEventListener("appinstalled", () => $("#baner-instalacji").classList.add("ukr
 const jestDodana = () =>
   matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
-let instalacjaZwinieta = (() => {
-  try { return Boolean(localStorage.getItem(KLUCZ_INSTALACJI)); } catch { return false; }
+/** Stan w pamięci telefonu: brak — rozwinięta, „zwinieta” (i dawne „nie”), „usunieta”. */
+const stanInstalacji = (() => {
+  try { return localStorage.getItem(KLUCZ_INSTALACJI); } catch { return null; }
 })();
+let instalacjaZwinieta = Boolean(stanInstalacji);
+let instalacjaUsunieta = stanInstalacji === "usunieta";
 
 /** `przelacz` — czy ustawić `open` samemu; przy dotknięciu nagłówka robi to przeglądarka. */
 function zwinInstalacje(zwin, przelacz = true) {
@@ -3111,9 +3116,15 @@ function tekstInstalacji() {
     + "otworzy się jak aplikacja, bez szukania linku.";
 }
 
+function usunInstalacje() {
+  instalacjaUsunieta = true;
+  try { localStorage.setItem(KLUCZ_INSTALACJI, "usunieta"); } catch { /* do zamknięcia aplikacji */ }
+  $("#baner-instalacji").classList.add("ukryty");
+}
+
 function rysujInstalacje() {
   const baner = $("#baner-instalacji");
-  if (jestDodana()) {
+  if (jestDodana() || instalacjaUsunieta) {
     baner.classList.add("ukryty");
     return;
   }
@@ -3129,6 +3140,12 @@ $("#baner-instalacji > summary").addEventListener("click", () => {
   zwinInstalacje($("#baner-instalacji").open, false);
 });
 $("#instalacja-nie").onclick = () => zwinInstalacje(true);
+// „✕” siedzi w nagłówku — bez `preventDefault` dotknięcie zwijałoby baner.
+$("#instalacja-usun").addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  usunInstalacje();
+});
 $("#zainstaluj").onclick = async () => {
   if (!zdarzenieInstalacji) return;
   zdarzenieInstalacji.prompt();
