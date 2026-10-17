@@ -95,6 +95,10 @@ function zbudujStaraBaze(): void {
       { positionId: "D2-S02", dzien: 2, lp: "A2.", cwiczenieId: "EX-0165",
         tygodnie: { 1: { serie: 6, powtorzenia: 6, rpe: 6.5 }, 2: { serie: 5, powtorzenia: 5, rpe: 8 } } },
       { positionId: "D2-S01", dzien: 2, lp: "A1.", cwiczenieId: "EX-0003" },  // Allah, coeff 0,5
+      // v12: S/l clean na B2 z liczbami akcesorium z „wpisz progresję” (T1, T4),
+      // ręczną zmianą trenera (T2) i oceną klienta (T4).
+      { positionId: "D3-S02", dzien: 3, lp: "B2.", cwiczenieId: "EX-3627",
+        tygodnie: { 1: { serie: 3, rpe: 8 }, 2: { serie: 4, rpe: 8 }, 4: { serie: 3, rpe: 9, feedback: "za łatwe" } } },
       { positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: null },
     ],
     topSety: [
@@ -155,7 +159,8 @@ describe("migracja v1 → v2", () => {
     // 7: wersja robocza planu — zmiany trenera czekają na zatwierdzenie (10.10.2026).
     // 8: znacznik resetu planu — telefon zaczyna trening od nowa (10.10.2026).
     // 11: własne ćwiczenia trenera (17.10.2026).
-    assert.equal(w, 11);
+    // 12: S/l clean z progresją dwuboju (17.10.2026).
+    assert.equal(w, 12);
   });
 
   test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {
@@ -374,5 +379,28 @@ describe("migracja v9 → v10: bojem tylko przysiady, martwe ciągi, bench", () 
 
   test("przysiad na B1 dalej bez liczb akcesorium (v9) — jest bojem", () => {
     assert.deepEqual(slot("zuzanna-c-4", "D1-S02").tygodnie[1], {});
+  });
+});
+
+/**
+ * Migracja v11 → v12 (17.10.2026): S/l clean dostaje progresję dwuboju —
+ * liczby akcesorium z „wpisz progresję” znikają, ręczne zostają.
+ */
+describe("migracja v11 → v12: S/l clean jak zwykły clean", () => {
+  function slot(id: string, positionId: string) {
+    const wiersz = polaczenie.baza()
+      .prepare("SELECT plan_json FROM plan WHERE trener_id = 1 AND id = ?")
+      .get(id) as { plan_json: string };
+    return JSON.parse(wiersz.plan_json).sloty.find((s: { positionId: string }) => s.positionId === positionId);
+  }
+
+  test("liczby akcesorium znikają — wchodzi tabela dwuboju; ocena klienta zostaje", () => {
+    const b2 = slot("zuzanna-c-4", "D3-S02");
+    assert.deepEqual(b2.tygodnie[1], {});
+    assert.deepEqual(b2.tygodnie[4], { feedback: "za łatwe" });
+  });
+
+  test("ręczna zmiana trenera zostaje", () => {
+    assert.deepEqual(slot("zuzanna-c-4", "D3-S02").tygodnie[2], { serie: 4, rpe: 8 });
   });
 });
