@@ -126,7 +126,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("rozwinięty tylko bieżący tydzień, reszta zwinięta z licznikiem",
     otwarte === 1
     && await s.locator("#tygodnie details.tydzien").first().evaluate((d: HTMLDetailsElement) => d.open)
-    && (await s.locator("#tygodnie .tydzien").nth(1).locator(".tydzien-stan").innerText()) === "0 z 1"
+    && (await s.locator("#tygodnie .tydzien").nth(1).locator(".tydzien-stan").innerText()) === "0 z 1 treningu"
     && !(await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel").isVisible()),
     `otwartych: ${otwarte}`);
   sprawdz("kafelek pokazuje skład dnia i wyróżnia następny trening",
@@ -156,12 +156,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // i co zmienia ciężar na kolejne tygodnie.
   const jak = s.locator("#jak-trenowac");
   const jakTekst = (await jak.textContent()) ?? "";
-  sprawdz("„Jak trenować” nad prowadzeniem: lista albo prowadzenie, ocena zmienia kolejne tygodnie",
+  // Od 17.10.2026 wpisany inny ciężar liczy resztę planu; ocena — zamiast wpisu.
+  sprawdz("„Jak trenować” nad prowadzeniem: lista albo prowadzenie; wpisany ciężar albo ocena liczy resztę",
     await jak.isVisible() && await jak.getAttribute("open") !== null
       && /Z listy.*odhaczaj zrobione przyciskiem „OK”/.test(jakTekst)
       && /Z prowadzeniem.*Nie musisz z niego korzystać/.test(jakTekst)
-      && /Ciężar na kolejne tygodnie.*zmienia ocena/.test(jakTekst)
-      && jakTekst.includes("Sam wpisany ciężar ich nie zmienia — zobaczy go trener")
+      && /Ciężar na kolejne tygodnie.*inny ciężar niż w planie\? Wpisz go — od tej serii policzę resztę planu/
+        .test(jakTekst)
+      && jakTekst.includes("Nie chcesz wpisywać? Wystarczy ocena")
       && !jakTekst.includes("Wyjątek"),
     jakTekst.replace(/\s+/g, " ").slice(0, 160));
   sprawdz("„Jak trenować” stoi przed przyciskiem prowadzenia",
@@ -236,17 +238,21 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // jednym dotknięciem — bez szukania go na liście.
   const celNastepny = poZakonczeniu.tygodnie.flatMap((t: any) =>
     t.dni.filter((d: any) => !d.ukonczony).map((d: any) => ({ t, d })))[0];
-  const oczekiwany = `▶ Następny trening: tydzień ${celNastepny.t.numer} · `
-    + `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]}`;
+  const oczekiwany = `▶ Następny trening: `
+    + `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]}, tydzień ${celNastepny.t.numer}`;
   sprawdz("na górze listy stoi przycisk do następnego treningu",
     (await s.locator("#nastepny-trening").innerText()) === oczekiwany,
     `${await s.locator("#nastepny-trening").innerText()} · oczekiwane: ${oczekiwany}`);
   await s.click("#nastepny-trening");
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
-  sprawdz("i otwiera dokładnie ten dzień",
+  // Tydzień małą linijką nad dniem, nie jednym ciągiem (17.10.2026: „napisy
+  // trochę zlewają się ze sobą”). textContent, bo linijka stoi wersalikami.
+  const tydzienNad = (await s.locator("#trening-tydzien").textContent()) ?? "";
+  sprawdz("i otwiera dokładnie ten dzień — tydzień nad dniem, osobno",
     (await s.locator("#trening-tytul").innerText())
-      === `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]} · tydzień ${celNastepny.t.numer}`,
-    await s.locator("#trening-tytul").innerText());
+      === `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]}`
+    && tydzienNad.startsWith(`Tydzień ${celNastepny.t.numer} z `),
+    `${tydzienNad} / ${await s.locator("#trening-tytul").innerText()}`);
   await s.click("#wroc-z-treningu");
   await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
 
@@ -982,7 +988,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     (await panel.innerText()).replace(/\n/g, " ").slice(0, 60));
   // Trener, 16.10.2026: co robi wpisany ciężar — przy pierwszej serii.
   sprawdz("przy pierwszej serii zdanie, co robi wpisany inny ciężar",
-    /Podniosłeś inny ciężar\? Wpisz go — następną serię policzę od niego/
+    /Podniosłeś inny ciężar\? Wpisz go — od tej serii policzę resztę planu/
       .test(await panel.locator(".wpisany-ciezar").innerText().catch(() => "")),
     await panel.locator(".wpisany-ciezar").innerText().catch(() => "brak zdania"));
 
@@ -1731,8 +1737,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const sciezkaPoCyklu = (await api(`/api/plany/${idPoCyklu}/link`, "POST")).sciezka;
 
   await s.goto(`${adres}${sciezkaPoCyklu}`, { waitUntil: "networkidle" });
-  const tytulyTygodni = (await s.locator("#tygodnie .tydzien-nazwa").allTextContents())
-    .map((t) => t.trim());
+  // Znaczek „deload” / „maksy” stoi przy numerze jako osobna pastylka.
+  const tytulyTygodni = await s.locator("#tygodnie .tydzien-nazwa").evaluateAll((wiersze) =>
+    wiersze.map((w) => [w.querySelector("strong")?.textContent, " ", w.querySelector(".z-ilu")?.textContent,
+      w.querySelector(".znaczek-tygodnia") ? ` · ${w.querySelector(".znaczek-tygodnia")!.textContent}` : ""]
+      .join("").trim()));
   sprawdz("klient widzi osiem tygodni, dwa ostatnie podpisane",
     tytulyTygodni.length === 8
     && tytulyTygodni[6] === "Tydzień 7 z 8 · deload" && tytulyTygodni[7] === "Tydzień 8 z 8 · maksy",
@@ -1765,8 +1774,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await blokMaksow.locator(".dzien-kafel").click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   sprawdz("tytuł mówi, co to za dzień",
-    (await s.locator("#trening-tytul").innerText()) === "Dzień maksów · tydzień 8",
-    await s.locator("#trening-tytul").innerText());
+    (await s.locator("#trening-tytul").innerText()) === "Dzień maksów"
+    && (await s.locator("#trening-tydzien").textContent()) === "Tydzień 8 z 8 · maksy",
+    `${await s.locator("#trening-tydzien").textContent()} / ${await s.locator("#trening-tytul").innerText()}`);
   sprawdz("w dniu maksów bez „Jak trenować” — nie ma ocen ani serii roboczych",
     !(await s.locator("#jak-trenowac").isVisible()));
   const kartyMaksow = s.locator("#cwiczenia .cwiczenie");

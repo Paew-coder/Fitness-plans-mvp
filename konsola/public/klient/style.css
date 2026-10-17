@@ -47,6 +47,12 @@ body {
 .ekran { padding-top: .5rem; }
 .ukryty { display: none !important; }
 h1 { font-size: 1.3rem; margin: 0; letter-spacing: -.01em; }
+/* Tydzień nad dniem w nagłówku treningu — mała linijka w kolorze akcentu. */
+.nadtytul {
+  margin: 0 0 .1rem; font-size: .72rem; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--akcent);
+}
+.nadtytul:empty { display: none; }
 .drobne { font-size: .82rem; color: var(--tekst-blady); margin: .2rem 0 0; }
 .srodek { text-align: center; }
 
@@ -160,14 +166,21 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
 /* ── tygodnie i dni ─────────────────────────────────────────────── */
 .tydzien { border-bottom: 1px solid var(--linia); }
 .tydzien[open] { padding-bottom: .6rem; }
+.tydzien[open] > .tydzien-tytul { margin-bottom: .2rem; }
 /* Nagłówek tygodnia to wiersz do dotknięcia: „Tydzień 2 z 6 ···· 1 z 3 ▸". */
 .tydzien-tytul {
   display: flex; align-items: center; gap: .6rem; min-height: 3rem;
   cursor: pointer; list-style: none; font-weight: 600; font-size: .95rem;
 }
 .tydzien-tytul::-webkit-details-marker { display: none; }
-.tydzien-tytul .tydzien-nazwa { flex: 1; }
-.tydzien-tytul .tydzien-stan { font-size: .82rem; font-weight: 500; color: var(--tekst-blady); }
+.tydzien-tytul .tydzien-nazwa { flex: 1; display: flex; align-items: baseline; gap: .3rem; }
+.tydzien-nazwa strong { font-size: 1.05rem; }
+.tydzien-nazwa .z-ilu { font-weight: 400; color: var(--tekst-blady); }
+.tydzien-nazwa .znaczek-tygodnia {
+  margin-left: .2rem; padding: .05rem .45rem; border-radius: 999px; align-self: center;
+  font-size: .72rem; font-weight: 600; background: var(--akcent-tlo); color: var(--akcent);
+}
+.tydzien-tytul .tydzien-stan { font-size: .8rem; font-weight: 500; color: var(--tekst-blady); }
 .tydzien-tytul .tydzien-stan.caly { color: var(--ok); }
 .tydzien-tytul::after {
   content: "▸"; color: var(--tekst-blady); width: 1rem; text-align: center;
@@ -181,11 +194,11 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
 }
 .dzien-kafel .kafel-gora { display: flex; align-items: center; gap: .8rem; }
 .dzien-kafel:disabled { opacity: .5; }
-.dzien-kafel .nazwa { font-weight: 600; flex: 1; }
+.dzien-kafel .nazwa { font-weight: 600; font-size: 1rem; flex: 1; }
 .dzien-kafel .ile { font-size: .82rem; color: var(--tekst-blady); }
 .dzien-kafel .ptaszek { color: var(--ok); font-size: 1.2rem; line-height: 1; }
 .dzien-kafel .sklad {
-  font-size: .8rem; color: var(--tekst-slaby);
+  font-size: .8rem; color: var(--tekst-slaby); margin-top: .1rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dzien-kafel.zrobiony { background: var(--karta-2); }
