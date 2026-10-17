@@ -482,8 +482,11 @@ describe("katalog BAZY 5.17", () => {
     // 17.10.2026: +4 naprzemienne — Gorilla row, Seesaw press, Seated seesaw
     // press, Bear renegade row (trener: „robi się je naprzemian … 8 robi jedna
     // ręka, czyli łącznie 16”).
-    assert.equal(bazaTrenera.jednostronne().length, 35);
-    for (const nazwa of ["Gorilla row", "Seesaw press", "Seated seesaw press (nogi proste)", "Bear renegade row"]) {
+    // Tego samego dnia +4: dead bug (dwa) „tak jak gorilla row”, Bird dog row
+    // („raz na jedną stronę, a raz na drugą”), Kettlebell march (na stronę kettla).
+    assert.equal(bazaTrenera.jednostronne().length, 39);
+    for (const nazwa of ["Gorilla row", "Seesaw press", "Seated seesaw press (nogi proste)", "Bear renegade row",
+      "Dead bug straight legs", "Deadbug OH", "Bird dog row", "Kettlebell march"]) {
       assert.equal(katalog.poNazwie(nazwa)?.jednostronne, true, nazwa);
     }
     assert.equal(katalog.poId("EX-0095")?.jednostronne, true, "wood chopper na stronę");
