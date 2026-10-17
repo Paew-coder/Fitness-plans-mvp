@@ -1078,9 +1078,14 @@ function rysujTrening() {
   kontener.replaceChildren(...opis, ...rozgrzewka,
     ...bezCwiczenia.map((ts) => kartaTopSetu(ts, d, stan)),
     ...d.cwiczenia.flatMap((c) => [
-      ...topy.filter((ts) => ts.positionId === c.positionId).map((ts) => kartaTopSetu(ts, d, stan)),
+      ...topy.filter((ts) => ts.positionId === c.positionId).map((ts) => {
+        const karta = kartaTopSetu(ts, d, stan);
+        karta.dataset.grupa = grupaKarty(c);
+        return karta;
+      }),
       kartaCwiczenia(c, stan),
     ]));
+  oznaczGrupy(kontener);
 
   rysujJakTrenowac(t, d);
 
@@ -1402,6 +1407,7 @@ function kartaCwiczenia(c, stan = null) {
   const karta = el("div",
     `cwiczenie ${"BCDE".includes(c.grupa) ? "grupa" : ""} ${tuJestes ? "biezace" : ""}`);
   karta.dataset.position = c.positionId;
+  karta.dataset.grupa = grupaKarty(c);
 
   const gora = el("div", "cwiczenie-gora");
   gora.append(el("span", "lp", c.lp || ""));
@@ -1499,6 +1505,21 @@ function odswiezKarte(positionId) {
   const c = dzienBiezacy()?.cwiczenia.find((x) => x.positionId === positionId);
   if (!stara || !c || stara.contains(document.activeElement)) return;
   stara.replaceWith(kartaCwiczenia(c, stanProwadzenia(dzienBiezacy())));
+  oznaczGrupy($("#cwiczenia"));
+}
+
+/**
+ * Ćwiczenia robione razem stoją na liście razem (trener, 17.10.2026: „jak jest
+ * B1 i B2, to są blisko siebie, a później delikatna przerwa przed C1, żeby
+ * wizualnie oddzielić ćwiczenia, które robi się wspólnie”). Grupa to litera
+ * z numeru — ta sama, po której prowadzenie robi superserie. Bez numeru —
+ * każde osobno. TOP SET należy do grupy swojego ćwiczenia.
+ */
+const grupaKarty = (c) => c.grupa || `bez-${c.positionId}`;
+function oznaczGrupy(kontener) {
+  const karty = [...kontener.children].filter((k) => k.dataset.grupa);
+  karty.forEach((k, i) => k.classList.toggle("ciasno",
+    karty[i + 1]?.dataset.grupa === k.dataset.grupa && k.nextElementSibling === karty[i + 1]));
 }
 
 /**

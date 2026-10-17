@@ -211,6 +211,10 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
   background: var(--karta); border: 1px solid var(--linia);
   border-radius: 12px; padding: .9rem 1rem; margin-bottom: .7rem;
 }
+/* Lista dnia: B1 i B2 — robione razem — stoją ciasno, przed C1 przerwa
+   (trener, 17.10.2026). */
+#cwiczenia > .cwiczenie, #cwiczenia > .topset { margin-bottom: 1.4rem; }
+#cwiczenia > .ciasno { margin-bottom: .35rem; }
 .cwiczenie.grupa { border-left: 3px solid var(--akcent); }
 .cwiczenie-gora { display: flex; align-items: baseline; gap: .55rem; }
 .cwiczenie .lp {
