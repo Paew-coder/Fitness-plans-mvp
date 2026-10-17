@@ -449,6 +449,56 @@ function doWersji11(d: DatabaseSync): void {
   `);
 }
 
+/**
+ * Wersja 12 — S/l clean z progresją dwuboju (17.10.2026).
+ *
+ * Trener: „moje ćwiczenie s/l clean — zrób, żeby progresja w nim przebiegała
+ * podobnie jak w zwykłym clean”. Dwubój bierze serie, powtórzenia i procent
+ * z własnej tabeli, ale liczby wpisane wcześniej przyciskiem „wpisz
+ * progresję”, gdy ćwiczenie liczyło się jak akcesorium (3 serie i RPE
+ * akcesorium z tej pozycji), wygrywają z tabelą — wyszłoby „3 × 8 na 70 %”.
+ *
+ * Zdejmujemy **tylko te liczby automatu** — przy każdym ćwiczeniu dwuboju,
+ * bo Clean sprzed 16.10.2026 mógł mieć to samo. Ręczne zmiany trenera, „G”,
+ * oceny i ciężary klienta zostają. Plan trenera i wersja, którą widzi klient.
+ */
+function doWersji12(d: DatabaseSync): void {
+  const plany = d.prepare("SELECT trener_id, id, plan_json, plan_klienta_json FROM plan").all() as
+    { trener_id: number; id: string; plan_json: string; plan_klienta_json: string | null }[];
+  const zapisz = d.prepare(
+    "UPDATE plan SET plan_json = ?, plan_klienta_json = ? WHERE trener_id = ? AND id = ?");
+
+  type Slot = { lp?: string; cwiczenieId?: string | null; bojGlowny?: boolean;
+    tygodnie?: Record<string, Record<string, unknown>> };
+  const posprzataj = (json: string | null): { json: string | null; zmiana: boolean } => {
+    if (!json) return { json, zmiana: false };
+    let plan: { sloty?: Slot[] };
+    try { plan = JSON.parse(json); } catch { return { json, zmiana: false }; }
+    let zmiana = false;
+    for (const slot of plan.sloty ?? []) {
+      if (!slot.cwiczenieId || !DWUBOJ.has(slot.cwiczenieId) || slot.bojGlowny !== undefined) continue;
+      for (const t of [1, 2, 3, 4, 5, 6] as const) {
+        const p = slot.tygodnie?.[t];
+        if (!p || p.powtorzenia !== undefined || p.procent !== undefined) continue;
+        const akcesorium = progresjaSlotu(slot.lp ?? "", t);
+        if (p.serie === akcesorium.serie && p.rpe === akcesorium.rpe) {
+          delete p.serie;
+          delete p.rpe;
+          zmiana = true;
+        }
+      }
+    }
+    return { json: zmiana ? JSON.stringify(plan) : json, zmiana };
+  };
+
+  for (const wiersz of plany) {
+    const trenera = posprzataj(wiersz.plan_json);
+    const klienta = posprzataj(wiersz.plan_klienta_json);
+    if (!trenera.zmiana && !klienta.zmiana) continue;
+    zapisz.run(trenera.json, klienta.json, wiersz.trener_id, wiersz.id);
+  }
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -460,4 +510,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 9, opis: "boje na każdej pozycji — bez liczb akcesorium", wykonaj: doWersji9 },
   { doWersji: 10, opis: "bojem tylko przysiady, martwe ciągi i bench — reszta bez liczb boju", wykonaj: doWersji10 },
   { doWersji: 11, opis: "własne ćwiczenia trenera", wykonaj: doWersji11 },
+  { doWersji: 12, opis: "S/l clean z progresją dwuboju — bez liczb akcesorium", wykonaj: doWersji12 },
 ];

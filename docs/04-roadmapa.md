@@ -1019,6 +1019,14 @@ Trener (zrzut planu z „Landmine core” w D1): „chciałbym teraz możliwoś�
 * Konsola: 🗑 w każdym wierszu z ćwiczeniem (obok 🔎 i ▶; w pustym wierszu niewidoczny, kolumna się nie przesuwa). Pytanie: „Usunąć „Landmine core” z D1?”, przy ćwiczeniu, które klient już robił — dopisek, że jego wpisy zostaną w historii, a z planu zniknie we wszystkich tygodniach. Po „OK” znika ćwiczenie i ustawienia trenera pod nie (serie, powtórzenia, RPE, procent, ciężar na sztywno, podmiany, „G”, „S”, „R”); numer pozycji i kategoria szkieletu zostają. ⌘Z / „Cofnij” przywraca.
 * Przegląd ekranów: pytanie z nazwą i „Anuluj” bez zmian, „OK” usuwa i zapisuje, „Cofnij” przywraca, w pustym wierszu kosza nie widać; cele dotykowe ≥ 24 px na telefonie i iPadzie.
 
+**81. S/l clean z progresją jak Clean — 17.10.2026.**
+
+Trener: „moje ćwiczenie s/l clean — zrób, żeby progresja w nim przebiegała podobnie jak w zwykłym clean”.
+
+* S/l clean (EX-3627) na liście dwuboju (`DWUBOJ`, teraz 34): ten sam blok objętościowy i intensyfikujący w % 1RM, deload 4 × 2 na 70 %, TOP SET 88 / 91 / 93 % w intensyfikacji, „Najpierw sprawdź swój maks” bez 1RM, ocena techniki i szybkości sztangi. Procent od własnego 1RM (na jedną nogę), powtórzenia na stronę. Przykład: 1RM 50 kg → T1–T6 35 · 36 · 38 · 38 · 39 · 40 kg (objętość). Konsola pokazuje „D” i procent zamiast RPE; „G” robi z niego zwykły bój.
+* Migracja v12: przy ćwiczeniach dwuboju w zapisanych planach znikają liczby akcesorium wpisane kiedyś przyciskiem „wpisz progresję” (3 serie i RPE akcesorium) — inaczej wygrywałyby z tabelą dwuboju. Ręczne zmiany trenera, „G”, oceny i ciężary klienta zostają. Plan trenera i wersja u klienta.
+* Testy: silnik (`dwuboj.test.ts` — S/l clean jak Clean, na stronę), migracja v12.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

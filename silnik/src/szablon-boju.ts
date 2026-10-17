@@ -295,6 +295,10 @@ export const DWUBOJ: ReadonlySet<string> = new Set([
   // BAZA trenera
   "EX-0046",   // Clean
   "EX-0047",   // Clean pins (z bloków)
+  // Trener, 17.10.2026: „moje ćwiczenie s/l clean — zrób, żeby progresja
+  // w nim przebiegała podobnie jak w zwykłym clean”. Na jedną nogę — procent
+  // z własnego 1RM (też na jedną nogę), powtórzenia na stronę.
+  "EX-3627",   // S/l clean
   // Theory of Motion
   "EX-1143",   // BB Clean and Jerk
   "EX-1186",   // BB High Hang Clean
