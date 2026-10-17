@@ -34,6 +34,10 @@ Przegląd klienta mierzy to na ekranie 360 px.
 
 ## Postęp przez wszystkie cykle
 
+> **Od 17.10.2026 schowany** (trener: „usuńmy na razie zakładkę »twój postęp«
+> — dodamy ją kiedyś, jak będzie lepiej dopracowana”). Ekran i kod zostają,
+> przycisk wraca przełącznikiem `POSTEP_WIDOCZNY` w `konsola/public/klient/app.js`.
+
 Ekran *Twój postęp* zaczyna się teraz od tego, czego arkusz nie pokazywał nigdy:
 ile cykli klient ma za sobą, od kiedy trenuje, ile treningów domknął — i jak
 zmieniał się jego ciężar maksymalny **przez kolejne cykle**, a nie tylko w tych
