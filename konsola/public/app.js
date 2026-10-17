@@ -2307,8 +2307,23 @@ function rysujSlot(slot, pusty) {
     if (!wybrane) film.classList.add("pusty");
     film.setAttribute("aria-label", wybrane ? "Brak filmu" : "Najpierw wybierz ćwiczenie");
   }
+  // 🗑 — usunięcie ćwiczenia z pozycji, z pytaniem (trener, 17.10.2026:
+  // „chciałbym możliwość usuwania wybranych ćwiczeń … przycisk x albo kosz,
+  // może być z pytaniem o potwierdzenie”). W pustym wierszu niewidoczny —
+  // kolumna się nie przesuwa.
+  const usun = el("button", "usun-cwiczenie", "🗑");
+  usun.type = "button";
+  if (wybrane) {
+    usun.title = `Usuń „${wybrane.nazwa}” z tej pozycji`;
+    usun.setAttribute("aria-label", `Usuń ćwiczenie: ${wybrane.nazwa}`);
+    usun.onclick = () => usunZPozycji(slot);
+  } else {
+    usun.disabled = true;
+    usun.tabIndex = -1;
+    usun.classList.add("pusty");
+  }
   const rzad = el("div", "wybor-cwiczenia");
-  rzad.append(wybor, lupa, film);
+  rzad.append(wybor, lupa, film, usun);
   // ✎ przy własnym ćwiczeniu — poprawka pól (zmiana idzie do każdego planu z nim).
   if (wybrane?.wlasne) {
     const edytuj = el("button", "edytuj-wlasne", "✎");
@@ -2680,6 +2695,35 @@ function znacznikOcen(wyliczony) {
  * Czyścimy wyłącznie oceny **w planie**. Zapis w historii wykonań zostaje:
  * klient naprawdę zrobił ten trening i naprawdę tak go ocenił.
  */
+/**
+ * Usunięcie ćwiczenia z pozycji (17.10.2026) — po potwierdzeniu. Pozycja
+ * zostaje (numer, kategoria szkieletu), znika ćwiczenie i to, co trener
+ * ustawił pod nie: serie, powtórzenia, RPE, ciężar na sztywno, podmiany,
+ * „G”, „S”, „R”. Wpisy klienta (oceny, jego ciężary) zostają w historii.
+ * ⌘Z cofa jak każdy krok.
+ */
+const POLA_TRENERA_TYGODNIA = ["serie", "powtorzenia", "rpe", "procent", "cwiczenieIdOverride",
+  "oneRMReczny", "ciezarOverride"];
+function usunZPozycji(slot) {
+  const nazwa = cwiczenie(slot.cwiczenieId)?.nazwa ?? slot.cwiczenieId;
+  const lp = slot.lp?.replace(/\.$/, "") || "tej pozycji";
+  const robil = (obraz.zapisany.wykonania ?? []).some((w) => w.positionId === slot.positionId)
+    || Object.values(slot.tygodnie ?? {}).some((p) => p?.feedback !== undefined);
+  if (!confirm(`Usunąć „${nazwa}” z ${lp}?`
+    + (robil ? "\n\nKlient już je robił — jego wpisy zostaną w historii, ale z planu ćwiczenie "
+      + "zniknie we wszystkich tygodniach." : "")
+    + "\n\nCofniesz to ⌘Z / Ctrl+Z.")) return;
+  slot.cwiczenieId = null;
+  for (const p of Object.values(slot.tygodnie ?? {})) {
+    for (const pole of POLA_TRENERA_TYGODNIA) delete p?.[pole];
+  }
+  delete slot.bojGlowny;
+  delete slot.bojSilowy;
+  delete slot.trybCiezaru;
+  zapiszPozniej(`${lp} · usunięte ćwiczenie`);
+  rysujDni();
+}
+
 function zapytajOPodmiane(slot, poprzednieCwiczenie) {
   if (!poprzednieCwiczenie || poprzednieCwiczenie === slot.cwiczenieId) return;
 
