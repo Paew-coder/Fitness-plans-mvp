@@ -18,6 +18,11 @@
    "podstawa": "ćwiczenie naprzemienne — trener 17.10.2026: „robi się je naprzemian … 8 robi jedna ręka, czyli łącznie 16”"
   },
   {
+   "id": "EX-0035",
+   "nazwa": "Bird dog row",
+   "podstawa": "trener 17.10.2026: „bird dog row to jest klasyczne raz na jedną stronę, a raz na drugą”"
+  },
+  {
    "id": "EX-0037",
    "nazwa": "Bulgarian clean plyo",
    "podstawa": "wzorzec ruchu „bulgarian” — potwierdzone przez trenera 15.08.2026"
@@ -36,6 +41,16 @@
    "id": "EX-0043",
    "nazwa": "Cable row s/a",
    "podstawa": "marker „s/a” w nazwie"
+  },
+  {
+   "id": "EX-0050",
+   "nazwa": "Dead bug straight legs",
+   "podstawa": "dead bug naprzemiennie — trener 17.10.2026: „dead bug tak jak gorilla row”"
+  },
+  {
+   "id": "EX-0052",
+   "nazwa": "Deadbug OH",
+   "podstawa": "dead bug naprzemiennie — trener 17.10.2026: „dead bug tak jak gorilla row”"
   },
   {
    "id": "EX-0055",
@@ -101,6 +116,11 @@
    "id": "EX-0112",
    "nazwa": "Incline dumbbell press alternating",
    "podstawa": "marker „alternating” w nazwie"
+  },
+  {
+   "id": "EX-0117",
+   "nazwa": "Kettlebell march",
+   "podstawa": "trener 17.10.2026: „kettel po jednej stronie — np. 10 kroków (po 5 na nogę), a po zmianie strony kettla znowu 10” — na stronę = na stronę kettla"
   },
   {
    "id": "EX-0130",

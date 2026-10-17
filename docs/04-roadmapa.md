@@ -925,7 +925,12 @@ Trener: „gorilla row robi się naprzemian, ale w bazie mamy je jako ćwiczenie
 * **BAZA** (`jednostronne.json`, potwierdzone): Gorilla row, Seesaw press, Seated seesaw press (nogi proste), Bear renegade row. Jednostronnych w BAZIE: 35 (było 31).
 * **Biblioteki** (`jednostronne: "tak"`): 16 naprzemiennych z hantlami / kettlebellami — seesaw press i row (2DB, 2KB, half kneeling, staggered), renegade row (w tym z kolan i ISO).
 * Liczenie serii bez zmian („jak w arkuszu” — 3 serie, nie 6). Liczba powtórzeń z automatu też bez zmian — zmienia się jej znaczenie: na stronę.
-* Do decyzji trenera (nie ruszone): Kettlebell march, Dead bug / Bird dog (wcześniej „nie”), naprzemienne z masą ciała z bibliotek (shoulder taps, prone alternating superman, alternating lying leg raise).
+* Dalej tego samego dnia, po odpowiedziach trenera — też **na stronę**:
+  * **Dead bug** — „tak jak gorilla row”: w BAZIE Dead bug straight legs i Deadbug OH, w bibliotekach 11 dynamicznych (bez izometrii na czas i bez opuszczania obu nóg naraz). Dead bug izo + OH (izometria) bez zmian.
+  * **Bird dog row** — „klasyczne raz na jedną stronę, a raz na drugą”: BAZA i DB Bird Dog Row z biblioteki. W aplikacji jedno i drugie (naprzemiennie albo najpierw jedna strona) to te same powtórzenia na stronę.
+  * **Kettlebell march** — „kettel po jednej stronie, np. 10 kroków (po 5 na nogę), po zmianie strony kettla znowu 10”: na stronę = na stronę kettla. Tak samo 1KB Suitcase March i 2KB Offset + Overhead Rack Marching z bibliotek. Marsze z dwoma kettlebellami bez zmiany strony zostają dwustronne; Suitcase carry (dystans) bez zmian.
+  * **Naprzemienne z masą ciała z bibliotek** — „liczymy naprzemiennie tak jak gorilla row”: 18 (shoulder taps, push up + alternating shoulder tap, prone alternating superman, alternating lying leg raise, marsze leżąc i w moście, knee to elbow, psoas march, penguin marches, wall marching). Wersje na czas (ISO, plank marching) bez zmian. Psoas march stracił znacznik „DO WERYFIKACJI – JEDNOSTRONNE”, offset marching — kod JEDNOSTRONNE (zostaje NAZWA).
+  * Jednostronnych w BAZIE: 39.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
