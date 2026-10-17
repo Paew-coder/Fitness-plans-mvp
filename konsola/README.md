@@ -358,6 +358,24 @@ kategorii — kategorię („— pełna baza —”); ⌘Z przywraca. Po zapisie
 przerysowaniu tabeli fokus wraca na to samo pole, więc z klawiatury da się
 pracować bez myszy.
 
+## Własne ćwiczenia (od 17.10.2026)
+
+Ćwiczenia, którego nie ma w BAZIE ani w bibliotekach, nie trzeba już dopisywać
+do plików. W liście ćwiczeń przy pozycji ostatnia opcja **„＋ Własne
+ćwiczenie…”** (albo w wyszukiwarce 🔎 „Nie ma na liście? Dodaj własne
+ćwiczenie” — z wpisaną już nazwą) otwiera okienko: nazwa, kategoria, wzorzec
+ruchu (part), coeff, progresja, skok, jednostronne, film. Po zapisie ćwiczenie
+od razu stoi w pozycji i zostaje w Twojej bazie na kolejne plany (na liście
+z dopiskiem „· własne”). **✎** obok poprawia pola — zmiana obejmuje każdy plan
+z tym ćwiczeniem.
+
+Liczy się jak każde inne: ciężar z 1RM, stres, telefon klienta (film z linku
+gra w aplikacji), eksport (dopisane do zakładki BAZA), import arkusza po
+nazwie. Nazwa musi być wolna — okienko mówi od razu, gdy takie ćwiczenie już
+jest. Generator „do pustych” ich nie losuje. Numery `WL-0001…` — osobne od
+BAZY i bibliotek. Dane w bazie konsoli (tabela `cwiczenie_wlasne`), nie
+w repozytorium.
+
 ## Biblioteki ćwiczeń z filmami (od 09.10.2026)
 
 Poza BAZĄ trenera (168) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
@@ -1126,6 +1144,8 @@ npm run kopia
 | `public/klient/karta-cwiczenia.js` | karta ćwiczenia z filmem w aplikacji klienta (YouTube IFrame Player API albo własny plik) |
 | `narzedzia/przeglad-filmu.ts` | karta z filmem OPEX na telefonie i komputerze, z prawdziwym odtwarzaczem YouTube; przełączanie pokaz / poradnik |
 | `public/wybor-cwiczenia.js` | wyszukiwarka ćwiczeń (BAZA + biblioteki filmów) z podglądem karty |
+| `public/wlasne-cwiczenie.js` | okienko własnego ćwiczenia (nazwa, kategoria, part, coeff, progresja, skok, jednostronne, film) |
+| `cwiczenia-wlasne.ts` | własne ćwiczenia trenera: zapis w bazie, sprawdzenie pól, wpięcie do katalogu silnika |
 | `public/klient/karta-cwiczenia.css` | wygląd karty ćwiczenia — wspólny dla klienta i podglądu w konsoli |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

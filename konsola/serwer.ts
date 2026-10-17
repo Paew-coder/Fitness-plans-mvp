@@ -36,13 +36,14 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { PROGRESJE_BEZ_CIEZARU } from "../silnik/src/typy.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
 import { dlaczegoBezSeriiMaksymalnej, POWOD_GUMY } from "../silnik/src/seria-maksymalna.ts";
-import { zGuma } from "../silnik/src/typy.ts";
+import { zGuma, type Cwiczenie } from "../silnik/src/typy.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
 import { filmyCwiczenia, idZLinkuYoutube, kartaDlaKlienta, kartaPodgladu, kartaRozgrzewki } from "../silnik/src/wideo.ts";
 import { BOJE, bojGlownySlotu, DWUBOJ, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
+import { dodajWlasne, wczytajWlasne, zarejestrujWlasne, zmienWlasne } from "./cwiczenia-wlasne.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
@@ -95,6 +96,9 @@ function pierwszeOtwarcieBazy(): number {
 }
 
 const TRENER = pierwszeOtwarcieBazy();
+// Własne ćwiczenia trenera (17.10.2026) wchodzą do katalogu silnika, zanim
+// przyjdzie pierwsze zapytanie — plan z nimi liczy się od pierwszej chwili.
+zarejestrujWlasne();
 
 /** Czy odpowiedzi mogą oznaczać ciasteczko jako `Secure`. */
 const ZA_HTTPS = process.env.ZA_HTTPS === "1";
@@ -160,40 +164,43 @@ function json(res: ServerResponse, dane: unknown, kod = 200): void {
  *
  * Po imporcie bibliotek filmów (09.10.2026) to kilka tysięcy pozycji, ok.
  * 1 MB JSON-a; gzip schodzi do ok. 1/8 — ma znaczenie na iPadzie przez sieć
- * komórkową. Katalog nie zmienia się w trakcie pracy serwera, więc wynik
- * trzymamy w pamięci.
+ * komórkową. BAZA i biblioteki nie zmieniają się w trakcie pracy serwera,
+ * więc wynik trzymamy w pamięci (własne ćwiczenia trenera idą osobno).
  */
 let listaCwiczen: { tresc: Buffer; gzip: Buffer } | null = null;
+/*
+ * Do każdego ćwiczenia dokładamy jedną informację, której nie ma w BAZIE:
+ * czy TOP SET jest przy nim zwyczajowy. Reguła jest wiedzą trenera
+ * i siedzi w silniku (`top-set.ts`) — przeglądarka nie ma jej powtarzać
+ * u siebie, bo wtedy byłyby dwie listy i jedna z nich by się rozjechała.
+ */
+function cwiczenieDoListy(c: Cwiczenie) {
+  const filmow = filmyCwiczenia(c.id).length;
+  return {
+    ...c,
+    zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
+    // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
+    // i przestawia przy nich „G” między progresją pauzowaną a bojem.
+    pauza: PAUZOWANE[c.id] ?? null,
+    // Dwubój (16.10.2026) — konsola pokazuje „D” i procent zamiast RPE.
+    dwuboj: DWUBOJ.has(c.id),
+    // Bój główny z reguły (przysiady, martwe ciągi, bench) — „G” podświetlone.
+    boj: BOJE.has(c.id),
+    // Guma bez kilogramów (17.10.2026) — w kolumnie ciężaru „guma”.
+    guma: zGuma(c),
+    // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
+    // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
+    filmow,
+    // Ćwiczenie BAZY bez wpisu w filmach, ale z linkiem YouTube w arkuszu —
+    // konsola i tak pokaże go w podglądzie (`kartaPodgladu`).
+    ...(filmow === 0 && idZLinkuYoutube(c.film) ? { filmZArkusza: true } : {}),
+  };
+}
 function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
   if (!listaCwiczen) {
-    /*
-     * Do każdego ćwiczenia dokładamy jedną informację, której nie ma w BAZIE:
-     * czy TOP SET jest przy nim zwyczajowy. Reguła jest wiedzą trenera
-     * i siedzi w silniku (`top-set.ts`) — przeglądarka nie ma jej powtarzać
-     * u siebie, bo wtedy byłyby dwie listy i jedna z nich by się rozjechała.
-     */
-    const tresc = Buffer.from(JSON.stringify(katalog.wszystkie.map((c) => {
-      const filmow = filmyCwiczenia(c.id).length;
-      return {
-        ...c,
-        zwyczajowyTopSet: zwyczajowyTopSet(c.nazwa),
-        // Pauzowane z własną progresją (02.10.2026) — konsola pokazuje „P”
-        // i przestawia przy nich „G” między progresją pauzowaną a bojem.
-        pauza: PAUZOWANE[c.id] ?? null,
-        // Dwubój (16.10.2026) — konsola pokazuje „D” i procent zamiast RPE.
-        dwuboj: DWUBOJ.has(c.id),
-        // Bój główny z reguły (przysiady, martwe ciągi, bench) — „G” podświetlone.
-        boj: BOJE.has(c.id),
-        // Guma bez kilogramów (17.10.2026) — w kolumnie ciężaru „guma”.
-        guma: zGuma(c),
-        // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
-        // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
-        filmow,
-        // Ćwiczenie BAZY bez wpisu w filmach, ale z linkiem YouTube w arkuszu —
-        // konsola i tak pokaże go w podglądzie (`kartaPodgladu`).
-        ...(filmow === 0 && idZLinkuYoutube(c.film) ? { filmZArkusza: true } : {}),
-      };
-    })));
+    // Bez własnych ćwiczeń trenera — te idą osobno (`/api/cwiczenia-wlasne`),
+    // bo zmieniają się w trakcie pracy, a ta lista jest liczona raz.
+    const tresc = Buffer.from(JSON.stringify(katalog.wszystkie.filter((c) => !c.wlasne).map(cwiczenieDoListy)));
     listaCwiczen = { tresc, gzip: gzipSync(tresc) };
   }
   const gzip = /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));
@@ -1355,6 +1362,23 @@ const serwer = createServer(async (req, res) => {
 
     // ── katalog ćwiczeń ──────────────────────────────────────────────
     if (sciezka === "/api/cwiczenia") return wyslijListeCwiczen(req, res);
+
+    // Własne ćwiczenia trenera (17.10.2026): lista, dodanie, poprawka.
+    if (sciezka === "/api/cwiczenia-wlasne" && req.method === "GET") {
+      return json(res, wczytajWlasne(trenerId).map(cwiczenieDoListy));
+    }
+    if (sciezka === "/api/cwiczenia-wlasne" && req.method === "POST") {
+      const wynik = dodajWlasne(trenerId, await cialo(req));
+      if ("blad" in wynik) return blad(res, wynik.blad);
+      return json(res, cwiczenieDoListy(wynik), 201);
+    }
+    const wlasneId = sciezka.match(/^\/api\/cwiczenia-wlasne\/(WL-\d+)$/)?.[1];
+    if (wlasneId && req.method === "PUT") {
+      const wynik = zmienWlasne(trenerId, wlasneId, await cialo(req));
+      if (wynik === null) return blad(res, "Nie ma takiego własnego ćwiczenia.", 404);
+      if ("blad" in wynik) return blad(res, wynik.blad);
+      return json(res, cwiczenieDoListy(wynik));
+    }
 
     // Karta ćwiczenia (opis i filmy) — podgląd w konsoli przy wyborze
     // ćwiczenia z biblioteki: ta sama karta, którą widzi klient.

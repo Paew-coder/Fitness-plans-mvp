@@ -116,7 +116,7 @@ export function dobierzCwiczenia(
   for (const s of sloty) {
     if (!doLosowania(s)) continue;
     const zKategorii = katalog.wKategorii(s.kategoriaSzkieletu)
-      .filter((c) => !c.biblioteka && !c.uwagi?.startsWith("DO WERYFIKACJI"));
+      .filter((c) => !c.biblioteka && !c.wlasne && !c.uwagi?.startsWith("DO WERYFIKACJI"));
     const dzis = wDniu.get(s.dzien) ?? new Set<string>();
     // Nigdy dwa razy w jednym dniu. Bój na A może wrócić w innym dniu;
     // reszta najpierw spośród jeszcze niewybranych.

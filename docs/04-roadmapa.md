@@ -988,6 +988,14 @@ Trener: „dodaj mi do bazy ćwiczenie S/l clean i B/l dragonflag bent knees” 
 * **S/l clean** (EX-3627): Lower pull, part d, coeff 0,5, kg, skok 1 kg, na jednej nodze — powtórzenia na stronę. Parametry jak Bulgarian clean plyo, skok jak Clean. Poza listą dwuboju — progresja zwykłego akcesorium. Bez filmu (kontrola planu zgłosi „bez nagrania”, dopóki trener nie poda linku).
 * Numery za bibliotekami filmów (import bierze kolejny numer po wszystkich). BAZA trenera: 164 z arkusza + 4 dodane.
 
+**77. Własne ćwiczenia w konsoli — 17.10.2026.**
+
+Trener: „dodaj możliwość wpisywania własnej nazwy ćwiczenia podczas tworzenia planu — razem z coeff, part, kategorią itp.”
+
+* **Konsola:** w liście ćwiczeń pozycji „＋ Własne ćwiczenie…”, w wyszukiwarce „Nie ma na liście? Dodaj własne ćwiczenie” (z wpisaną nazwą). Okienko: nazwa, kategoria (domyślnie z szkieletu pozycji), wzorzec ruchu (part), coeff, progresja, skok (tylko przy kg / dodatkowym ciężarze), jednostronne, film. Po zapisie ćwiczenie stoi w pozycji, na liście z dopiskiem „· własne”; ✎ obok poprawia pola we wszystkich planach. Brak pola i zajęta nazwa — komunikat w okienku od razu.
+* **Zaplecze** (`konsola/cwiczenia-wlasne.ts`): tabela `cwiczenie_wlasne` (schemat v11), numery `WL-0001…`. Przy starcie serwera i po każdej zmianie ćwiczenia wchodzą do katalogu silnika (`katalog.ustawWlasne`) — plan, telefon, eksport (zakładka BAZA) i import arkusza widzą je jak każde inne. Serwer sprawdza pola jeszcze raz (nazwa wolna w całym katalogu, kategoria, part, coeff 1/0,75/0,5/0,25, progresja, skok 0–20 kg, link). `/api/cwiczenia-wlasne` — lista trenera, `POST` dodaje, `PUT /…/WL-…` poprawia. Generator ich nie losuje.
+* Testy: `konsola/testy/cwiczenia-wlasne.test.ts` (dodanie, odmowy, skok bez kg, w planie z ciężarem i na telefonie z filmem, poprawka we wszystkich planach, restart serwera), eksport, migracja (v11). Przegląd ekranów: odmowa przy zajętej nazwie, zapis z pól okienka, „· własne” i ✎, poprawka coeff liczy się od razu, „Nie ma na liście?” z nazwą.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

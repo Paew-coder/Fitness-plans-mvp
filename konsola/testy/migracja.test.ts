@@ -154,7 +154,8 @@ describe("migracja v1 → v2", () => {
     // 6: wykonanie pamięta wszystkie serie, nie tylko najcięższą (23.09.2026).
     // 7: wersja robocza planu — zmiany trenera czekają na zatwierdzenie (10.10.2026).
     // 8: znacznik resetu planu — telefon zaczyna trening od nowa (10.10.2026).
-    assert.equal(w, 10);
+    // 11: własne ćwiczenia trenera (17.10.2026).
+    assert.equal(w, 11);
   });
 
   test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {
