@@ -980,6 +980,14 @@ Trener: „na liście wyświetlającej dany dzień treningowy może zróbmy tak,
 * Lista dnia u klienta: karty jednej litery (B1, B2) stoją ciasno (odstęp ok. 6 px), między literami przerwa (ok. 22 px). Grupa to ta sama litera, po której prowadzenie układa superserie; TOP SET należy do grupy swojego ćwiczenia, ćwiczenie bez numeru stoi osobno. Inne ekrany bez zmian. SW `trening-v80`.
 * Przegląd klienta: odstęp w grupie mniejszy niż między grupami.
 
+**76. Dwa ćwiczenia dodane do BAZY — 17.10.2026.**
+
+Trener: „dodaj mi do bazy ćwiczenie S/l clean i B/l dragonflag bent knees” (z linkiem do filmu „Dragon Flags (bent legs)”).
+
+* **B/l dragonflag bent knees** (EX-3626): Core, part c, coeff 0,75, masa ciała, obustronne — jak B/l dragonflag eccentric. Film z linku gra w aplikacji.
+* **S/l clean** (EX-3627): Lower pull, part d, coeff 0,5, kg, skok 1 kg, na jednej nodze — powtórzenia na stronę. Parametry jak Bulgarian clean plyo, skok jak Clean. Poza listą dwuboju — progresja zwykłego akcesorium. Bez filmu (kontrola planu zgłosi „bez nagrania”, dopóki trener nie poda linku).
+* Numery za bibliotekami filmów (import bierze kolejny numer po wszystkich). BAZA trenera: 164 z arkusza + 4 dodane.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

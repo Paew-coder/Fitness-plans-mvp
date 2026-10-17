@@ -417,15 +417,23 @@ describe("katalog BAZY 5.17", () => {
   // filmów (import 09.10.2026), które są w tym samym katalogu.
   const bazaTrenera = new Katalog(katalog.bazaTrenera);
 
-  test("zawiera 164 ćwiczenia z arkusza i 2 dodane przez trenera", () => {
-    // Dodane: Sumo deadlift (EX-0204) i „Barbell low bar squat paused 3sec”
-    // (EX-0205, 02.10.2026 — progresja pauzowana).
-    assert.equal(katalog.bazaTrenera.length, 166);
+  test("zawiera 164 ćwiczenia z arkusza i 4 dodane przez trenera", () => {
+    // Dodane: Sumo deadlift (EX-0204), „Barbell low bar squat paused 3sec”
+    // (EX-0205, 02.10.2026 — progresja pauzowana), 17.10.2026: „B/l dragonflag
+    // bent knees” (EX-3626) i „S/l clean” (EX-3627) — numery za bibliotekami.
+    const DODANE = ["EX-0204", "EX-0205", "EX-3626", "EX-3627"];
+    assert.equal(katalog.bazaTrenera.length, 168);
     // Rozdzielone celowo: arkusz to arkusz, a to, co trener dołożył później,
     // ma być widać. Inaczej za pół roku nikt nie odróżni jednego od drugiego.
-    const zArkusza = katalog.bazaTrenera.filter((c) => c.id !== "EX-0204" && c.id !== "EX-0205");
+    const zArkusza = katalog.bazaTrenera.filter((c) => !DODANE.includes(c.id));
     assert.equal(zArkusza.length, 164);
     assert.equal(katalog.poNazwie("sumo deadlift")?.coeff, 1);
+    const dragonflag = katalog.poNazwie("b/l dragonflag bent knees")!;
+    assert.deepEqual([dragonflag.progresja, dragonflag.jednostronne, dragonflag.film],
+      ["masa ciała", undefined, "https://youtu.be/7uUfiKjAKmg"]);
+    const clean = katalog.poNazwie("s/l clean")!;
+    assert.deepEqual([clean.kategoria, clean.progresja, clean.skokKg, clean.jednostronne],
+      ["Lower pull", "kg", 1, true]);
   });
 
   test("wyszukiwanie po ID i po nazwie", () => {
@@ -472,7 +480,7 @@ describe("katalog BAZY 5.17", () => {
 
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(bazaTrenera.wKategorii("Tricep").length, 9);
-    assert.equal(bazaTrenera.wKategorii(null).length, 166);
+    assert.equal(bazaTrenera.wKategorii(null).length, 168);
     assert.equal(katalog.wKategorii(null).length, katalog.wszystkie.length);
   });
 
@@ -484,7 +492,8 @@ describe("katalog BAZY 5.17", () => {
     // ręka, czyli łącznie 16”).
     // Tego samego dnia +4: dead bug (dwa) „tak jak gorilla row”, Bird dog row
     // („raz na jedną stronę, a raz na drugą”), Kettlebell march (na stronę kettla).
-    assert.equal(bazaTrenera.jednostronne().length, 39);
+    // 17.10.2026: +1 — „S/l clean”, na jednej nodze.
+    assert.equal(bazaTrenera.jednostronne().length, 40);
     for (const nazwa of ["Gorilla row", "Seesaw press", "Seated seesaw press (nogi proste)", "Bear renegade row",
       "Dead bug straight legs", "Deadbug OH", "Bird dog row", "Kettlebell march"]) {
       assert.equal(katalog.poNazwie(nazwa)?.jednostronne, true, nazwa);
@@ -510,8 +519,9 @@ describe("katalog BAZY 5.17", () => {
     // Pełna lista czekających na decyzję to 14 + 2 oznaczone "UZUPEŁNIĆ".
     assert.equal(bazaTrenera.wymagajaceDecyzji().length, 16);
     // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania,
-    // + pauzowany przysiad low bar (02.10.2026, film dopisze trener).
-    assert.equal(bazaTrenera.bezFilmu().length, 28);
+    // + pauzowany przysiad low bar (02.10.2026, film dopisze trener)
+    // + „S/l clean” (17.10.2026, bez linku).
+    assert.equal(bazaTrenera.bezFilmu().length, 29);
   });
 });
 
