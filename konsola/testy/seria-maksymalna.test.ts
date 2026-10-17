@@ -46,7 +46,7 @@ describe("kiedy seria maksymalna ma sens", () => {
     }
   });
 
-  test("dotyczy 38 ćwiczeń ze 166 — nie jest to margines", () => {
+  test("dotyczy 39 ćwiczeń ze 168 — nie jest to margines", () => {
     // BAZA trenera; ćwiczenia z bibliotek filmów (09.10.2026) liczą się osobno.
     const bez = katalog.bazaTrenera.filter((c) => !seriaMaksymalnaMaSens(c.progresja));
     // 27.09.2026: +2 — Reverse Nordic i Glute crusher przeszły na masę ciała.
@@ -55,7 +55,8 @@ describe("kiedy seria maksymalna ma sens", () => {
     // 16.10.2026: +9 — brzuch, prost grzbietu i skoki bez obciążenia (Toes to bar,
     // GHD flexion, Incline sit-ups, Supine pigeon abs, Back extension, Box jump,
     // Horizontal jump, Seated broad jump, Extensive plyo jumps s/l).
-    assert.equal(bez.length, 38);
+    // 17.10.2026: +1 — nowy „B/l dragonflag bent knees” na masie ciała.
+    assert.equal(bez.length, 39);
     assert.ok(bez.some((c) => c.nazwa === "Toes to bar"));
     assert.ok(bez.some((c) => c.nazwa === "Box jump"));
     assert.ok(bez.some((c) => c.nazwa === "S/l dragonflag eccentric"));

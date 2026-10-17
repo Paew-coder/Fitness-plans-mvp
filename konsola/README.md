@@ -360,7 +360,7 @@ pracować bez myszy.
 
 ## Biblioteki ćwiczeń z filmami (od 09.10.2026)
 
-Poza BAZĄ trenera (166) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
+Poza BAZĄ trenera (168) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
 i Catalyst Athletics, każde z kategorią, part, coeff, progresją i skokiem
 (1199 oznaczonych „DO WERYFIKACJI”). Lista w slocie pokazuje jak dotąd BAZĘ
 trenera; **🔎** obok (albo ostatnia opcja listy) otwiera wyszukiwarkę po

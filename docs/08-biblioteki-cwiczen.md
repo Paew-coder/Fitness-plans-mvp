@@ -17,7 +17,7 @@ weryfikacji”.
 | Do weryfikacji | 1199 (`uwagi` = „DO WERYFIKACJI – powód”, `weryfikacja` = kody) |
 | Filmów | 3916: Theory of Motion 3297, Catalyst 618, OPEX 1 |
 | Ćwiczeń z kilkoma nagraniami | 324 (np. Deadlift EX-0053 — 7, Barbell bench press EX-0011 — 6) |
-| Ćwiczeń BAZY trenera z filmem | 76 ze 166 (160 filmów z bibliotek) |
+| Ćwiczeń BAZY trenera z filmem | 77 ze 168 (160 filmów z bibliotek; 17.10.2026 +2 dodane przez trenera, jedno z linkiem) |
 | Pominięte filmy | 32 (nagrania konkretnych osób, migawki, „IMG 0906”…) |
 | Poradniki ogólne bez ćwiczenia | 23 (mobilność, „5 Tips for a Better Squat”, vlogi) — do przypięcia w arkuszu |
 
