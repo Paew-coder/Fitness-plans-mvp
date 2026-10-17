@@ -502,6 +502,57 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     poCofnieciu.zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.trybCiezaru == null
     && JSON.stringify(await ciezaryTygodni("D1-S02")) === JSON.stringify(przedPrzestawieniem));
 
+  // ── 11b'. ↗ — RPE 7,5 → 10 przy stałych powtórzeniach (17.10.2026) ──
+  //
+  // Trener: „przycisk, który będzie wpisywał w danym ćwiczeniu samo RPE od
+  // 1 tygodnia — 7,5, przeskok o 0,5, tak żeby w 6 tygodniu było RPE 10 —
+  // i to, że wtedy ciężar liczy się na podstawie RPE”.
+  const przedRosnacym = await ciezaryTygodni("D1-S02");
+  const tygodniePrzedRosnacym = JSON.stringify((await zBazy()).zapisany.plan.sloty
+    .find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {});
+  await wiersz(1).hover();
+  await wiersz(1).locator("td.lp button", { hasText: /^↗$/ }).click();
+  await zapisano();
+  const zRosnacym = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
+  const rpeTygodni = [1, 2, 3, 4, 5, 6].map((t) => zRosnacym?.tygodnie?.[t]?.rpe);
+  const powtTygodni = [1, 2, 3, 4, 5, 6].map((t) => zRosnacym?.tygodnie?.[t]?.powtorzenia);
+  sprawdz("↗ wpisuje RPE 7,5 → 10 co 0,5, stałe powtórzenia i ciężar z RPE",
+    JSON.stringify(rpeTygodni) === "[7.5,8,8.5,9,9.5,10]" && new Set(powtTygodni).size === 1
+      && typeof powtTygodni[0] === "number" && zRosnacym?.trybCiezaru === "licz z RPE",
+    `${rpeTygodni.join(" ")} · powt. ${powtTygodni.join(" ")} · ${zRosnacym?.trybCiezaru}`);
+  // Ten plan ma już oceny klienta z wcześniejszych sekcji — tydzień po
+  // tygodniu ciężar skacze z mnożnikiem. Równy wzrost sprawdza test eksportu
+  // na czystym planie; tu: liczone RPE to drabinka, a T6 cięższy niż T1.
+  const { wynik: wynikRosnacy } = await zBazy();
+  const ciezaryRosnace = (await ciezaryTygodni("D1-S02")).slice(0, 6) as number[];
+  const rpeLiczone = wynikRosnacy.tygodnie.slice(0, 6)
+    .map((t: any) => t.sloty.find((x: any) => x.positionId === "D1-S02")?.rpe);
+  sprawdz("ciężar liczony z RPE drabinki: T6 cięższy niż T1",
+    JSON.stringify(rpeLiczone) === "[7.5,8,8.5,9,9.5,10]" && ciezaryRosnace[5]! > ciezaryRosnace[0]!,
+    `${ciezaryRosnace.join(" · ")} · RPE ${rpeLiczone.join(" ")}`);
+  sprawdz("przy Lp. znacznik RPE↗, a ↗ podświetlone",
+    (await wiersz(1).locator(".znacznik-tryb").innerText().catch(() => "")) === "RPE↗"
+      && await wiersz(1).locator("td.lp button.wlaczony", { hasText: /^↗$/ }).count() === 1);
+  await wiersz(1).hover();
+  await wiersz(1).locator("td.lp button", { hasText: /^↗$/ }).click();
+  await zapisano();
+  const bezRosnacego = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
+  sprawdz("ponowne ↗ zdejmuje RPE i tryb z RPE, powtórzenia zostają",
+    [1, 2, 3, 4, 5, 6].every((t) => bezRosnacego?.tygodnie?.[t]?.rpe === undefined)
+      && bezRosnacego?.trybCiezaru == null && bezRosnacego?.tygodnie?.[6]?.powtorzenia === powtTygodni[0]);
+  // Dwa razy „Cofnij” — plan wraca do stanu sprzed ↗ (dalsze sekcje liczą na niego).
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  const poCofnieciuRosnacego = await ciezaryTygodni("D1-S02");
+  const slotPoCofnieciu = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
+  sprawdz("„Cofnij” dwa razy — plan jak przed ↗",
+    JSON.stringify(poCofnieciuRosnacego) === JSON.stringify(przedRosnacym)
+      && JSON.stringify(slotPoCofnieciu?.tygodnie ?? {}) === tygodniePrzedRosnacym,
+    `${JSON.stringify(przedRosnacym)} → ${JSON.stringify(poCofnieciuRosnacego)} · T1 ${JSON.stringify(slotPoCofnieciu?.tygodnie?.[1])}`);
+
   // ── 11c. progresja boju w cz.1 i w cz.2 ───────────────────────────
   //
   // Odczytane z arkuszy trenera „Szablon 3 dni, 3 złożone cz.1 / cz.2",
@@ -1681,8 +1732,8 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("w deloadzie stoi, skąd biorą się liczby",
     (await s.locator("#dni .opis-po-cyklu").innerText().catch(() => "")).includes("RPE o 1 niżej"));
   const przyciskiDeloadu = await s.locator("table.sloty .strzalki button").allInnerTexts();
-  sprawdz("w deloadzie nie ma », T ani R — kopiowałyby deload na tygodnie pracy",
-    przyciskiDeloadu.length > 0 && przyciskiDeloadu.every((t) => !["»", "T", "R"].includes(t)),
+  sprawdz("w deloadzie nie ma », T, R ani ↗ — kopiowałyby deload na tygodnie pracy",
+    przyciskiDeloadu.length > 0 && przyciskiDeloadu.every((t) => !["»", "T", "R", "↗"].includes(t)),
     przyciskiDeloadu.join(" "));
 
   await s.click("#przelacz-maksy");

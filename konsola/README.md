@@ -353,6 +353,14 @@ serwer (tygodnie, szablon, losowanie, asystent, 1RM, status); ▲▼ — przesta
 z powrotem. Wpisy klienta (oceny, jego ciężary) zostają zawsze. W polu tekstowym
 ⌘Z cofa samo pole, jak w każdej przeglądarce.
 
+**↗** w kolumnie Lp. (od 17.10.2026, przy ćwiczeniach na kilogramy, poza
+dwubojem) wpisuje RPE 7,5 · 8 · 8,5 · 9 · 9,5 · 10 w T1–T6, ustala stałe
+powtórzenia (z T1, chyba że w tygodniu wpisane inne) i włącza liczenie ciężaru
+z RPE („R”) — ciężar rośnie co tydzień przy tej samej liczbie powtórzeń. Przy
+numerze znacznik „RPE↗”. Drugie kliknięcie zdejmuje RPE i „R” (powtórzenia
+zostają); ⌘Z cofa. Eksport wpisuje takie ciężary do arkusza wprost — arkusz
+zna tylko tryb całego planu (to samo przy samym „R”).
+
 **🗑** przy ćwiczeniu (od 17.10.2026) usuwa je z pozycji po potwierdzeniu: znika
 ćwiczenie i to, co było pod nie ustawione (serie, powtórzenia, RPE, ciężar na
 sztywno, „G”, „S”, „R”); numer i kategoria pozycji zostają, wpisy klienta
