@@ -973,6 +973,13 @@ Trener: „po namyśle zróbmy jednak tak, że jeżeli ktoś wpisze inny cięża
 * **Guma** (`zGuma` w `silnik/src/typy.ts`): guma w sprzęcie albo „band” w nazwie, a progresja bez kilogramów (czas, ręczne ustawienie, asysta, masa ciała, dystans) — 136 ćwiczeń. W kolumnie ciężaru „guma”, pod spodem „na czas” / „asysta” / „na dystans”; bez pola na kilogramy u klienta i w konsoli, bez serii maksymalnej („Ćwiczenie z gumą — opór dobiera się gumą, nie kilogramami.”). Guma razem ze sztangą, hantlami, kettlem czy wyciągiem zostaje przy kilogramach. Guma na masie ciała („Spanish Squat”, „RNT Step-Up”) dalej zmienia po ocenie powtórzenia. SW `trening-v79`.
 * Testy: silnik (`guma.test.ts`, `zmiana-1rm.test.ts`), konsola (`kalibracja.test.ts` — przykład trenera, mniej niż w planie, same powtórzenia, akcesorium z bloku, poprawka, druga zmiana, zaległy trening, 30 %, ciężar trenera, reset; API — guma, zmiana od T3, notka w telefonie, sama ocena; eksport). Przeglądy: nagłówek dnia z tygodniem nad nim, lista tygodni, nowe zdania.
 
+**75. Ćwiczenia robione razem stoją razem — 17.10.2026.**
+
+Trener: „na liście wyświetlającej dany dzień treningowy może zróbmy tak, że jak jest ćwiczenie np. B1 i B2, to są one blisko siebie, i później jakaś przerwa delikatna przed C1 — tak żeby wizualnie oddzielić ćwiczenia, które robi się wspólnie”.
+
+* Lista dnia u klienta: karty jednej litery (B1, B2) stoją ciasno (odstęp ok. 6 px), między literami przerwa (ok. 22 px). Grupa to ta sama litera, po której prowadzenie układa superserie; TOP SET należy do grupy swojego ćwiczenia, ćwiczenie bez numeru stoi osobno. Inne ekrany bez zmian. SW `trening-v80`.
+* Przegląd klienta: odstęp w grupie mniejszy niż między grupami.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

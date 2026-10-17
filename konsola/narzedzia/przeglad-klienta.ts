@@ -146,6 +146,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const karty = s.locator("#cwiczenia .cwiczenie");
   sprawdz("trening pokazuje ćwiczenia z planu", await karty.count() === 3,
     `${await karty.count()} ćwiczenia`);
+  // Trener, 17.10.2026: B1 i B2 blisko siebie, przed kolejną literą przerwa.
+  const odstepy = await karty.evaluateAll((k: HTMLElement[]) => k.map((e) =>
+    Math.round(e.nextElementSibling ? e.nextElementSibling.getBoundingClientRect().top
+      - e.getBoundingClientRect().bottom : -1)));
+  sprawdz("A1 osobno, B1 i B2 razem — odstęp w grupie mniejszy niż między grupami",
+    odstepy[1]! < 10 && odstepy[0]! > 3 * odstepy[1]!, odstepy.join(" · "));
   // Na liście „OK” zostaje (27.09.2026) — znika tylko z panelu.
   sprawdz("na liście ocena z „OK” pośrodku",
     (await karty.first().locator(".oceny .ocena-przycisk").allInnerTexts()).join(" | ")
@@ -884,7 +890,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     pasekTopSetu.includes("Barbell row") && /RPE\s*8/.test(pasekTopSetu),
     pasekTopSetu.replace(/\n/g, " ") || "pusto");
   // Każdy TOP SET stoi tuż przed swoim ćwiczeniem, nie nad całym dniem.
-  const kolejnoscKart = await s.locator("#cwiczenia > .topset, #cwiczenia > .cwiczenie").evaluateAll(
+  const kolejnoscKart = await s.locator("#cwiczenia .topset, #cwiczenia .cwiczenie").evaluateAll(
     (k: HTMLElement[]) => k.map((e) => (e.dataset.topset ? `TS ${e.dataset.topset}` : e.dataset.position)));
   sprawdz("dwa TOP SETY, każdy przed swoim ćwiczeniem",
     kolejnoscKart.slice(0, 4).join(" · ") === "TS D1-S01 · D1-S01 · TS D1-S02 · D1-S02",
