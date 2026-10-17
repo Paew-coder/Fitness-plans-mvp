@@ -98,4 +98,18 @@ describe("sprzątanie", () => {
     assert.ok(pliki().some((f) => f.includes("przed-migracja")),
       "kopia sprzed migracji zniknęła pod codziennymi");
   });
+
+  test("kopie sprzed aktualizacji serwera nie wypychają codziennych (17.10.2026)", async () => {
+    // Serwer sprawdza nową wersję co minutę; aktualizacji bywa kilka dziennie.
+    for (const f of pliki()) rmSync(join(KOPIE, f));
+    for (let i = 0; i < 5; i++) {
+      writeFileSync(join(KOPIE, `craftmyplan-2026-03-${String(i + 1).padStart(2, "0")}T00-00-00.db`), "x");
+    }
+    for (let i = 0; i < kopie.ILE_TRZYMAMY + 10; i++) {
+      writeFileSync(join(KOPIE, `craftmyplan-przed-aktualizacja-2026-04-${String(i + 1).padStart(2, "0")}T00-00-00.db`), "x");
+    }
+    kopie.posprzataj();
+    assert.equal(pliki().filter((f) => !f.includes("przed-aktualizacja")).length, 5, "codzienne zostają");
+    assert.equal(pliki().filter((f) => f.includes("przed-aktualizacja")).length, kopie.ILE_TRZYMAMY);
+  });
 });
