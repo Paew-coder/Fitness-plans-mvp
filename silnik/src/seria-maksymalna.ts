@@ -38,6 +38,9 @@ export function dlaczegoBezSeriiMaksymalnej(progresja: Progresja): string | null
   }
 }
 
+/** Ćwiczenie z gumą bez kilogramów (`zGuma`, 17.10.2026). */
+export const POWOD_GUMY = "Ćwiczenie z gumą — opór dobiera się gumą, nie kilogramami.";
+
 /** Czy przy tym ćwiczeniu para „ciężar × powtórzenia" da cokolwiek policzyć. */
 export function seriaMaksymalnaMaSens(progresja: Progresja): boolean {
   return dlaczegoBezSeriiMaksymalnej(progresja) === null;

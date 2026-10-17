@@ -648,10 +648,29 @@ pojedynczego zamiast serii do odmowy, pole powtórzeń z jedynką.
 
 Nad przyciskiem prowadzenia zwijany baner: trenować można z samej listy
 (odhaczyć „OK”, ciężaru nie trzeba wpisywać), prowadzenie seria po serii jest
-nieobowiązkowe. Ciężar na kolejne tygodnie zmienia ocena „Za trudne / Za
-łatwe”; wpisany ciężar zobaczy trener, a w prowadzeniu następna seria idzie
-od niego. Wyjątek — „dobierz”: z pierwszej wpisanej serii liczy się reszta
-planu. Zwinięty raz zostaje zwinięty. Szczegóły: roadmapa, punkt 63.
+nieobowiązkowe. Ciężar na kolejne tygodnie zmienia wpisany inny ciężar albo
+ocena „Za trudne / Za łatwe”. Wyjątek — „dobierz”: z pierwszej wpisanej serii
+liczy się reszta planu. Zwinięty raz zostaje zwinięty. Szczegóły: roadmapa,
+punkty 63 i 74.
+
+## Inny ciężar niż w planie liczy resztę planu (od 17.10.2026)
+
+Klient miał zrobić 40 kg × 8, a zrobił 45 kg × 9 — wpisuje to, a od tego
+tygodnia do końca planu ciężary liczą się od tej serii (1RM w górę o ok.
+17 %). Przerobione tygodnie zostają, jakie były. Mniej niż w planie — reszta
+planu lżejsza. Nie chce wpisywać — wystarczy ocena. Nie liczy się: ciężar jak
+w planie z inną liczbą powtórzeń (od tego jest ocena), różnica ponad 30 %
+(trafia do Ciebie jako propozycja 1RM), ciężar wpisany przez Ciebie na
+sztywno, rwanie i zarzut. W konsoli przy serii maksymalnej widać, z której
+serii i od którego tygodnia; nadpisanie pól to cofa. Szczegóły: roadmapa,
+punkt 74.
+
+## Tydzień nad dniem, guma w kolumnie ciężaru (od 17.10.2026)
+
+Nagłówek treningu: małą linijką „TYDZIEŃ 3 Z 6”, pod nią „Dzień I”. Lista
+tygodni: „**Tydzień 3** z 6”, licznik „1 z 3 treningów”. Ćwiczenia z gumą
+bez kilogramów mają w kolumnie ciężaru „guma” (pod spodem „na czas”,
+„asysta”…) zamiast nazwy progresji.
 
 ## Dobieranie ciężaru bez oceny „za lekko / za ciężko” (od 10.10.2026)
 

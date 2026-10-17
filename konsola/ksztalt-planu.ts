@@ -120,9 +120,20 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (seria.kalibracja != null) {
       const k = seria.kalibracja;
       if (!jestObiektem(k) || !jestLiczba(k.ciezar) || !jestLiczba(k.powtorzenia)
-        || !jestLiczba(k.rpe) || !jestLiczba(k.tydzien)) {
+        || !jestLiczba(k.rpe) || !jestLiczba(k.tydzien)
+        || (k.oneRMPrzed != null && !jestLiczba(k.oneRMPrzed))
+        || (k.ciezarPlanu != null && !jestLiczba(k.ciezarPlanu))
+        || (k.pierwotne != null && (!Array.isArray(k.pierwotne) || k.pierwotne.length > 20
+          || !k.pierwotne.every((p: any) => jestObiektem(p) && typeof p.cwiczenieId === "string"
+            && jestLiczba(p.ciezar) && jestLiczba(p.powtorzenia))))) {
         return `${gdzie}: opis serii, z której policzono 1RM, jest uszkodzony`;
       }
+    }
+    // 1RM sprzed zmiany w środku cyklu, tydzień po tygodniu (17.10.2026).
+    if (seria.wczesniej != null && (!Array.isArray(seria.wczesniej) || seria.wczesniej.length > 8
+      || !seria.wczesniej.every((w: any) => jestObiektem(w) && Number.isInteger(w.doTygodnia)
+        && w.doTygodnia >= 1 && w.doTygodnia <= 8 && jestLiczba(w.oneRM) && w.oneRM >= 0))) {
+      return `${gdzie}: 1RM z wcześniejszych tygodni jest uszkodzone`;
     }
     // 1RM z treningu, które ta seria zastąpiła — wraca, gdy klient ją usunie.
     if (seria.zastapionaKalibracja != null) {

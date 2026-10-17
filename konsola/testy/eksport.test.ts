@@ -39,6 +39,20 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("1RM zmienione serią w środku cyklu — tygodnie idą liczbami wprost (17.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.serieMaksymalne[0] = { cwiczenieId: "EX-0010", ciezar: 130, powtorzenia: 1,
+      wczesniej: [{ doTygodnia: 2, oneRM: 120 }] };
+    const wynik = przeliczPlan(zapisany.plan);
+    const dane = daneDoArkusza(zapisany);
+    for (const t of [1, 3]) {
+      assert.equal(pole(dane, "D1-S01", t).ciezar_reczny, wynik.tygodnie[t - 1]!.sloty[0]!.ciezar,
+        `T${t}: arkusz ma jedno 1RM na ćwiczenie — dostaje liczbę`);
+    }
+    assert.ok(wynik.tygodnie[0]!.sloty[0]!.oneRM === 120 && wynik.tygodnie[2]!.sloty[0]!.oneRM === 130);
+    assert.equal(pole(dane, "D1-S02", 1).ciezar_reczny, null, "inne ćwiczenie bez zmian — formuła");
+  });
+
   test("mały ciężar przesunięty po ocenie (5 → 4 kg) idzie do arkusza wprost (02.10.2026)", () => {
     const zapisany = planDomyslny();
     zapisany.plan.serieMaksymalne = zapisany.plan.serieMaksymalne

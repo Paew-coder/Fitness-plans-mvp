@@ -191,10 +191,12 @@ describe("nowy cykl zaczyna od tego, co klient faktycznie podnosił", () => {
     //
     // Bój główny, bo ma już 1RM (przyjęte dwa testy wyżej). Przy ćwiczeniu
     // bez 1RM seria nie idzie do propozycji, tylko od razu je ustala — to
-    // sprawdza test niżej.
+    // sprawdza test niżej. Ciężar z planu, więcej powtórzeń: inny ciężar
+    // (17.10.2026) zmieniłby 1RM od razu, bez propozycji.
+    const t1 = (await api(`/api/plany/${planCyklu2}`)).dane.wynik.tygodnie[0].sloty[0];
     await api(`/api/klient/${token}/odczucie`, "POST", {
       positionId: "D1-S01", tydzien: 1,
-      ciezarWykonany: 95, powtorzeniaWykonane: 5, feedback: "OK",
+      ciezarWykonany: t1.ciezar, powtorzeniaWykonane: t1.powtorzenia + 2, feedback: "OK",
     });
     const { dane } = await api(`/api/plany/${planCyklu2}`);
     const propozycja = dane.propozycje1RM.find((p: any) => p.cwiczenieId === "EX-0010");
@@ -949,6 +951,8 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
   const KLIENT = "Podmieniana Osoba";
   const PLAN = "podmieniana-osoba-1";
   let tokenPodmiany = "";
+  let ciezarT1 = 0;
+  let powtT1 = 0;
 
   before(async () => {
     await api("/api/plany", "POST", { klient: KLIENT, wersja: 1 });
@@ -963,10 +967,15 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     await api(`/api/plany/${PLAN}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
     await api(`/api/plany/${PLAN}/zatwierdz`, "POST");
     tokenPodmiany = (await api(`/api/plany/${PLAN}/link`, "POST")).dane.token;
+    // Ciężar z planu, więcej powtórzeń — idzie do propozycji. Inny ciężar
+    // (17.10.2026) zmieniłby 1RM od razu.
+    const wynik = (await api(`/api/plany/${PLAN}`)).dane.wynik;
     for (const tydzien of [1, 2]) {
+      const s = wynik.tygodnie[tydzien - 1].sloty[0];
+      if (tydzien === 1) [ciezarT1, powtT1] = [s.ciezar, s.powtorzenia + 3];
       await api(`/api/klient/${tokenPodmiany}/odczucie`, "POST", {
         planId: PLAN, positionId: "D1-S01", tydzien, feedback: "OK",
-        ciezarWykonany: 100 + tydzien * 5, powtorzeniaWykonane: 5,
+        ciezarWykonany: s.ciezar, powtorzeniaWykonane: s.powtorzenia + 3,
       });
     }
   });
@@ -1025,8 +1034,8 @@ describe("podmiana ćwiczenia nie przepisuje przerobionych tygodni", () => {
     const t1 = dane.tygodnie[0].dni[0].cwiczenia[0];
     assert.ok(t1.wczesniej, "przerobiony tydzień wygląda na pusty");
     assert.match(t1.wczesniej.nazwa, /back squat/i);
-    assert.equal(t1.wczesniej.ciezarWykonany, 105);
-    assert.equal(t1.wczesniej.powtorzeniaWykonane, 5);
+    assert.equal(t1.wczesniej.ciezarWykonany, ciezarT1);
+    assert.equal(t1.wczesniej.powtorzeniaWykonane, powtT1);
     assert.equal(t1.wczesniej.feedback, "OK");
 
     // Tygodnie nietknięte podmianą nie mają czego wspominać.
@@ -1392,3 +1401,79 @@ describe("dwubój na telefonie", () => {
     assert.equal(lista.find((c: any) => c.id === "EX-0010").dwuboj, false);
   });
 });
+
+/*
+ * Guma (trener, 17.10.2026): przy „SL Glute Bridge ISO Band Hip Flexion”
+ * w kolumnie ciężaru stało „czas” — „musimy zrobić osobny wpis w tamto
+ * miejsce dla ćwiczeń z gumą”.
+ */
+describe("guma na telefonie", () => {
+  let t = "";
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Guma Test", wersja: 1 });
+    const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Guma Test").id;
+    const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
+    plan.sloty[1].cwiczenieId = "EX-2579";   // SL Glute Bridge ISO Band Hip Flexion — czas
+    plan.sloty[2].cwiczenieId = "EX-3170";   // Banded Wall Slide — ręczne ustawienie
+    assert.equal((await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" })).kod, 200);
+    t = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+  });
+
+  test("w kolumnie ciężaru „guma”, a progresja mówi, że na czas", async () => {
+    const cw = (await api(`/api/klient/${t}`)).dane.tygodnie[0].dni[0].cwiczenia;
+    const most = cw.find((c: any) => c.cwiczenieId === "EX-2579");
+    assert.deepEqual([most.ciezar, most.progresja, most.dobierzCiezar, most.ciezarWybieraKlient],
+      ["guma", "czas", false, false]);
+  });
+
+  test("ręczna guma nie prosi klienta o kilogramy", async () => {
+    const cw = (await api(`/api/klient/${t}`)).dane.tygodnie[0].dni[0].cwiczenia;
+    const slide = cw.find((c: any) => c.cwiczenieId === "EX-3170");
+    assert.deepEqual([slide.ciezar, slide.ciezarWybieraKlient], ["guma", false]);
+  });
+});
+
+/*
+ * Inny ciężar w środku cyklu liczy resztę planu (trener, 17.10.2026: „miał
+ * zrobić 40 kg × 8, a zrobił 45 kg × 9 — niech ta seria będzie podstawą do
+ * wyliczenia obciążeń do całej reszty planu”).
+ */
+describe("wpisany inny ciężar zmienia resztę planu", () => {
+  let id = "";
+  let t = "";
+  const ciezary = async () => (await api(`/api/plany/${id}`)).dane.wynik.tygodnie
+    .slice(0, 6).map((w: any) => w.sloty[0].ciezar);
+
+  before(async () => {
+    await api("/api/plany", "POST", { klient: "Zmiana Test", wersja: 1 });
+    id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Zmiana Test").id;
+    const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
+    plan.sloty[0].cwiczenieId = "EX-0010";
+    plan.serieMaksymalne = [{ cwiczenieId: "EX-0010", ciezar: 100, powtorzenia: 5 }];
+    assert.equal((await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" })).kod, 200);
+    t = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
+  });
+
+  test("seria z T3 cięższa niż w planie — T1–T2 bez zmian, od T3 ciężej", async () => {
+    const przed = await ciezary();   // 77,5 · 80 · 85 · 87,5 · 90 · 95
+    await api(`/api/klient/${t}/odczucie`, "POST", {
+      positionId: "D1-S01", tydzien: 3, serie: [{ ciezar: 92.5, powtorzenia: 5 }],
+    });
+    const po = await ciezary();
+    assert.deepEqual(po.slice(0, 2), przed.slice(0, 2));
+    assert.equal(po[2], 92.5);
+    assert.ok(po.slice(3).every((c: number, i: number) => c > przed[i + 3]), po.join(" · "));
+  });
+
+  test("telefon mówi, że reszta planu liczy się od tej serii", async () => {
+    const c = (await api(`/api/klient/${t}`)).dane.tygodnie[2].dni[0].cwiczenia[0];
+    assert.deepEqual(c.kalibracja, { ciezar: 92.5, powtorzenia: 5, rpe: 7, zmiana: true });
+  });
+
+  test("sama ocena później niczego nie liczy od nowa", async () => {
+    const przed = await ciezary();
+    await api(`/api/klient/${t}/odczucie`, "POST", { positionId: "D1-S01", tydzien: 3, feedback: "OK" });
+    assert.deepEqual(await ciezary(), przed);
+  });
+});
+

@@ -124,7 +124,25 @@ export function jestHipertrofia(czesc: CzescPlanu): boolean {
 export type KomunikatCiezaru = "— brak 1RM" | "— ustaw ręcznie";
 
 /** Liczba (kg), komunikat błędu albo nazwa progresji bezciężarowej. */
-export type WynikCiezaru = number | KomunikatCiezaru | Progresja;
+export type WynikCiezaru = number | KomunikatCiezaru | Progresja | "guma";
+
+/**
+ * Ćwiczenie z gumą bez kilogramów (trener, 17.10.2026: przy „SL Glute Bridge
+ * ISO Band Hip Flexion” w kolumnie ciężaru stało „czas”, „a to jest ćwiczenie
+ * z gumą — musimy zrobić osobny wpis w tamto miejsce dla ćwiczeń z gumą”).
+ * Guma w sprzęcie albo „band” w nazwie, a progresja bez kilogramów (czas,
+ * ręczne ustawienie, asysta, masa ciała, dystans). Guma razem ze sztangą czy
+ * hantlami zostaje przy kilogramach — także gdy progresja jest ręczna
+ * („Band on DB 90/90 Ext. Rot”: kilogramy hantli wpisuje trener).
+ */
+const OBCIAZENIE = ["sztanga", "hantle", "kettlebell", "talerz", "landmine", "wyciąg",
+  "maszyna", "trap bar", "gryf łamany", "piłka lekarska", "sanie", "kamizelka"];
+export function zGuma(c: { nazwa: string; progresja: Progresja; sprzet?: readonly string[] }): boolean {
+  if (c.progresja === "kg" || c.progresja === "dodatkowy ciężar") return false;
+  const sprzet = c.sprzet ?? [];
+  if (sprzet.some((s) => OBCIAZENIE.includes(s))) return false;
+  return sprzet.includes("guma") || /\bband(s|ed)?\b/i.test(c.nazwa);
+}
 
 export type Stres = {
   calkowity: number;

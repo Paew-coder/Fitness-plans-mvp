@@ -71,6 +71,8 @@ function rozwiaz1RM(cwiczenieId: string, serie: SeriaMaksymalna[]): number {
 }
 ```
 
+**Poza arkuszem — 1RM tygodnia (17.10.2026).** Inny ciężar wpisany przez klienta w środku cyklu zmienia 1RM od tygodnia tej serii do końca planu (`konsola/kalibracja.ts`). Wpis serii maksymalnej niesie wtedy `wczesniej: [{ doTygodnia, oneRM }]` — 1RM dla tygodni już przerobionych. `rozwiaz1RM(id, serie, tydzien)` bierze pierwszy odcinek z `tydzien ≤ doTygodnia`, dalej wartość wpisu; bez tygodnia — obecne 1RM. Akcesorium „trzymaj z bloku” skaluje ciężar z T1/T4 do 1RM swojego tygodnia.
+
 ---
 
 ## 3. `procent1RM` — tabela RPE

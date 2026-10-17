@@ -35,7 +35,8 @@ import { adresyLokalnejSieci } from "./adresy.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { PROGRESJE_BEZ_CIEZARU } from "../silnik/src/typy.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
-import { dlaczegoBezSeriiMaksymalnej } from "../silnik/src/seria-maksymalna.ts";
+import { dlaczegoBezSeriiMaksymalnej, POWOD_GUMY } from "../silnik/src/seria-maksymalna.ts";
+import { zGuma } from "../silnik/src/typy.ts";
 import { przerwaSekund } from "../silnik/src/przerwa.ts";
 import { krokiRampy, potrzebaRampy, SCHEMAT_RAMPY } from "../silnik/src/rampa.ts";
 import { TABELA_RPE } from "../silnik/src/dane/tabele.ts";
@@ -46,7 +47,7 @@ import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
 import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
-import { oblicz1RM, procent1RM, rozwiaz1RM, POWT_MAX } from "../silnik/src/rpe.ts";
+import { oblicz1RM, procent1RM, rozwiaz1RM, POWT_MAX, type SeriaMaksymalna } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
 import { PRZECIWWSKAZANIA, dawkaOddechowa, OBJASNIENIA_ODDECHU } from "../silnik/src/oddech.ts";
@@ -183,6 +184,8 @@ function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
         dwuboj: DWUBOJ.has(c.id),
         // Bój główny z reguły (przysiady, martwe ciągi, bench) — „G” podświetlone.
         boj: BOJE.has(c.id),
+        // Guma bez kilogramów (17.10.2026) — w kolumnie ciężaru „guma”.
+        guma: zGuma(c),
         // Ile filmów do odtworzenia w aplikacji (osobno od BAZY). Same filmy
         // konsola bierze z `/api/karta-cwiczenia` dopiero przy podglądzie.
         filmow,
@@ -418,8 +421,7 @@ function tygodnieRealizacji(plan: Plan, dniWPlanie: number) {
 function propozycje1RM(
   zrodlo: magazyn.ZapisanyPlan,
   wynikZrodla: ReturnType<typeof przeliczPlan>,
-  serieObecne: readonly { cwiczenieId: string; ciezar: number; powtorzenia: number }[]
-    = zrodlo.plan.serieMaksymalne,
+  serieObecne: readonly SeriaMaksymalna[] = zrodlo.plan.serieMaksymalne,
 ) {
   const zapisany = zrodlo;
   const wynik = wynikZrodla;
@@ -428,6 +430,10 @@ function propozycje1RM(
     .sort((a, b) => a.data.localeCompare(b.data));
   if (wykonania.length === 0) return [];
 
+  // 1RM ustalone serią z treningu (kalibracja, zmiana w środku cyklu) już
+  // zawiera serie do tego tygodnia — nie wracają jako propozycja tego samego.
+  const ustaloneDoTygodnia = new Map(serieObecne
+    .flatMap((s) => s.kalibracja ? [[s.cwiczenieId, s.kalibracja.tydzien] as const] : []));
   // Sloty grupujemy po ćwiczeniu — to samo ćwiczenie może stać w kilku dniach.
   const wgCwiczenia = new Map<string, SeriaRobocza[]>();
   for (const w of wykonania) {
@@ -444,6 +450,7 @@ function propozycje1RM(
     // Stare wpisy nie mają tej informacji; dla nich slot to nadal najlepsze,
     // co mamy.
     const cwiczenieWykonane = w.cwiczenieId ?? slot.cwiczenie.id;
+    if (w.tydzien <= (ustaloneDoTygodnia.get(cwiczenieWykonane) ?? 0)) continue;
     const lista = wgCwiczenia.get(cwiczenieWykonane) ?? [];
     lista.push({
       ciezar: w.ciezarWykonany!,
@@ -976,7 +983,8 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     const k = zapisany.plan.serieMaksymalne
       .find((x) => x.cwiczenieId === cwiczenieId)?.kalibracja;
     return k && k.positionId === positionId && k.tydzien === tydzien
-      ? { ciezar: k.ciezar, powtorzenia: k.powtorzenia, rpe: k.rpe }
+      ? { ciezar: k.ciezar, powtorzenia: k.powtorzenia, rpe: k.rpe,
+          ...(k.oneRMPrzed !== undefined ? { zmiana: true } : {}) }
       : null;
   };
 
@@ -1108,7 +1116,10 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
             // w kolumnie ciężaru napis z BAZY — „ręczne ustawienie".
             ciezarWybieraKlient: t.rodzaj !== "maksy"
               && s.cwiczenie!.progresja === "ręczne ustawienie"
-              && typeof s.ciezar !== "number",
+              && typeof s.ciezar !== "number" && s.ciezar !== "guma",
+            // Przy gumie (17.10.2026) telefon dopisuje pod „guma”, czy to na czas,
+            // z asystą… — progresja mówi, czym jest liczba w kolumnie powtórzeń.
+            progresja: s.cwiczenie!.progresja,
             // Ręczny ciężar przeniesiony z wcześniejszego tygodnia — telefon
             // dopisuje „jak w T1", żeby było wiadomo, skąd ta liczba.
             ciezarZTygodnia: s.ciezarZrodlo && s.ciezarZrodlo.tydzien < t.tydzien
@@ -1164,11 +1175,14 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
               powtorzenia: seria.zastapionaKalibracja.kalibracja.powtorzenia,
               rpe: seria.zastapionaKalibracja.kalibracja.rpe }
           : null,
-        oneRM: slot?.oneRM || null,
+        // Obecne 1RM, nie z T1 — po zmianie serią w środku cyklu (17.10.2026)
+        // T1 zostaje przy starym.
+        oneRM: rozwiaz1RM(id, zapisany.plan.serieMaksymalne) || slot?.oneRM || null,
         // Dwubój: seria maksymalna to najcięższe czyste powtórzenie, nie seria
         // do odmowy (16.10.2026) — telefon mówi to przy polach.
         dwuboj: DWUBOJ.has(id),
-        bezSerii: progresja ? dlaczegoBezSeriiMaksymalnej(progresja) : null,
+        bezSerii: slot?.cwiczenie && zGuma(slot.cwiczenie) ? POWOD_GUMY
+          : progresja ? dlaczegoBezSeriiMaksymalnej(progresja) : null,
       };
     });
 
@@ -2117,9 +2131,14 @@ const serwer = createServer(async (req, res) => {
         if (i >= 0) wykonania[i] = wpis; else wykonania.push(wpis);
 
         // Kalibracja pierwszym treningiem: seria przy ćwiczeniu bez 1RM staje
-        // się jego 1RM, a z niego liczy się cały cykl — patrz `kalibracja.ts`.
-        const skalibrowane = skalibruj(cel.plan, wpis, wpis.data);
-        if (skalibrowane) cel.plan.serieMaksymalne = skalibrowane;
+        // się jego 1RM, a z niego liczy się cały cykl. Inny ciężar niż w planie
+        // w środku cyklu zmienia 1RM do końca planu — patrz `kalibracja.ts`.
+        // Tylko gdy przyszły serie: sama ocena później nie liczy niczego od nowa
+        // względem planu, który po zmianie stoi już na innym ciężarze.
+        if ("serie" in cialoZadania || "ciezarWykonany" in cialoZadania) {
+          const skalibrowane = skalibruj(cel.plan, wpis, wpis.data);
+          if (skalibrowane) cel.plan.serieMaksymalne = skalibrowane;
+        }
 
         return json(res, naEkran(magazyn.zapisz({ ...cel, wykonania })));
       }
@@ -2266,7 +2285,8 @@ const serwer = createServer(async (req, res) => {
         const kalibracja = dotychczasowe.find((s) => s.kalibracja);
         const doPrzywrocenia = kalibracja
           ? { ciezar: kalibracja.ciezar, powtorzenia: kalibracja.powtorzenia,
-              kalibracja: kalibracja.kalibracja! }
+              kalibracja: kalibracja.kalibracja!,
+              ...(kalibracja.wczesniej ? { wczesniej: kalibracja.wczesniej } : {}) }
           : dotychczasowe.find((s) => s.zastapionaKalibracja)?.zastapionaKalibracja;
         const serieMaksymalne = cel.plan.serieMaksymalne
           .filter((s) => s.cwiczenieId !== cwiczenieId);
