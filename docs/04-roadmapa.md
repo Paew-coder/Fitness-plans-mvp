@@ -1006,6 +1006,12 @@ Trener: „jest możliwe, żeby zmiany były od razu, a nie po tych 15 minutach?
 * Natychmiast co do sekundy dałby tylko webhook z GitHuba albo GitHub Actions z kluczem SSH — oba wymagają ustawień w GitHubie i na serwerze, a i tak zostaje przebudowa (ok. minuty). Co minutę daje prawie to samo bez żadnej konfiguracji.
 * Sprawdzone na próbnym repozytorium z podstawionym cronem: przestawienie wpisu, jeden wpis do logu, wyjście przy zajętej blokadzie. Test puli kopii w `testy/kopie.test.ts`.
 
+**79. Bez dopisku „(biblioteka)” — 17.10.2026.**
+
+Trener: „usuń z niektórych nazw ćwiczeń »(biblioteka)«, jeżeli nie jest ona potrzebna”.
+
+* Konsola: ćwiczenie z biblioteki filmów w wierszu planu stoi samą nazwą. Dopisek zostaje tylko jeden — „(spoza szkieletu)”, gdy kategoria ćwiczenia nie pasuje do kategorii pozycji (tak samo dla BAZY, bibliotek i własnych). Skąd jest ćwiczenie, dalej widać w wyszukiwarce 🔎 (źródło w opisie pod nazwą). Telefon klienta i arkusz nigdy go nie pokazywały.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
