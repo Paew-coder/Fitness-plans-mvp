@@ -86,7 +86,9 @@ Decyzje warte uwagi trenera:
   bird dog, dead bug = „nie”. Jednorącz/jednonóż = „tak” (serie na stronę).
   Naprzemienne z dwiema hantlami / kettlebellami (seesaw, renegade row) —
   „tak” od 17.10.2026 (trener: „robi się je naprzemian … 8 robi jedna ręka,
-  czyli łącznie 16”), jak „alternating” w BAZIE.
+  czyli łącznie 16”), jak „alternating” w BAZIE. Tego samego dnia też
+  dead bug, bird dog row, marsz z kettlebellem po jednej stronie (na stronę
+  kettla) i naprzemienne z masą ciała (shoulder taps, marsze, superman).
 - **Izometria** (hold) — stopień niżej niż wersja w ruchu; skoki 0,5,
   pogo 0,25.
 
