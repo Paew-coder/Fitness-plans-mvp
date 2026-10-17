@@ -58,7 +58,10 @@ export async function zrobKopie(etykieta = "", katalog = katalogKopii()): Promis
   return cel;
 }
 
-/** Zostają najnowsze; kopie sprzed migracji przeżywają dłużej niż codzienne. */
+/**
+ * Zostają najnowsze; każda pula liczy się osobno — sprzed migracji, sprzed
+ * aktualizacji serwera i codzienne.
+ */
 export function posprzataj(katalog = katalogKopii()): string[] {
   if (!existsSync(katalog)) return [];
   const wszystkie = readdirSync(katalog)
@@ -70,10 +73,15 @@ export function posprzataj(katalog = katalogKopii()): string[] {
   // aktualizacji — a wtedy zwykle minęło już trochę czasu i codzienne dawno
   // by ją wypchnęły. Dlatego liczy się je osobno.
   const przedMigracja = wszystkie.filter((f) => f.includes("-przed-migracja-"));
-  const codzienne = wszystkie.filter((f) => !f.includes("-przed-migracja-"));
+  // Serwer sprawdza nową wersję co minutę (17.10.2026), a aktualizacji bywa
+  // kilka dziennie — każda z kopią. We wspólnej puli wypchnęłyby codzienne
+  // w kilka dni zamiast w miesiąc.
+  const przedAktualizacja = wszystkie.filter((f) => f.includes("-przed-aktualizacja-"));
+  const codzienne = wszystkie.filter((f) => !f.includes("-przed-migracja-") && !f.includes("-przed-aktualizacja-"));
   const doUsuniecia = [
     ...codzienne.slice(ILE_TRZYMAMY),
     ...przedMigracja.slice(ILE_TRZYMAMY),
+    ...przedAktualizacja.slice(ILE_TRZYMAMY),
   ];
   for (const f of doUsuniecia) unlinkSync(join(katalog, f));
   return doUsuniecia;

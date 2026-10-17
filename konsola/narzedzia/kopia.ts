@@ -22,7 +22,10 @@ import { resolve } from "node:path";
 import { ILE_TRZYMAMY, katalogKopii, zrobKopie } from "../baza/kopie.ts";
 
 const katalog = resolve(process.argv[2] ?? katalogKopii());
-const cel = await zrobKopie("", katalog);
+// Kopia przed aktualizacją serwera (17.10.2026) ma własną pulę — przy
+// aktualizacjach kilka razy dziennie nie wypycha codziennych.
+const etykieta = process.env.KOPIA_ETYKIETA === "przed-aktualizacja" ? "przed-aktualizacja" : "";
+const cel = await zrobKopie(etykieta, katalog);
 
 if (!cel) {
   console.log("\n  Nie ma jeszcze bazy do skopiowania.\n");

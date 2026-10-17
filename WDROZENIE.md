@@ -214,32 +214,41 @@ docker compose up -d --build
 
 Dane zostają — leżą na osobnym woluminie, nie w obrazie.
 
-**Aktualizacje same, co kwadrans**
+**Aktualizacje same, co minutę**
 
 Powyższe trzeba pamiętać i wpisać. Poniższe ustawia się raz:
 
 ```bash
-(crontab -l 2>/dev/null; echo "*/15 * * * * $HOME/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh") | crontab -
+(crontab -l 2>/dev/null; echo "* * * * * $HOME/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh") | crontab -
 ```
 
-Co kwadrans, a nie raz na dobę, bo poprawka zgłoszona w poniedziałek ma wejść
-w poniedziałek. Sprawdzenie jest tanie: jedno zapytanie do GitHuba o numer
+Co minutę (od 17.10.2026; wcześniej co kwadrans — trener: „jest możliwe, żeby
+zmiany były od razu, a nie po tych 15 minutach?”). Poprawka jest na serwerze
+w 1–3 minuty od wysłania: do minuty na zauważenie, reszta to kopia bazy
+i przebudowa. Sprawdzenie jest tanie: jedno zapytanie do GitHuba o numer
 najnowszej wersji. Przebudowa — ta kosztowna — dzieje się wyłącznie wtedy, gdy
-faktycznie coś przyszło, czyli kilka razy w tygodniu, nie 96 razy dziennie.
+faktycznie coś przyszło. Dwa przebiegi naraz się nie zdarzą (blokada `flock`),
+a stary wpis „co kwadrans” skrypt przestawia sam przy pierwszym przebiegu.
 
 Skrypt sprawdza, czy jest nowa wersja; jeśli nie ma, kończy bez robienia
 czegokolwiek. Jeśli jest — **najpierw robi kopię bazy**, i dopiero wtedy
 pobiera kod i przebudowuje. Nieudana kopia przerywa całość: lepiej zostać na
 starej wersji niż aktualizować bez możliwości cofnięcia.
 
-Każdy przebieg dopisuje się do `~/Fitness-plans-mvp/aktualizacja.log` razem
-z powodem, dla którego się skończył:
+Każda aktualizacja dopisuje się do `~/Fitness-plans-mvp/aktualizacja.log`
+razem z powodem, dla którego się skończyła; przebieg „bez zmian” (co minutę)
+tylko nadpisuje jedną linijkę w `aktualizacja-ostatnio.txt` — widać, że
+automat żyje i kiedy ostatnio sprawdzał:
 
 ```bash
 tail -20 ~/Fitness-plans-mvp/aktualizacja.log
+cat ~/Fitness-plans-mvp/aktualizacja-ostatnio.txt
 ```
 
-Żeby pobrać zmiany od razu, nie czekając do rana:
+Kopia bazy przed każdą aktualizacją ma własną pulę (`craftmyplan-przed-aktualizacja-…`,
+30 ostatnich) — przy kilku aktualizacjach dziennie nie wypycha codziennych.
+
+Żeby pobrać zmiany od razu, nie czekając na automat:
 
 ```bash
 ~/Fitness-plans-mvp/konsola/wdrozenie/aktualizuj-serwer.sh

@@ -412,7 +412,7 @@ W CraftMyPlan silnik umie to od dawna (`oneRMzSerii` liczy 1RM z serii roboczej,
 1. ~~**Biblioteka szkieletów z Base44**~~ — zrobione 25.09.2026 (punkt 24); trzy nazwy bez odpowiednika zostają pustą pozycją z kategorią.
 2. ~~**Deload i tydzień max out**~~ — zrobione 25.09.2026 na prośbę trenera, przed pełnym cyklem z klientem (punkt 22).
 3. ~~**Progresja hipertroficzna 12/14**~~ — zrobione 25.09.2026 (punkt 23).
-4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera. **25.09.2026: zostaje jak jest.** Serwer bierze zmiany z gałęzi roboczej co kwadrans i trener woli to od zatwierdzania. Wersja testowa (`test.craftmyplan.pl` na gałęzi roboczej, klienci na `main` po „Merge") — do przypomnienia przed pierwszym pełnym cyklem z prawdziwym klientem.
+4. **Scalenie gałęzi roboczej do `main`** — decyzja trenera. **25.09.2026: zostaje jak jest.** Serwer bierze zmiany z gałęzi roboczej co kwadrans (od 17.10.2026 co minutę) i trener woli to od zatwierdzania. Wersja testowa (`test.craftmyplan.pl` na gałęzi roboczej, klienci na `main` po „Merge") — do przypomnienia przed pierwszym pełnym cyklem z prawdziwym klientem.
 
 **14. Wiosłowanie zostaje akcesorium, a trening dostaje prowadzenie — 22.09.2026.**
 
@@ -995,6 +995,16 @@ Trener: „dodaj możliwość wpisywania własnej nazwy ćwiczenia podczas tworz
 * **Konsola:** w liście ćwiczeń pozycji „＋ Własne ćwiczenie…”, w wyszukiwarce „Nie ma na liście? Dodaj własne ćwiczenie” (z wpisaną nazwą). Okienko: nazwa, kategoria (domyślnie z szkieletu pozycji), wzorzec ruchu (part), coeff, progresja, skok (tylko przy kg / dodatkowym ciężarze), jednostronne, film. Po zapisie ćwiczenie stoi w pozycji, na liście z dopiskiem „· własne”; ✎ obok poprawia pola we wszystkich planach. Brak pola i zajęta nazwa — komunikat w okienku od razu.
 * **Zaplecze** (`konsola/cwiczenia-wlasne.ts`): tabela `cwiczenie_wlasne` (schemat v11), numery `WL-0001…`. Przy starcie serwera i po każdej zmianie ćwiczenia wchodzą do katalogu silnika (`katalog.ustawWlasne`) — plan, telefon, eksport (zakładka BAZA) i import arkusza widzą je jak każde inne. Serwer sprawdza pola jeszcze raz (nazwa wolna w całym katalogu, kategoria, part, coeff 1/0,75/0,5/0,25, progresja, skok 0–20 kg, link). `/api/cwiczenia-wlasne` — lista trenera, `POST` dodaje, `PUT /…/WL-…` poprawia. Generator ich nie losuje.
 * Testy: `konsola/testy/cwiczenia-wlasne.test.ts` (dodanie, odmowy, skok bez kg, w planie z ciężarem i na telefonie z filmem, poprawka we wszystkich planach, restart serwera), eksport, migracja (v11). Przegląd ekranów: odmowa przy zajętej nazwie, zapis z pól okienka, „· własne” i ✎, poprawka coeff liczy się od razu, „Nie ma na liście?” z nazwą.
+
+**78. Serwer bierze zmiany co minutę — 17.10.2026.**
+
+Trener: „jest możliwe, żeby zmiany były od razu, a nie po tych 15 minutach?”
+
+* `konsola/wdrozenie/aktualizuj-serwer.sh`: cron co minutę zamiast co kwadrans — poprawka jest na serwerze w 1–3 minuty (do minuty na zauważenie, reszta to kopia bazy i przebudowa). Stary wpis „*/15” skrypt przestawia sam przy pierwszym przebiegu po aktualizacji — bez logowania się na serwer; nowa instalacja (`instaluj.sh`) od razu co minutę.
+* Blokada `flock` — przebudowa trwa dłużej niż minuta, drugi przebieg nie zacznie drugiej obok. Przebieg „bez zmian” nie zapycha logu (1440 linijek na dobę), tylko nadpisuje `aktualizacja-ostatnio.txt`.
+* Kopie przed aktualizacją we własnej puli (`przed-aktualizacja`, 30 ostatnich) — przy kilku aktualizacjach dziennie nie wypychają codziennych (te zostają na miesiąc).
+* Natychmiast co do sekundy dałby tylko webhook z GitHuba albo GitHub Actions z kluczem SSH — oba wymagają ustawień w GitHubie i na serwerze, a i tak zostaje przebudowa (ok. minuty). Co minutę daje prawie to samo bez żadnej konfiguracji.
+* Sprawdzone na próbnym repozytorium z podstawionym cronem: przestawienie wpisu, jeden wpis do logu, wyjście przy zajętej blokadzie. Test puli kopii w `testy/kopie.test.ts`.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
