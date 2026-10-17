@@ -751,6 +751,33 @@ body.wyszukiwarka-otwarta { overflow: hidden; }
   border-radius: 6px; padding: .3rem .55rem; font: inherit; font-size: .82rem; cursor: pointer; min-height: 2.1rem;
 }
 .wyszukiwarka-wiecej { margin-top: .5rem; align-self: center; font: inherit; font-size: .85rem; }
+.wyszukiwarka-wlasne { margin-top: .5rem; align-self: flex-start; font: inherit; font-size: .85rem; }
+
+/* ── własne ćwiczenie (17.10.2026) ──────────────────────────────────── */
+.formularz-cwiczenia { max-width: 34rem; overflow-y: auto; }
+.formularz-pola { display: grid; gap: .65rem; margin-top: .8rem; }
+.formularz-wiersz { display: grid; gap: .2rem; }
+.formularz-etykieta { font-family: var(--mono); font-size: .72rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--tekst-slaby); }
+.formularz-wiersz input, .formularz-wiersz select {
+  font: inherit; font-size: .95rem; padding: .5rem .6rem; border-radius: 6px;
+  border: 1px solid var(--linia-mocna); background: var(--tlo); color: var(--tekst); width: 100%;
+}
+/* Etykiety jak w całej konsoli (label: mono, wersaliki); podpowiedzi i ptaszek zwykłym tekstem. */
+.formularz-cwiczenia h3 { font-family: var(--sans); text-transform: none; letter-spacing: normal;
+  color: var(--tekst); font-size: 1.05rem; }
+.formularz-podpowiedz { font-family: var(--sans); text-transform: none; letter-spacing: normal;
+  font-size: .78rem; color: var(--tekst-blady); }
+.formularz-cwiczenia .formularz-ptaszek { display: flex; flex-direction: row; align-items: center; gap: .55rem;
+  font-family: var(--sans); text-transform: none; letter-spacing: normal; font-size: .9rem; color: var(--tekst);
+  cursor: pointer; }
+.formularz-ptaszek input { width: 1.1rem; height: 1.1rem; margin: 0; flex: none; }
+.formularz-blad { color: var(--zle); font-size: .85rem; min-height: 1.2em; margin: .6rem 0 0; }
+.formularz-dol { display: flex; align-items: center; justify-content: flex-end; gap: .5rem;
+  flex-wrap: wrap; margin-top: .4rem; }
+.formularz-dol .formularz-podpowiedz { flex: 1; }
+.edytuj-wlasne { padding: .25rem .5rem; }
+
 /* Karta ćwiczenia z aplikacji klienta (podgląd filmów) — jej kolory z tokenów konsoli. */
 .karta-cw-tlo {
   --karta: var(--plaszczyzna); --karta-2: var(--panel);

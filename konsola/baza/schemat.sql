@@ -133,3 +133,15 @@ CREATE TABLE IF NOT EXISTS pomiar_wagi (
   PRIMARY KEY (trener_id, klient_id, data),
   FOREIGN KEY (trener_id, klient_id) REFERENCES klient(trener_id, id) ON DELETE CASCADE
 );
+
+-- Ćwiczenia dodane przez trenera w konsoli (od wersji 11, 17.10.2026). Plan
+-- referuje je po `id` tak jak każde inne; silnik dostaje je przy starcie
+-- serwera (`cwiczenia-wlasne.ts`). Opis ćwiczenia jako JSON — te same pola,
+-- co w BAZIE (kategoria, part, coeff, skok, progresja, jednostronne, film).
+CREATE TABLE IF NOT EXISTS cwiczenie_wlasne (
+  id        TEXT    PRIMARY KEY,
+  trener_id INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
+  dane_json TEXT    NOT NULL,
+  utworzone TEXT    NOT NULL,
+  zmienione TEXT    NOT NULL
+);

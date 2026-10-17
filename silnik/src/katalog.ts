@@ -3,20 +3,44 @@ import { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
 
 /** Katalog ćwiczeń — odpowiednik zakładki BAZA, ale z wyszukiwaniem po ID. */
 export class Katalog {
-  readonly wszystkie: readonly Cwiczenie[];
+  #stale: readonly Cwiczenie[];
+  #wszystkie: readonly Cwiczenie[];
   #poId = new Map<string, Cwiczenie>();
   #poNazwie = new Map<string, Cwiczenie>();
 
   /**
    * BAZA trenera — arkusz 5.17 i jego dopiski, bez ćwiczeń z bibliotek filmów
-   * (import 09.10.2026). Na niej stoją kontrole zgodne z arkuszem i generator.
+   * (import 09.10.2026) i bez własnych z konsoli. Na niej stoją kontrole
+   * zgodne z arkuszem i generator.
    */
   readonly bazaTrenera: readonly Cwiczenie[];
 
   constructor(cwiczenia: readonly Cwiczenie[] = BAZA_CWICZEN) {
-    this.wszystkie = cwiczenia;
-    this.bazaTrenera = cwiczenia.filter((c) => !c.biblioteka);
-    for (const c of cwiczenia) {
+    this.#stale = cwiczenia;
+    this.#wszystkie = cwiczenia;
+    this.bazaTrenera = cwiczenia.filter((c) => !c.biblioteka && !c.wlasne);
+    this.#indeksuj();
+  }
+
+  get wszystkie(): readonly Cwiczenie[] {
+    return this.#wszystkie;
+  }
+
+  /**
+   * Ćwiczenia dodane przez trenera w konsoli (17.10.2026) — z bazy danych,
+   * nie z plików. Każde wywołanie zastępuje poprzednią listę własnych; reszta
+   * katalogu bez zmian. Dzięki temu plan, eksport, import arkusza i telefon
+   * widzą je tak samo jak każde inne ćwiczenie.
+   */
+  ustawWlasne(wlasne: readonly Cwiczenie[]): void {
+    this.#wszystkie = [...this.#stale, ...wlasne.map((c) => ({ ...c, wlasne: true as const }))];
+    this.#indeksuj();
+  }
+
+  #indeksuj(): void {
+    this.#poId.clear();
+    this.#poNazwie.clear();
+    for (const c of this.#wszystkie) {
       this.#poId.set(c.id, c);
       this.#poNazwie.set(c.nazwa.toLocaleLowerCase("pl"), c);
     }

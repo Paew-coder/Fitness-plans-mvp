@@ -6,6 +6,7 @@
  * i odrysowujemy analizę. Dokładnie tak, jak arkusz przelicza się sam.
  */
 import { opisFilmow, otworzWyszukiwarke, podgladFilmow } from "./wybor-cwiczenia.js";
+import { otworzFormularzCwiczenia } from "./wlasne-cwiczenie.js";
 
 const KATEGORIE = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
@@ -21,6 +22,12 @@ let cwiczenia = [];
  */
 let cwiczeniaPoId = new Map();
 const cwiczenie = (id) => (id ? cwiczeniaPoId.get(id) : undefined);
+/** Nowe albo poprawione własne ćwiczenie trenera (17.10.2026) — do listy na miejscu starego. */
+function dolaczCwiczenie(c) {
+  cwiczenia = [...cwiczenia.filter((x) => x.id !== c.id), c]
+    .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  cwiczeniaPoId = new Map(cwiczenia.map((x) => [x.id, x]));
+}
 
 /** Tabela RPE kończy się na piętnastu powtórzeniach — tyle, co POWT_MAX w silniku. */
 const MAKS_POWTORZEN_SERII = 15;
@@ -2207,7 +2214,7 @@ function rysujSlot(slot, pusty) {
   const dostepne = cwiczenia.filter((c) => !c.biblioteka
     && (!slot.kategoriaSzkieletu || c.kategoria === slot.kategoriaSzkieletu));
   for (const c of dostepne) {
-    const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : ""));
+    const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : "") + (c.wlasne ? "  · własne" : ""));
     o.value = c.id;
     wybor.append(o);
   }
@@ -2226,6 +2233,12 @@ function rysujSlot(slot, pusty) {
   const opcjaSzukaj = el("option", "", "🔎 Szukaj w całej bazie i bibliotekach filmów…");
   opcjaSzukaj.value = SZUKAJ;
   wybor.append(opcjaSzukaj);
+  // Własne ćwiczenie (trener, 17.10.2026: „możliwość wpisywania własnej nazwy
+  // ćwiczenia podczas tworzenia planu — razem z coeff, part, kategorią”).
+  const WLASNE = "__wlasne__";
+  const opcjaWlasne = el("option", "", "＋ Własne ćwiczenie…");
+  opcjaWlasne.value = WLASNE;
+  wybor.append(opcjaWlasne);
   wybor.value = slot.cwiczenieId ?? "";
   const ustaw = (id) => {
     const poprzednie = slot.cwiczenieId;
@@ -2247,15 +2260,24 @@ function rysujSlot(slot, pusty) {
      */
     rysujDni();
   };
+  const wlasne = (nazwa = "") => otworzFormularzCwiczenia({
+    api, cwiczenia, kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "", nazwa,
+    naZapis: (c) => { dolaczCwiczenie(c); ustaw(c.id); },
+  });
   const szukaj = () => otworzWyszukiwarke({
     cwiczenia, kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "",
-    wybraneId: slot.cwiczenieId, api, naWybor: ustaw,
+    wybraneId: slot.cwiczenieId, api, naWybor: ustaw, naWlasne: wlasne,
   });
   czyscKlawiszem(wybor, slot.positionId, "td.cwiczenie select", () => ustaw(""));
   wybor.onchange = () => {
     if (wybor.value === SZUKAJ) {
       wybor.value = slot.cwiczenieId ?? "";
       szukaj();
+      return;
+    }
+    if (wybor.value === WLASNE) {
+      wybor.value = slot.cwiczenieId ?? "";
+      wlasne();
       return;
     }
     ustaw(wybor.value);
@@ -2285,6 +2307,23 @@ function rysujSlot(slot, pusty) {
   }
   const rzad = el("div", "wybor-cwiczenia");
   rzad.append(wybor, lupa, film);
+  // ✎ przy własnym ćwiczeniu — poprawka pól (zmiana idzie do każdego planu z nim).
+  if (wybrane?.wlasne) {
+    const edytuj = el("button", "edytuj-wlasne", "✎");
+    edytuj.type = "button";
+    edytuj.title = "Popraw własne ćwiczenie (nazwa, kategoria, coeff, progresja…)";
+    edytuj.setAttribute("aria-label", `Popraw własne ćwiczenie: ${wybrane.nazwa}`);
+    edytuj.onclick = () => otworzFormularzCwiczenia({
+      api, cwiczenia, kategorie: KATEGORIE, cwiczenie: wybrane,
+      naZapis: (c) => {
+        dolaczCwiczenie(c);
+        rysujDni();
+        // Coeff, progresja czy skok zmieniają ciężary i stres — przeliczy je serwer.
+        zapiszPozniej(`własne ćwiczenie · ${c.nazwa}`);
+      },
+    });
+    rzad.append(edytuj);
+  }
   komorkaCwiczenia.append(rzad);
   wiersz.append(komorkaCwiczenia);
 
@@ -3376,7 +3415,10 @@ $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
 
 // ── start ──────────────────────────────────────────────────────────
 (async () => {
-  cwiczenia = await api("/api/cwiczenia");
+  // Wspólna lista i własne ćwiczenia trenera (17.10.2026) — te drugie osobno,
+  // bo zmieniają się w trakcie pracy, a wspólna jest liczona na serwerze raz.
+  const [wspolne, wlasne] = await Promise.all([api("/api/cwiczenia"), api("/api/cwiczenia-wlasne")]);
+  cwiczenia = [...wspolne, ...wlasne];
   cwiczenia.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
   cwiczeniaPoId = new Map(cwiczenia.map((c) => [c.id, c]));
   wypelnijListeSzablonow(await api("/api/szablony"));

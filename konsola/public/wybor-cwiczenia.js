@@ -139,7 +139,7 @@ let otwarta = null;
  * Okno wyszukiwarki. `naWybor(id)` — po kliknięciu ćwiczenia (okno się zamyka).
  * `kategoria` — filtr na start (kategoria szkieletu wiersza).
  */
-export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybraneId = null, naWybor, api }) {
+export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybraneId = null, naWybor, api, naWlasne = null }) {
   zamknijWyszukiwarke();
   const tlo = el("div", "wyszukiwarka-tlo");
   const okno = el("div", "wyszukiwarka");
@@ -186,6 +186,17 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
   wiecej.type = "button";
 
   okno.append(gora, pole, filtry, licznik, lista, wiecej);
+  // Nie ma na liście — własne ćwiczenie z wpisaną nazwą (17.10.2026).
+  if (naWlasne) {
+    const wlasne = el("button", "wyszukiwarka-wlasne", "＋ Nie ma na liście? Dodaj własne ćwiczenie");
+    wlasne.type = "button";
+    wlasne.onclick = () => {
+      const nazwa = pole.value.trim();
+      zamknijWyszukiwarke();
+      naWlasne(nazwa);
+    };
+    okno.append(wlasne);
+  }
   tlo.append(okno);
   document.body.append(tlo);
   document.body.classList.add("wyszukiwarka-otwarta");
@@ -222,7 +233,7 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
       const nazwa = el("span", "wyszukiwarka-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : ""));
       const meta = el("span", "wyszukiwarka-meta",
         [c.kategoria, `coeff ${String(c.coeff).replace(".", ",")}`, c.progresja,
-          c.biblioteka ? ZRODLA[c.biblioteka] : "Twoja baza"].join(" · "));
+          c.biblioteka ? ZRODLA[c.biblioteka] : c.wlasne ? "Twoje własne" : "Twoja baza"].join(" · "));
       opis.append(nazwa, meta);
       if (c.uwagi?.startsWith("DO WERYFIKACJI")) {
         const z = el("span", "wyszukiwarka-weryfikacja", "do weryfikacji");
