@@ -1027,6 +1027,14 @@ Trener: „moje ćwiczenie s/l clean — zrób, żeby progresja w nim przebiega�
 * Migracja v12: przy ćwiczeniach dwuboju w zapisanych planach znikają liczby akcesorium wpisane kiedyś przyciskiem „wpisz progresję” (3 serie i RPE akcesorium) — inaczej wygrywałyby z tabelą dwuboju. Ręczne zmiany trenera, „G”, oceny i ciężary klienta zostają. Plan trenera i wersja u klienta.
 * Testy: silnik (`dwuboj.test.ts` — S/l clean jak Clean, na stronę), migracja v12.
 
+**82. ↗ — RPE 7,5 → 10 przy stałych powtórzeniach — 17.10.2026.**
+
+Trener: „do przycisków, które są po lewej stronie przy każdym ćwiczeniu — typu G — dodajmy przycisk, który będzie wpisywał w danym ćwiczeniu samo RPE od 1 tygodnia — 7,5, przeskok o 0,5, tak żeby w 6 tygodniu było RPE 10 — i to, że wtedy ciężar liczy się na podstawie RPE. Przyda mi się do ćwiczeń, w których będę chciał zostawić daną liczbę powtórzeń i progresować ciężarem”.
+
+* Konsola: „↗” w siatce przy Lp. (obok G, R, T), przy ćwiczeniach na kilogramy i z dodatkowym ciężarem, poza dwubojem (tam procenty) i tygodniami po cyklu. Kliknięcie wpisuje RPE 7,5 · 8 · 8,5 · 9 · 9,5 · 10 w T1–T6, stałe powtórzenia (z T1 — wpisane albo z planu — do tygodni bez wpisu) i „R” (ciężar z RPE co tydzień, nie z bloku); bój i pauzowane liczą z RPE i tak. Liczby stoją w tabeli i każdą da się poprawić. Znacznik „RPE↗” przy numerze, ↗ podświetlone. Drugie kliknięcie zdejmuje RPE i „R”, powtórzenia zostają; ⌘Z cofa. Przykład: wiosłowanie 1RM 80 kg, 8 powtórzeń → 55 kg w T1, 65 kg w T6.
+* Eksport: przy „R” (i „↗”) ciężary idą do arkusza wprost — arkusz zna tylko tryb całego planu i trzymałby ciężar z bloku. Dotąd sam „R” rozjeżdżał się z arkuszem po cichu.
+* Testy: eksport (RPE, powtórzenia i ciężar wprost); przegląd ekranów — wpisanie drabinki, stałe powtórzenia, „R”, liczone RPE i T6 cięższy niż T1, znacznik, zdjęcie, dwa razy „Cofnij”, brak ↗ w deloadzie.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
