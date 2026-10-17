@@ -941,6 +941,12 @@ Trener: „wchodząc teraz w link do planu nie ma informacji o tej możliwości 
 * Treść wg urządzenia: iPhone — udostępnianie „na dole”, iPad (także podający się za Maca) — „u góry”, potem „Do ekranu początkowego”; Android z przyciskiem „Dodaj do ekranu głównego” albo „W menu przeglądarki (⋮)…”. SW `trening-v74`.
 * Przegląd klienta: widoczna od pierwszego wejścia, po treningu dalej, „Schowaj” zwija, zostaje zwinięta po ponownym otwarciu, dotknięcie rozwija.
 
+**71. Opis maksa przy dwuboju — brzmienie trenera — 17.10.2026.**
+
+Trener (zrzut karty Clean): „opis powinien być bardziej w stylu: stopniowo zwiększaj ciężar, aż dojdziesz do najcięższego powtórzenia, które jesteś w stanie zrobić dynamicznie i z zachowaniem dobrej techniki. Wpisz ten ciężar — na jego podstawie będą policzone ciężary w reszcie planu”.
+
+* Blok „Najpierw sprawdź swój maks” — dokładnie to zdanie. Tym samym językiem ekran serii maksymalnych („…dynamicznie i z zachowaniem dobrej techniki. Wpisz ten ciężar — powtórzenia: 1.”) i punkt „Rwanie i zarzut bez maksa” w „Jak trenować”. SW `trening-v76`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

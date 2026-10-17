@@ -2213,6 +2213,10 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     sprawdz("lista: Clean bez 1RM — „sprawdź maks” zamiast ciężaru, 70 % 1RM zamiast RPE, bez rampy",
       (await cleanNaLiscie.locator(".kolumna-ciezar").innerText()).includes("sprawdź maks")
         && (await cleanNaLiscie.locator(".proba-tytul").innerText()) === "Najpierw sprawdź swój maks"
+        // Brzmienie trenera, 17.10.2026.
+        && tekstListy.includes("Stopniowo zwiększaj ciężar, aż dojdziesz do najcięższego powtórzenia, "
+          + "które jesteś w stanie zrobić dynamicznie i z zachowaniem dobrej techniki. Wpisz ten ciężar "
+          + "— na jego podstawie będą policzone ciężary w reszcie planu.")
         && !/test 1RM/i.test(tekstListy)
         && (await cleanNaLiscie.locator(".rpe-linia").innerText()) === "70 % 1RM"
         && await cleanNaLiscie.locator(".proba-maksu").count() === 1
@@ -2220,7 +2224,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
         && !/RPE \d/.test(tekstListy),
       tekstListy.slice(0, 200));
     sprawdz("„Jak trenować” mówi, że przy rwaniu i zarzucie najpierw maks",
-      /Rwanie i zarzut bez maksa.*najcięższego powtórzenia/.test((await s.locator("#jak-trenowac").textContent()) ?? ""));
+      /Rwanie i zarzut bez maksa.*najcięższego powtórzenia.*dynamicznie/.test((await s.locator("#jak-trenowac").textContent()) ?? ""));
 
     await cleanNaLiscie.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
     await s.waitForSelector("#ekran-seria:not(.ukryty)");
@@ -2259,7 +2263,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
     const pomiarClean = s.locator('#pomiary .pomiar[data-cwiczenie="EX-0046"]');
     sprawdz("serie maksymalne: przy dwuboju najcięższe czyste powtórzenie, nie seria do odmowy",
-      (await pomiarClean.locator(".proba-pomiaru").innerText()).includes("najcięższe powtórzenie zrobione czysto i szybko")
+      (await pomiarClean.locator(".proba-pomiaru").innerText()).includes("dynamicznie i z zachowaniem dobrej techniki")
         && !(await s.locator("#pomiary").innerText()).includes("Jedna seria do odmowy"),
       (await pomiarClean.innerText()).replace(/\n/g, " ").slice(0, 160));
   }
