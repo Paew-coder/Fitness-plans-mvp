@@ -932,6 +932,15 @@ Trener: „gorilla row robi się naprzemian, ale w bazie mamy je jako ćwiczenie
   * **Naprzemienne z masą ciała z bibliotek** — „liczymy naprzemiennie tak jak gorilla row”: 18 (shoulder taps, push up + alternating shoulder tap, prone alternating superman, alternating lying leg raise, marsze leżąc i w moście, knee to elbow, psoas march, penguin marches, wall marching). Wersje na czas (ISO, plank marching) bez zmian. Psoas march stracił znacznik „DO WERYFIKACJI – JEDNOSTRONNE”, offset marching — kod JEDNOSTRONNE (zostaje NAZWA).
   * Jednostronnych w BAZIE: 39.
 
+**70. Podpowiedź „Dodaj trening do ekranu głównego” od pierwszego wejścia, zwijana — 17.10.2026.**
+
+Trener: „wchodząc teraz w link do planu nie ma informacji o tej możliwości dodania skrótu / ikony do ekranu startowego tak jak było wcześniej — dodaj z powrotem z możliwością chowania go”.
+
+* Przyczyna: podpowiedź czekała na pierwszy domknięty trening i po „Nie teraz” znikała na zawsze — po „↺ Resetuj plan” albo u kogoś, kto raz ją odłożył, nie było jej wcale.
+* Teraz zwijany baner (jak „Skąd wziąć ciężary”) od pierwszego wejścia w link, rozwinięty. „Schowaj” albo dotknięcie nagłówka zwija go do jednej linijki i tak zostaje (pamięć telefonu); dotknięcie linijki rozwija. Dawne „Nie teraz” liczy się jak zwinięcie. Nie ma go, gdy aplikacja jest otwarta z ikony; po dodaniu przyciskiem (Android) znika.
+* Treść wg urządzenia: iPhone — udostępnianie „na dole”, iPad (także podający się za Maca) — „u góry”, potem „Do ekranu początkowego”; Android z przyciskiem „Dodaj do ekranu głównego” albo „W menu przeglądarki (⋮)…”. SW `trening-v74`.
+* Przegląd klienta: widoczna od pierwszego wejścia, po treningu dalej, „Schowaj” zwija, zostaje zwinięta po ponownym otwarciu, dotknięcie rozwija.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
