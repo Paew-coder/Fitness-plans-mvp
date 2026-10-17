@@ -558,12 +558,13 @@ Aplikacja mówi o tym sama — od 17.10.2026 tak (trener: „nie ma informacji
 o możliwości dodania skrótu, tak jak było wcześniej — dodaj z powrotem
 z możliwością chowania go”):
 
-1. **od pierwszego wejścia w link**, jako rozwinięty baner „Dodaj trening do
-   ekranu głównego” (wcześniej dopiero po pierwszym treningu i tylko raz —
+1. **od pierwszego wejścia w link**, jako rozwinięty baner „Dodaj do ekranu
+   głównego” (wcześniej dopiero po pierwszym treningu i tylko raz —
    po resecie planu albo „nie teraz” nie było jej wcale);
 2. **„Schowaj” albo dotknięcie nagłówka** zwija ją do jednej linijki i tak
    zostaje; dotknięcie linijki rozwija ją z powrotem;
-3. **nigdy**, gdy aplikacja jest już dodana (otwarta z ikony).
+3. **nigdy**, gdy aplikacja jest już dodana (otwarta z ikony);
+4. **„✕”** w nagłówku usuwa ją na dobre (17.10.2026).
 
 Instrukcja zależy od urządzenia: iPhone — ikona udostępniania na dole,
 iPad — u góry, potem „Do ekranu początkowego”; Android — przycisk albo menu (⋮).

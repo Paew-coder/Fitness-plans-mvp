@@ -263,7 +263,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.locator("#baner-instalacji > summary").click();
   sprawdz("dotknięcie linijki rozwija ją z powrotem",
     await s.locator("#instalacja-tresc").isVisible());
-  await s.locator("#baner-instalacji > summary").click();
+  // Trener, 17.10.2026: „poza opcją chowania dodajmy też x, którym się ją usuwa”.
+  await s.locator("#instalacja-usun").click();
+  sprawdz("„✕” usuwa podpowiedź od razu",
+    !(await s.locator("#baner-instalacji").isVisible()));
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("i nie wraca po ponownym otwarciu",
+    !(await s.locator("#baner-instalacji").isVisible()));
 
   // ── 9. seria maksymalna z telefonu ────────────────────────────────
   await s.click("#pokaz-pomiary");
