@@ -1014,7 +1014,9 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const opisWyboru = await s.locator("#dni td.cwiczenie select").evaluateAll(
     (lista: HTMLSelectElement[], id: string) => lista.find((x) => x.value === id)?.selectedOptions[0]?.textContent ?? "",
     goblet?.id);
-  sprawdz("w wierszu widać, że to ćwiczenie z biblioteki", /\(biblioteka\)/.test(opisWyboru), opisWyboru);
+  // Trener, 17.10.2026: „usuń z niektórych nazw ćwiczeń »(biblioteka)«”.
+  sprawdz("w wierszu sama nazwa — bez dopisku „(biblioteka)”",
+    opisWyboru.startsWith("Goblet Squat") && !/biblioteka/.test(opisWyboru), opisWyboru);
 
   // ── własne ćwiczenie (17.10.2026) ───────────────────────────────────
   // Trener: „możliwość wpisywania własnej nazwy ćwiczenia podczas tworzenia

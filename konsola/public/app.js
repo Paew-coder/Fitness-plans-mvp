@@ -2219,12 +2219,14 @@ function rysujSlot(slot, pusty) {
     wybor.append(o);
   }
   // Ćwiczenie spoza listy (spoza szkieletu albo z biblioteki) zostaje widoczne,
-  // żeby zmiana szkieletu go nie gubiła.
+  // żeby zmiana szkieletu go nie gubiła. Dopisek tylko „(spoza szkieletu)”,
+  // gdy kategoria nie pasuje do pozycji — „(biblioteka)” trener kazał zdjąć
+  // (17.10.2026): skąd jest ćwiczenie, w planie nic nie zmienia.
   if (slot.cwiczenieId && !dostepne.some((c) => c.id === slot.cwiczenieId)) {
     const c = cwiczenie(slot.cwiczenieId);
     if (c) {
-      const dopisek = c.biblioteka ? "biblioteka" : "spoza szkieletu";
-      const o = el("option", "", `${c.nazwa}${c.jednostronne ? "  ↔" : ""} (${dopisek})`);
+      const spoza = slot.kategoriaSzkieletu && c.kategoria !== slot.kategoriaSzkieletu;
+      const o = el("option", "", `${c.nazwa}${c.jednostronne ? "  ↔" : ""}${spoza ? " (spoza szkieletu)" : ""}`);
       o.value = c.id;
       wybor.append(o);
     }
