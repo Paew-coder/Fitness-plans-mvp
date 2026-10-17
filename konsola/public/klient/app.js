@@ -821,8 +821,10 @@ const OPIS_TYGODNIA = {
  */
 // Trener, 16.10.2026: „nie podoba mi się ten opis »najpierw test 1RM« —
 // mało naturalny”. Teraz językiem sali: „sprawdź swój maks”.
-const TEST_1RM_DWUBOJU = "Twój maks to najcięższe powtórzenie zrobione czysto i szybko. "
-  + "Rozgrzej się, dojdź do niego w kilku podejściach i wpisz ciężar — powtórzenia: 1.";
+// 17.10.2026: tym samym językiem co blok przy ćwiczeniu (brzmienie trenera).
+const TEST_1RM_DWUBOJU = "Stopniowo zwiększaj ciężar, aż dojdziesz do najcięższego powtórzenia, "
+  + "które jesteś w stanie zrobić dynamicznie i z zachowaniem dobrej techniki. "
+  + "Wpisz ten ciężar — powtórzenia: 1.";
 const TOP_SET_DWUBOJU_BEZ_1RM = "Najpierw sprawdź swój maks — przy seriach tego ćwiczenia. "
   + "Od niego policzę ciężar TOP SETU.";
 
@@ -837,9 +839,10 @@ const kluczTestu = (c) => `${widok?.planId}:${biezacy?.tydzien}:${biezacy?.dzien
 function blokProbyMaksu(c) {
   const blok = el("div", "dobor proba-maksu");
   blok.append(el("p", "proba-tytul", "Najpierw sprawdź swój maks"));
-  blok.append(el("p", "", "Rozgrzej się i dokładaj w kolejnych podejściach, aż dojdziesz "
-    + "do najcięższego powtórzenia, które zrobisz czysto i szybko. Wpisz ten ciężar — od niego "
-    + "policzę ciężary na cały plan, następnie robisz już serie z planu."));
+  // Brzmienie trenera, 17.10.2026.
+  blok.append(el("p", "", "Stopniowo zwiększaj ciężar, aż dojdziesz do najcięższego powtórzenia, "
+    + "które jesteś w stanie zrobić dynamicznie i z zachowaniem dobrej techniki. Wpisz ten "
+    + "ciężar — na jego podstawie będą policzone ciężary w reszcie planu."));
   const wiersz = el("div", "proba-pola");
   const pole = el("input");
   pole.type = "number"; pole.inputMode = "decimal"; pole.min = "0"; pole.step = "0.5";
@@ -1107,8 +1110,9 @@ function rysujJakTrenowac(t, d) {
       : []),
     // Dwubój bez 1RM (16.10.2026) — test pojedynczego w pierwszym treningu.
     ...(d.cwiczenia.some((c) => c.probaMaksu)
-      ? [punkt("Rwanie i zarzut bez maksa", "najpierw dojdź do najcięższego powtórzenia, które",
-        "zrobisz czysto i szybko, i wpisz je. Od niego policzę ciężary na cały plan.")]
+      ? [punkt("Rwanie i zarzut bez maksa", "najpierw stopniowo dojdź do najcięższego powtórzenia,",
+        "które zrobisz dynamicznie i z dobrą techniką, i wpisz je — na jego podstawie będą policzone",
+        "ciężary w reszcie planu.")]
       : []),
   );
 }
