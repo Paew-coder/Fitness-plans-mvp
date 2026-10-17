@@ -1012,6 +1012,13 @@ Trener: „usuń z niektórych nazw ćwiczeń »(biblioteka)«, jeżeli nie jest
 
 * Konsola: ćwiczenie z biblioteki filmów w wierszu planu stoi samą nazwą. Dopisek zostaje tylko jeden — „(spoza szkieletu)”, gdy kategoria ćwiczenia nie pasuje do kategorii pozycji (tak samo dla BAZY, bibliotek i własnych). Skąd jest ćwiczenie, dalej widać w wyszukiwarce 🔎 (źródło w opisie pod nazwą). Telefon klienta i arkusz nigdy go nie pokazywały.
 
+**80. 🗑 — usunięcie ćwiczenia z pozycji — 17.10.2026.**
+
+Trener (zrzut planu z „Landmine core” w D1): „chciałbym teraz możliwość usuwania wybranych ćwiczeń … przycisk x albo kosz, może być z pytaniem o potwierdzenie”.
+
+* Konsola: 🗑 w każdym wierszu z ćwiczeniem (obok 🔎 i ▶; w pustym wierszu niewidoczny, kolumna się nie przesuwa). Pytanie: „Usunąć „Landmine core” z D1?”, przy ćwiczeniu, które klient już robił — dopisek, że jego wpisy zostaną w historii, a z planu zniknie we wszystkich tygodniach. Po „OK” znika ćwiczenie i ustawienia trenera pod nie (serie, powtórzenia, RPE, procent, ciężar na sztywno, podmiany, „G”, „S”, „R”); numer pozycji i kategoria szkieletu zostają. ⌘Z / „Cofnij” przywraca.
+* Przegląd ekranów: pytanie z nazwą i „Anuluj” bez zmian, „OK” usuwa i zapisuje, „Cofnij” przywraca, w pustym wierszu kosza nie widać; cele dotykowe ≥ 24 px na telefonie i iPadzie.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

@@ -1079,9 +1079,39 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     await formularz.locator('input[name="nazwa"]').inputValue() === "Moje nowe ćwiczenie");
   await s.keyboard.press("Escape");
   await s.waitForTimeout(200);
-  // Ćwiczenie z listy zostaje do usunięcia przez dalsze sekcje — usuwamy
-  // własne z wiersza, żeby liczby wierszy w kolejnych kontrolach się zgadzały.
-  await wierszWlasnego.locator("td.cwiczenie select").selectOption("");
+
+  // ── 🗑 usunięcie ćwiczenia z pozycji (17.10.2026) ──────────────────
+  // Trener: „możliwość usuwania wybranych ćwiczeń … przycisk x albo kosz,
+  // może być z pytaniem o potwierdzenie”. Przy okazji wiersz z własnym
+  // ćwiczeniem wraca do pustego — dalsze sekcje liczą wiersze.
+  const maWlasne = async () => (await zBazy()).zapisany.plan.sloty.some((x: any) => x.cwiczenieId?.startsWith("WL-"));
+  const kosz = () => s.locator("#dni tr").filter({ has: s.locator("button.edytuj-wlasne") })
+    .locator("button.usun-cwiczenie");
+  const pytanPrzedKoszem = pytania.length;
+  odrzucaj = true;
+  await kosz().click();
+  await s.waitForTimeout(300);
+  odrzucaj = false;
+  sprawdz("🗑 pyta o potwierdzenie z nazwą ćwiczenia; „Anuluj” nic nie zmienia",
+    pytania.length === pytanPrzedKoszem + 1 && /^Usunąć „Pallof press przegląd” z /.test(pytania.at(-1) ?? "")
+      && await maWlasne() && (await kosz().count()) === 1,
+    pytania.at(-1) ?? "bez pytania");
+  await kosz().click();
+  await s.waitForTimeout(150);
+  await zapisano();
+  sprawdz("„OK” usuwa ćwiczenie z pozycji — wiersz pusty, zapisane",
+    !(await maWlasne()) && (await kosz().count()) === 0);
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("„Cofnij” przywraca usunięte ćwiczenie", await maWlasne() && (await kosz().count()) === 1);
+  const koszePustych = await s.locator("#dni td.cwiczenie").evaluateAll((k: HTMLElement[]) => k
+    .filter((x) => !(x.querySelector("select") as HTMLSelectElement | null)?.value)
+    .map((x) => getComputedStyle(x.querySelector("button.usun-cwiczenie")!).visibility));
+  sprawdz("w pustym wierszu kosza nie widać", koszePustych.length > 0 && koszePustych.every((v) => v === "hidden"),
+    koszePustych.join(", "));
+  await kosz().click();
+  await s.waitForTimeout(150);
   await zapisano();
 
   // ▶ przy ćwiczeniu w wierszu (10.10.2026): filmy wybranego ćwiczenia jednym

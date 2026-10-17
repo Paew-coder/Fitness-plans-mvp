@@ -353,6 +353,11 @@ serwer (tygodnie, szablon, losowanie, asystent, 1RM, status); ▲▼ — przesta
 z powrotem. Wpisy klienta (oceny, jego ciężary) zostają zawsze. W polu tekstowym
 ⌘Z cofa samo pole, jak w każdej przeglądarce.
 
+**🗑** przy ćwiczeniu (od 17.10.2026) usuwa je z pozycji po potwierdzeniu: znika
+ćwiczenie i to, co było pod nie ustawione (serie, powtórzenia, RPE, ciężar na
+sztywno, „G”, „S”, „R”); numer i kategoria pozycji zostają, wpisy klienta
+zostają w historii. ⌘Z / „Cofnij” przywraca.
+
 **Backspace / Delete** na liście ćwiczenia usuwa ćwiczenie z wiersza, na liście
 kategorii — kategorię („— pełna baza —”); ⌘Z przywraca. Po zapisie i
 przerysowaniu tabeli fokus wraca na to samo pole, więc z klawiatury da się
