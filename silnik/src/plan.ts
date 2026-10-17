@@ -1,3 +1,4 @@
+import { zGuma } from "./typy.ts";
 import type {
   Cwiczenie,
   CzescPlanu,
@@ -10,7 +11,8 @@ import type {
   WynikCiezaru,
 } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { obliczCiezar, obliczCiezarTopSetu, tydzienBazowyBloku } from "./ciezar.ts";
+import { obliczCiezar, obliczCiezarTopSetu, SKOK_MINIMALNY, tydzienBazowyBloku } from "./ciezar.ts";
+import { mround } from "./pomocnicze.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
 import {
@@ -370,12 +372,18 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       : p.rpe ?? szablon.rpe!;
 
     const zmienione = cwiczenieIdOverride !== undefined && cwiczenieIdOverride !== slot.cwiczenieId;
-    const oneRM = rozwiaz1RM(cwiczenie.id, plan.serieMaksymalne);
+    const oneRM = rozwiaz1RM(cwiczenie.id, plan.serieMaksymalne, tydzien);
 
     const bazowy = tydzienBazowyBloku(tydzien as Tydzien);
     const slotBazowy = bazowy
       ? wyliczone.get(bazowy)?.sloty.find((s) => s.positionId === slot.positionId)
       : undefined;
+    // 1RM zmienione serią w środku bloku (17.10.2026): akcesorium „trzymaj
+    // z bloku” niesie ciężar z T1/T4 — przeskalowany do 1RM tego tygodnia.
+    const ciezarBazowy = typeof slotBazowy?.ciezar === "number" && slotBazowy.oneRM > 0
+      && oneRM > 0 && oneRM !== slotBazowy.oneRM && slotBazowy.cwiczenie?.id === cwiczenie.id
+      ? mround(slotBazowy.ciezar * oneRM / slotBazowy.oneRM, Math.max(cwiczenie.skokKg, SKOK_MINIMALNY))
+      : slotBazowy?.ciezar;
 
     /*
      * „Ręczne ustawienie": ciężar nie bierze się z 1RM, więc bez wpisu trenera
@@ -402,10 +410,11 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       mnoznik,
       cwiczenieZmienioneWzgledemT1: zmienione,
       oneRMReczny: p.oneRMReczny ?? p6.oneRMReczny,
-      ciezarBazowy: slotBazowy?.ciezar,
+      ciezarBazowy,
       mnoznikBazowy: slotBazowy?.mnoznik,
     };
     const policzony = obliczCiezar(kontekst);
+    const guma = zGuma(cwiczenie);
     // Ocena przesunęła mały ciężar o krok, którego arkusz by nie zrobił —
     // eksport wpisze wtedy ciężar wprost (patrz `widocznaZmiana`).
     const zmianaPoOcenie = typeof policzony === "number"
@@ -423,9 +432,10 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       procent1RM: procentDwuboju ?? procent1RM(powtorzenia, rpe),
       oneRM,
       mnoznik,
-      ciezar: p.ciezarOverride ?? przeniesiony?.kg ?? policzony,
-      ciezarNadpisany: p.ciezarOverride !== undefined,
-      ...(p.ciezarOverride === undefined && przeniesiony
+      // Guma (17.10.2026): opór dobiera klient — zamiast nazwy progresji „guma”.
+      ciezar: guma ? "guma" : p.ciezarOverride ?? przeniesiony?.kg ?? policzony,
+      ciezarNadpisany: !guma && p.ciezarOverride !== undefined,
+      ...(!guma && p.ciezarOverride === undefined && przeniesiony
         ? { ciezarZrodlo: { tydzien: przeniesiony.tydzien, kto: przeniesiony.kto } } : {}),
       stres: stresSlotu({ coeff: cwiczenie.coeff, serie: efektywne, rpe, powtorzenia }),
       ...(pauza ? { pauza } : {}),

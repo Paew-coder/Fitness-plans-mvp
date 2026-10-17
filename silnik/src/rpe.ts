@@ -67,7 +67,19 @@ export type SeriaMaksymalna = {
    * wcześniej wpisanie serii „na próbę” i wyczyszczenie pól kasowało 1RM
    * na dobre. Silnik tego nie czyta.
    */
-  zastapionaKalibracja?: { ciezar: number; powtorzenia: number; kalibracja: KalibracjaSerii };
+  zastapionaKalibracja?: {
+    ciezar: number; powtorzenia: number; kalibracja: KalibracjaSerii;
+    wczesniej?: readonly { doTygodnia: number; oneRM: number }[];
+  };
+  /**
+   * 1RM sprzed zmiany z serii roboczej w środku cyklu (17.10.2026) — dla
+   * tygodni, które klient już przerobił. Trener: „jeżeli ktoś wpisze inny
+   * ciężar … to niech ta seria będzie podstawą do wyliczenia obciążeń do całej
+   * reszty planu”. Reszta planu, czyli od tygodnia tej serii: minione tygodnie
+   * zostają przy ciężarach, które klient wtedy dostał. Tydzień `t` bierze
+   * pierwszy wpis z `t ≤ doTygodnia`; dalsze — ten wpis.
+   */
+  wczesniej?: readonly { doTygodnia: number; oneRM: number }[];
 };
 
 /**
@@ -89,6 +101,18 @@ export type KalibracjaSerii = {
   positionId: string;
   /** ISO — kiedy klient wpisał tę serię. */
   data: string;
+  /**
+   * Zmiana 1RM w środku cyklu (17.10.2026) — 1RM obowiązujące w tym tygodniu
+   * przed tą serią i ciężar, który klient miał wtedy w planie. Z nich liczy
+   * się każda poprawka z tego samego treningu (kolejna, cięższa seria).
+   */
+  oneRMPrzed?: number;
+  ciezarPlanu?: number;
+  /**
+   * Serie maksymalne sprzed pierwszej zmiany w tym cyklu — „Resetuj plan”
+   * wraca do nich, zamiast zostawiać ćwiczenie bez 1RM.
+   */
+  pierwotne?: readonly SeriaMaksymalna[];
 };
 
 /**
@@ -96,11 +120,17 @@ export type KalibracjaSerii = {
  * Arkusz bierze MAX po wszystkich wpisach (START!N) — nie pierwsze trafienie, nie średnią.
  * Zwraca 0, gdy nie ma żadnego wpisu; wtedy ciężar liczy się na "— brak 1RM".
  */
-export function rozwiaz1RM(cwiczenieId: string, serie: readonly SeriaMaksymalna[]): number {
+export function rozwiaz1RM(
+  cwiczenieId: string, serie: readonly SeriaMaksymalna[], tydzien?: number,
+): number {
   let max = 0;
   for (const s of serie) {
     if (s.cwiczenieId !== cwiczenieId) continue;
-    const wynik = oblicz1RM(s.ciezar, s.powtorzenia);
+    // Bez tygodnia — obecne 1RM (maksy, propozycje); z tygodniem — to, które
+    // w nim obowiązywało (patrz `wczesniej`).
+    const wczesniejsze = tydzien === undefined ? undefined
+      : s.wczesniej?.find((w) => tydzien <= w.doTygodnia)?.oneRM;
+    const wynik = wczesniejsze ?? oblicz1RM(s.ciezar, s.powtorzenia);
     if (wynik !== null && wynik > max) max = wynik;
   }
   return max;

@@ -99,6 +99,10 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
     // A i `coeff` po cichu pomijała — więc powyższy komentarz nie był prawdą.
     // Teraz ta sama reguła co w silniku, razem z decyzją trenera („G").
     const bojGlowny = bojGlownySlotu(slot, cwiczenie);
+    // 1RM zmienione serią w środku cyklu (17.10.2026): arkusz ma jedno 1RM
+    // na ćwiczenie, a tygodnie sprzed zmiany liczą się ze starego. Liczby wprost.
+    const zmiana1RM = (id: string | undefined) =>
+      !!id && plan.serieMaksymalne.some((s) => s.cwiczenieId === id && s.wczesniej?.length);
 
     const tygodnie: Record<string, unknown> = {};
     for (const t of TYGODNIE) {
@@ -141,7 +145,7 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // arkusz policzyłby ciężar inaczej. Liczba wprost.
         ciezar_reczny: p.ciezarOverride
           ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie || obliczony?.dwuboj
-            || bojGlowny !== pozycjaBoju(slot.lp))
+            || bojGlowny !== pozycjaBoju(slot.lp) || zmiana1RM(obliczony?.cwiczenie?.id))
             && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),
         // Podmiana ćwiczenia w środku cyklu — w arkuszu wyraża się po prostu
         // inną nazwą w kolumnie ĆWICZENIE tego tygodnia. Bez tego arkusz

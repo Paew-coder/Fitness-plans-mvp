@@ -113,8 +113,9 @@ export function bezWpisowKlienta(plan: Plan): Plan {
       for (const pole of POLA_KLIENTA) delete (tydzien as any)?.[pole];
     }
   }
+  // Zmiana 1RM w środku cyklu (17.10.2026) wraca do serii sprzed niej.
   czysty.serieMaksymalne = czysty.serieMaksymalne
-    .filter((s) => !s.kalibracja)
+    .flatMap((s) => s.kalibracja ? [...(s.kalibracja.pierwotne ?? [])] : [s])
     .map(({ zastapionaKalibracja, ...s }) => s);
   return czysty;
 }

@@ -36,6 +36,7 @@ const POWODY_BEZ_SERII = {
   "dystans": "Ćwiczenie na dystans — liczy się odległość, nie kilogramy.",
   "ręczne ustawienie": "Ciężar do tego ćwiczenia ustala się wprost, nie z 1RM.",
 };
+const POWOD_GUMY = "Ćwiczenie z gumą — opór dobiera się gumą, nie kilogramami.";
 /**
  * Tygodnie po cyklu — te same stałe co w silniku (`plan.ts`). Klucze są
  * stałe: 7 to deload, 8 to maksy; bez deloadu maksy są na ekranie siódme.
@@ -1767,7 +1768,8 @@ function rysujTydzienMaksow(kontener, t8) {
   const kandydaci = [];
   for (const s of wyliczonyTydzienNr(6).sloty) {
     const c = s.cwiczenie;
-    if (!c || c.progresja in POWODY_BEZ_SERII || kandydaci.some((k) => k.id === c.id)) continue;
+    if (!c || c.progresja in POWODY_BEZ_SERII || s.ciezar === "guma"
+      || kandydaci.some((k) => k.id === c.id)) continue;
     kandydaci.push({ id: c.id, nazwa: c.nazwa, oneRM: s.oneRM, positionId: s.positionId });
   }
   if (kandydaci.length === 0) {
@@ -2535,14 +2537,16 @@ function komorkaCiezaru(parametry, wyliczony) {
    * trener wpisał serię maksymalną, zobaczył napis zamiast kilogramów
    * i nie miał jak tego poprawić.
    */
-  const recznie = progresja === "ręczne ustawienie";
+  // Guma (17.10.2026) — opór dobiera klient, pola na kilogramy nie ma.
+  const recznie = progresja === "ręczne ustawienie" && ciezar !== "guma";
   const bezCiezaru = typeof ciezar === "string" && !ciezar.startsWith("—") && !recznie;
   const komorka = el("td", typeof ciezar === "number" ? "ciezar" : "ciezar brak");
 
   if (bezCiezaru) {
     const napis = el("span", "", String(ciezar));
-    napis.title = "To ćwiczenie nie chodzi na kilogramy — seria maksymalna "
-      + "nic tu nie policzy.";
+    napis.title = ciezar === "guma"
+      ? "Ćwiczenie z gumą — opór dobiera klient, kilogramów tu nie ma."
+      : "To ćwiczenie nie chodzi na kilogramy — seria maksymalna nic tu nie policzy.";
     komorka.append(napis);
     return komorka;
   }
@@ -2767,10 +2771,10 @@ function rysujSerieMax(pelne = false) {
      * Wygląda to jak awaria, a jest zgodne z BAZĄ — więc wiersz mówi to
      * wprost i dopowiada, co zrobić zamiast.
      */
-    const bezSerii = POWODY_BEZ_SERII[c.progresja];
+    const bezSerii = c.guma ? POWOD_GUMY : POWODY_BEZ_SERII[c.progresja];
     if (bezSerii) {
       const powod = el("div", "powod-bez-serii", bezSerii
-        + (c.progresja === "ręczne ustawienie"
+        + (c.progresja === "ręczne ustawienie" && !c.guma
           ? " Wpisz kilogramy wprost w kolumnie Ciężar."
           : ""));
       wiersz.append(powod);
@@ -2825,7 +2829,13 @@ function rysujSerieMax(pelne = false) {
       const bezZera = (n) => liczba(n).replace(",0", "");
       wiersz.append(el("div", "kalibracja-zrodlo",
         `z serii roboczej klienta: ${bezZera(k.ciezar)} kg × ${k.powtorzenia} `
-        + `przy RPE ${bezZera(k.rpe)} · T${k.tydzien}, dzień ${RZYMSKIE[k.dzien - 1] ?? k.dzien}`));
+        + `przy RPE ${bezZera(k.rpe)} · T${k.tydzien}, dzień ${RZYMSKIE[k.dzien - 1] ?? k.dzien}`
+        // Inny ciężar niż w planie w środku cyklu (17.10.2026) — od tego
+        // tygodnia; wcześniejsze zostały przy starym 1RM.
+        + (k.oneRMPrzed != null && k.ciezarPlanu != null
+          ? ` (w planie było ${bezZera(k.ciezarPlanu)} kg) · od T${k.tydzien} do końca planu, `
+            + `wcześniej 1RM ${bezZera(k.oneRMPrzed)} kg`
+          : "")));
     }
     // Wynik z tygodnia maksów poprzedniego cyklu — wszedł sam, bez przyjmowania.
     if (istniejaca?.zTygodniaMaksow != null && !k) {
@@ -2837,8 +2847,11 @@ function rysujSerieMax(pelne = false) {
 }
 
 function tekst1RM(cwiczenieId) {
-  const wyliczony = obraz.wynik.tygodnie[0].sloty
-    .find((s) => s.cwiczenie?.id === cwiczenieId);
+  // Obecne 1RM — z ostatniego tygodnia z tym ćwiczeniem. Po zmianie serią
+  // w środku cyklu (17.10.2026) T1 zostaje przy starym.
+  const wyliczony = [...obraz.wynik.tygodnie].reverse().map((t) => t.sloty
+    .find((s) => s.cwiczenie?.id === cwiczenieId && s.oneRM)).find(Boolean)
+    ?? obraz.wynik.tygodnie[0].sloty.find((s) => s.cwiczenie?.id === cwiczenieId);
   return wyliczony?.oneRM ? `${liczba(wyliczony.oneRM)}` : "—";
 }
 

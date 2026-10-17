@@ -796,9 +796,11 @@ const wskazowkaWlasnegoCiezaru = () => el("p", "dobor dobor-wlasny",
   "Ciężar dobierasz sam — wpisz, z jakim robisz serie. Zostanie na kolejne tygodnie.");
 
 /** Skąd się wziął ciężar — w tym treningu, w którym go policzyliśmy. */
-const notkaKalibracji = (k) => el("p", "kalibracja",
-  `✓ Policzone z Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia} `
-  + `przy RPE ${liczba(k.rpe)}`);
+const notkaKalibracji = (k) => el("p", "kalibracja", k.zmiana
+  // Inny ciężar niż w planie w środku cyklu (17.10.2026).
+  ? `✓ Reszta planu liczona od Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia}`
+  : `✓ Policzone z Twojej serii: ${liczba(k.ciezar)} kg × ${k.powtorzenia} `
+    + `przy RPE ${liczba(k.rpe)}`);
 
 /**
  * Tygodnie po cyklu (decyzja trenera z 25.09.2026): deload — lżej, RPE niżej,
@@ -819,6 +821,16 @@ const dopisekTygodnia = (rodzaj) =>
   rodzaj === "deload" ? " · deload" : rodzaj === "maksy" ? " · maksy" : "";
 const nazwaDnia = (t, d) =>
   t?.rodzaj === "maksy" ? "Dzień maksów" : `Dzień ${RZYMSKIE[d.dzien - 1]}`;
+/**
+ * Nagłówek treningu i panelu: tydzień małą linijką nad dniem, dzień duży.
+ * Było „Dzień I · tydzień 3” jednym ciągiem, a pod spodem „0 z 7 ćwiczeń
+ * zaczętych” — trener (17.10.2026): „napisy trochę zlewają się ze sobą”.
+ */
+function naglowekDnia(gdzie, t, d) {
+  $(`#${gdzie}-tydzien`).textContent =
+    `Tydzień ${numerTygodnia(t)} z ${widok.tygodnie.length}${dopisekTygodnia(t?.rodzaj)}`;
+  $(`#${gdzie}-tytul`).textContent = nazwaDnia(t, d);
+}
 const OPIS_TYGODNIA = {
   deload: "Tydzień lżejszy: RPE niżej, bez TOP SETU — odpoczynek przed kolejnym cyklem.",
   maksy: "Jedno powtórzenie na maksa w każdym boju — wszystko jednego dnia.",
@@ -973,7 +985,7 @@ function rysujTygodnie() {
     const zaczety = d.cwiczenia.some((c) => c.feedback
       || (c.serieWykonane ?? []).some((x) => !pustaSeria(x)));
     nastepny.textContent = `▶ ${zaczety ? "Wróć do treningu" : "Następny trening"}: `
-      + `tydzień ${numerTygodnia(t)} · ${nazwaDnia(t, d)}`;
+      + `${nazwaDnia(t, d)}, tydzień ${numerTygodnia(t)}`;
     nastepny.onclick = () => {
       biezacy = { ...cel };
       otworz("#ekran-trening");
@@ -990,11 +1002,17 @@ function rysujTygodnie() {
     blok.open = rozwinieteTygodnie.get(t.tydzien) ?? t.tydzien === biezacyTydzien;
     const zrobioneDni = t.dni.filter((d) => d.ukonczony).length;
     const naglowek = el("summary", "tydzien-tytul");
-    naglowek.append(
-      el("span", "tydzien-nazwa",
-        `Tydzień ${numerTygodnia(t)} z ${widok.tygodnie.length}${dopisekTygodnia(t.rodzaj)}`),
+    // „Tydzień 1 z 6 ···· 1 z 3” — dwa razy „z” w jednym wierszu zlewało się
+    // (trener, 17.10.2026). Numer tygodnia mocno, „z 6” i licznik słabiej,
+    // a licznik mówi, czego: treningów.
+    const nazwa = el("span", "tydzien-nazwa");
+    nazwa.append(el("strong", "", `Tydzień ${numerTygodnia(t)}`),
+      el("span", "z-ilu", `z ${widok.tygodnie.length}`));
+    if (t.rodzaj) nazwa.append(el("span", `znaczek-tygodnia ${t.rodzaj}`, t.rodzaj));
+    naglowek.append(nazwa,
       el("span", `tydzien-stan${zrobioneDni === t.dni.length ? " caly" : ""}`,
-        `${zrobioneDni === t.dni.length ? "✓ " : ""}${zrobioneDni} z ${t.dni.length}`),
+        `${zrobioneDni === t.dni.length ? "✓ " : ""}${zrobioneDni} z ${t.dni.length} `
+        + odmiana(t.dni.length, ["treningu", "treningów", "treningów"])),
     );
     // Klik, a nie zdarzenie „toggle": to drugie strzela też przy ustawieniu
     // `open` wyżej i zapamiętałoby domyślny stan jako wybór klienta — tydzień 1
@@ -1039,7 +1057,7 @@ function rysujTrening() {
   if (!d) return;
 
   const t = tydzienWidoku(biezacy.tydzien);
-  $("#trening-tytul").textContent = `${nazwaDnia(t, d)} · tydzień ${numerTygodnia(t)}`;
+  naglowekDnia("trening", t, d);
   pokazPostepTreningu(d);
   // W dniu maksów ocen nie ma, a serwer niczego za klienta nie dopisuje.
   $("#notka-ok").classList.toggle("ukryty", t?.rodzaj === "maksy");
@@ -1106,16 +1124,20 @@ function rysujJakTrenowac(t, d) {
     li.append(el("strong", "", tytul), ` — ${tresc.filter(Boolean).join(" ")}`);
     return li;
   };
-  const zMasaCiala = d.cwiczenia.some((c) => c.ciezar === "masa ciała");
+  const zMasaCiala = d.cwiczenia.some((c) => naMasieCiala(c));
   $("#jak-trenowac-tresc").replaceChildren(
     punkt("Z listy", "rób ćwiczenia z tej listy, w swoim tempie, i odhaczaj zrobione przyciskiem",
       "„OK” (albo „Za trudne” / „Za łatwe”, jeśli tak było). Ciężaru nie musisz wpisywać.",
       "Na koniec wybierz „Zakończ trening”."),
     punkt("Z prowadzeniem", "„▶ Prowadź mnie seria po serii” pokazuje każdą serię osobno,",
       "z przerwą. Nie musisz z niego korzystać — do listy wrócisz w każdej chwili."),
-    punkt("Ciężar na kolejne tygodnie", "zmienia ocena: „Za trudne” — lżej, „Za łatwe” — ciężej"
+    // Od 17.10.2026 wpisany inny ciężar liczy resztę planu (trener: „niech ta
+    // seria będzie podstawą do wyliczenia obciążeń do całej reszty planu”).
+    punkt("Ciężar na kolejne tygodnie", "zrobiłeś inny ciężar niż w planie? Wpisz go —",
+      "od tej serii policzę resztę planu. Nie chcesz wpisywać? Wystarczy ocena:",
+      "„Za trudne” — lżej, „Za łatwe” — ciężej"
       + (zMasaCiala ? " (przy masie ciała — liczba powtórzeń)." : "."),
-      "Sam wpisany ciężar ich nie zmienia — zobaczy go trener."),
+      d.cwiczenia.some((c) => c.dwuboj) ? "Przy rwaniu i zarzucie liczy się tylko ocena." : ""),
     ...(d.cwiczenia.some(dobieraCiezar)
       ? [punkt("Wyjątek: „dobierz”", "tam ciężar wybierasz sam. Z pierwszej wpisanej serii",
         "policzę go na resztę planu.")]
@@ -1162,7 +1184,7 @@ function kolumnyZadania({
   else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "dobierz");
   // Dwubój bez 1RM (16.10.2026): ciężar wyjdzie z testu pojedynczego.
   else if (proba) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "sprawdź maks");
-  else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"));
+  else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"), null, dopisekCiezaru);
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
     null, [jednostronne ? "na stronę" : null, dopisekPowtorzen].filter(Boolean).join(" · ") || null);
@@ -1424,7 +1446,7 @@ function kartaCwiczenia(c, stan = null) {
     procent: c.procent, proba: c.probaMaksu,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
-    dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null,
+    dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : dopisekGumy(c),
   }));
   const historia = linijkaOstatnio(c);
   if (historia) karta.append(historia);
@@ -1553,7 +1575,7 @@ function podpowiedzSerii(c, i, serie) {
   // Na masie ciała ocena zmienia powtórzenia następnej serii o ±1 (trener,
   // 02.10.2026: „miałem 10 powtórzeń, zaznaczyłem »za trudne«, a w kolejnej
   // serii znowu 10”). Dalsze serie idą za tym, co klient zrobił.
-  const naPowtorzenia = !skorygowana && c.ciezar === "masa ciała" && !wlasna?.powtorzenia
+  const naPowtorzenia = !skorygowana && naMasieCiala(c) && !wlasna?.powtorzenia
     && poprzednia?.powtorzenia && korekta?.od === i + 1;
   return {
     ciezar: skorygowana
@@ -1663,7 +1685,7 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
   // kliknięcia i tak oznacza OK). Na liście „OK" zostaje.
   blok.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
   // Trener, 16.10.2026: klient ma wiedzieć, że ocena sięga dalej niż ta seria.
-  const co = c.ciezar === "masa ciała" ? "powtórzenia" : "ciężar";
+  const co = naMasieCiala(c) ? "powtórzenia" : "ciężar";
   // Dwubój (16.10.2026): o ciężarze decyduje technika i szybkość sztangi.
   if (c.dwuboj) {
     blok.append(el("p", "drobne podpowiedz-dwuboju",
@@ -1694,7 +1716,7 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
       notka.textContent = `Następna seria: ${liczba(kg)} kg`
         + `${podstawa !== baza ? ` × ${c.powtorzenia}` : ""} `
         + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(podstawa, kg)}).`;
-    } else if (nastepna && c.ciezar === "masa ciała" && powt) {
+    } else if (nastepna && naMasieCiala(c) && powt) {
       notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek)} powt. `
         + `(o 1 ${korekta.kierunek < 0 ? "mniej" : "więcej"}).`;
     } else {
@@ -1983,7 +2005,7 @@ function polaWykonania(c) {
         const ciezar = bezCiezaru ? null
           : poOcenie ? poKorekcie(baza, k.kierunek, c.skokKg) : baza;
         // Masa ciała: ocena przestawia powtórzenia o ±1 (02.10.2026).
-        const powtorzenia = poOcenie && c.ciezar === "masa ciała"
+        const powtorzenia = poOcenie && naMasieCiala(c)
           ? Math.max(1, s.powtorzenia + k.kierunek)
           : dopasowany !== null ? Number(c.powtorzenia) : s.powtorzenia;
         return { ciezar, powtorzenia, zCiezaru: baza, dopasowany: dopasowany !== null };
@@ -2023,7 +2045,7 @@ function polaWykonania(c) {
       : p0?.dopasowany && !bezCiezaru
         ? `Blade liczby to propozycja: ${liczba(p0.ciezar)} kg × ${p0.powtorzenia} — tyle powtórzeń, `
           + "ile w planie, z ciężarem o tym samym wysiłku co Twoja seria. Po serii dotknij ✓ albo popraw."
-      : poOcenie && c.ciezar === "masa ciała"
+      : poOcenie && naMasieCiala(c)
         ? `Blade liczby to propozycja: ${p0.powtorzenia} powt. — o 1 ${k.kierunek < 0 ? "mniej" : "więcej"} `
           + "po Twojej ocenie. Po serii dotknij ✓ albo popraw."
         : "Blade liczby to propozycja z poprzedniej serii — po serii dotknij ✓ albo popraw.";
@@ -2119,7 +2141,17 @@ const DOLOZ_SEKUND = 30;
  */
 const PRZERWA_GDY_BRAK = 90;
 /** Progresje, przy których kilogramów nie ma czego wpisywać. */
-const BEZ_POLA_CIEZARU = ["masa ciała", "czas", "dystans"];
+const BEZ_POLA_CIEZARU = ["masa ciała", "czas", "dystans", "guma"];
+
+/**
+ * Ćwiczenie na masie ciała — także z gumą („Spanish Squat”, „RNT Step-Up”):
+ * w kolumnie ciężaru stoi wtedy „guma”, a ocena dalej zmienia powtórzenia.
+ */
+const naMasieCiala = (c) => c.ciezar === "masa ciała" || (c.ciezar === "guma" && c.progresja === "masa ciała");
+
+/** Pod „guma” w kolumnie ciężaru — czym jest to ćwiczenie poza gumą (17.10.2026). */
+const dopisekGumy = (c) => c.ciezar !== "guma" ? null
+  : ({ czas: "na czas", asysta: "asysta", dystans: "na dystans" })[c.progresja] ?? null;
 
 /** Stan jednego prowadzonego treningu. Naraz pamiętamy jeden — patrz `wczytajProwadzenie`. */
 let prowadzenie = null;
@@ -2311,7 +2343,7 @@ function rysujPanel() {
   panel.replaceChildren();
 
   const tp = tydzienWidoku(prowadzenie.tydzien);
-  $("#seria-tytul").textContent = `${nazwaDnia(tp, d)} · tydzień ${numerTygodnia(tp)}`;
+  naglowekDnia("seria", tp, d);
   const zrobione = new Set(prowadzenie.zrobione);
   const ileZrobionych = kroki.filter((k) => zrobione.has(k.klucz)).length;
   $("#seria-postep").textContent = prowadzenie.krok >= kroki.length
@@ -2552,7 +2584,7 @@ function panelSerii(k, kroki, d) {
     dopisekPowtorzen: powtZPola !== null && c.powtorzenia ? `w planie ${c.powtorzenia}` : null,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
-    dopisekCiezaru: zPola === null ? (c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : null)
+    dopisekCiezaru: zPola === null ? (c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : dopisekGumy(c))
       : typeof c.ciezar === "number" ? `w planie ${liczba(c.ciezar)}`
       : podpowiedz.zrodlo === "korekta" ? "po Twojej ocenie"
       : podpowiedz.zrodlo === "dopasowana" ? `na ${c.powtorzenia} powt.`
@@ -2657,9 +2689,12 @@ function panelSerii(k, kroki, d) {
   // ćwiczenia, gdy ciężar jest z planu. Przy „dobierz” mówi to instrukcja
   // doboru („z tej serii policzę Twoje ciężary na cały plan”).
   if (k.seria === 1 && !bezCiezaru && !c.maks && !dobieraCiezar(c) && typeof c.ciezar === "number") {
-    karta.append(el("p", "drobne wpisany-ciezar",
-      "Podniosłeś inny ciężar? Wpisz go — następną serię policzę od niego. "
-      + "Kolejne tygodnie zmienia ocena niżej."));
+    karta.append(el("p", "drobne wpisany-ciezar", c.dwuboj
+      ? "Podniosłeś inny ciężar? Wpisz go — następną serię policzę od niego. "
+        + "Kolejne tygodnie zmienia ocena niżej."
+      // 17.10.2026: inny ciężar liczy resztę planu, nie tylko ten trening.
+      : "Podniosłeś inny ciężar? Wpisz go — od tej serii policzę resztę planu. "
+        + "Nie chcesz wpisywać? Wystarczy ocena niżej."));
   }
   // Klient dobiera ciężar: wpisany w pole przelicza rampę na kilogramy.
   ramkaRampy?.polacz(wCiezar);

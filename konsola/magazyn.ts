@@ -758,7 +758,12 @@ export function kopiaJakoNowaWersja(zrodlo: ZapisanyPlan, wersja: number): Zapis
       ...zrodlo.plan,
       serieMaksymalne: [
         ...zrodlo.plan.serieMaksymalne
-          .filter((s) => !zMaksow.some((m) => m.cwiczenieId === s.cwiczenieId)),
+          .filter((s) => !zMaksow.some((m) => m.cwiczenieId === s.cwiczenieId))
+          // 1RM z serii roboczej (17.10.2026) wchodzi do nowego cyklu jako
+          // zwykłe 1RM: bez tygodni sprzed zmiany i bez opisu treningu, który
+          // należał do starego cyklu — inaczej seria z T1 nowego cyklu w tym
+          // samym miejscu poprawiałaby wpis tamtego.
+          .map(({ wczesniej, kalibracja, zastapionaKalibracja, ...s }) => s),
         ...zMaksow,
       ],
       sloty: zrodlo.plan.sloty.map((slot) => ({
