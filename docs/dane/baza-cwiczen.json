@@ -1,6 +1,6 @@
 {
  "opis": "BAZA z MasterTemplate 5.17, wiersze 3-202 (164 pozycje) + cwiczenia dodane przez trenera poza arkuszem (wiersz_baza: null).",
- "liczba": 166,
+ "liczba": 168,
  "cwiczenia": [
   {
    "id": "EX-0001",
@@ -79,6 +79,19 @@
    "uwagi": null,
    "scalone_id": "EX-0006x",
    "wiersz_baza": 8
+  },
+  {
+   "id": "EX-3626",
+   "nazwa": "B/l dragonflag bent knees",
+   "kategoria": "Core",
+   "part": "c",
+   "coeff": 0.75,
+   "skok_kg": 0.0,
+   "progresja": "masa ciała",
+   "film": "https://youtu.be/7uUfiKjAKmg",
+   "uwagi": "DODANE PRZEZ TRENERA 17.10.2026 – nie ma tego w BAZIE 5.17. Parametry jak B/l dragonflag eccentric.",
+   "scalone_id": null,
+   "wiersz_baza": null
   },
   {
    "id": "EX-0007",
@@ -1835,6 +1848,19 @@
    "uwagi": null,
    "scalone_id": null,
    "wiersz_baza": 140
+  },
+  {
+   "id": "EX-3627",
+   "nazwa": "S/l clean",
+   "kategoria": "Lower pull",
+   "part": "d",
+   "coeff": 0.5,
+   "skok_kg": 1.0,
+   "progresja": "kg",
+   "film": null,
+   "uwagi": "DODANE PRZEZ TRENERA 17.10.2026 – nie ma tego w BAZIE 5.17. Na jednej nodze (S/l), na stronę. Parametry jak Bulgarian clean plyo, skok jak Clean. Brak nagrania.",
+   "scalone_id": null,
+   "wiersz_baza": null
   },
   {
    "id": "EX-0174",

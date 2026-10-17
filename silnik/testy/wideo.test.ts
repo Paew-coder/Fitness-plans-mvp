@@ -21,8 +21,8 @@ import { dobierzCwiczenia } from "../src/dobor-cwiczen.ts";
 import type { Plan } from "../src/plan.ts";
 
 describe("Barbell bench press z biblioteki OPEX", () => {
-  test("to istniejące EX-0011, nie nowe ćwiczenie — BAZA trenera dalej ma 166 pozycji", () => {
-    assert.equal(katalog.bazaTrenera.length, 166);
+  test("to istniejące EX-0011, nie nowe ćwiczenie — BAZA trenera bez duplikatu", () => {
+    assert.equal(katalog.bazaTrenera.length, 168, "164 z arkusza + 4 dodane przez trenera");
     const lawka = BAZA_CWICZEN.filter((c) => c.nazwa.toLowerCase() === "barbell bench press");
     assert.equal(lawka.length, 1, "bez duplikatu — także po imporcie bibliotek");
     assert.equal(lawka[0]!.id, "EX-0011");
@@ -103,9 +103,12 @@ describe("biblioteki Theory of Motion i Catalyst Athletics", () => {
   });
 
   test("id ćwiczeń z bibliotek idą po BAZIE trenera i się nie powtarzają", () => {
-    const max = Math.max(...katalog.bazaTrenera.map((c) => Number(c.id.slice(3))));
-    const ids = katalog.wszystkie.filter((c) => c.biblioteka).map((c) => Number(c.id.slice(3)));
-    assert.ok(Math.min(...ids) > max);
+    // Ćwiczenia dodane przez trenera po imporcie bibliotek (od 17.10.2026)
+    // dostają numery za nimi — import bierze kolejny numer po wszystkich.
+    const nr = (c: { id: string }) => Number(c.id.slice(3));
+    const ids = katalog.wszystkie.filter((c) => c.biblioteka).map(nr);
+    const [min, maxBib] = [Math.min(...ids), Math.max(...ids)];
+    for (const c of katalog.bazaTrenera) assert.ok(nr(c) < min || nr(c) > maxBib, c.id);
     assert.equal(new Set(katalog.wszystkie.map((c) => c.id)).size, katalog.wszystkie.length);
   });
 
