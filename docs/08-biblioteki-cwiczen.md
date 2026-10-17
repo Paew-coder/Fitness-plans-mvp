@@ -84,6 +84,9 @@ Decyzje warte uwagi trenera:
 - **Jednostronność** wg precedensów BAZY: staggered (jedna noga z tyłu) =
   obustronne; side plank, Copenhagen, suitcase carry, kickback pośladka,
   bird dog, dead bug = „nie”. Jednorącz/jednonóż = „tak” (serie na stronę).
+  Naprzemienne z dwiema hantlami / kettlebellami (seesaw, renegade row) —
+  „tak” od 17.10.2026 (trener: „robi się je naprzemian … 8 robi jedna ręka,
+  czyli łącznie 16”), jak „alternating” w BAZIE.
 - **Izometria** (hold) — stopień niżej niż wersja w ruchu; skoki 0,5,
   pogo 0,25.
 
