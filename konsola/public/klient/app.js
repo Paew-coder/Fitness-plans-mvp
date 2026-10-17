@@ -1095,7 +1095,7 @@ function rysujJakTrenowac(t, d) {
   $("#jak-trenowac-tresc").replaceChildren(
     punkt("Z listy", "rób ćwiczenia z tej listy, w swoim tempie, i odhaczaj zrobione przyciskiem",
       "„OK” (albo „Za trudne” / „Za łatwe”, jeśli tak było). Ciężaru nie musisz wpisywać.",
-      "Na koniec dotknij „Zakończ trening”."),
+      "Na koniec wybierz „Zakończ trening”."),
     punkt("Z prowadzeniem", "„▶ Prowadź mnie seria po serii” pokazuje każdą serię osobno,",
       "z przerwą. Nie musisz z niego korzystać — do listy wrócisz w każdej chwili."),
     punkt("Ciężar na kolejne tygodnie", "zmienia ocena: „Za trudne” — lżej, „Za łatwe” — ciężej"
