@@ -44,7 +44,7 @@ const tygodnie = (p: Plan, poz = 0) => [1, 2, 3, 4, 5, 6].map((t) => {
 
 describe("lista ćwiczeń dwuboju", () => {
   test("każde istnieje, to rwanie albo zarzut ze sztangą, skok 1 kg", () => {
-    assert.equal(DWUBOJ.size, 33);
+    assert.equal(DWUBOJ.size, 34, "33 z 16.10.2026 + S/l clean (17.10.2026)");
     for (const id of DWUBOJ) {
       const c = katalog.poId(id);
       assert.ok(c, id);
@@ -78,6 +78,18 @@ describe("progresja w % 1RM", () => {
   test("każde ćwiczenie od własnego 1RM — Snatch 80 kg, skok 1 kg", () => {
     assert.equal(tygodnie(plan([PRZYSIAD, SNATCH]), 1),
       "6×3 56 | 6×3 58 | 5×3 60 | 6×2 60 | 6×2 62 | 5×2 64");
+  });
+
+  test("S/l clean (17.10.2026) — jak zwykły Clean, od własnego 1RM, na stronę", () => {
+    // Trener: „moje ćwiczenie s/l clean — zrób, żeby progresja w nim
+    // przebiegała podobnie jak w zwykłym clean”.
+    const SL_CLEAN = "EX-3627";
+    const p = plan([PRZYSIAD, SL_CLEAN], {
+      serieMaksymalne: [{ cwiczenieId: PRZYSIAD, ciezar: 120, powtorzenia: 1 }, { cwiczenieId: SL_CLEAN, ciezar: 50, powtorzenia: 1 }],
+    });
+    assert.equal(tygodnie(p, 1), "6×3 35 | 6×3 36 | 5×3 38 | 6×2 38 | 6×2 39 | 5×2 40");
+    const s = slot(p, 1, 1);
+    assert.deepEqual([s.dwuboj, s.cwiczenie?.jednostronne], [true, true]);
   });
 
   test("na każdej pozycji, nie tylko A — Snatch na B1 też", () => {
