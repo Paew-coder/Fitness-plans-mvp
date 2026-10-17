@@ -5,8 +5,11 @@
 #   ./aktualizuj-serwer.sh            # pobierz i wdroż, jeśli jest co
 #   ./aktualizuj-serwer.sh --wymus    # przebuduj nawet bez zmian
 #
-# Uruchamiany z crona raz na dobę. Bez tego każda poprawka znaczy dla trenera
-# komendy w terminalu — czyli dokładnie to, od czego serwer miał uwolnić.
+# Uruchamiany z crona co minutę (do 17.10.2026 — co kwadrans; trener: „jest
+# możliwe, żeby zmiany były od razu, a nie po tych 15 minutach?”). Bez tego
+# każda poprawka znaczy dla trenera komendy w terminalu — czyli dokładnie to,
+# od czego serwer miał uwolnić. Sprawdzenie to jedno zapytanie do GitHuba;
+# przebudowa tylko wtedy, gdy faktycznie coś przyszło.
 #
 # Kolejność jest tu treścią, nie stylem:
 #   1. kopia bazy — ZANIM cokolwiek ruszy,
@@ -26,6 +29,23 @@ powiedz() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"; }
 
 cd "$KATALOG/konsola"
 
+# Jeden przebieg naraz. Przebudowa trwa dłużej niż minuta, a drugi przebieg
+# w tym czasie zobaczyłby „nową wersję” i zaczął drugą przebudowę obok.
+if command -v flock > /dev/null 2>&1; then
+  exec 9> "$KATALOG/.aktualizacja.lock"
+  flock -n 9 || exit 0
+fi
+
+# Cron ustawiony dawniej „co kwadrans” przechodzi sam na „co minutę”
+# (17.10.2026) — bez logowania się na serwer. Tylko wpis tego skryptu.
+if command -v crontab > /dev/null 2>&1; then
+  stary="$(crontab -l 2>/dev/null || true)"
+  nowy="$(printf '%s\n' "$stary" | sed -E 's#^\*/15 (\* \* \* \* .*aktualizuj-serwer\.sh)#* \1#')"
+  if [ -n "$stary" ] && [ "$stary" != "$nowy" ]; then
+    printf '%s\n' "$nowy" | crontab - && powiedz "automat: sprawdzanie nowej wersji co minutę zamiast co kwadrans"
+  fi
+fi
+
 wymus=0
 [ "${1:-}" = "--wymus" ] && wymus=1
 
@@ -35,14 +55,18 @@ przed="$(git -C "$KATALOG" rev-parse HEAD)"
 po="$(git -C "$KATALOG" rev-parse FETCH_HEAD)"
 
 if [ "$przed" = "$po" ] && [ "$wymus" -eq 0 ]; then
-  powiedz "bez zmian ($(echo "$przed" | cut -c1-7)) — nic nie robię"
+  # Co minutę — więc nie do logu (1440 linijek na dobę), tylko do jednego
+  # pliku, nadpisywanego: widać, że automat żyje i kiedy ostatnio sprawdzał.
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] bez zmian ($(echo "$przed" | cut -c1-7))" > "$KATALOG/aktualizacja-ostatnio.txt"
   exit 0
 fi
 
 powiedz "nowa wersja: $(echo "$przed" | cut -c1-7) → $(echo "$po" | cut -c1-7)"
 
 # Kopia PRZED czymkolwiek. Aplikacja da się odtworzyć z repozytorium, plany nie.
-if "${COMPOSE[@]}" exec -T konsola node --no-warnings narzedzia/kopia.ts >> "$LOG" 2>&1; then
+# Osobna pula kopii „przed aktualizacją” — przy częstych aktualizacjach
+# nie wypychają codziennych (te zostają na miesiąc).
+if "${COMPOSE[@]}" exec -T -e KOPIA_ETYKIETA=przed-aktualizacja konsola node --no-warnings narzedzia/kopia.ts >> "$LOG" 2>&1; then
   powiedz "kopia bazy zrobiona"
 else
   powiedz "UWAGA: nie udało się zrobić kopii — przerywam, nic nie zmieniam"
@@ -60,3 +84,4 @@ powiedz "konsola przebudowana i uruchomiona"
 sleep 5
 "${COMPOSE[@]}" logs --tail 20 konsola >> "$LOG" 2>&1
 powiedz "gotowe"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] wdrożone $(echo "$po" | cut -c1-7)" > "$KATALOG/aktualizacja-ostatnio.txt"

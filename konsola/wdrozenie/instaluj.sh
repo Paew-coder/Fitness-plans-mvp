@@ -68,7 +68,7 @@ krok "5/5  Automat aktualizacji"
 # robić dalej. Trener widział wtedy urwane wyjście i nie miał skąd wiedzieć,
 # że aplikacja już stoi. Automat jest wygodą; konsola działa bez niego.
 set +e
-WPIS="*/15 * * * * $KATALOG/konsola/wdrozenie/aktualizuj-serwer.sh"
+WPIS="* * * * * $KATALOG/konsola/wdrozenie/aktualizuj-serwer.sh"
 command -v crontab > /dev/null 2>&1 || apt-get install -y --no-install-recommends cron > /dev/null 2>&1
 systemctl enable --now cron > /dev/null 2>&1
 
@@ -77,7 +77,7 @@ if ! command -v crontab > /dev/null 2>&1; then
 elif crontab -l 2>/dev/null | grep -qF "aktualizuj-serwer.sh"; then
   echo "już ustawiony"
 elif (crontab -l 2>/dev/null; echo "$WPIS") | crontab -; then
-  echo "co kwadrans sprawdzana jest nowa wersja"
+  echo "co minutę sprawdzana jest nowa wersja"
 else
   echo "nie udało się dopisać zadania do crona — aktualizacje trzeba będzie uruchamiać ręcznie"
 fi
