@@ -479,7 +479,13 @@ describe("katalog BAZY 5.17", () => {
   test("oznaczenie ćwiczeń jednostronnych", () => {
     // 19 z jawnym markerem w nazwie + 12 wzorców potwierdzonych przez trenera
     // (27.09.2026 doszedł Halfkneeling wood chopper — „robione na każdą stronę")
-    assert.equal(bazaTrenera.jednostronne().length, 31);
+    // 17.10.2026: +4 naprzemienne — Gorilla row, Seesaw press, Seated seesaw
+    // press, Bear renegade row (trener: „robi się je naprzemian … 8 robi jedna
+    // ręka, czyli łącznie 16”).
+    assert.equal(bazaTrenera.jednostronne().length, 35);
+    for (const nazwa of ["Gorilla row", "Seesaw press", "Seated seesaw press (nogi proste)", "Bear renegade row"]) {
+      assert.equal(katalog.poNazwie(nazwa)?.jednostronne, true, nazwa);
+    }
     assert.equal(katalog.poId("EX-0095")?.jednostronne, true, "wood chopper na stronę");
     assert.equal(bazaTrenera.kandydaciJednostronne().length, 0, "wszystkie rozstrzygnięte");
     assert.equal(katalog.poNazwie("lateral raise s/a")?.jednostronne, true);

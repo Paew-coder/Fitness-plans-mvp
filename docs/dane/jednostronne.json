@@ -13,6 +13,11 @@
    "podstawa": "wzorzec ruchu „pistol” — potwierdzone przez trenera 15.08.2026"
   },
   {
+   "id": "EX-0020",
+   "nazwa": "Bear renegade row",
+   "podstawa": "ćwiczenie naprzemienne — trener 17.10.2026: „robi się je naprzemian … 8 robi jedna ręka, czyli łącznie 16”"
+  },
+  {
    "id": "EX-0037",
    "nazwa": "Bulgarian clean plyo",
    "podstawa": "wzorzec ruchu „bulgarian” — potwierdzone przez trenera 15.08.2026"
@@ -71,6 +76,11 @@
    "id": "EX-0088",
    "nazwa": "Front foot elevated split squat",
    "podstawa": "wzorzec ruchu „split squat” — potwierdzone przez trenera 15.08.2026"
+  },
+  {
+   "id": "EX-0093",
+   "nazwa": "Gorilla row",
+   "podstawa": "ćwiczenie naprzemienne — trener 17.10.2026: „robi się je naprzemian … 8 robi jedna ręka, czyli łącznie 16”"
   },
   {
    "id": "EX-0094",
@@ -146,6 +156,16 @@
    "id": "EX-0175",
    "nazwa": "S/l hip thrust",
    "podstawa": "marker „s/l” w nazwie"
+  },
+  {
+   "id": "EX-0178",
+   "nazwa": "Seated seesaw press (nogi proste)",
+   "podstawa": "ćwiczenie naprzemienne — trener 17.10.2026: „robi się je naprzemian … 8 robi jedna ręka, czyli łącznie 16”"
+  },
+  {
+   "id": "EX-0179",
+   "nazwa": "Seesaw press",
+   "podstawa": "ćwiczenie naprzemienne — trener 17.10.2026: „robi się je naprzemian … 8 robi jedna ręka, czyli łącznie 16”"
   },
   {
    "id": "EX-0184",
