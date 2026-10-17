@@ -3048,11 +3048,17 @@ async function wyslijPomiar(p, karta, ciezar, powtorzenia) {
  * ale **nikt tego sam nie odkrywa**. Bez jednego zdania klient do końca cyklu
  * będzie otwierał link z SMS-a, czyli używał zakładki zamiast aplikacji.
  *
- * Trzy zasady, żeby to była podpowiedź, a nie naganianie:
- *   1. dopiero **po pierwszym domkniętym treningu** — zanim aplikacja się
- *      przyda, proszenie o miejsce na ekranie głównym jest bezczelne;
- *   2. **raz**; „nie teraz" znaczy nigdy więcej;
- *   3. nigdy, gdy aplikacja jest już dodana.
+ * Trener, 17.10.2026: „wchodząc teraz w link do planu nie ma informacji
+ * o możliwości dodania skrótu do ekranu startowego, tak jak było wcześniej —
+ * dodaj z powrotem z możliwością chowania go”. Do tego dnia podpowiedź
+ * czekała na pierwszy domknięty trening i znikała na zawsze po „Nie teraz” —
+ * po resecie planu albo u kogoś, kto raz ją odłożył, nie było jej wcale.
+ * Teraz:
+ *   1. od pierwszego wejścia w link — rozwinięta;
+ *   2. „Schowaj” albo dotknięcie nagłówka zwija ją do jednej linijki
+ *      i tak zostaje (pamięć telefonu); dotknięcie linijki rozwija ją z powrotem;
+ *   3. nigdy, gdy aplikacja jest już dodana (otwarta z ikony).
+ * Dawne „Nie teraz” (ten sam klucz w pamięci) liczy się jak zwinięcie.
  *
  * Android daje na to zdarzenie i przycisk. iOS nie daje nic — tam zostaje
  * napisanie wprost, w co dotknąć, bo inaczej podpowiedź jest bezużyteczna.
@@ -3062,51 +3068,70 @@ let zdarzenieInstalacji = null;
 addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   zdarzenieInstalacji = e;
+  if (widok) rysujInstalacje();   // przycisk „Dodaj” pojawia się, gdy Android pozwoli
 });
+// Dodana z przycisku albo z menu przeglądarki — podpowiedź znika od razu.
+addEventListener("appinstalled", () => $("#baner-instalacji").classList.add("ukryty"));
 
 const jestDodana = () =>
   matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
-function odlozInstalacje() {
-  try { localStorage.setItem(KLUCZ_INSTALACJI, "nie"); } catch { /* pełna pamięć */ }
-  $("#baner-instalacji").classList.add("ukryty");
+let instalacjaZwinieta = (() => {
+  try { return Boolean(localStorage.getItem(KLUCZ_INSTALACJI)); } catch { return false; }
+})();
+
+/** `przelacz` — czy ustawić `open` samemu; przy dotknięciu nagłówka robi to przeglądarka. */
+function zwinInstalacje(zwin, przelacz = true) {
+  instalacjaZwinieta = zwin;
+  try {
+    if (zwin) localStorage.setItem(KLUCZ_INSTALACJI, "zwinieta");
+    else localStorage.removeItem(KLUCZ_INSTALACJI);
+  } catch { /* pełna pamięć — zwinięcie trwa do zamknięcia aplikacji */ }
+  if (przelacz) $("#baner-instalacji").open = !zwin;
 }
 
-function moznaPokazacInstalacje() {
-  if (jestDodana()) return false;
-  try { if (localStorage.getItem(KLUCZ_INSTALACJI)) return false; } catch { return false; }
-  // Dopiero gdy aplikacja zdążyła się do czegoś przydać.
-  return (widok?.tygodnie ?? []).flatMap((t) => t.dni).some((d) => d.ukonczony);
+/** iPhone: udostępnianie na dole; iPad (także podający się za Maca): u góry. */
+function tekstInstalacji() {
+  const ua = navigator.userAgent;
+  const iPad = /ipad/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  const iPhone = /iphone|ipod/i.test(ua);
+  if (zdarzenieInstalacji) {
+    return "Dodaj tę stronę do ekranu głównego — otworzy się jak aplikacja, "
+      + "na pełnym ekranie i bez szukania linku.";
+  }
+  if (iPhone || iPad) {
+    return `Dotknij ikony udostępniania ${iPad ? "u góry" : "na dole"} (kwadrat ze strzałką), `
+      + "potem „Do ekranu początkowego”. Trening otworzy się jak aplikacja, bez szukania linku.";
+  }
+  return "W menu przeglądarki (⋮) wybierz „Dodaj do ekranu głównego”. Trening "
+    + "otworzy się jak aplikacja, bez szukania linku.";
 }
 
 function rysujInstalacje() {
   const baner = $("#baner-instalacji");
-  if (!moznaPokazacInstalacje()) {
+  if (jestDodana()) {
     baner.classList.add("ukryty");
     return;
   }
-
-  const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  $("#instalacja-tresc").textContent = zdarzenieInstalacji
-    ? "Dodaj tę stronę do ekranu głównego — otworzy się jak aplikacja, "
-      + "na pełnym ekranie i bez szukania linku."
-    : iOS
-      ? "Dotknij ikony udostępniania na dole, potem „Do ekranu początkowego”. "
-        + "Trening otworzy się jak aplikacja, bez szukania linku."
-      : "W menu przeglądarki wybierz „Dodaj do ekranu głównego”. Trening "
-        + "otworzy się jak aplikacja, bez szukania linku.";
-
+  $("#instalacja-tresc").textContent = tekstInstalacji();
   $("#zainstaluj").classList.toggle("ukryty", !zdarzenieInstalacji);
+  baner.open = !instalacjaZwinieta;
   baner.classList.remove("ukryty");
 }
 
-$("#instalacja-nie").onclick = odlozInstalacje;
+// Klik, a nie „toggle” — jak przy banerze ciężarów: w chwili kliknięcia
+// `open` ma jeszcze stan sprzed przełączenia.
+$("#baner-instalacji > summary").addEventListener("click", () => {
+  zwinInstalacje($("#baner-instalacji").open, false);
+});
+$("#instalacja-nie").onclick = () => zwinInstalacje(true);
 $("#zainstaluj").onclick = async () => {
   if (!zdarzenieInstalacji) return;
   zdarzenieInstalacji.prompt();
-  await zdarzenieInstalacji.userChoice;
+  const { outcome } = await zdarzenieInstalacji.userChoice;
   zdarzenieInstalacji = null;
-  odlozInstalacje();   // niezależnie od decyzji — pytamy raz
+  if (outcome === "accepted") $("#baner-instalacji").classList.add("ukryty");
+  else rysujInstalacje();
 };
 
 // ── obsługa przycisków ─────────────────────────────────────────────

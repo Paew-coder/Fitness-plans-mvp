@@ -99,10 +99,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && (await s.locator("#podtytul").innerText()).startsWith("Cykl 1 · "),
     `${await s.locator("#tytul").innerText()} · ${await s.locator("#podtytul").innerText()}`);
 
-  // Podpowiedź o dodaniu do ekranu głównego ma milczeć, dopóki aplikacja się
-  // do czegoś nie przyda. Sprawdzamy to tutaj, zanim klient cokolwiek zrobi.
-  sprawdz("przed pierwszym treningiem podpowiedź o instalacji milczy",
-    !(await s.locator("#baner-instalacji").isVisible()));
+  // Trener, 17.10.2026: podpowiedź o dodaniu do ekranu głównego ma być od
+  // pierwszego wejścia w link (wcześniej czekała na pierwszy trening).
+  sprawdz("od pierwszego wejścia w link podpowiedź o ekranie głównym — rozwinięta",
+    await s.locator("#baner-instalacji[open]").isVisible()
+      && /ekranu (głównego|początkowego)/.test(await s.locator("#instalacja-tresc").innerText()),
+    await s.locator("#instalacja-tresc").innerText().catch(() => "brak"));
 
   const przedStart = await widok();
   sprawdz("tygodnie są do wyboru",
@@ -242,20 +244,26 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   // ── 8. podpowiedź o dodaniu do ekranu głównego ────────────────────
   // Aplikacja ma ikonę i działa bez zasięgu, ale nikt sam nie odkrywa, że da
-  // się ją dodać. Podpowiedź ma się jednak odezwać dopiero wtedy, gdy zdążyła
-  // się do czegoś przydać — i tylko raz.
-  // (trening domknięty w kroku 7, więc teraz podpowiedź ma prawo się pojawić)
+  // się ją dodać. Od 17.10.2026 podpowiedź jest zawsze (poza aplikacją już
+  // dodaną), a klient może ją schować do jednej linijki — i tak zostaje.
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForTimeout(500);
-  sprawdz("po domkniętym treningu podpowiedź się pokazuje",
-    await s.locator("#baner-instalacji").isVisible(),
+  sprawdz("po domkniętym treningu podpowiedź dalej jest",
+    await s.locator("#baner-instalacji[open]").isVisible(),
     (await s.locator("#instalacja-tresc").innerText()).slice(0, 60));
 
   await s.click("#instalacja-nie");
+  sprawdz("„Schowaj” zwija ją do jednej linijki",
+    await s.locator("#baner-instalacji:not([open])").isVisible()
+      && !(await s.locator("#instalacja-tresc").isVisible()));
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForTimeout(500);
-  sprawdz("„nie teraz” znaczy nigdy więcej",
-    !(await s.locator("#baner-instalacji").isVisible()));
+  sprawdz("schowana zostaje schowana po ponownym otwarciu",
+    await s.locator("#baner-instalacji:not([open])").isVisible());
+  await s.locator("#baner-instalacji > summary").click();
+  sprawdz("dotknięcie linijki rozwija ją z powrotem",
+    await s.locator("#instalacja-tresc").isVisible());
+  await s.locator("#baner-instalacji > summary").click();
 
   // ── 9. seria maksymalna z telefonu ────────────────────────────────
   await s.click("#pokaz-pomiary");
