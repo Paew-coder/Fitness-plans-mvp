@@ -113,8 +113,9 @@ plan, brak serii maksymalnej, powtórzenia poza tabelą) i co warto sprawdzić
 (ćwiczenie bez nagrania, niezgodne ze szkieletem, powtórka z poprzedniego cyklu).
 
 **Eksport do arkusza** — `Eksportuj arkusz` tworzy plik w formacie 5.18
-z żywymi formułami, walidacjami i zakładkami ODDECH/BIEG. Ląduje w
-`konsola/dane/eksport/`.
+z żywymi formułami, walidacjami i zakładkami ODDECH/BIEG i pobiera go na
+urządzenie, na którym otwarta jest konsola (laptop: Pobrane; iPad: Pliki →
+Pobrane). Kopia zostaje też w `konsola/dane/eksport/` po stronie serwera.
 
 **Wczytanie istniejącego planu** — `Wczytaj plan z arkusza` bierze plik `.xlsx`
 w układzie 5.17/5.18 i przenosi go do konsoli. Ćwiczenia, których nie ma w BAZIE

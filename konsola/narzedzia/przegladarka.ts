@@ -106,7 +106,13 @@ export async function zKonsola(
 ): Promise<void> {
   const { chromium } = await wczytajPlaywrighta();
   await zSerwerem(port, async (srodowisko) => {
-    const przegladarka = await chromium.launch();
+    // Kontener bez ustawionego języka (LANG pusty) to dla Chromium kodowanie
+    // ASCII: nazwa pobieranego pliku z polską literą („Przegląd ekranu
+    // 1.0.xlsx”) przychodzi wtedy jako „download”. Laptop i iPad mają UTF-8
+    // zawsze — przegląd ma widzieć to samo co one.
+    const utf8 = /utf-?8/i.test(process.env.LC_ALL || process.env.LANG || "");
+    const przegladarka = await chromium.launch(
+      utf8 ? {} : { env: { ...process.env, LANG: "C.UTF-8", LC_ALL: "C.UTF-8" } });
     try {
       await przebieg(przegladarka, srodowisko);
     } finally {

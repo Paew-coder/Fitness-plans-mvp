@@ -46,6 +46,18 @@ function bezpiecznaNazwa(tekst: string): string {
 }
 
 /**
+ * Nagłówek pobrania pliku (18.10.2026). Polskie litery idą w `filename*`
+ * (UTF-8); `filename` to zapas bez ogonków dla przeglądarek, które `*`
+ * nie znają. Nazwa przeszła już przez `bezpiecznaNazwa`, więc cudzysłowu
+ * ani średnika w niej nie ma.
+ */
+export function naglowekZalacznika(nazwa: string): string {
+  const bezOgonkow = nazwa.replace(/ł/g, "l").replace(/Ł/g, "L")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, "_");
+  return `attachment; filename="${bezOgonkow}"; filename*=UTF-8''${encodeURIComponent(nazwa)}`;
+}
+
+/**
  * Co dokładnie wpisujemy do arkusza.
  *
  * Wydzielone z `eksportujDoArkusza`, żeby dało się to sprawdzić testem bez

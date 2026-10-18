@@ -3304,23 +3304,44 @@ $("#status-wybor").onchange = async (e) => {
 };
 
 // ── eksport ────────────────────────────────────────────────────────
+/*
+ * Arkusz pobiera się na urządzenie trenera (18.10.2026). Dotąd okno podawało
+ * ścieżkę na dysku — dysku serwera, którego z laptopa ani iPada nie widać:
+ * „gdzie się eksportuje ten plan jako plik xlsx, bo go nie widzę?”.
+ * Pobranie rusza samo; w oknie zostaje przycisk na drugi raz, gdyby
+ * przeglądarka (Safari na iPadzie) zatrzymała pierwsze.
+ */
+let ostatniArkusz = null;   // adres pobranego pliku w pamięci przeglądarki
 $("#eksportuj").onclick = async () => {
   const przycisk = $("#eksportuj");
   przycisk.disabled = true;
   przycisk.textContent = "Eksportuję…";
   try {
-    const { plik } = await api(`/api/plany/${obraz.zapisany.id}/eksport`, { method: "POST" });
-    $("#modal-tytul").textContent = "Arkusz gotowy";
+    const odp = await fetch(`/api/plany/${obraz.zapisany.id}/eksport`);
+    if (!odp.ok) throw new Error((await odp.json().catch(() => ({}))).blad ?? "Błąd serwera");
+    const zNaglowka = odp.headers.get("content-disposition")?.match(/filename\*=UTF-8''([^;]+)/)?.[1];
+    const nazwa = zNaglowka ? decodeURIComponent(zNaglowka) : "plan.xlsx";
+    if (ostatniArkusz) URL.revokeObjectURL(ostatniArkusz);
+    ostatniArkusz = URL.createObjectURL(await odp.blob());
+    const pobierz = el("a", "przycisk-pobierz", "⬇ Pobierz jeszcze raz");
+    pobierz.href = ostatniArkusz;
+    pobierz.download = nazwa;
+
+    $("#modal-tytul").textContent = "Arkusz pobrany";
     $("#modal-body").replaceChildren();
     $("#modal-body").append(
-      el("p", "", "Plik zapisany na dysku:"),
-      el("code", "", plik),
+      el("p", "", "Plik na tym urządzeniu:"),
+      el("code", "", nazwa),
+      el("p", "wskazowka",
+        "Laptop: folder Pobrane. iPad: aplikacja Pliki → Pobrane (albo strzałka ⬇ w pasku Safari)."),
       el("p", "wskazowka",
         obraz.gotowy
           ? "Plan przeszedł kontrolę — można wysyłać."
           : "Uwaga: plan ma otwarte błędy. Sprawdź panel „Kontrola planu” przed wysyłką."),
+      pobierz,
     );
     $("#modal").classList.remove("ukryty");
+    pobierz.click();
   } catch (err) {
     alert(err.message);
   } finally {
