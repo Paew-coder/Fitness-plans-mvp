@@ -1084,6 +1084,13 @@ Trener (zrzut listy tygodni): „to jest teraz tak naprawdę strona główna / p
 * **Więcej:** „Serie maksymalne” (i „Oddech i bieg”, gdy jest) jako pozycja z opisem i strzałką.
 * Działanie bez zmian — te same przyciski, identyfikatory, zwijanie tygodni, banery. SW `trening-v83`. Przegląd klienta: karta następnego treningu (etykieta, dzień, skład), znaczek cyklu i pasek.
 
+**89. Złączenie krawędzi superserii bez przerwy — 18.10.2026.**
+
+Trener (zrzut B1/B2): „miejsca łączenia tych krawędzi wyglądają źle, bo jest tam przerwa”.
+
+* Przerwę robiły dwie rzeczy: zaokrąglone (3 px) rogi przy złączeniu i cienka górna ramka dolnej karty, która przecinała łącznik.
+* Teraz rogi po stronie złączenia są proste, a łącznik zaczyna się tuż pod górną kartą, sięga przez odstęp i górną ramkę dolnej karty i leży nad nimi — krawędź idzie jednym pasem. Sprawdzone na powiększonym zrzucie (×3) w ciemnym i jasnym motywie. SW `trening-v84`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
