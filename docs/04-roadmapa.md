@@ -1110,6 +1110,13 @@ Trener: „czy jesteś w stanie przygotować mi jakieś wideo / prezentację / i
 * **Serwer:** odpowiedzi 206 na zakres bajtów (bez nich Safari na iPhonie nie włącza filmu), typy WebP, MP4 i PDF. Strona poza `/klient/`, żeby film nie szedł przez service worker.
 * Testy: brama dostępu (instrukcja bez logowania, zakresy 206/416, podobny adres dalej za hasłem); przeglądy: link w aplikacji klienta i w oknie linku w konsoli.
 
+**92. „Raised bird dog” → „Elevated bird dog” — 18.10.2026.**
+
+Trener: „zmień nazwę ćwiczenia w bazie z raised bird dog na Elevated bird dog”.
+
+* BAZA (`docs/dane/baza-cwiczen.json`, EX-0167) i dane silnika z generatora. Plany trzymają ID, więc każdy plan, konsola i telefon klienta pokazują nową nazwę od razu; wczytanie starego arkusza znajduje ćwiczenie po ID z ukrytej kolumny.
+* Eksport: szablon 5.18 zna EX-0167 pod starą nazwą. Wiersz zakładki BAZA odnajduje się teraz po ID i dostaje nową nazwę (`dopisz_do_bazy`) — wcześniej doszedłby drugi wiersz z tym samym ID, a stara nazwa została w arkuszu klienta. Dotyczy też każdej przyszłej zmiany nazwy. Test: `eksport-pobieranie.test.ts` (bez poprawki: dwa wiersze, z poprawką: jeden).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

@@ -97,21 +97,40 @@ def dopisz_do_bazy(wb, cwiczenia: list) -> tuple:
     Cwiczenia, ktore szablon zna, dostaja wartosci z aplikacji w polach
     POLA_UZGADNIANE (18.10.2026): skok, progresja, coeff... Zwraca liczbe
     dopisanych i poprawionych wierszy.
+
+    Szablon zna cwiczenie pod stara nazwa, a baza aplikacji ma nowa
+    (18.10.2026: „Raised bird dog” -> „Elevated bird dog”, to samo ID):
+    wiersz odnajduje sie po ID i dostaje nowa nazwe. Formuly i lista wyboru
+    cwiczen biora ja z tej kolumny — drugi wiersz z tym samym ID bylby
+    zbedny, a stara nazwa wisialaby w arkuszu klienta.
     """
     ws = wb["BAZA"]
+    kolumna_id = KOLUMNY_BAZY.index("id") + 1
     znane = {}
+    po_id = {}
     wolny = PIERWSZY_WIERSZ_BAZY
     while ws.cell(row=wolny, column=1).value not in (None, ""):
         znane[str(ws.cell(row=wolny, column=1).value).strip().lower()] = wolny
+        id_wiersza = ws.cell(row=wolny, column=kolumna_id).value
+        if id_wiersza not in (None, ""):
+            po_id[str(id_wiersza).strip()] = wolny
         wolny += 1
     dopisane = 0
     poprawione = 0
     for c in cwiczenia:
         if not c.get("nazwa"):
             continue
-        wiersz = znane.get(c["nazwa"].strip().lower())
+        nazwa = c["nazwa"].strip().lower()
+        wiersz = znane.get(nazwa)
+        nowa_nazwa = False
+        if wiersz is None and c.get("id") in po_id:
+            wiersz = po_id[c["id"]]
+            znane.pop(str(ws.cell(row=wiersz, column=1).value).strip().lower(), None)
+            ws.cell(row=wiersz, column=1).value = c["nazwa"]
+            znane[nazwa] = wiersz
+            nowa_nazwa = True
         if wiersz is not None:
-            zmiana = False
+            zmiana = nowa_nazwa
             for i, klucz in enumerate(KOLUMNY_BAZY, 1):
                 if klucz not in POLA_UZGADNIANE or c.get(klucz) is None:
                     continue

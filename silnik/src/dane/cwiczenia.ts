@@ -140,7 +140,7 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0164", nazwa: "Pull ups (paused)", kategoria: "Upper pull vertical", part: "r", coeff: 0.75, skokKg: 0.0, progresja: "masa ciała", film: null },
   { id: "EX-0165", nazwa: "Push press barbell", kategoria: "Upper push vertical", part: "b", coeff: 1.0, skokKg: 2.5, progresja: "kg" },
   { id: "EX-0166", nazwa: "Push up", kategoria: "Upper push horizontal", part: "b", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/WDIpL0pjun0" },
-  { id: "EX-0167", nazwa: "Raised bird dog", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 0.0, progresja: "masa ciała", film: "https://youtube.com/shorts/eMc71nTlciE" },
+  { id: "EX-0167", nazwa: "Elevated bird dog", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 0.0, progresja: "masa ciała", film: "https://youtube.com/shorts/eMc71nTlciE" },
   { id: "EX-0168", nazwa: "RDL", kategoria: "Lower pull", part: "d", coeff: 1.0, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/bT5OOBgY4bc" },
   { id: "EX-0169", nazwa: "Reverse Nordic", kategoria: "Lower push", part: "s", coeff: 0.5, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/GbpDfXXKuk0", uwagi: "Zmiana 27.09.2026 (trener): ćwiczenie bez ciężaru — było „kg”, telefon kazał dobierać ciężar." },
   { id: "EX-0170", nazwa: "Rope pushdown", kategoria: "Tricep", part: "b", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/-xa-6cQaZKY" },
