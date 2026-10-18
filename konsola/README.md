@@ -402,8 +402,11 @@ pokazują przykładowego klienta „Jan Przykładowy”. Na stronie:
 - opis krok po kroku ze zrzutami i częste pytania.
 
 Link do instrukcji stoi w oknie „Link dla klienta” (przycisk „Kopiuj link +
-instrukcję” kopiuje oba adresy naraz), a klient ma go w aplikacji w sekcji
-„Więcej” — „Jak korzystać z aplikacji”.
+instrukcję” kopiuje oba adresy naraz). Klient ma ją w aplikacji dwa razy:
+na górze strony głównej, pod „Następnym treningiem” (karta zwijana do jednej
+linijki, „✕” ją usuwa; po obejrzeniu zwija się sama), i na stałe w „Więcej”
+— „Jak korzystać z aplikacji”. Otwiera się w tym samym oknie z paskiem
+„← Wróć do planu”.
 
 Zrzuty, film i PDF robi `npm run instrukcja` z prawdziwej aplikacji klienta
 na świeżej bazie (Playwright z Chromium i ffmpeg z libx264/libwebp). Po

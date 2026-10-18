@@ -1133,6 +1133,15 @@ Trener: „po wejściu w »jak korzystać z aplikacji« ze skrótu dodanego do e
 * Teraz: instrukcja otwiera się w tym samym oknie, a aplikacja dopisuje adres powrotu (`/instrukcja?wroc=/k/<token>`). Strona pokazuje wtedy przyklejony u góry pasek „← Wróć do planu”: z historią cofa (plan wraca tam, gdzie był), bez niej przechodzi pod adres planu. Przyjmowany jest wyłącznie adres planu na tej stronie (`/k/…`) — instrukcja wysłana linkiem albo z obcym adresem paska nie ma. SW `trening-v87`.
 * Przegląd klienta: link z adresem powrotu i bez nowej karty, pasek przyklejony (widoczny także na dole strony), powrót z historią i bez niej (okno jak z ikony), brak paska bez adresu planu i z obcym adresem.
 
+**95. Instrukcja na górze strony głównej klienta — 18.10.2026.**
+
+Trener: „klient mi napisał, że na instrukcję i filmik natrafił dopiero po przeklikaniu samodzielnie wszystkiego w planie, więc chyba musimy dać go gdzieś na górze, ale z możliwością minimalizowania / usunięcia tej informacji”.
+
+* Karta „Jak korzystać z aplikacji” zaraz pod „Następnym treningiem”, nad „Skąd wziąć ciężary” i podpowiedzią o ekranie głównym: „Pierwszy raz? Minutowy film i instrukcja krok po kroku…”, przyciski „▶ Obejrzyj instrukcję” i „Schowaj”.
+* Od pierwszego wejścia rozwinięta. „Schowaj”, dotknięcie nagłówka albo obejrzenie instrukcji zwija ją do jednej linijki i tak zostaje (pamięć telefonu, osobno dla każdego linku); dotknięcie linijki rozwija. „✕” usuwa ją — instrukcja zostaje w „Więcej”. Ten sam wygląd i zachowanie co podpowiedź o ekranie głównym. SW `trening-v88`.
+* `npm run instrukcja` chowa tę kartę na zrzutach — instrukcja nie pokazuje linku do samej siebie, a obecne zrzuty i film zostają aktualne.
+* Przegląd klienta: na pierwszym ekranie, pod następnym treningiem i nad resztą; „Schowaj” → linijka, zostaje po ponownym otwarciu, rozwija się dotknięciem; po obejrzeniu sama linijka; „✕” usuwa, „Więcej” zostaje; usunięta nie wraca.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

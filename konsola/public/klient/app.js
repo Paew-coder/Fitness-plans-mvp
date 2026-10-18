@@ -333,6 +333,7 @@ function rysuj({ pomiary = true } = {}) {
   }
 
   rysujTygodnie();
+  rysujInstrukcje();
   rysujInstalacje();
   if (biezacy) rysujTrening();
   // Panel prowadzenia przerysowujemy tylko wtedy, gdy klient w nim akurat nie
@@ -3257,7 +3258,9 @@ $("#instalacja-nie").onclick = () => zwinInstalacje(true);
 // korzystać z aplikacji« ze skrótu dodanego do ekranu telefonu nie ma
 // strzałki powrotnej”). Otwierana w nowej karcie lądowała z ikony w oknie
 // bez historii i bez paska przeglądarki — nie było jak wrócić do planu.
-$("#pokaz-instrukcje").href = `/instrukcja?wroc=${encodeURIComponent(`/k/${TOKEN}`)}`;
+const ADRES_INSTRUKCJI = `/instrukcja?wroc=${encodeURIComponent(`/k/${TOKEN}`)}`;
+$("#pokaz-instrukcje").href = ADRES_INSTRUKCJI;
+$("#instrukcja-otworz").href = ADRES_INSTRUKCJI;
 $("#przywroc-instalacje").onclick = przywrocInstalacje;
 // „✕” siedzi w nagłówku — bez `preventDefault` dotknięcie zwijałoby baner.
 $("#instalacja-usun").addEventListener("click", (e) => {
@@ -3273,6 +3276,56 @@ $("#zainstaluj").onclick = async () => {
   if (outcome === "accepted") $("#baner-instalacji").classList.add("ukryty");
   else rysujInstalacje();
 };
+
+/**
+ * Instrukcja na górze strony głównej (18.10.2026). Trener: „klient napisał,
+ * że na instrukcję i filmik natrafił dopiero po przeklikaniu samodzielnie
+ * wszystkiego w planie, więc chyba musimy dać go gdzieś na górze, ale
+ * z możliwością minimalizowania / usunięcia tej informacji”. Dotąd był tylko
+ * link na samym dole, w „Więcej”.
+ *   1. od pierwszego wejścia rozwinięta, zaraz pod „Następnym treningiem”;
+ *   2. „Schowaj”, dotknięcie nagłówka albo obejrzenie instrukcji zwija ją
+ *      do jednej linijki i tak zostaje (pamięć telefonu);
+ *   3. „✕” usuwa ją — instrukcja zostaje w „Więcej”.
+ * Układ i zachowanie jak przy podpowiedzi o ekranie głównym.
+ */
+const KLUCZ_INSTRUKCJI = `instrukcja-${TOKEN}`;
+/** Brak — rozwinięta, „zwinieta”, „usunieta”. */
+let stanInstrukcji = (() => {
+  try { return localStorage.getItem(KLUCZ_INSTRUKCJI); } catch { return null; }
+})();
+
+function ustawInstrukcje(stan) {
+  stanInstrukcji = stan;
+  try {
+    if (stan) localStorage.setItem(KLUCZ_INSTRUKCJI, stan);
+    else localStorage.removeItem(KLUCZ_INSTRUKCJI);
+  } catch { /* pełna pamięć — stan trwa do zamknięcia aplikacji */ }
+}
+
+function rysujInstrukcje() {
+  const baner = $("#baner-instrukcji");
+  baner.classList.toggle("ukryty", stanInstrukcji === "usunieta");
+  baner.open = !stanInstrukcji;
+}
+
+// Klik, a nie „toggle” — w chwili kliknięcia `open` ma jeszcze stan sprzed przełączenia.
+$("#baner-instrukcji > summary").addEventListener("click", () => {
+  ustawInstrukcje($("#baner-instrukcji").open ? "zwinieta" : null);
+});
+$("#instrukcja-schowaj").onclick = () => {
+  ustawInstrukcje("zwinieta");
+  rysujInstrukcje();
+};
+// Obejrzana — po powrocie do planu zostaje sama linijka.
+$("#instrukcja-otworz").addEventListener("click", () => ustawInstrukcje("zwinieta"));
+// „✕” siedzi w nagłówku — bez `preventDefault` dotknięcie zwijałoby baner.
+$("#instrukcja-usun").addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  ustawInstrukcje("usunieta");
+  rysujInstrukcje();
+});
 
 // ── obsługa przycisków ─────────────────────────────────────────────
 $("#wroc-z-treningu").onclick = wroc;

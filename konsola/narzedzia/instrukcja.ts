@@ -133,6 +133,10 @@ async function zrzut(s: any, nazwa: string): Promise<void> {
 async function zrobZrzuty(przegladarka: any, srodowisko: Srodowisko): Promise<void> {
   const sciezka = await zasiej(srodowisko);
   const kontekst = await przegladarka.newContext(TELEFON);
+  // Karta „Jak korzystać z aplikacji” na górze strony głównej — w samej
+  // instrukcji zbędna (link do siebie samej); zrzuty pokazują plan.
+  await kontekst.addInitScript((klucz: string) => localStorage.setItem(klucz, "usunieta"),
+    `instrukcja-${sciezka.split("/")[2]}`);
   const s = await kontekst.newPage();
   await s.goto(`${srodowisko.adres}${sciezka}`, { waitUntil: "networkidle" });
   await s.waitForTimeout(400);
