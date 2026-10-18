@@ -310,11 +310,14 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
 #cwiczenia > .grupa-a, #cwiczenia > .grupa-b {
   position: relative; border-left: 4px solid var(--krawedz);
 }
-#cwiczenia > .ciasno { border-bottom-left-radius: 3px; }
-#cwiczenia > .w-grupie-dalej { border-top-left-radius: 3px; }
+/* Złączenie bez szwu (18.10.2026: „miejsca łączenia wyglądają źle, bo jest
+   tam przerwa”): proste rogi po stronie złączenia, a łącznik sięga przez
+   dolną ramkę górnej karty, odstęp i górną ramkę dolnej — i leży nad nimi. */
+#cwiczenia > .ciasno { border-bottom-left-radius: 0; }
+#cwiczenia > .w-grupie-dalej { border-top-left-radius: 0; }
 #cwiczenia > .ciasno::after {
-  content: ""; position: absolute; left: -4px; width: 4px;
-  bottom: calc(-.35rem - 1px); height: calc(.35rem + 2px); background: var(--krawedz);
+  content: ""; position: absolute; z-index: 1; left: -4px; width: 4px;
+  top: 100%; height: calc(.35rem + 2px); background: var(--krawedz);
 }
 .cwiczenie-gora { display: flex; align-items: baseline; gap: .55rem; }
 .cwiczenie .lp {
