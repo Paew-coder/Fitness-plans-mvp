@@ -150,6 +150,46 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("póki podpowiedź jest, w „Więcej” nie ma pozycji do jej przywracania",
     !(await s.locator("#przywroc-instalacje").isVisible()));
 
+  // Instrukcja na górze (18.10.2026): klient trafił na nią dopiero po
+  // przeklikaniu całego planu — link był tylko w „Więcej”, na samym dole.
+  const banerInstrukcji = s.locator("#baner-instrukcji");
+  await s.evaluate(() => window.scrollTo(0, 0));
+  await s.waitForTimeout(200);
+  const yInstrukcji = (await banerInstrukcji.boundingBox())?.y ?? Infinity;
+  sprawdz("od pierwszego wejścia instrukcja na górze — rozwinięta, pod następnym treningiem, nad resztą",
+    await s.locator("#baner-instrukcji[open]").isVisible()
+      && yInstrukcji > (await s.locator("#nastepny-trening").boundingBox())!.y
+      && yInstrukcji < (await s.locator("#baner-instalacji").boundingBox())!.y
+      && yInstrukcji > 0 && yInstrukcji < 500
+      && await s.locator("#instrukcja-otworz").getAttribute("href") === hrefInstrukcji,
+    `y ${Math.round(yInstrukcji)}`);
+  await s.click("#instrukcja-schowaj");
+  sprawdz("„Schowaj” zwija instrukcję do jednej linijki",
+    await s.locator("#baner-instrukcji:not([open])").isVisible()
+      && (await banerInstrukcji.boundingBox())!.height < 70);
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(400);
+  sprawdz("zwinięta zostaje zwinięta po ponownym otwarciu",
+    await s.locator("#baner-instrukcji:not([open])").isVisible());
+  await s.locator("#baner-instrukcji > summary").click();
+  sprawdz("dotknięcie linijki rozwija instrukcję z powrotem",
+    await s.locator("#instrukcja-otworz").isVisible());
+  await s.click("#instrukcja-otworz");
+  await s.waitForURL(/\/instrukcja\?/);
+  await s.click("#wroc");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(400);
+  sprawdz("po obejrzeniu instrukcji zostaje sama linijka",
+    await s.locator("#baner-instrukcji:not([open])").isVisible());
+  await s.locator("#instrukcja-usun").click();
+  sprawdz("„✕” usuwa instrukcję z góry, a w „Więcej” dalej jest",
+    !(await banerInstrukcji.isVisible()) && await s.locator("#pokaz-instrukcje").isVisible());
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(400);
+  sprawdz("usunięta nie wraca po ponownym otwarciu",
+    !(await banerInstrukcji.isVisible()));
+
   const przedStart = await widok();
   sprawdz("tygodnie są do wyboru",
     await s.locator("#tygodnie .tydzien").count() === 6,

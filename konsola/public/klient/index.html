@@ -55,6 +55,24 @@
        gdy trener się odezwie.</p>
   </section>
 
+  <!-- Instrukcja na górze (18.10.2026). Trener: „klient napisał, że na
+       instrukcję i filmik natrafił dopiero po przeklikaniu samodzielnie
+       wszystkiego w planie, więc chyba musimy dać go gdzieś na górze, ale
+       z możliwością minimalizowania / usunięcia tej informacji”. Zwijana do
+       jednej linijki, „✕” usuwa — instrukcja zostaje w „Więcej”. Patrz app.js. -->
+  <details id="baner-instrukcji" class="baner ukryty" open>
+    <summary class="baner-naglowek">
+      <strong class="baner-tytul">Jak korzystać z aplikacji</strong>
+      <button id="instrukcja-usun" class="baner-x" type="button"
+        aria-label="Usuń podpowiedź o instrukcji" title="Usuń">✕</button>
+    </summary>
+    <p>Pierwszy raz? Minutowy film i instrukcja krok po kroku: jak zrobić trening,
+       wpisać ciężar i ocenić ćwiczenie.</p>
+    <div class="akcje-baneru">
+      <a id="instrukcja-otworz" class="glowny" href="/instrukcja">▶ Obejrzyj instrukcję</a>
+      <button id="instrukcja-schowaj" class="poboczny">Schowaj</button>
+    </div>
+  </details>
   <!-- Dwie drogi do ciężarów. Dotąd była jedna — seria maksymalna — i baner
        mówił „bez nich nie policzę ciężarów". Teraz klient może zacząć od razu
        i dobrać ciężar według RPE; pierwsza wpisana seria liczy resztę planu.
