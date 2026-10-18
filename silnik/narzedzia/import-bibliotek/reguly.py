@@ -211,6 +211,11 @@ def klasyfikuj(nazwa, grupy_catalyst=()):
         p["progresja"], p["skok_kg"] = "kg", 5.0
     elif c == 0.25 and set(p["sprzet"]) & {"hantle", "wyciąg", "gryf łamany", "talerz"}:
         p["progresja"], p["skok_kg"] = "kg", 1.0
+    # Trener, 18.10.2026: mniejsze ćwiczenia (coeff 0,5) z hantlami albo na
+    # wyciągu — skok 1 kg. Przy 2,5 kg klient na 6 kg dostawał w planie 5.
+    elif c == 0.5 and set(p["sprzet"]) & {"hantle", "wyciąg"} \
+            and not set(p["sprzet"]) & {"sztanga", "trap bar", "landmine", "maszyna"}:
+        p["progresja"], p["skok_kg"] = "kg", 1.0
     else:
         p["progresja"], p["skok_kg"] = "kg", 2.5
 
