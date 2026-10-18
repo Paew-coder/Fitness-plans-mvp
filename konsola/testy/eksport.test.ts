@@ -40,6 +40,15 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("widoczny postęp (skok w górę po zaokrągleniu) idzie do arkusza wprost (18.10.2026)", () => {
+    const zapisany = planDomyslny();
+    zapisany.plan.sloty[1]!.cwiczenieId = "EX-2497";   // Single Arm Lat Pullover, skok 1 kg
+    zapisany.plan.serieMaksymalne.push({ cwiczenieId: "EX-2497", ciezar: 8.5, powtorzenia: 1 });
+    const t4 = przeliczPlan(zapisany.plan).tygodnie[3]!.sloty[1]!;
+    assert.equal(t4.widocznyPostep, true);
+    assert.equal(pole(daneDoArkusza(zapisany), "D1-S02", 4).ciezar_reczny, t4.ciezar);
+  });
+
   test("RPE 7,5 → 10 przy akcesorium („↗”, tryb z RPE) — ciężary wprost, RPE i powtórzenia też (17.10.2026)", () => {
     const zapisany = planDomyslny();
     zapisany.plan.sloty[1]!.trybCiezaru = "licz z RPE";

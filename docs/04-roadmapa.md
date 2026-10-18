@@ -1058,6 +1058,15 @@ Trener: „tak, przestaw mniejsze na 1 kg” (dalszy ciąg punktu 84).
 * Reguła importu (`silnik/narzedzia/import-bibliotek/reguly.py`) przestawiona tak samo — kolejny import da ten sam wynik.
 * BAZA trenera bez zmian — 13 mniejszych ćwiczeń z hantlami i na wyciągu ma tam 2,5 kg (m.in. Cable row, Dumbbell fly, Seated cable facepull); do decyzji trenera.
 
+**86. Mniejsze ćwiczenia BAZY na 1 kg; eksport z wartościami aplikacji; widoczny postęp — 18.10.2026.**
+
+Trener: „tak, przestaw je też na 1 kg”, oraz: „na przykładzie single arm lat pullover jest już 6 kg na 10–12 powt. T1–T3 z RPE 8, ale później po zmianie RPE na 9 i powrocie na 10 powtórzeń ciężar nadal zostaje 6, bo zmiana jest za mała — co możemy zrobić, żeby uniknąć tego w planie, bo T4 wygląda tak samo jak T1 i jest to cofnięcie progresu”.
+
+* **BAZA trenera — skok 1 kg:** Cable fly, Cable row, Cable row s/a, Dumbbell external rotation, Dumbbell fly, Dumbbell s/a Arnold press, Dumbbell s/a row, Halfkneeling s/a cable pull, Hinged dumbbell row, Hip flexors cable, Incline dumbbell fly, Jefferson cable, Seated cable facepull — i Bird dog row (wiosłowanie hantlą, ten sam skok co Dumbbell s/a row).
+* **Eksport — zakładka BAZA z wartościami aplikacji:** szablon 5.18 trzymał swoje stare kategorie, part, coeff, skok i progresję (46 rozbieżności: masa ciała przy 9 ćwiczeniach i dragonflagach, skok 1 kg przy Clean, nowe skoki 1 kg…), więc arkusz liczył inaczej niż konsola. `wypelnij-arkusz.py` nadpisuje teraz te pola w wierszach, które szablon zna. Sprawdzone na wygenerowanym arkuszu (Cable row — skok 1, S/l dragonflag — masa ciała). Kółko przez LibreOffice w tym środowisku nie rusza — LibreOffice nie otwiera tu nawet niezmienionego szablonu.
+* **Widoczny postęp** (`silnik/src/plan.ts`): gdy powtórzeń jest mniej niż tydzień wcześniej, a plan zakłada większy ułamek 1RM, a po zaokrągleniu do skoku wychodzi tyle samo albo mniej — ciężar idzie o jeden skok w górę. Przykład trenera: 6 × 10–12 w T1–T3 → T4 7 × 10 przy RPE 9, T5–T6 trzymają 7. Po ocenie „za trudne” (mnożnik niższy niż tydzień wcześniej) nic się nie podnosi. Tylko ciężar liczony — wpis trenera, ciężar ręczny i dwubój bez zmian. Konsola: „↑” przy ciężarze z wyjaśnieniem; eksport wpisuje go wprost.
+* Testy: silnik (`widoczny-postep.test.ts`, trzy testy trybu ciężaru z nowym skokiem Cable row), eksport.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

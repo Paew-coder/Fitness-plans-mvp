@@ -146,7 +146,9 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         ciezar_reczny: p.ciezarOverride
           // Tryb ciężaru przy jednym ćwiczeniu („R”, „↗” — 17.10.2026): arkusz zna
           // tylko tryb całego planu i trzymałby ciężar z bloku. Liczba wprost.
+          // Widoczny postęp (18.10.2026): skok w górę, którego arkusz nie robi — też wprost.
           ?? ((obliczony?.ciezarZrodlo || obliczony?.pauza || obliczony?.zmianaPoOcenie || obliczony?.dwuboj
+            || obliczony?.widocznyPostep
             || bojGlowny !== pozycjaBoju(slot.lp) || zmiana1RM(obliczony?.cwiczenie?.id)
             || (!bojGlowny && slot.trybCiezaru !== undefined && slot.trybCiezaru !== plan.trybAkcesoriow))
             && typeof obliczony.ciezar === "number" ? obliczony.ciezar : null),

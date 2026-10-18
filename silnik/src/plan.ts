@@ -213,6 +213,8 @@ export type SlotWyliczony = {
   dwuboj?: true;
   /** Mały ciężar przesunięty po ocenie o krok, którego arkusz nie robi (`widocznaZmiana`). */
   zmianaPoOcenie?: true;
+  /** Ciężar podniesiony o skok, bo zaokrąglenie zjadło zaplanowany wzrost (`widocznyPostep`). */
+  widocznyPostep?: true;
 };
 
 export type TopSetWyliczony = {
@@ -278,6 +280,11 @@ export function dniTreningowe(plan: Plan): number {
 export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): PlanWyliczony {
   const dni = dniTreningowe(plan);
   const wyliczone = new Map<Tydzien, TydzienWyliczony>();
+  /**
+   * Zamierzony ułamek 1RM slotu w tygodniu — przed zaokrągleniem do skoku.
+   * Z niego `widocznyPostep` wie, czy plan chciał w tym tygodniu ciężej.
+   */
+  const zamierzone = new Map<string, number>();
 
   /**
    * Jeden slot w jednym tygodniu. `wzor` to ten sam slot policzony w T6 —
@@ -413,12 +420,45 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       ciezarBazowy,
       mnoznikBazowy: slotBazowy?.mnoznik,
     };
-    const policzony = obliczCiezar(kontekst);
+    const policzonyZSilnika = obliczCiezar(kontekst);
     const guma = zGuma(cwiczenie);
+
+    /*
+     * Widoczny postęp (trener, 18.10.2026): „single arm lat pullover — 6 kg na
+     * 10–12 powtórzeń w T1–T3 z RPE 8, ale po zmianie RPE na 9 i powrocie do
+     * 10 powtórzeń ciężar nadal zostaje 6, bo zmiana jest za mała — T4 wygląda
+     * tak samo jak T1 i jest to cofnięcie progresu”.
+     *
+     * Gdy powtórzeń jest mniej niż tydzień wcześniej, a plan zakłada większy
+     * ułamek 1RM (wyższe RPE, mniej powtórzeń) — a po zaokrągleniu do skoku
+     * wychodzi tyle samo albo mniej — ciężar idzie o jeden skok w górę. Po
+     * ocenie „za trudne” (mnożnik niższy niż tydzień wcześniej) nic się nie
+     * podnosi — klient powiedział, że jest ciężko. Tylko ciężar liczony; wpis
+     * trenera i dwubój bez zmian.
+     */
+    const dziedziczy = !kontekst.jestBojemGlownym && kontekst.trybAkcesoriow === "trzymaj z bloku"
+      && [2, 3, 5, 6].includes(tydzien) && !zmienione;
+    const zamierzonyBazowy = bazowy ? zamierzone.get(`${bazowy}|${slot.positionId}`) : undefined;
+    const procentTygodnia = procentDwuboju ?? procent1RM(powtorzenia, rpe);
+    const zamierzony = dziedziczy
+      ? (zamierzonyBazowy !== undefined ? zamierzonyBazowy * mnoznik / Math.max(slotBazowy?.mnoznik ?? 1, 0.0001) : undefined)
+      : (procentTygodnia !== null ? procentTygodnia * mnoznik : undefined);
+    if (zamierzony !== undefined && tydzien <= 6) zamierzone.set(`${tydzien}|${slot.positionId}`, zamierzony);
+    const poprzedni = tydzien >= 2 && tydzien <= 6
+      ? wyliczone.get((tydzien - 1) as Tydzien)?.sloty.find((s) => s.positionId === slot.positionId)
+      : undefined;
+    const zamierzonyPoprzedni = zamierzone.get(`${tydzien - 1}|${slot.positionId}`);
+    const skok = Math.max(cwiczenie.skokKg, SKOK_MINIMALNY);
+    const podbity = typeof policzonyZSilnika === "number" && !dwuboj && poprzedni?.cwiczenie?.id === cwiczenie.id
+      && typeof poprzedni.ciezar === "number" && !poprzedni.ciezarNadpisany && !poprzedni.ciezarZrodlo
+      && powtorzenia < poprzedni.powtorzenia && mnoznik >= poprzedni.mnoznik
+      && zamierzony !== undefined && zamierzonyPoprzedni !== undefined && zamierzony > zamierzonyPoprzedni
+      && policzonyZSilnika <= poprzedni.ciezar;
+    const policzony = podbity ? mround((poprzedni!.ciezar as number) + skok, skok) : policzonyZSilnika;
     // Ocena przesunęła mały ciężar o krok, którego arkusz by nie zrobił —
     // eksport wpisze wtedy ciężar wprost (patrz `widocznaZmiana`).
-    const zmianaPoOcenie = typeof policzony === "number"
-      && policzony !== obliczCiezar({ ...kontekst, bezWidocznejZmiany: true });
+    const zmianaPoOcenie = typeof policzonyZSilnika === "number"
+      && policzonyZSilnika !== obliczCiezar({ ...kontekst, bezWidocznejZmiany: true });
 
     return {
       positionId: slot.positionId,
@@ -441,6 +481,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
       ...(pauza ? { pauza } : {}),
       ...(dwuboj ? { dwuboj: true as const } : {}),
       ...(zmianaPoOcenie && p.ciezarOverride === undefined && !przeniesiony ? { zmianaPoOcenie: true } : {}),
+      ...(podbity && p.ciezarOverride === undefined && !przeniesiony && !guma ? { widocznyPostep: true as const } : {}),
     };
   };
 
