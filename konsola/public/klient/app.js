@@ -308,7 +308,13 @@ function rysuj({ pomiary = true } = {}) {
   if (!$("#rpe-baner").firstChild) $("#rpe-baner").append(objasnienieRPE());
   const zrobione = widok.tygodnie.flatMap((t) => t.dni).filter((d) => d.ukonczony).length;
   const wszystkie = widok.tygodnie.flatMap((t) => t.dni).length;
-  $("#podtytul").textContent = `Cykl ${widok.wersja} · ${zrobione} z ${wszystkie} treningów za Tobą`;
+  // Cykl znaczkiem, postęp słowami i paskiem (18.10.2026).
+  $("#podtytul").replaceChildren(el("span", "znaczek-cyklu", `Cykl ${widok.wersja}`),
+    el("span", "", `${zrobione} z ${wszystkie} treningów za Tobą`));
+  const procentCyklu = wszystkie ? Math.round((100 * zrobione) / wszystkie) : 0;
+  $("#postep-cyklu").classList.toggle("ukryty", wszystkie === 0);
+  $("#postep-cyklu").setAttribute("aria-valuenow", String(procentCyklu));
+  $(".postep-cyklu-wypelnienie").style.width = `${procentCyklu}%`;
 
   // Domknięcie cyklu. Ostatni trening kończył się dotąd tak samo jak każdy
   // inny — lista samych ptaszków i cisza. To jest ta chwila, w której klient
@@ -984,8 +990,12 @@ function rysujTygodnie() {
     const d = t.dni.find((x) => x.dzien === cel.dzien);
     const zaczety = d.cwiczenia.some((c) => c.feedback
       || (c.serieWykonane ?? []).some((x) => !pustaSeria(x)));
-    nastepny.textContent = `▶ ${zaczety ? "Wróć do treningu" : "Następny trening"}: `
-      + `${nazwaDnia(t, d)}, tydzień ${numerTygodnia(t)}`;
+    // Karta zamiast jednej linijki (18.10.2026): co, który dzień, skład.
+    nastepny.replaceChildren(
+      el("span", "cta-etykieta", zaczety ? "Wróć do treningu" : "Następny trening"),
+      el("span", "cta-cel", `${nazwaDnia(t, d)} · tydzień ${numerTygodnia(t)}`),
+      el("span", "cta-sklad", d.cwiczenia.map((c) => c.nazwa).filter(Boolean).join(" · ")),
+    );
     nastepny.onclick = () => {
       biezacy = { ...cel };
       otworz("#ekran-trening");
@@ -998,9 +1008,12 @@ function rysujTygodnie() {
   // ostatni tydzień.
   const biezacyTydzien = cel?.tydzien ?? widok.tygodnie.at(-1)?.tydzien;
   for (const t of widok.tygodnie) {
-    const blok = el("details", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`);
-    blok.open = rozwinieteTygodnie.get(t.tydzien) ?? t.tydzien === biezacyTydzien;
     const zrobioneDni = t.dni.filter((d) => d.ukonczony).length;
+    const caly = t.dni.length > 0 && zrobioneDni === t.dni.length;
+    const teraz = t.tydzien === biezacyTydzien && !caly;
+    const blok = el("details", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`
+      + `${caly ? " zrobiony" : ""}${teraz ? " biezacy" : ""}`);
+    blok.open = rozwinieteTygodnie.get(t.tydzien) ?? t.tydzien === biezacyTydzien;
     const naglowek = el("summary", "tydzien-tytul");
     // „Tydzień 1 z 6 ···· 1 z 3” — dwa razy „z” w jednym wierszu zlewało się
     // (trener, 17.10.2026). Numer tygodnia mocno, „z 6” i licznik słabiej,
@@ -1009,11 +1022,20 @@ function rysujTygodnie() {
     nazwa.append(el("strong", "", `Tydzień ${numerTygodnia(t)}`),
       el("span", "z-ilu", `z ${widok.tygodnie.length}`));
     if (t.rodzaj) nazwa.append(el("span", `znaczek-tygodnia ${t.rodzaj}`, t.rodzaj));
-    naglowek.append(nazwa,
-      el("span", `tydzien-stan${zrobioneDni === t.dni.length ? " caly" : ""}`,
-        `${zrobioneDni === t.dni.length ? "✓ " : ""}${zrobioneDni} z ${t.dni.length} `
-        + odmiana(t.dni.length, ["treningu", "treningów", "treningów"])),
-    );
+    // Karta tygodnia (18.10.2026): ikona stanu, nazwa, pod nią kropki
+    // treningów i licznik słowami.
+    const ikona = el("span", "tydzien-ikona", caly ? "✓" : "");
+    ikona.setAttribute("aria-hidden", "true");
+    const kropki = el("span", "tydzien-kropki");
+    kropki.setAttribute("aria-hidden", "true");
+    for (const d of t.dni) kropki.append(el("span", `kropka${d.ukonczony ? " pelna" : ""}`));
+    const postep = el("span", "tydzien-postep");
+    postep.append(kropki, el("span", `tydzien-stan${caly ? " caly" : ""}`,
+      `${zrobioneDni} z ${t.dni.length} `
+      + odmiana(t.dni.length, ["treningu", "treningów", "treningów"])));
+    const opis = el("span", "tydzien-opis");
+    opis.append(nazwa, postep);
+    naglowek.append(ikona, opis);
     // Klik, a nie zdarzenie „toggle": to drugie strzela też przy ustawieniu
     // `open` wyżej i zapamiętałoby domyślny stan jako wybór klienta — tydzień 1
     // zostałby rozwinięty na zawsze.
