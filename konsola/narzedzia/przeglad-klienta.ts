@@ -93,6 +93,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // zostaje i dalsze sekcje sprawdzają go po włączeniu przełącznika.
   sprawdz("„Twój postęp” schowany — przycisku na liście tygodni nie ma",
     await s.locator("#pokaz-postep").count() === 1 && !(await s.locator("#pokaz-postep").isVisible()));
+  // Instrukcja (18.10.2026): w „Więcej”, w nowej karcie, bez logowania.
+  const instrukcja = s.locator("#pokaz-instrukcje");
+  sprawdz("„Jak korzystać z aplikacji” prowadzi do instrukcji w nowej karcie",
+    await instrukcja.isVisible() && await instrukcja.getAttribute("target") === "_blank"
+      && (await fetch(`${adres}${await instrukcja.getAttribute("href")}`)).ok,
+    String(await instrukcja.getAttribute("href")));
   await s.evaluate(() => localStorage.setItem("postep-widoczny", "1"));
   await s.reload({ waitUntil: "networkidle" });
 

@@ -222,6 +222,7 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
   content: "›"; position: absolute; right: 1.1rem; top: 50%; transform: translateY(-50%);
   font-size: 1.4rem; color: var(--tekst-blady);
 }
+a.akcja { text-decoration: none; }
 .akcja-tytul { font-weight: 600; }
 .akcja-opis { font-size: .8rem; color: var(--tekst-blady); }
 

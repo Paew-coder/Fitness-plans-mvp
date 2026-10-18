@@ -390,6 +390,32 @@ jest. Generator „do pustych” ich nie losuje. Numery `WL-0001…` — osobne 
 BAZY i bibliotek. Dane w bazie konsoli (tabela `cwiczenie_wlasne`), nie
 w repozytorium.
 
+## Instrukcja dla klienta (od 18.10.2026)
+
+Strona `/instrukcja` — do wysłania klientowi przed pierwszym planem. Otwiera
+się bez logowania i bez tokenu, bo nie ma w niej żadnych danych: ekrany
+pokazują przykładowego klienta „Jan Przykładowy”. Na stronie:
+
+- film 1080×1920 (~75 s, MP4) — dwanaście plansz z ekranami aplikacji
+  i podpisami; nadaje się też do wysłania przez WhatsApp,
+- te same plansze jako prezentacja PDF,
+- opis krok po kroku ze zrzutami i częste pytania.
+
+Link do instrukcji stoi w oknie „Link dla klienta” (przycisk „Kopiuj link +
+instrukcję” kopiuje oba adresy naraz), a klient ma go w aplikacji w sekcji
+„Więcej” — „Jak korzystać z aplikacji”.
+
+Zrzuty, film i PDF robi `npm run instrukcja` z prawdziwej aplikacji klienta
+na świeżej bazie (Playwright z Chromium i ffmpeg z libx264/libwebp). Po
+zmianach w `public/klient/` wystarczy puścić to jeszcze raz. Tekst strony
+(`public/instrukcja/index.html`) i podpisy plansz (`PLANSZE` w
+`narzedzia/instrukcja.ts`) są pisane ręcznie — po zmianie działania
+aplikacji trzeba je przejrzeć.
+
+Film iPhone odtwarza tylko przez zapytania o zakres bajtów — serwer odpowiada
+na nie kodem 206 (`plikStatyczny`). Strona leży poza `/klient/`, żeby nie
+przechodziła przez service worker aplikacji.
+
 ## Biblioteki ćwiczeń z filmami (od 09.10.2026)
 
 Poza BAZĄ trenera (168) konsola zna 3420 ćwiczeń z bibliotek Theory of Motion
@@ -1038,6 +1064,7 @@ Drugi przegląd chodzi po aplikacji klienta — po telefonie:
 
 ```bash
 npm run przeglad-klienta      # wymaga Playwrighta z Chromium, trwa ~35 sekund
+npm run instrukcja            # zrzuty, film i PDF instrukcji dla klienta (+ ffmpeg)
 ```
 
 Otwiera link na ekranie 390×844 i przechodzi pętlę, dla której cała aplikacja
