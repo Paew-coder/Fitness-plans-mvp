@@ -1050,6 +1050,14 @@ Trener (zrzut z telefonu, T2: „ciężar 5 kg”, „Ostatnio (T1): 6 · 6 · 6
 * EX-2497 Single Arm Lat Pullover: skok 1 kg (jak w BAZIE trenera przy małych ćwiczeniach na wyciągu i z hantlami: „Cable lateral raise s/a”, „Dumbbell curl”), oznaczone jako zatwierdzone — ponowny import bibliotek tego nie cofnie. Ta sama symulacja: 6 kg w T1 → 6 kg w T1–T6.
 * Szerzej: w bibliotekach 694 ćwiczenia z hantlami, kettlem albo wyciągiem mają skok 2,5 kg (448 — 4 kg przy kettlach, 228 — 1 kg). Do decyzji trenera, czy przestawić małe (coeff 0,25–0,5) na 1 kg.
 
+**85. Mniejsze ćwiczenia z hantlami i na wyciągu — skok 1 kg — 18.10.2026.**
+
+Trener: „tak, przestaw mniejsze na 1 kg” (dalszy ciąg punktu 84).
+
+* Biblioteki filmów: 275 ćwiczeń z coeff 0,25–0,5 z hantlami albo na wyciągu (bez sztangi, trap bara, landmine i maszyny) — skok 1 kg zamiast 2,5. Duże ćwiczenia z hantlami (coeff 0,75–1, 401 pozycji) zostają na 2,5 kg; kettle — na 4 kg.
+* Reguła importu (`silnik/narzedzia/import-bibliotek/reguly.py`) przestawiona tak samo — kolejny import da ten sam wynik.
+* BAZA trenera bez zmian — 13 mniejszych ćwiczeń z hantlami i na wyciągu ma tam 2,5 kg (m.in. Cable row, Dumbbell fly, Seated cable facepull); do decyzji trenera.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
