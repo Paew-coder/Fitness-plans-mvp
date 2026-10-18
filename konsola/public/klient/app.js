@@ -3164,7 +3164,11 @@ async function wyslijPomiar(p, karta, ciezar, powtorzenia) {
  *      i tak zostaje (pamięć telefonu); dotknięcie linijki rozwija ją z powrotem;
  *   3. nigdy, gdy aplikacja jest już dodana (otwarta z ikony);
  *   4. „✕” w nagłówku usuwa ją na dobre (trener, 17.10.2026: „poza opcją
- *      chowania dodajmy też x, którym się ją usuwa”).
+ *      chowania dodajmy też x, którym się ją usuwa”);
+ *   5. usuniętą przywraca „Dodaj do ekranu głównego” w sekcji „Więcej”
+ *      (18.10.2026, trener: „u klienta w planie znowu nie ma tego okienka”).
+ *      „✕” stoi tuż przy strzałce zwijania — trafienie w niego przypadkiem
+ *      chowało podpowiedź bez śladu i bez drogi powrotu.
  * Dawne „Nie teraz” (ten sam klucz w pamięci) liczy się jak zwinięcie.
  *
  * Android daje na to zdarzenie i przycisk. iOS nie daje nic — tam zostaje
@@ -3220,11 +3224,19 @@ function tekstInstalacji() {
 function usunInstalacje() {
   instalacjaUsunieta = true;
   try { localStorage.setItem(KLUCZ_INSTALACJI, "usunieta"); } catch { /* do zamknięcia aplikacji */ }
-  $("#baner-instalacji").classList.add("ukryty");
+  rysujInstalacje();
+}
+
+function przywrocInstalacje() {
+  instalacjaUsunieta = false;
+  zwinInstalacje(false);   // czyści pamięć telefonu i rozwija
+  rysujInstalacje();
+  $("#baner-instalacji").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function rysujInstalacje() {
   const baner = $("#baner-instalacji");
+  $("#przywroc-instalacje").classList.toggle("ukryty", jestDodana() || !instalacjaUsunieta);
   if (jestDodana() || instalacjaUsunieta) {
     baner.classList.add("ukryty");
     return;
@@ -3241,6 +3253,7 @@ $("#baner-instalacji > summary").addEventListener("click", () => {
   zwinInstalacje($("#baner-instalacji").open, false);
 });
 $("#instalacja-nie").onclick = () => zwinInstalacje(true);
+$("#przywroc-instalacje").onclick = przywrocInstalacje;
 // „✕” siedzi w nagłówku — bez `preventDefault` dotknięcie zwijałoby baner.
 $("#instalacja-usun").addEventListener("click", (e) => {
   e.preventDefault();

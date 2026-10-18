@@ -1117,6 +1117,14 @@ Trener: „zmień nazwę ćwiczenia w bazie z raised bird dog na Elevated bird d
 * BAZA (`docs/dane/baza-cwiczen.json`, EX-0167) i dane silnika z generatora. Plany trzymają ID, więc każdy plan, konsola i telefon klienta pokazują nową nazwę od razu; wczytanie starego arkusza znajduje ćwiczenie po ID z ukrytej kolumny.
 * Eksport: szablon 5.18 zna EX-0167 pod starą nazwą. Wiersz zakładki BAZA odnajduje się teraz po ID i dostaje nową nazwę (`dopisz_do_bazy`) — wcześniej doszedłby drugi wiersz z tym samym ID, a stara nazwa została w arkuszu klienta. Dotyczy też każdej przyszłej zmiany nazwy. Test: `eksport-pobieranie.test.ts` (bez poprawki: dwa wiersze, z poprawką: jeden).
 
+**93. Usuniętą podpowiedź o ekranie głównym da się przywrócić — 18.10.2026.**
+
+Trener: „u [klienta] w planie znowu nie ma tego okienka informującego o tym, że można dodać skrót do planu do ekranu startowego”.
+
+* Podpowiedź chowa się tylko w dwóch przypadkach: trening otwarty z ikony (skrót już jest) albo „✕” dotknięte na tym telefonie — telefon pamięta to dla tego linku. „✕” stał ok. 10 px od strzałki zwijania, a cały nagłówek zwija baner — przypadkowe trafienie chowało podpowiedź na dobre, bez drogi powrotu. To samo, gdy link klienta był testowany na innym telefonie.
+* Teraz: usunięta podpowiedź (poza aplikacją otwartą z ikony) ma pozycję „Dodaj do ekranu głównego” w „Więcej” — dotknięcie przywraca ją rozwiniętą i przewija do niej. Odstęp „✕” od strzałki większy. Zdanie o tym w instrukcji dla klienta (krok 2). SW `trening-v86`.
+* Przegląd klienta: pozycji nie ma, póki podpowiedź jest; po „✕” jest; przywrócona — rozwinięta i zostaje po ponownym otwarciu.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
