@@ -1035,6 +1035,13 @@ Trener: „do przycisków, które są po lewej stronie przy każdym ćwiczeniu �
 * Eksport: przy „R” (i „↗”) ciężary idą do arkusza wprost — arkusz zna tylko tryb całego planu i trzymałby ciężar z bloku. Dotąd sam „R” rozjeżdżał się z arkuszem po cichu.
 * Testy: eksport (RPE, powtórzenia i ciężar wprost); przegląd ekranów — wpisanie drabinki, stałe powtórzenia, „R”, liczone RPE i T6 cięższy niż T1, znacznik, zdjęcie, dwa razy „Cofnij”, brak ↗ w deloadzie.
 
+**83. Niebieska krawędź tylko przy superserii — 18.10.2026.**
+
+Trener (zrzut: E1 i E2 z krawędzią, F1 bez): „dlaczego niektóre kafelki mają niebieską krawędź, a niektóre nie?” — wybrana opcja 1.
+
+* Telefon: krawędź stała na sztywno przy literach B–E (superserie w szablonie arkusza) — samotne C1 ją miało, para F1 + F2 nie. Teraz tylko przy prawdziwej superserii: co najmniej dwa ćwiczenia dnia z tą samą literą. Mówi to samo co odstęp między grupami (punkt 75) i „superseria B” w prowadzeniu. SW `trening-v81`.
+* Przegląd klienta: krawędź przy B1 i B2, bez niej przy samotnym A1.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

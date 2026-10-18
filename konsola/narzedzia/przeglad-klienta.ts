@@ -152,6 +152,11 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       - e.getBoundingClientRect().bottom : -1)));
   sprawdz("A1 osobno, B1 i B2 razem — odstęp w grupie mniejszy niż między grupami",
     odstepy[1]! < 10 && odstepy[0]! > 3 * odstepy[1]!, odstepy.join(" · "));
+  // Niebieska krawędź tylko przy superserii — dwa ćwiczenia z tą samą literą
+  // (trener, 18.10.2026); dotąd stała na sztywno przy B–E.
+  const krawedzie = await karty.evaluateAll((k: HTMLElement[]) => k.map((e) => e.classList.contains("grupa")));
+  sprawdz("niebieska krawędź przy B1 i B2 (superseria), bez niej przy samotnym A1",
+    JSON.stringify(krawedzie) === "[false,true,true]", JSON.stringify(krawedzie));
   // Na liście „OK” zostaje (27.09.2026) — znika tylko z panelu.
   sprawdz("na liście ocena z „OK” pośrodku",
     (await karty.first().locator(".oceny .ocena-przycisk").allInnerTexts()).join(" | ")
