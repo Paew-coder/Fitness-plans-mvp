@@ -149,10 +149,11 @@ details.baner[open] .baner-licznik { display: none; }
 details.baner:not([open]) { background: var(--karta); border-color: var(--linia); }
 details.baner:not([open]) > .baner-naglowek { margin-bottom: -1rem; padding-bottom: 1rem; }
 details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); }
-/* „✕” w nagłówku podpowiedzi o ekranie głównym (17.10.2026) — usuwa ją na
-   dobre; strzałka zwijania stoi przed nim, krzyżyk na samym końcu. */
+/* „✕” w nagłówku podpowiedzi o ekranie głównym (17.10.2026) — usuwa ją;
+   strzałka zwijania stoi przed nim, krzyżyk na samym końcu. Odstęp od
+   strzałki (18.10.2026): kciuk celujący w zwinięcie trafiał w krzyżyk. */
 .baner-naglowek .baner-x {
-  order: 2; flex: none; min-width: 2.2rem; min-height: 2.2rem; margin: -.4rem -.5rem -.4rem 0;
+  order: 2; flex: none; min-width: 2.2rem; min-height: 2.2rem; margin: -.4rem -.5rem -.4rem .5rem;
   background: none; border: none; padding: 0; cursor: pointer;
   color: var(--tekst-blady); font: inherit; font-size: 1.05rem; line-height: 1;
 }

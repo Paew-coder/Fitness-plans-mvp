@@ -120,6 +120,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await s.locator("#baner-instalacji[open]").isVisible()
       && /ekranu (głównego|początkowego)/.test(await s.locator("#instalacja-tresc").innerText()),
     await s.locator("#instalacja-tresc").innerText().catch(() => "brak"));
+  sprawdz("póki podpowiedź jest, w „Więcej” nie ma pozycji do jej przywracania",
+    !(await s.locator("#przywroc-instalacje").isVisible()));
 
   const przedStart = await widok();
   sprawdz("tygodnie są do wyboru",
@@ -312,6 +314,18 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForTimeout(500);
   sprawdz("i nie wraca po ponownym otwarciu",
     !(await s.locator("#baner-instalacji").isVisible()));
+  // 18.10.2026: usuniętą (choćby przypadkiem) przywraca pozycja w „Więcej”.
+  sprawdz("usuniętą da się przywrócić — „Dodaj do ekranu głównego” w „Więcej”",
+    await s.locator("#przywroc-instalacje").isVisible());
+  await s.click("#przywroc-instalacje");
+  sprawdz("przywrócona jest rozwinięta, a pozycja w „Więcej” znika",
+    await s.locator("#baner-instalacji[open]").isVisible()
+      && await s.locator("#instalacja-tresc").isVisible()
+      && !(await s.locator("#przywroc-instalacje").isVisible()));
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(500);
+  sprawdz("przywrócona zostaje po ponownym otwarciu",
+    await s.locator("#baner-instalacji[open]").isVisible());
 
   // ── 9. seria maksymalna z telefonu ────────────────────────────────
   await s.click("#pokaz-pomiary");
