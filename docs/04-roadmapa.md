@@ -1091,6 +1091,14 @@ Trener (zrzut B1/B2): „miejsca łączenia tych krawędzi wyglądają źle, bo 
 * Przerwę robiły dwie rzeczy: zaokrąglone (3 px) rogi przy złączeniu i cienka górna ramka dolnej karty, która przecinała łącznik.
 * Teraz rogi po stronie złączenia są proste, a łącznik zaczyna się tuż pod górną kartą, sięga przez odstęp i górną ramkę dolnej karty i leży nad nimi — krawędź idzie jednym pasem. Sprawdzone na powiększonym zrzucie (×3) w ciemnym i jasnym motywie. SW `trening-v84`.
 
+**90. Eksport arkusza pobiera się na urządzenie trenera — 18.10.2026.**
+
+Trener: „gdzie się eksportuje ten plan jako plik xlsx, bo go nie widzę?”
+
+* Dotąd „Eksportuj arkusz” zapisywał plik na dysku i pokazywał ścieżkę. To działało, póki konsola stała na laptopie; na serwerze była to ścieżka na dysku serwera, nieosiągalna z laptopa i iPada.
+* Teraz `GET /api/plany/<id>/eksport` oddaje sam plik (nazwa „<Klient> <wersja>.0.xlsx”, polskie litery w `filename*`). Konsola pobiera go od razu; okno mówi, gdzie go szukać (laptop: Pobrane, iPad: Pliki → Pobrane) i ma przycisk „⬇ Pobierz jeszcze raz”, gdyby Safari zatrzymało pierwsze pobranie. Kopia na dysku serwera zostaje jak dotąd.
+* Testy: `eksport-pobieranie.test.ts` (nagłówek, plik zip z nazwą klienta, 404 dla nieistniejącego planu); przegląd ekranów łapie pobranie w przeglądarce i czyta z pliku zakładkę BAZA.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

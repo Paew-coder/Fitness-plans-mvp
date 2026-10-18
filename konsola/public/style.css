@@ -412,6 +412,11 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .modal-tresc code { font-family: var(--mono); font-size: .84rem;
   background: var(--panel); padding: .15rem .4rem; border-radius: 3px;
   display: block; margin: .6rem 0; word-break: break-all; }
+/* „Pobierz jeszcze raz” po eksporcie arkusza — link wyglądający jak przycisk. */
+.modal-tresc a.przycisk-pobierz { display: inline-block; margin: .4rem .5rem .4rem 0;
+  padding: .42rem .85rem; border: 1px solid var(--linia-mocna); border-radius: 4px;
+  color: var(--tekst); text-decoration: none; }
+.modal-tresc a.przycisk-pobierz:hover { border-color: var(--akcent); color: var(--akcent); }
 
 /* ── logowanie ──────────────────────────────────────────────────── */
 .ekran-logowania {

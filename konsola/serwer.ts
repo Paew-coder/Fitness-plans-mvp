@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync, statSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { gzipSync } from "node:zlib";
-import { dirname, extname, join, normalize } from "node:path";
+import { basename, dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -61,7 +61,7 @@ import { skopiujTydzien, zastosujProgresje } from "../silnik/src/progresja.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
-import { BladEksportu, eksportujDoArkusza } from "./eksport-xlsx.ts";
+import { BladEksportu, eksportujDoArkusza, naglowekZalacznika } from "./eksport-xlsx.ts";
 import { BladAI, stan as stanAI } from "./ai/klient.ts";
 import {
   iluNadpisze, przeliczPropozycje, zaproponujSzkielet, zastosujPropozycje,
@@ -1780,15 +1780,32 @@ const serwer = createServer(async (req, res) => {
         return json(res, { uniewazniony: true });
       }
 
-      if (akcja === "/eksport" && req.method === "POST") {
+      /**
+       * Arkusz do pobrania (18.10.2026). Trener: „gdzie się eksportuje ten plan
+       * jako plik xlsx, bo go nie widzę?”. Konsola zapisywała plik na dysku
+       * i pokazywała ścieżkę — to działało, póki konsola stała na laptopie.
+       * Na serwerze ten dysk jest poza zasięgiem laptopa i iPada, więc plik
+       * idzie teraz do przeglądarki jako pobranie. Kopia na dysku serwera
+       * zostaje jak dotąd (sprawdza ją `sprawdz-wdrozenie`).
+       */
+      if (akcja === "/eksport" && req.method === "GET") {
+        let plik: string;
         try {
-          return json(res, { plik: await eksportujDoArkusza(zapisany) });
+          plik = await eksportujDoArkusza(zapisany);
         } catch (e) {
           // 503, nie 500: brakującego Pythona nie naprawi ponowienie za chwilę,
           // a tak właśnie kod 500 rozumie każdy, kto go dostaje.
           if (e instanceof BladEksportu) return blad(res, e.message, 503);
           throw e;
         }
+        const tresc = readFileSync(plik);
+        res.writeHead(200, {
+          "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "content-disposition": naglowekZalacznika(basename(plik)),
+          "content-length": tresc.length,
+          "cache-control": "no-store",
+        });
+        return void res.end(tresc);
       }
 
       /**

@@ -1458,13 +1458,23 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await s.click("#modal-zamknij");
 
   // ── 15. eksport arkusza ───────────────────────────────────────────
-  // Arkusz nie leci przez przeglądarkę — konsola zapisuje go na dysku i podaje
-  // ścieżkę. Kontrola jest więc dwuczęściowa: co pokazała i czy plik jest.
-  await s.click("#eksportuj");
+  // Od 18.10.2026 arkusz pobiera się do przeglądarki — dysk serwera był dla
+  // trenera nieosiągalny („gdzie się eksportuje ten plan, bo go nie widzę?”).
+  // Kontrola: pobranie rusza samo, ma nazwę klienta, a w środku jest arkusz.
+  const [pobrany] = await Promise.all([
+    s.waitForEvent("download", { timeout: 30000 }),
+    s.click("#eksportuj"),
+  ]);
   await s.waitForSelector("#modal:not(.ukryty)", { timeout: 30000 });
-  const sciezka = (await s.locator("#modal-body code").innerText()).trim();
-  sprawdz("eksport zapisuje arkusz na dysku",
-    sciezka.endsWith(".xlsx") && existsSync(sciezka), sciezka);
+  const sciezka = join(tmpdir(), `przeglad-arkusz-${process.pid}.xlsx`);
+  await pobrany.saveAs(sciezka);
+  const nazwaPobrana = pobrany.suggestedFilename();
+  sprawdz("eksport pobiera arkusz na urządzenie, z nazwą klienta",
+    nazwaPobrana === `${KLIENT} 1.0.xlsx` && existsSync(sciezka),
+    nazwaPobrana);
+  sprawdz("okno po eksporcie mówi, gdzie szukać pliku, i daje pobrać drugi raz",
+    /Pobrane/.test(await s.locator("#modal-body").innerText())
+      && await s.locator("#modal-body a.przycisk-pobierz").isVisible());
   // Ćwiczenie z biblioteki dopisane do zakładki BAZA — formuły arkusza
   // szukają po nazwie kategorii, coeff i progresji.
   const wBazieArkusza = existsSync(sciezka) ? execFileSync("python3", ["-c",
@@ -1538,6 +1548,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   // bez ogonków i wczytujemy tę kopię.
   const kopiaArkusza = join(tmpdir(), "przeglad-ekranow.xlsx");
   copyFileSync(sciezka, kopiaArkusza);
+  rmSync(sciezka, { force: true });
   await s.setInputFiles('#form-import [name="plik"]', kopiaArkusza);
   await s.click("#form-import button[type=submit]");
   await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 60000 });
