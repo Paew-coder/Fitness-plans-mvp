@@ -23,14 +23,21 @@
 
 <!-- ── wybór treningu ─────────────────────────────────────────────── -->
 <div id="ekran-tygodnie" class="ekran">
-  <header class="gora">
+  <!-- Nagłówek planu (18.10.2026: „strona główna … bardziej przejrzysta
+       i profesjonalna, bez zmiany działania”): imię, cykl, pasek postępu. -->
+  <header class="gora naglowek-planu">
+    <p class="nadtytul">Twój plan treningowy</p>
     <h1 id="tytul">—</h1>
-    <p id="podtytul" class="drobne"></p>
+    <p id="podtytul" class="podtytul-planu"></p>
+    <div id="postep-cyklu" class="postep-cyklu ukryty" role="progressbar"
+      aria-label="Postęp cyklu" aria-valuemin="0" aria-valuemax="100">
+      <div class="postep-cyklu-wypelnienie"></div>
+    </div>
   </header>
 
   <!-- Jednym dotknięciem do treningu, który jest następny — bez szukania go
        na liście (prośba trenera z 25.09.2026). Chowa się po całym cyklu. -->
-  <button id="nastepny-trening" class="glowny szeroki nastepny-trening ukryty"></button>
+  <button id="nastepny-trening" class="nastepny-trening ukryty"></button>
 
   <!-- Wszystkie treningi z cyklu odhaczone. Bez tego ostatni trening kończył
        się tak samo jak każdy inny, a klient zostawał z listą samych ptaszków
@@ -91,12 +98,23 @@
     </div>
   </details>
 
+  <h2 class="sekcja-tytul">Tygodnie cyklu</h2>
   <div id="tygodnie"></div>
 
-  <button id="pokaz-pomiary" class="poboczny szeroki">Serie maksymalne</button>
-  <button id="pokaz-moduly" class="poboczny szeroki ukryty">Oddech i bieg</button>
+  <h2 class="sekcja-tytul">Więcej</h2>
+  <button id="pokaz-pomiary" class="akcja">
+    <span class="akcja-tytul">Serie maksymalne</span>
+    <span class="akcja-opis">Twoje maksy — wpisz albo popraw</span>
+  </button>
+  <button id="pokaz-moduly" class="akcja ukryty">
+    <span class="akcja-tytul">Oddech i bieg</span>
+    <span class="akcja-opis">Rozpiska od trenera poza siłownią</span>
+  </button>
   <!-- „Twój postęp” schowany 17.10.2026, do dopracowania — patrz app.js. -->
-  <button id="pokaz-postep" class="poboczny szeroki ukryty">Twój postęp</button>
+  <button id="pokaz-postep" class="akcja ukryty">
+    <span class="akcja-tytul">Twój postęp</span>
+    <span class="akcja-opis">Ciężary i powtórzenia przez wszystkie cykle</span>
+  </button>
 </div>
 
 <!-- ── postęp ─────────────────────────────────────────────────────── -->

@@ -104,7 +104,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // pliku, nie o kliencie.
   sprawdz("tytuł to imię klienta, numer cyklu w podtytule, bez „1.0”",
     (await s.locator("#tytul").innerText()) === KLIENT
-    && (await s.locator("#podtytul").innerText()).startsWith("Cykl 1 · "),
+    && (await s.locator("#podtytul .znaczek-cyklu").textContent()) === "Cykl 1"
+    && (await s.locator("#postep-cyklu").isVisible()),
     `${await s.locator("#tytul").innerText()} · ${await s.locator("#podtytul").innerText()}`);
 
   // Trener, 17.10.2026: podpowiedź o dodaniu do ekranu głównego ma być od
@@ -255,11 +256,14 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // jednym dotknięciem — bez szukania go na liście.
   const celNastepny = poZakonczeniu.tygodnie.flatMap((t: any) =>
     t.dni.filter((d: any) => !d.ukonczony).map((d: any) => ({ t, d })))[0];
-  const oczekiwany = `▶ Następny trening: `
-    + `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]}, tydzień ${celNastepny.t.numer}`;
+  // Karta (18.10.2026): etykieta, dzień i tydzień, skład dnia.
+  const oczekiwany = `Dzień ${["I", "II", "III", "IV", "V"][celNastepny.d.dzien - 1]} · tydzień ${celNastepny.t.numer}`;
+  const naKarcie = [await s.locator("#nastepny-trening .cta-etykieta").textContent(),
+    await s.locator("#nastepny-trening .cta-cel").textContent()].join(" | ");
   sprawdz("na górze listy stoi przycisk do następnego treningu",
-    (await s.locator("#nastepny-trening").innerText()) === oczekiwany,
-    `${await s.locator("#nastepny-trening").innerText()} · oczekiwane: ${oczekiwany}`);
+    naKarcie === `Następny trening | ${oczekiwany}`
+      && ((await s.locator("#nastepny-trening .cta-sklad").textContent()) ?? "").length > 0,
+    `${naKarcie} · oczekiwane: ${oczekiwany}`);
   await s.click("#nastepny-trening");
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   // Tydzień małą linijką nad dniem, nie jednym ciągiem (17.10.2026: „napisy
@@ -506,7 +510,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForTimeout(600);
   sprawdz("telefon sam przeszedł na nowy cykl",
-    (await s.locator("#podtytul").innerText()).startsWith("Cykl 2 · "),
+    (await s.locator("#podtytul .znaczek-cyklu").textContent()) === "Cykl 2",
     await s.locator("#podtytul").innerText());
 
   await s.click("#pokaz-postep");

@@ -1074,6 +1074,16 @@ Trener: „zróbmy tak, że jak ćwiczenie jest w superserii, to są połączone
 * Telefon, lista dnia: każda karta ma krawędź po lewej (4 px). Kolejne grupy — pojedyncze ćwiczenie albo superseria — na przemian niebieska i fioletowa. Karty jednej superserii łączy ciągła krawędź przez odstęp między nimi, złączone rogi bez zaokrąglenia. TOP SET w grupie swojego ćwiczenia; bieżące ćwiczenie zostaje przy kolorze swojej grupy. Zastępuje punkt 83 (krawędź tylko przy superserii). SW `trening-v82`.
 * Przegląd klienta: krawędź przy każdym ćwiczeniu, A1 innym kolorem niż B1 + B2, B1 i B2 połączone.
 
+**88. Strona główna aplikacji klienta — przejrzyściej, bez zmiany działania — 18.10.2026.**
+
+Trener (zrzut listy tygodni): „to jest teraz tak naprawdę strona główna / panel główny aplikacji klienta. Jesteśmy w stanie zmienić to, żeby było bardziej przejrzyste i wyglądało profesjonalniej, ale tak, żeby nie zmieniać działania aplikacji?”
+
+* **Nagłówek:** „Twój plan treningowy” małą linijką, imię większe, pod nim znaczek „Cykl 8”, „5 z 18 treningów za Tobą” i pasek postępu cyklu.
+* **Następny trening:** karta zamiast jednej linijki — „Wróć do treningu” / „Następny trening” małymi literami, „Dzień III · tydzień 2” dużo, skład dnia pod spodem, strzałka po prawej.
+* **Tygodnie:** nagłówek sekcji „Tygodnie cyklu”, każdy tydzień jako zaokrąglona karta z ikoną stanu (✓ zrobiony na zielono, kropka — bieżący, puste kółko — przyszły), kropkami treningów i licznikiem; bieżący obwiedziony akcentem, zrobione przygaszone. Dni w środku na tle o ton jaśniejszym; zrobione przygaszone, następny obwiedziony.
+* **Więcej:** „Serie maksymalne” (i „Oddech i bieg”, gdy jest) jako pozycja z opisem i strzałką.
+* Działanie bez zmian — te same przyciski, identyfikatory, zwijanie tygodni, banery. SW `trening-v83`. Przegląd klienta: karta następnego treningu (etykieta, dzień, skład), znaczek cyklu i pasek.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
