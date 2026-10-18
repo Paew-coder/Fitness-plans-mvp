@@ -1067,6 +1067,13 @@ Trener: „tak, przestaw je też na 1 kg”, oraz: „na przykładzie single arm
 * **Widoczny postęp** (`silnik/src/plan.ts`): gdy powtórzeń jest mniej niż tydzień wcześniej, a plan zakłada większy ułamek 1RM, a po zaokrągleniu do skoku wychodzi tyle samo albo mniej — ciężar idzie o jeden skok w górę. Przykład trenera: 6 × 10–12 w T1–T3 → T4 7 × 10 przy RPE 9, T5–T6 trzymają 7. Po ocenie „za trudne” (mnożnik niższy niż tydzień wcześniej) nic się nie podnosi. Tylko ciężar liczony — wpis trenera, ciężar ręczny i dwubój bez zmian. Konsola: „↑” przy ciężarze z wyjaśnieniem; eksport wpisuje go wprost.
 * Testy: silnik (`widoczny-postep.test.ts`, trzy testy trybu ciężaru z nowym skokiem Cable row), eksport.
 
+**87. Krawędź przy każdej grupie, kolory na przemian, superseria połączona — 18.10.2026.**
+
+Trener: „zróbmy tak, że jak ćwiczenie jest w superserii, to są połączone tą krawędzią — wszystkie ćwiczenia mogą mieć krawędź, te pojedyncze tak samo, tylko niech zmienia się ich kolor na przemian”.
+
+* Telefon, lista dnia: każda karta ma krawędź po lewej (4 px). Kolejne grupy — pojedyncze ćwiczenie albo superseria — na przemian niebieska i fioletowa. Karty jednej superserii łączy ciągła krawędź przez odstęp między nimi, złączone rogi bez zaokrąglenia. TOP SET w grupie swojego ćwiczenia; bieżące ćwiczenie zostaje przy kolorze swojej grupy. Zastępuje punkt 83 (krawędź tylko przy superserii). SW `trening-v82`.
+* Przegląd klienta: krawędź przy każdym ćwiczeniu, A1 innym kolorem niż B1 + B2, B1 i B2 połączone.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

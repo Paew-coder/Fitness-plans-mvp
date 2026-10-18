@@ -152,11 +152,17 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       - e.getBoundingClientRect().bottom : -1)));
   sprawdz("A1 osobno, B1 i B2 razem — odstęp w grupie mniejszy niż między grupami",
     odstepy[1]! < 10 && odstepy[0]! > 3 * odstepy[1]!, odstepy.join(" · "));
-  // Niebieska krawędź tylko przy superserii — dwa ćwiczenia z tą samą literą
-  // (trener, 18.10.2026); dotąd stała na sztywno przy B–E.
-  const krawedzie = await karty.evaluateAll((k: HTMLElement[]) => k.map((e) => e.classList.contains("grupa")));
-  sprawdz("niebieska krawędź przy B1 i B2 (superseria), bez niej przy samotnym A1",
-    JSON.stringify(krawedzie) === "[false,true,true]", JSON.stringify(krawedzie));
+  // Krawędź każdej grupy, kolory na przemian, superseria połączona jedną
+  // krawędzią (trener, 18.10.2026).
+  const krawedzie = await karty.evaluateAll((k: HTMLElement[]) => k.map((e) => ({
+    kolor: getComputedStyle(e).borderLeftColor, szer: getComputedStyle(e).borderLeftWidth,
+    laczy: getComputedStyle(e, "::after").content !== "none",
+  })));
+  sprawdz("krawędź przy każdym ćwiczeniu; A1 innym kolorem niż B1 + B2; B1 i B2 połączone",
+    krawedzie.every((k) => k.szer === "4px")
+      && krawedzie[0]!.kolor !== krawedzie[1]!.kolor && krawedzie[1]!.kolor === krawedzie[2]!.kolor
+      && krawedzie[1]!.laczy && !krawedzie[0]!.laczy && !krawedzie[2]!.laczy,
+    JSON.stringify(krawedzie));
   // Na liście „OK” zostaje (27.09.2026) — znika tylko z panelu.
   sprawdz("na liście ocena z „OK” pośrodku",
     (await karty.first().locator(".oceny .ocena-przycisk").allInnerTexts()).join(" | ")

@@ -12,6 +12,8 @@
   --akcent-tlo: #1E2440;
   --ok: #3FBE83;
   --ok-tlo: #14291F;
+  /* Krawędź co drugiej grupy ćwiczeń na liście dnia (18.10.2026). */
+  --grupa-2: #C58CFF;
   --latwe: #D19A3E;
   --trudne: #F2837B;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -23,6 +25,7 @@
     --tekst: #15171F; --tekst-slaby: #5C6274; --tekst-blady: #878DA0;
     --linia: #DEE2EC; --akcent: #1F3FD8; --akcent-tlo: #E8ECFD;
     --ok: #0E7C4A; --ok-tlo: #E8F4EE; --latwe: #9A6100; --trudne: #B3261E;
+    --grupa-2: #8A3FD1;
   }
 }
 
@@ -215,7 +218,24 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
    (trener, 17.10.2026). */
 #cwiczenia > .cwiczenie, #cwiczenia > .topset { margin-bottom: 1.4rem; }
 #cwiczenia > .ciasno { margin-bottom: .35rem; }
-.cwiczenie.grupa { border-left: 3px solid var(--akcent); }
+/*
+ * Krawędź grupy (trener, 18.10.2026): „wszystkie ćwiczenia mogą mieć krawędź,
+ * te pojedyncze tak samo, tylko niech zmienia się ich kolor na przemian —
+ * a ćwiczenia w superserii są połączone tą krawędzią”. Kolejne grupy:
+ * niebieska, fioletowa, niebieska… Superseria — jedna ciągła krawędź przez
+ * odstęp między kartami, a złączone rogi bez zaokrąglenia.
+ */
+#cwiczenia > .grupa-a { --krawedz: var(--akcent); }
+#cwiczenia > .grupa-b { --krawedz: var(--grupa-2); }
+#cwiczenia > .grupa-a, #cwiczenia > .grupa-b {
+  position: relative; border-left: 4px solid var(--krawedz);
+}
+#cwiczenia > .ciasno { border-bottom-left-radius: 3px; }
+#cwiczenia > .w-grupie-dalej { border-top-left-radius: 3px; }
+#cwiczenia > .ciasno::after {
+  content: ""; position: absolute; left: -4px; width: 4px;
+  bottom: calc(-.35rem - 1px); height: calc(.35rem + 2px); background: var(--krawedz);
+}
 .cwiczenie-gora { display: flex; align-items: baseline; gap: .55rem; }
 .cwiczenie .lp {
   font-size: .78rem; color: var(--tekst-blady); flex: none;
@@ -585,6 +605,8 @@ p.dobor.dobor-zapisane { color: var(--ok); }
 
 /* Na liście dnia: bieżące ćwiczenie w akcencie, stan jako przycisk powrotu. */
 .cwiczenie.biezace, .topset.biezace { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }
+/* Bieżące ćwiczenie zostaje przy kolorze swojej grupy po lewej. */
+#cwiczenia > .biezace { border-left-color: var(--krawedz, var(--akcent)); }
 .stan-prowadzenia {
   display: inline-block; margin-top: .4rem; padding: .25rem .6rem; border-radius: 8px;
   font-size: .78rem; font-weight: 600;

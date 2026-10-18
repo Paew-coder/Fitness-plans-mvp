@@ -1404,8 +1404,7 @@ function kartaTopSetu(ts, d, stan) {
 
 function kartaCwiczenia(c, stan = null) {
   const tuJestes = stan?.tu?.positionId === c.positionId;
-  const karta = el("div",
-    `cwiczenie ${wSuperserii(c) ? "grupa" : ""} ${tuJestes ? "biezace" : ""}`);
+  const karta = el("div", `cwiczenie ${tuJestes ? "biezace" : ""}`);
   karta.dataset.position = c.positionId;
   karta.dataset.grupa = grupaKarty(c);
 
@@ -1516,18 +1515,20 @@ function odswiezKarte(positionId) {
  * każde osobno. TOP SET należy do grupy swojego ćwiczenia.
  */
 const grupaKarty = (c) => c.grupa || `bez-${c.positionId}`;
-/**
- * Niebieska krawędź — tylko przy prawdziwej superserii: co najmniej dwa
- * ćwiczenia dnia z tą samą literą (trener, 18.10.2026). Dotąd stała na sztywno
- * przy literach B–E, jak w szablonie arkusza: samotne C1 ją miało, a para
- * F1 + F2 — nie.
- */
-const wSuperserii = (c) => !!c.grupa
-  && (dzienBiezacy()?.cwiczenia ?? []).filter((x) => x.grupa === c.grupa).length > 1;
 function oznaczGrupy(kontener) {
   const karty = [...kontener.children].filter((k) => k.dataset.grupa);
-  karty.forEach((k, i) => k.classList.toggle("ciasno",
-    karty[i + 1]?.dataset.grupa === k.dataset.grupa && k.nextElementSibling === karty[i + 1]));
+  // Krawędź (18.10.2026): każda grupa — także pojedyncze ćwiczenie — swoim
+  // kolorem, na przemian; karty jednej superserii połączone (CSS `.ciasno`).
+  let numer = -1;
+  karty.forEach((k, i) => {
+    if (k.dataset.grupa !== karty[i - 1]?.dataset.grupa) numer++;
+    k.classList.toggle("grupa-a", numer % 2 === 0);
+    k.classList.toggle("grupa-b", numer % 2 === 1);
+    k.classList.toggle("ciasno",
+      karty[i + 1]?.dataset.grupa === k.dataset.grupa && k.nextElementSibling === karty[i + 1]);
+    k.classList.toggle("w-grupie-dalej",
+      karty[i - 1]?.dataset.grupa === k.dataset.grupa && k.previousElementSibling === karty[i - 1]);
+  });
 }
 
 /**
