@@ -691,7 +691,7 @@ describe("przeliczenie planu i walidacja", () => {
     const plan = planTestowy();
     plan.serieMaksymalne = [
       ...plan.serieMaksymalne,
-      { cwiczenieId: "EX-0042", ciezar: 100, powtorzenia: 1 },   // Cable row, coeff 0,5
+      { cwiczenieId: "EX-0042", ciezar: 100, powtorzenia: 1 },   // Cable row, coeff 0,5, skok 1 kg (18.10.2026)
       { cwiczenieId: "EX-0003", ciezar: 100, powtorzenia: 1 },   // Allah, coeff 0,5
     ];
     plan.sloty = [
@@ -712,7 +712,7 @@ describe("przeliczenie planu i walidacja", () => {
       t.sloty.find((s) => s.positionId === positionId)!.ciezar);
 
     // Przestawione: powtórzeń przybywa przy tym samym RPE, więc ciężar schodzi.
-    assert.deepEqual(ciezary("D1-S02"), [67.5, 65, 62.5, 72.5, 67.5, 67.5]);
+    assert.deepEqual(ciezary("D1-S02"), [68, 65, 63, 72, 69, 67]);
     // Sąsiad w tym samym dniu zostaje przy trybie planu — sztanga stoi.
     assert.deepEqual(ciezary("D1-S03"), [67.5, 67.5, 67.5, 72.5, 72.5, 72.5]);
   });
@@ -723,7 +723,7 @@ describe("przeliczenie planu i walidacja", () => {
       .find((s) => s.positionId === "D1-S02")!.ciezar;
     const zRPE = przeliczPlan({ ...plan, trybAkcesoriow: "licz z RPE" }).tygodnie[1]!.sloty
       .find((s) => s.positionId === "D1-S02")!.ciezar;
-    assert.equal(wBloku, 67.5);
+    assert.equal(wBloku, 68);
     assert.equal(zRPE, 65);
   });
 
@@ -733,7 +733,7 @@ describe("przeliczenie planu i walidacja", () => {
     plan.sloty = plan.sloty.map((s) =>
       s.positionId === "D1-S02" ? { ...s, trybCiezaru: "trzymaj z bloku" as const } : s);
     const w = przeliczPlan(plan);
-    assert.equal(w.tygodnie[1]!.sloty.find((s) => s.positionId === "D1-S02")!.ciezar, 67.5,
+    assert.equal(w.tygodnie[1]!.sloty.find((s) => s.positionId === "D1-S02")!.ciezar, 68,
       "wiersz trzyma z bloku mimo planu na RPE");
     assert.equal(w.tygodnie[1]!.sloty.find((s) => s.positionId === "D1-S03")!.ciezar, 65,
       "sąsiad idzie za planem");

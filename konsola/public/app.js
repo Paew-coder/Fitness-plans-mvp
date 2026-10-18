@@ -2703,6 +2703,13 @@ function komorkaCiezaru(parametry, wyliczony) {
     komorka.classList.add("reczny");
     komorka.append(el("span", "znacznik-reczny", "●"));
   }
+  // Podniesione o skok, bo zaokrąglenie zjadało wzrost (18.10.2026).
+  if (wyliczony?.widocznyPostep && parametry.ciezarOverride === undefined) {
+    const z = el("span", "znacznik-jedn znacznik-postep", "↑");
+    z.title = "Podniesione o jeden skok: mniej powtórzeń i wyższe RPE niż tydzień wcześniej, "
+      + "a po zaokrągleniu wychodził ten sam ciężar — bez tego tydzień wyglądałby jak cofnięcie.";
+    komorka.append(z);
+  }
   if (wyliczony?.cwiczenie?.jednostronne && typeof wyliczony?.ciezar === "number") {
     komorka.append(el("span", "znacznik-jedn", "↔"));
   }

@@ -77,7 +77,13 @@ def rozszerz_zakresy(wb, stary: int, nowy: int) -> None:
             listy[f"{kol}{r}"] = Translator(wzor, origin=f"{kol}{stary}").translate_formula(f"{kol}{r}")
 
 
-def dopisz_do_bazy(wb, cwiczenia: list) -> int:
+# Pola, ktore aplikacja zmienia wzgledem szablonu 5.18 (masa ciala zamiast kg,
+# skok 1 kg przy mniejszych cwiczeniach z hantlami i na wyciagu...). Szablon
+# trzyma swoje stare wartosci — bez nadpisania arkusz liczylby inaczej niz konsola.
+POLA_UZGADNIANE = ("kategoria", "part", "coeff", "skok_kg", "progresja")
+
+
+def dopisz_do_bazy(wb, cwiczenia: list) -> tuple:
     """
     Cwiczenia z planu, ktorych nie ma w zakladce BAZA szablonu — dopisane
     na koncu, z kompletem pol. Formuly T1-T6 szukaja cwiczenia po nazwie
@@ -87,26 +93,46 @@ def dopisz_do_bazy(wb, cwiczenia: list) -> int:
     Dotyczy cwiczen z bibliotek filmow (09.10.2026) i tych, ktore trener
     dodal poza arkuszem 5.17 (Sumo deadlift, Barbell low bar squat paused).
     Gdy wolnych wierszy (do 202) zabraknie — zakresy rosna.
+
+    Cwiczenia, ktore szablon zna, dostaja wartosci z aplikacji w polach
+    POLA_UZGADNIANE (18.10.2026): skok, progresja, coeff... Zwraca liczbe
+    dopisanych i poprawionych wierszy.
     """
     ws = wb["BAZA"]
-    znane = set()
+    znane = {}
     wolny = PIERWSZY_WIERSZ_BAZY
     while ws.cell(row=wolny, column=1).value not in (None, ""):
-        znane.add(str(ws.cell(row=wolny, column=1).value).strip().lower())
+        znane[str(ws.cell(row=wolny, column=1).value).strip().lower()] = wolny
         wolny += 1
     dopisane = 0
+    poprawione = 0
     for c in cwiczenia:
-        if not c.get("nazwa") or c["nazwa"].strip().lower() in znane:
+        if not c.get("nazwa"):
+            continue
+        wiersz = znane.get(c["nazwa"].strip().lower())
+        if wiersz is not None:
+            zmiana = False
+            for i, klucz in enumerate(KOLUMNY_BAZY, 1):
+                if klucz not in POLA_UZGADNIANE or c.get(klucz) is None:
+                    continue
+                stara = ws.cell(row=wiersz, column=i).value
+                rozne = (abs(float(stara) - float(c[klucz])) > 1e-9
+                         if isinstance(stara, (int, float)) and isinstance(c[klucz], (int, float))
+                         else str(stara) != str(c[klucz]))
+                if rozne:
+                    ws.cell(row=wiersz, column=i).value = c[klucz]
+                    zmiana = True
+            poprawione += zmiana
             continue
         for i, klucz in enumerate(KOLUMNY_BAZY, 1):
             ws.cell(row=wolny, column=i).value = c.get(klucz)
-        znane.add(c["nazwa"].strip().lower())
+        znane[c["nazwa"].strip().lower()] = wolny
         wolny += 1
         dopisane += 1
     koniec = koniec_zakresu_bazy(wb)
     if wolny - 1 > koniec:
         rozszerz_zakresy(wb, koniec, wolny - 1)
-    return dopisane
+    return dopisane, poprawione
 
 
 def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
@@ -115,7 +141,7 @@ def wypelnij(szablon: str, dane: dict, cel: str) -> dict:
     licznik = {"sloty": 0, "serie_maksymalne": 0, "tygodnie": 0}
 
     # --- BAZA: cwiczenia z planu, ktorych szablon nie zna ---
-    licznik["dopisane_do_bazy"] = dopisz_do_bazy(wb, dane.get("cwiczenia_bazy") or [])
+    licznik["dopisane_do_bazy"], licznik["poprawione_w_bazie"] = dopisz_do_bazy(wb, dane.get("cwiczenia_bazy") or [])
 
     # --- przelaczniki ---
     analiza = wb["Analiza"]
