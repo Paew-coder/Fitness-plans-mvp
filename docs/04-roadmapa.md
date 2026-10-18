@@ -1042,6 +1042,14 @@ Trener (zrzut: E1 i E2 z krawędzią, F1 bez): „dlaczego niektóre kafelki maj
 * Telefon: krawędź stała na sztywno przy literach B–E (superserie w szablonie arkusza) — samotne C1 ją miało, para F1 + F2 nie. Teraz tylko przy prawdziwej superserii: co najmniej dwa ćwiczenia dnia z tą samą literą. Mówi to samo co odstęp między grupami (punkt 75) i „superseria B” w prowadzeniu. SW `trening-v81`.
 * Przegląd klienta: krawędź przy B1 i B2, bez niej przy samotnym A1.
 
+**84. Single Arm Lat Pullover — skok 1 kg — 18.10.2026.**
+
+Trener (zrzut z telefonu, T2: „ciężar 5 kg”, „Ostatnio (T1): 6 · 6 · 6 kg × 10”): „dlaczego tutaj ciężar został 5 kg, skoro ostatnio wpisałem wszystkie serie z 6 kg? Nie powinno się dostosować?”
+
+* Przyczyna: ćwiczenie z biblioteki Theory of Motion miało skok 2,5 kg. Seria z 6 kg zmieniała 1RM (punkt 74), ale ciężar w planie zaokrąglał się do 2,5 · 5 · 7,5 kg — 6 kg nie było na tej siatce, więc wracało 5 (symulacja: 1RM 7,5 → 9 kg, plan dalej 5 kg w T1–T3, 7,5 w T4).
+* EX-2497 Single Arm Lat Pullover: skok 1 kg (jak w BAZIE trenera przy małych ćwiczeniach na wyciągu i z hantlami: „Cable lateral raise s/a”, „Dumbbell curl”), oznaczone jako zatwierdzone — ponowny import bibliotek tego nie cofnie. Ta sama symulacja: 6 kg w T1 → 6 kg w T1–T6.
+* Szerzej: w bibliotekach 694 ćwiczenia z hantlami, kettlem albo wyciągiem mają skok 2,5 kg (448 — 4 kg przy kettlach, 228 — 1 kg). Do decyzji trenera, czy przestawić małe (coeff 0,25–0,5) na 1 kg.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
