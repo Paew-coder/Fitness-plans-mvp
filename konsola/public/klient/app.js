@@ -3253,6 +3253,11 @@ $("#baner-instalacji > summary").addEventListener("click", () => {
   zwinInstalacje($("#baner-instalacji").open, false);
 });
 $("#instalacja-nie").onclick = () => zwinInstalacje(true);
+// Instrukcja z adresem powrotu (18.10.2026, trener: „po wejściu w »jak
+// korzystać z aplikacji« ze skrótu dodanego do ekranu telefonu nie ma
+// strzałki powrotnej”). Otwierana w nowej karcie lądowała z ikony w oknie
+// bez historii i bez paska przeglądarki — nie było jak wrócić do planu.
+$("#pokaz-instrukcje").href = `/instrukcja?wroc=${encodeURIComponent(`/k/${TOKEN}`)}`;
 $("#przywroc-instalacje").onclick = przywrocInstalacje;
 // „✕” siedzi w nagłówku — bez `preventDefault` dotknięcie zwijałoby baner.
 $("#instalacja-usun").addEventListener("click", (e) => {

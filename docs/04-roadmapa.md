@@ -1125,6 +1125,14 @@ Trener: „u [klienta] w planie znowu nie ma tego okienka informującego o tym, 
 * Teraz: usunięta podpowiedź (poza aplikacją otwartą z ikony) ma pozycję „Dodaj do ekranu głównego” w „Więcej” — dotknięcie przywraca ją rozwiniętą i przewija do niej. Odstęp „✕” od strzałki większy. Zdanie o tym w instrukcji dla klienta (krok 2). SW `trening-v86`.
 * Przegląd klienta: pozycji nie ma, póki podpowiedź jest; po „✕” jest; przywrócona — rozwinięta i zostaje po ponownym otwarciu.
 
+**94. Powrót z instrukcji do planu w aplikacji z ekranu głównego — 18.10.2026.**
+
+Trener: „po wejściu w »jak korzystać z aplikacji« ze skrótu dodanego do ekranu telefonu nie ma strzałki powrotnej do panelu głównego planu treningowego”.
+
+* Przyczyna: link otwierał instrukcję w nowej karcie (punkt 91). W aplikacji otwartej z ikony nie ma paska przeglądarki ani strzałki wstecz, a nowe okno nie ma historii — przycisk powrotu na stronie pokazywał się tylko przy historii, więc nie było go wcale.
+* Teraz: instrukcja otwiera się w tym samym oknie, a aplikacja dopisuje adres powrotu (`/instrukcja?wroc=/k/<token>`). Strona pokazuje wtedy przyklejony u góry pasek „← Wróć do planu”: z historią cofa (plan wraca tam, gdzie był), bez niej przechodzi pod adres planu. Przyjmowany jest wyłącznie adres planu na tej stronie (`/k/…`) — instrukcja wysłana linkiem albo z obcym adresem paska nie ma. SW `trening-v87`.
+* Przegląd klienta: link z adresem powrotu i bez nowej karty, pasek przyklejony (widoczny także na dole strony), powrót z historią i bez niej (okno jak z ikony), brak paska bez adresu planu i z obcym adresem.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
