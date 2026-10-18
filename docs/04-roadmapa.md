@@ -1099,6 +1099,17 @@ Trener: „gdzie się eksportuje ten plan jako plik xlsx, bo go nie widzę?”
 * Teraz `GET /api/plany/<id>/eksport` oddaje sam plik (nazwa „<Klient> <wersja>.0.xlsx”, polskie litery w `filename*`). Konsola pobiera go od razu; okno mówi, gdzie go szukać (laptop: Pobrane, iPad: Pliki → Pobrane) i ma przycisk „⬇ Pobierz jeszcze raz”, gdyby Safari zatrzymało pierwsze pobranie. Kopia na dysku serwera zostaje jak dotąd.
 * Testy: `eksport-pobieranie.test.ts` (nagłówek, plik zip z nazwą klienta, 404 dla nieistniejącego planu); przegląd ekranów łapie pobranie w przeglądarce i czyta z pliku zakładkę BAZA.
 
+**91. Instrukcja dla klienta: strona, film i prezentacja — 18.10.2026.**
+
+Trener: „czy jesteś w stanie przygotować mi jakieś wideo / prezentację / instrukcję używania tej aplikacji, którą będę mógł wysyłać klientom przed ich pierwszym planem?”
+
+* **Strona `/instrukcja`** (bez logowania, bez danych — przykładowy klient „Jan Przykładowy”): film, „W skrócie” w pięciu krokach, osiem kroków ze zrzutami (otwórz plan, ekran główny, skąd wziąć ciężary, RPE, trening z listy i superserie, ocena i wpis serii, prowadzenie z przerwą, zakończenie i tryb offline), częste pytania. Jasny i ciemny motyw jak w aplikacji; teksty bez form rodzajowych tam, gdzie się da.
+* **Film** 1080×1920, ~75 s, MP4 — dwanaście plansz z ekranami i podpisami, przejścia płynne. **Prezentacja PDF** — te same plansze. Oba do pobrania ze strony.
+* **Skąd:** `npm run instrukcja` — aplikacja klienta na świeżej bazie, przykładowy plan na 3 dni, zrzuty z iPhone’a (×3) z zaznaczeniem, gdzie dotknąć; plansze składa Chromium, film i WebP ffmpeg. Po zmianach w aplikacji klienta wystarczy puścić jeszcze raz.
+* **Gdzie trener ją ma:** okno „Link dla klienta” — link do instrukcji i przycisk „Kopiuj link + instrukcję”. **Klient:** „Więcej” → „Jak korzystać z aplikacji” (nowa karta). SW `trening-v85`.
+* **Serwer:** odpowiedzi 206 na zakres bajtów (bez nich Safari na iPhonie nie włącza filmu), typy WebP, MP4 i PDF. Strona poza `/klient/`, żeby film nie szedł przez service worker.
+* Testy: brama dostępu (instrukcja bez logowania, zakresy 206/416, podobny adres dalej za hasłem); przeglądy: link w aplikacji klienta i w oknie linku w konsoli.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

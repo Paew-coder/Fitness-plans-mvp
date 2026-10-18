@@ -496,6 +496,8 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .spostrzezenie p { margin: .2rem 0 0; color: var(--tekst-slaby); }
 
 .akcje-modala { display: flex; gap: .5rem; margin-top: .9rem; }
+/* Link do instrukcji dla klienta w oknie „Link dla klienta” (18.10.2026). */
+#modal-body > a { display: inline-block; margin: 0 0 .4rem; word-break: break-all; }
 .lista-uwag { margin: .3rem 0 0; padding-left: 1.1rem; }
 .lista-uwag li { margin: .2rem 0; }
 

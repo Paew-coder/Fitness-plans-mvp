@@ -3380,12 +3380,31 @@ async function pokazLinkKlienta(klientId) {
       zamknijModal();
       if (kartoteka?.klient.id === klientId) otworzKlienta(klientId);
     };
+    // Instrukcja dla klienta (18.10.2026): film i opis krok po kroku pod
+    // stałym adresem — do wysłania razem z linkiem przed pierwszym planem.
+    const instrukcja = `${location.origin}/instrukcja`;
+    const kopiujZInstrukcja = el("button", "", "Kopiuj link + instrukcję");
+    kopiujZInstrukcja.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(
+          `Twój plan treningowy: ${adres}\nJak korzystać z aplikacji: ${instrukcja}`);
+        kopiujZInstrukcja.textContent = "Skopiowane ✓";
+      } catch {
+        kopiujZInstrukcja.textContent = "Zaznacz i skopiuj ręcznie";
+      }
+    };
     const akcje = el("div", "akcje-modala");
-    akcje.append(kopiuj, uniewaznij);
+    akcje.append(kopiuj, kopiujZInstrukcja, uniewaznij);
 
+    const linkInstrukcji = el("a", "", instrukcja);
+    linkInstrukcji.href = instrukcja;
+    linkInstrukcji.target = "_blank";
+    linkInstrukcji.rel = "noopener";
     const tresc = [
       el("p", "", "Wyślij klientowi. Otworzy się na telefonie, działa też bez zasięgu."),
       pole,
+      el("p", "wskazowka", "Przed pierwszym planem dołącz instrukcję — film i opis krok po kroku:"),
+      linkInstrukcji,
     ];
 
     /**

@@ -139,6 +139,10 @@ const TYPY: Record<string, string> = {
   // dodanie do ekranu głównego daje zrzut strony zamiast sztangi.
   ".png": "image/png",
   ".webmanifest": "application/manifest+json",
+  // Instrukcja dla klienta (18.10.2026): zrzuty, film i prezentacja.
+  ".webp": "image/webp",
+  ".mp4": "video/mp4",
+  ".pdf": "application/pdf",
 };
 
 /**
@@ -1269,10 +1273,37 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse, req?: IncomingMe
    */
   naglowki["cache-control"] = "no-cache";
   naglowki.etag = znacznik(pelna);
+  naglowki["accept-ranges"] = "bytes";
 
   if (req?.headers["if-none-match"] === naglowki.etag) {
     res.writeHead(304, { etag: naglowki.etag, "cache-control": "no-cache" });
     res.end();
+    return true;
+  }
+
+  /**
+   * Kawałek pliku (18.10.2026). Safari na iPhonie i iPadzie gra wideo
+   * wyłącznie przez zapytania o zakres bajtów — bez odpowiedzi 206 film
+   * w instrukcji dla klienta w ogóle się nie włącza.
+   */
+  const zakres = /^bytes=(\d*)-(\d*)$/.exec(String(req?.headers.range ?? ""));
+  if (zakres) {
+    const tresc = readFileSync(pelna);
+    const rozmiar = tresc.length;
+    const [, a, b] = zakres;
+    const od = a === "" ? Math.max(0, rozmiar - Number(b)) : Number(a);
+    const doBajtu = a === "" || b === "" ? rozmiar - 1 : Math.min(Number(b), rozmiar - 1);
+    if ((a === "" && b === "") || od > doBajtu) {
+      res.writeHead(416, { "content-range": `bytes */${rozmiar}` });
+      res.end();
+      return true;
+    }
+    res.writeHead(206, {
+      ...naglowki,
+      "content-range": `bytes ${od}-${doBajtu}/${rozmiar}`,
+      "content-length": String(doBajtu - od + 1),
+    });
+    res.end(tresc.subarray(od, doBajtu + 1));
     return true;
   }
 
@@ -1288,11 +1319,16 @@ function plikStatyczny(sciezkaUrl: string, res: ServerResponse, req?: IncomingMe
  * byłby obietnicą bez pokrycia.
  */
 
-/** Adresy, do których klient dostaje się samym tokenem — bez konta trenera. */
+/**
+ * Adresy, do których klient dostaje się bez konta trenera: samym tokenem
+ * (plan) albo wprost (instrukcja — przykładowy klient, żadnych danych).
+ */
 function dlaKlienta(sciezka: string): boolean {
   return sciezka.startsWith("/api/klient/")
     || sciezka.startsWith("/k/")
-    || sciezka.startsWith("/klient/");
+    || sciezka.startsWith("/klient/")
+    || sciezka === "/instrukcja"
+    || sciezka.startsWith("/instrukcja/");
 }
 
 /**
@@ -2344,6 +2380,13 @@ const serwer = createServer(async (req, res) => {
 
     if (sciezka.startsWith("/k/")) {
       if (plikStatyczny("/klient/index.html", res, req)) return;
+    }
+
+    // Instrukcja dla klienta (18.10.2026) — link do wysłania przed pierwszym
+    // planem. Poza `/klient/`, żeby nie łapał jej service worker aplikacji:
+    // film szedłby wtedy przez jego pamięć, która zakresów bajtów nie zna.
+    if (sciezka === "/instrukcja" || sciezka === "/instrukcja/") {
+      if (plikStatyczny("/instrukcja/index.html", res, req)) return;
     }
 
     // ── 1RM z serii maksymalnej (podgląd na żywo) ────────────────────

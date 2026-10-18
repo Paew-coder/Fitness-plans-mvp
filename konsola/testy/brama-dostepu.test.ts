@@ -119,6 +119,38 @@ describe("wejście", () => {
   });
 });
 
+describe("instrukcja dla klienta (18.10.2026)", () => {
+  test("strona instrukcji otwiera się bez logowania", async () => {
+    for (const sciezka of ["/instrukcja", "/instrukcja/"]) {
+      const odp = await fetch(`${adres}${sciezka}`);
+      assert.equal(odp.status, 200, sciezka);
+      assert.match(await odp.text(), /Jak korzystać z aplikacji/, sciezka);
+    }
+    const zrzut = await fetch(`${adres}/instrukcja/ekrany/glowna.webp`);
+    assert.equal(zrzut.status, 200);
+    assert.equal(zrzut.headers.get("content-type"), "image/webp");
+  });
+
+  test("film idzie kawałkami — bez tego Safari na iPhonie go nie włączy", async () => {
+    const odp = await fetch(`${adres}/instrukcja/film.mp4`, { headers: { range: "bytes=0-99" } });
+    assert.equal(odp.status, 206);
+    assert.equal(odp.headers.get("content-type"), "video/mp4");
+    assert.match(odp.headers.get("content-range") ?? "", /^bytes 0-99\/\d+$/);
+    assert.equal((await odp.arrayBuffer()).byteLength, 100);
+    const rozmiar = Number(odp.headers.get("content-range")!.split("/")[1]);
+    const koniec = await fetch(`${adres}/instrukcja/film.mp4`, { headers: { range: "bytes=-10" } });
+    assert.equal(koniec.status, 206);
+    assert.equal(koniec.headers.get("content-range"), `bytes ${rozmiar - 10}-${rozmiar - 1}/${rozmiar}`);
+    const poza = await fetch(`${adres}/instrukcja/film.mp4`, { headers: { range: `bytes=${rozmiar}-` } });
+    assert.equal(poza.status, 416);
+  });
+
+  test("podobny adres nie przechodzi za instrukcją — konsola dalej za hasłem", async () => {
+    assert.equal((await fetch(`${adres}/instrukcjax`)).status, 401);
+    assert.equal((await fetch(`${adres}/app.js`)).status, 401);
+  });
+});
+
 describe("analiza ruchu (07.10.2026)", () => {
   test("bez logowania /ruch/ pokazuje ekran logowania, a skrypty modułu — odmowę", async () => {
     for (const sciezka of ["/ruch", "/ruch/"]) {
