@@ -12,8 +12,8 @@
  */
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -82,6 +82,40 @@ describe("eksport do przeglądarki", () => {
     const tresc = Buffer.from(await odp.arrayBuffer());
     assert.equal(tresc.subarray(0, 2).toString(), "PK", "xlsx to archiwum zip");
     assert.ok(tresc.length > 10_000, `${tresc.length} B`);
+  });
+
+  test("zmieniona nazwa w bazie — wiersz BAZA arkusza znaleziony po ID, bez duplikatu (18.10.2026)", async (t) => {
+    // Szablon zna EX-0167 jako „Raised bird dog”; baza aplikacji ma już
+    // „Elevated bird dog”. Wiersz ma dostać nową nazwę, a nie bliźniaka.
+    await fetch(`${ADRES}/api/plany`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ klient: "Bird Dog Test", wersja: 1 }),
+    });
+    const plany = await (await fetch(`${ADRES}/api/plany`)).json() as { id: string; klient: string }[];
+    const id = plany.find((p) => p.klient === "Bird Dog Test")!.id;
+    const { zapisany } = await (await fetch(`${ADRES}/api/plany/${id}`)).json() as any;
+    zapisany.plan.sloty[1].cwiczenieId = "EX-0167";
+    await fetch(`${ADRES}/api/plany/${id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ plan: zapisany.plan, dataStartu: null, status: "szkic" }),
+    });
+
+    const odp = await fetch(`${ADRES}/api/plany/${id}/eksport`);
+    if (odp.status === 503) {
+      t.skip("eksport niedostępny w tym środowisku");
+      return;
+    }
+    assert.equal(odp.status, 200);
+    const plik = join(katalog, "bird-dog.xlsx");
+    writeFileSync(plik, Buffer.from(await odp.arrayBuffer()));
+    const wiersze = JSON.parse(execFileSync("python3", ["-c",
+      "import sys, json, openpyxl; ws = openpyxl.load_workbook(sys.argv[1])['BAZA']; "
+      + "print(json.dumps([r[0] for r in ws.iter_rows(min_row=3, values_only=True) "
+      + "if r[7] == 'EX-0167' or (r[0] or '').lower().endswith('bird dog') and 'row' not in (r[0] or '').lower()]))",
+      plik], { encoding: "utf-8" }));
+    assert.deepEqual(wiersze, ["Elevated bird dog"]);
   });
 
   test("nieistniejący plan — 404, bez pliku", async () => {
