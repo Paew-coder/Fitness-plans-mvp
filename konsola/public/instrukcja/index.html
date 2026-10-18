@@ -49,13 +49,21 @@
       margin: 0; font-size: .75rem; font-weight: 700; letter-spacing: .14em;
       text-transform: uppercase; color: var(--akcent);
     }
-    .wroc {
-      display: inline-flex; align-items: center; gap: .4rem; margin-top: 1rem;
-      border: none; background: var(--karta-2); color: var(--tekst); font: inherit;
-      font-size: .95rem; padding: .5rem .9rem; border-radius: 999px; cursor: pointer;
+    /* Powrót do planu (18.10.2026) — przyklejony u góry, bo z ikony na
+       ekranie głównym nie ma paska przeglądarki ani strzałki wstecz. */
+    .pasek-powrotu {
+      position: sticky; top: 0; z-index: 5; margin: 0 -16px;
+      padding: calc(.6rem + env(safe-area-inset-top)) 16px .6rem;
+      background: var(--tlo); border-bottom: 1px solid var(--linia);
     }
-    .wroc[hidden] { display: none; }
+    .pasek-powrotu[hidden] { display: none; }
+    .wroc {
+      display: inline-flex; align-items: center; gap: .4rem; text-decoration: none;
+      background: var(--karta-2); color: var(--tekst); font-weight: 600;
+      font-size: 1rem; padding: .6rem 1rem; border-radius: 999px;
+    }
     header { padding: calc(1.6rem + env(safe-area-inset-top)) 0 1rem; }
+    .pasek-powrotu:not([hidden]) + header { padding-top: 1.2rem; }
     header h1 { font-size: clamp(1.9rem, 6vw, 2.8rem); margin: .4rem 0 .6rem; font-weight: 800; }
     .wstep { font-size: 1.15rem; color: var(--tekst-slaby); margin: 0; max-width: 40rem; }
 
@@ -131,12 +139,15 @@
 <body>
 <div class="strona">
 
+<nav class="pasek-powrotu" id="pasek-powrotu" hidden>
+  <a class="wroc" id="wroc" href="/">← Wróć do planu</a>
+</nav>
+
 <header>
   <p class="nadtytul">CraftMyPlan</p>
   <h1>Jak korzystać z aplikacji treningowej</h1>
   <p class="wstep">Trener przygotował plan, który otwiera się w telefonie. Tu w kilka minut
     zobaczysz, jak z niego korzystać — wystarczy obejrzeć film albo przewinąć niżej.</p>
-  <button type="button" class="wroc" id="wroc" hidden>← Wróć do planu</button>
 </header>
 
 <section class="film" aria-label="Film z instrukcją">
@@ -358,12 +369,22 @@
 
 </div>
 <script>
-  // Otwarta z aplikacji (dodanej do ekranu głównego nie ma paska przeglądarki
-  // ani strzałki wstecz) — własny przycisk powrotu.
-  if (history.length > 1 && document.referrer.startsWith(location.origin)) {
+  // Otwarta z aplikacji klienta (18.10.2026). Z ikony na ekranie głównym nie
+  // ma paska przeglądarki ani strzałki wstecz, a nowe okno nie ma historii —
+  // dlatego aplikacja podaje w adresie, dokąd wrócić: `?wroc=/k/<token>`.
+  // Tylko adres planu na tej stronie, nic z zewnątrz.
+  const doPlanu = new URLSearchParams(location.search).get("wroc") ?? "";
+  if (/^\/k\/[\w-]+$/.test(doPlanu)) {
     const wroc = document.getElementById("wroc");
-    wroc.hidden = false;
-    wroc.onclick = () => history.back();
+    wroc.href = doPlanu;
+    document.getElementById("pasek-powrotu").hidden = false;
+    // Przyszła z planu w tym samym oknie — cofamy, plan wraca tam, gdzie był.
+    wroc.onclick = (e) => {
+      if (history.length > 1 && document.referrer.startsWith(`${location.origin}/k/`)) {
+        e.preventDefault();
+        history.back();
+      }
+    };
   }
 </script>
 </body>

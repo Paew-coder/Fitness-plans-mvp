@@ -93,12 +93,39 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // zostaje i dalsze sekcje sprawdzają go po włączeniu przełącznika.
   sprawdz("„Twój postęp” schowany — przycisku na liście tygodni nie ma",
     await s.locator("#pokaz-postep").count() === 1 && !(await s.locator("#pokaz-postep").isVisible()));
-  // Instrukcja (18.10.2026): w „Więcej”, w nowej karcie, bez logowania.
+  // Instrukcja (18.10.2026): w „Więcej”, w tym samym oknie, z adresem
+  // powrotu — z ikony na ekranie głównym nie ma strzałki wstecz przeglądarki.
   const instrukcja = s.locator("#pokaz-instrukcje");
-  sprawdz("„Jak korzystać z aplikacji” prowadzi do instrukcji w nowej karcie",
-    await instrukcja.isVisible() && await instrukcja.getAttribute("target") === "_blank"
-      && (await fetch(`${adres}${await instrukcja.getAttribute("href")}`)).ok,
-    String(await instrukcja.getAttribute("href")));
+  const hrefInstrukcji = await instrukcja.getAttribute("href") ?? "";
+  sprawdz("„Jak korzystać z aplikacji” prowadzi do instrukcji z adresem powrotu, w tym samym oknie",
+    await instrukcja.isVisible() && await instrukcja.getAttribute("target") === null
+      && hrefInstrukcji === `/instrukcja?wroc=${encodeURIComponent(sciezka)}`,
+    hrefInstrukcji);
+  await instrukcja.click();
+  await s.waitForURL(/\/instrukcja\?/);
+  sprawdz("w instrukcji „← Wróć do planu” przyklejony u góry",
+    await s.locator("#pasek-powrotu").isVisible()
+      && await s.locator("#pasek-powrotu").evaluate((e: Element) => getComputedStyle(e).position) === "sticky");
+  await s.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await s.waitForTimeout(200);
+  sprawdz("na dole instrukcji powrót dalej na wierzchu",
+    (await s.locator("#wroc").boundingBox())!.y < 120);
+  await s.click("#wroc");
+  await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  sprawdz("„Wróć do planu” wraca na stronę główną planu", new URL(s.url()).pathname === sciezka, s.url());
+  // Jak z ikony na ekranie głównym: nowe okno, bez historii.
+  const oknoIkony = await kontekst.newPage();
+  await oknoIkony.goto(`${adres}${hrefInstrukcji}`, { waitUntil: "networkidle" });
+  await oknoIkony.click("#wroc");
+  await oknoIkony.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+  sprawdz("bez historii (okno z ikony) powrót też trafia do planu",
+    new URL(oknoIkony.url()).pathname === sciezka, oknoIkony.url());
+  for (const obcy of ["/instrukcja", "/instrukcja?wroc=https%3A%2F%2Fexample.com", "/instrukcja?wroc=%2F%2Fexample.com"]) {
+    await oknoIkony.goto(`${adres}${obcy}`, { waitUntil: "networkidle" });
+    sprawdz(`instrukcja bez adresu planu nie ma paska powrotu — ${obcy}`,
+      !(await oknoIkony.locator("#pasek-powrotu").isVisible()));
+  }
+  await oknoIkony.close();
   await s.evaluate(() => localStorage.setItem("postep-widoczny", "1"));
   await s.reload({ waitUntil: "networkidle" });
 
