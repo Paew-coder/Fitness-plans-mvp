@@ -586,10 +586,17 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       && JSON.stringify((await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {})
         === tygodniePrzedPrzesunieciem,
     `akcesorium ${przyAkcesorium} · bój ${przyBoju}`);
-  odpowiedzi.push(String(powtPrzed[0] + 2));
-  await wiersz(1).hover();
-  await plusMinus().click();
-  await zapisano();
+  // ± liczy serwer — czekamy na jego odpowiedź, nie na „zapisano” (to może
+  // już stać na ekranie z poprzedniego zapisu).
+  const plusMinusZ = async (odpowiedz: string) => {
+    odpowiedzi.push(odpowiedz);
+    await wiersz(1).hover();
+    const odp = s.waitForResponse((r: any) => r.url().endsWith("/tygodnie") && r.request().method() === "POST");
+    await plusMinus().click();
+    await odp;
+    await s.waitForTimeout(250);
+  };
+  await plusMinusZ(String(powtPrzed[0] + 2));
   const powtPo = await powtTygodniaLiczone("D1-S02");
   const slotPrzesuniety = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
   sprawdz("± z T1 o 2 więcej — cała progresja idzie o 2, ten sam kształt",
@@ -599,34 +606,54 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     (await wiersz(1).locator(".znacznik-tryb", { hasText: "powt." }).innerText().catch(() => "")) === "powt. +2"
       && await wiersz(1).locator("td.lp button.wlaczony", { hasText: /^±$/ }).count() === 1);
   // Przy ciężarze tabela %1RM kończy się na 15 — poza nią odmowa, bez zmian.
+  // Odmowę daje serwer (400) — przeglądarka zapisuje ją jako błąd zasobu.
+  // Zamierzona, więc nie liczy się do błędów przeglądu.
   const pytanPrzed = pytania.length;
-  odpowiedzi.push("15");
-  await wiersz(1).hover();
-  await plusMinus().click();
-  await s.waitForTimeout(400);
+  const bledyPrzedOdmowa = bledyPrzegladarki.length;
+  await plusMinusZ("15");
+  const bledyOdmowy = bledyPrzegladarki.slice(bledyPrzedOdmowa);
+  bledyPrzegladarki.splice(bledyPrzedOdmowa);
   sprawdz("± powyżej 15 przy ciężarze — okienko z wyjaśnieniem, plan bez zmian",
     pytania.slice(pytanPrzed).some((m) => /kończy się na 15/.test(m))
+      && bledyOdmowy.every((b) => /400/.test(b))
       && JSON.stringify(await powtTygodniaLiczone("D1-S02")) === JSON.stringify(powtPo),
     pytania.slice(pytanPrzed).join(" | "));
   // Puste pole — powrót do progresji z planu.
-  odpowiedzi.push("");
-  await wiersz(1).hover();
-  await plusMinus().click();
-  await zapisano();
+  await plusMinusZ("");
   const slotBezPrzesuniecia = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
   sprawdz("± z pustym polem — progresja z planu, bez przesunięcia",
     slotBezPrzesuniecia?.przesunieciePowtorzen === undefined
       && [1, 2, 3, 4, 5, 6].every((t) => slotBezPrzesuniecia?.tygodnie?.[t]?.powtorzenia === undefined));
-  // Dwa razy „Cofnij” — plan jak przed ± (dalsze sekcje liczą na niego).
-  await s.locator("#cofnij").click();
+  // Trener, 19.10.2026: „wpisuję tam 6 zamiast 8 i kolejne tygodnie się nie
+  // dostosowują — w T2 nadal jest 9, a nie 7”. Najpierw liczba w polu T1,
+  // potem ± i OK z tym, co okienko podsuwa.
+  const automat = await powtTygodniaLiczone("D1-S02");
+  const tabPrzed = (await s.locator("#taby-tygodni button.aktywny").innerText()).trim();
+  await s.locator("#taby-tygodni button", { hasText: /^T1$/ }).click();
+  const poleT1 = wiersz(1).locator("td").nth(4).locator("input");
+  await poleT1.fill(String(automat[0]! - 1));
+  await poleT1.press("Tab");
   await zapisano();
-  await s.locator("#cofnij").click();
-  await zapisano();
-  await s.waitForTimeout(200);
-  sprawdz("„Cofnij” dwa razy — plan jak przed ±",
+  const pytanPrzedOkienkiem = pytania.length;
+  await plusMinusZ(String(automat[0]! - 1));
+  const powtOdT1 = await powtTygodniaLiczone("D1-S02");
+  sprawdz("najpierw liczba w polu T1, potem ± i OK — reszta tygodni idzie od T1",
+    powtOdT1.every((x, i) => x === automat[i]! - 1)
+      && pytania[pytanPrzedOkienkiem]?.includes(`teraz ${automat[0]! - 1} · ${automat[1]}`) === true,
+    `${automat.join(" · ")} → ${powtOdT1.join(" · ")}`);
+  // „Cofnij” — plan jak przed ± (dalsze sekcje liczą na niego): ± od T1,
+  // pole T1, puste pole, ± o 2 — cztery kroki.
+  for (let i = 0; i < 4; i++) {
+    await s.locator("#cofnij").click();
+    await zapisano();
+    await s.waitForTimeout(250);
+  }
+  await s.locator("#taby-tygodni button", { hasText: new RegExp(`^${tabPrzed}$`) }).click();
+  sprawdz("„Cofnij” cztery razy — plan jak przed ±",
     JSON.stringify((await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {})
       === tygodniePrzedPrzesunieciem
-      && (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.przesunieciePowtorzen === undefined);
+      && (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.przesunieciePowtorzen === undefined,
+    JSON.stringify((await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {}));
 
   // ── 11c. progresja boju w cz.1 i w cz.2 ───────────────────────────
   //

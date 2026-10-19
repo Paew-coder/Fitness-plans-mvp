@@ -57,7 +57,7 @@ import { NORMY } from "../silnik/src/stres.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import { porownajCykle, podsumujPorownanie } from "../silnik/src/porownanie-cykli.ts";
 import { historiaKlienta, podsumujHistorie } from "../silnik/src/historia-klienta.ts";
-import { skopiujTydzien, zastosujProgresje } from "../silnik/src/progresja.ts";
+import { powtorzeniaOdT1, skopiujTydzien, zastosujProgresje } from "../silnik/src/progresja.ts";
 import * as magazyn from "./magazyn.ts";
 import { trenerDomyslny } from "./baza/polaczenie.ts";
 import * as auth from "./uwierzytelnianie.ts";
@@ -1853,7 +1853,7 @@ const serwer = createServer(async (req, res) => {
        * arkusza liczby policzone, a nie puste komórki.
        */
       if (akcja === "/tygodnie" && req.method === "POST") {
-        const { tryb, zrodlo, positionId } = await cialo(req);
+        const { tryb, zrodlo, positionId, t1 } = await cialo(req);
         if (tryb === "progresja") {
           return json(res, obrazPlanu(magazyn.zapisz({
             ...zapisany, plan: zastosujProgresje(zapisany.plan),
@@ -1880,7 +1880,14 @@ const serwer = createServer(async (req, res) => {
             ...zapisany, plan: skopiujTydzien(zapisany.plan, tydzien as 1, slot),
           })));
         }
-        return blad(res, "Nieznany tryb — „progresja”, „progresja-bojow” albo „kopiuj”.");
+        // „±” (19.10.2026) — powtórzenia ćwiczenia od T1, wg jego progresji.
+        if (tryb === "powtorzenia-od-t1") {
+          if (t1 !== null && !Number.isInteger(t1)) return blad(res, "Wpisz liczbę całkowitą.");
+          const wynik = powtorzeniaOdT1(zapisany.plan, tekst(positionId), t1);
+          if ("blad" in wynik) return blad(res, wynik.blad);
+          return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan: wynik })));
+        }
+        return blad(res, "Nieznany tryb — „progresja”, „progresja-bojow”, „kopiuj” albo „powtorzenia-od-t1”.");
       }
 
       if (akcja === "/moduly" && req.method === "PUT") {

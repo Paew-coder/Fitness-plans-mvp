@@ -1174,6 +1174,14 @@ Trener: „tak, przestaw oba na kg. Poza tym przy kliknięciu strzałki ustawiaj
 
 Trener: „przycisk kopiuj link i instrukcję nie działa prawidłowo, więc możesz go usunąć — zostaw tylko ten faktyczny link do instrukcji, który jest wyżej”. Okno „Link dla klienta”: „Kopiuj link”, link do instrukcji i „Unieważnij link”. Przegląd ekranów pilnuje, że przycisku nie ma, a link do instrukcji się otwiera.
 
+**100. „±” liczy od progresji z planu — 19.10.2026.**
+
+Trener: „ten nowy przycisk nie działa — jak wpisuję tam 6 zamiast 8, jak było wyjściowo, to kolejne tygodnie się nie dostosowują, bo w T2 nadal jest 9 po zmianie, a nie 7”.
+
+* Przyczyna: „±” przesuwał o różnicę między nową liczbą a **bieżącym** T1. Po wpisaniu 6 w pole T1 i kliknięciu „±” okienko podsuwało 6 — różnica zero, nic się nie działo (odtworzone w przeglądarce: 6 · 9 · 10 · 8 · 9 · 10).
+* Teraz liczy serwer (`powtorzeniaOdT1` w silniku, `POST …/tygodnie` z trybem `powtorzenia-od-t1`): przesunięcie = T1 − T1 z progresji planu, powtórzenia wpisane w T1–T6 ustępują, więc cała progresja idzie od T1 bez względu na to, czy liczbę wpisano w okienku, czy wcześniej w polu. Przy „↗” wszystkie tygodnie dostają liczbę z T1 (stałe powtórzenia), a po wyłączeniu „↗” zostaje automat od T1. Okienko podsuwa liczbę z pola T1; konsola najpierw czeka na zapis tego, co trener właśnie wpisał. Odmowa (powyżej 15 przy ciężarze, bój) przychodzi z serwera z wyjaśnieniem.
+* Testy: silnik +7 (m.in. „najpierw 6 w T1, potem ±”), przegląd ekranów: ten sam przebieg w przeglądarce (6 · 7 · 8 · 6 · 7 · 8 przy 8–10), cofanie czterech kroków.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

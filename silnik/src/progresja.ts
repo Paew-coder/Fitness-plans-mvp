@@ -17,9 +17,11 @@
  */
 import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
 import { TYGODNIE } from "./plan.ts";
-import type { Tydzien } from "./typy.ts";
+import { PROGRESJE_Z_TABELI, type Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { bojGlownySlotu, dwubojSlotu, parametrySzablonu, pauzaSlotu } from "./szablon-boju.ts";
+import { POWT_MAX_BEZ_TABELI, powtorzeniaAkcesorium } from "./powtorzenia.ts";
+import { POWT_MAX, POWT_MIN } from "./rpe.ts";
 
 export {
   PROGRESJA_BOJU, SERIE_AKCESORIUM, RPE_AKCESORIUM,
@@ -119,4 +121,73 @@ export function skopiujTydzien(plan: Plan, zrodlo: Tydzien, positionId?: string)
       return { ...slot, tygodnie };
     }),
   };
+}
+
+/**
+ * „±” — powtórzenia całej progresji ułożone od T1 (19.10.2026).
+ *
+ * Trener: „jak dane ćwiczenie idzie T1–T3 8–10 i T4–T6 8–10, to jak wpiszę
+ * w T1 10, to będzie szło 10–12 i 10–12; jak idzie T1–T6 10–15, to po
+ * wpisaniu 12 ma iść 12–17. Wyjątkiem są ćwiczenia główne z własną
+ * periodyzacją”.
+ *
+ * Liczone od progresji z planu, nie od tego, co akurat stoi w T1. Pierwsza
+ * wersja przesuwała o różnicę względem bieżącego T1 — a trener wpisał 6 do pola
+ * T1, kliknął „±”, okienko podsunęło 6 i różnica wyszła zero: „w T2 nadal jest
+ * 9 po zmianie, a nie 7”. Teraz przesunięcie = T1 − automat T1, a powtórzenia
+ * wpisane w T1–T6 ustępują automatowi z przesunięciem, żeby cała progresja szła
+ * od T1. Przy „↗” (stałe powtórzenia, `przedRpeRosnacym`) wszystkie tygodnie
+ * dostają liczbę z T1 — automat z przesunięciem wraca po wyłączeniu „↗”.
+ *
+ * `t1 === null` — powrót do progresji z planu (bez przesunięcia i bez wpisanych
+ * powtórzeń). Zwraca nowy plan albo powód odmowy po polsku.
+ */
+export function powtorzeniaOdT1(
+  plan: Plan, positionId: string, t1: number | null, katalog: Katalog = katalogDomyslny,
+): Plan | { blad: string } {
+  const slot = plan.sloty.find((s) => s.positionId === positionId);
+  const cwiczenie = slot?.cwiczenieId ? katalog.poId(slot.cwiczenieId) : undefined;
+  if (!slot || !cwiczenie) return { blad: "Nie ma takiego ćwiczenia w planie." };
+  if (bojGlownySlotu(slot, cwiczenie) || pauzaSlotu(slot, cwiczenie.id, plan.czescPlanu)
+    || dwubojSlotu(slot, cwiczenie.id)) {
+    return { blad: "To ćwiczenie ma własną periodyzację — jego powtórzeń się nie przesuwa." };
+  }
+  const bezTabeli = !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja);
+  const automat = TYGODNIE.map((t) => powtorzeniaAkcesorium({
+    coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: t,
+    przezCalyCykl: cwiczenie.progresja === "masa ciała", bezTabeli,
+  }));
+  let przesuniecie = 0;
+  if (t1 !== null) {
+    if (!Number.isInteger(t1)) return { blad: "Wpisz liczbę całkowitą." };
+    przesuniecie = t1 - automat[0]!;
+    const po = automat.map((x) => x + przesuniecie);
+    const maks = bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX;
+    if (Math.min(...po) < POWT_MIN || Math.max(...po) > maks) {
+      return { blad: bezTabeli
+        ? `Od ${POWT_MIN} do ${maks} powtórzeń w każdym tygodniu — wyszłoby ${po.join(" · ")}.`
+        : `Przy ćwiczeniu z ciężarem tabela %1RM kończy się na ${POWT_MAX} powtórzeniach — `
+          + `wyszłoby ${po.join(" · ")}.` };
+    }
+  }
+
+  const stale = slot.przedRpeRosnacym ? structuredClone(slot.przedRpeRosnacym) : undefined;
+  const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
+  for (const t of TYGODNIE) {
+    if (!tygodnie[t] && !(stale && t1 !== null)) continue;
+    const { powtorzenia: _p, ...reszta } = tygodnie[t] ?? {};
+    tygodnie[t] = stale && t1 !== null ? { ...reszta, powtorzenia: t1 } : reszta;
+  }
+  if (stale) {
+    stale.powtorzenia = t1 === null ? {}
+      : Object.fromEntries(Object.keys(stale.powtorzenia).map((t) => [t, t1]));
+  }
+  const { przesunieciePowtorzen: _s, przedRpeRosnacym: _r, ...bezPol } = slot;
+  const nowy: SlotPlanu = {
+    ...bezPol,
+    tygodnie,
+    ...(przesuniecie ? { przesunieciePowtorzen: przesuniecie } : {}),
+    ...(stale ? { przedRpeRosnacym: stale } : {}),
+  };
+  return { ...plan, sloty: plan.sloty.map((s) => (s.positionId === positionId ? nowy : s)) };
 }
