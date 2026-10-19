@@ -1142,6 +1142,14 @@ Trener: „klient mi napisał, że na instrukcję i filmik natrafił dopiero po 
 * `npm run instrukcja` chowa tę kartę na zrzutach — instrukcja nie pokazuje linku do samej siebie, a obecne zrzuty i film zostają aktualne.
 * Przegląd klienta: na pierwszym ekranie, pod następnym treningiem i nad resztą; „Schowaj” → linijka, zostaje po ponownym otwarciu, rozwija się dotknięciem; po obejrzeniu sama linijka; „✕” usuwa, „Więcej” zostaje; usunięta nie wraca.
 
+**96. Konsola bez „Wczytaj plan z arkusza”, nowy plan bez przykładowego nazwiska — 19.10.2026.**
+
+Trener: „z konsoli trenera usuńmy opcję wczytaj z arkusza, a w opcji nowy plan usuńmy to »np. Zofia K«”.
+
+* Z listy klientów zniknął panel „Wczytaj plan z arkusza” (z obsługą w `app.js`), a pole „Klient” w „Nowym planie” nie ma już podpowiedzi z nazwiskiem.
+* Mechanizm wczytywania został w tle: `npm run wczytaj-arkusze` (cały katalog plików) i `POST /api/import` na serwerze. Z tego drugiego korzysta przegląd ekranów — wyeksportowany arkusz wraca z tymi samymi ćwiczeniami, a tak powstały klient służy dalej do sprawdzenia scalania kartotek. Przycisk da się przywrócić bez zmian po stronie serwera.
+* Przegląd ekranów: brak panelu i podpowiedzi na liście; arkusz przyjęty przez serwer (201).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

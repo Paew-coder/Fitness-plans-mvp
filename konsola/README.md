@@ -117,10 +117,13 @@ z żywymi formułami, walidacjami i zakładkami ODDECH/BIEG i pobiera go na
 urządzenie, na którym otwarta jest konsola (laptop: Pobrane; iPad: Pliki →
 Pobrane). Kopia zostaje też w `konsola/dane/eksport/` po stronie serwera.
 
-**Wczytanie istniejącego planu** — `Wczytaj plan z arkusza` bierze plik `.xlsx`
-w układzie 5.17/5.18 i przenosi go do konsoli. Ćwiczenia, których nie ma w BAZIE
-(literówki, pozycje jeszcze niedodane), wypisuje osobno — te sloty zostają puste
-i trzeba je dobrać ręcznie.
+**Wczytanie istniejącego planu** — od 19.10.2026 bez przycisku w konsoli
+(trener: „z konsoli trenera usuńmy opcję wczytaj z arkusza”). Mechanizm został:
+`npm run wczytaj-arkusze` przenosi cały katalog plików `.xlsx` w układzie
+5.17/5.18, a serwer przyjmuje pojedynczy plik pod `POST /api/import` — z tego
+korzysta przegląd ekranów, sprawdzając, że wyeksportowany arkusz wraca z tymi
+samymi ćwiczeniami. Ćwiczenia, których nie ma w BAZIE, są wypisywane osobno —
+te sloty zostają puste i trzeba je dobrać ręcznie.
 
 **Widzisz, czy klient ćwiczy.** Karta *Realizacja* pokazuje treningi tydzień
 po tygodniu: kropka pełna to trening domknięty, blada to zaczęty (klient oceniał
