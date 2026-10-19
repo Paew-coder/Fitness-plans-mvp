@@ -537,9 +537,15 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await wiersz(1).locator("td.lp button", { hasText: /^↗$/ }).click();
   await zapisano();
   const bezRosnacego = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
-  sprawdz("ponowne ↗ zdejmuje RPE i tryb z RPE, powtórzenia zostają",
-    [1, 2, 3, 4, 5, 6].every((t) => bezRosnacego?.tygodnie?.[t]?.rpe === undefined)
-      && bezRosnacego?.trybCiezaru == null && bezRosnacego?.tygodnie?.[6]?.powtorzenia === powtTygodni[0]);
+  // Trener, 19.10.2026: „przy kliknięciu i odkliknięciu powtórzenia zostają
+  // zmienione na sztywno i nie wracają do stanu wyjściowego”.
+  const bezPustych = (tygodnie: any) => JSON.stringify(Object.fromEntries(
+    Object.entries(tygodnie ?? {}).filter(([, p]) => Object.keys(p as object).length > 0)));
+  sprawdz("ponowne ↗ przywraca stan sprzed ↗ — RPE, powtórzenia i tryb ciężaru",
+    bezPustych(bezRosnacego?.tygodnie) === bezPustych(JSON.parse(tygodniePrzedRosnacym))
+      && bezRosnacego?.trybCiezaru == null && bezRosnacego?.przedRpeRosnacym === undefined
+      && JSON.stringify(await ciezaryTygodni("D1-S02")) === JSON.stringify(przedRosnacym),
+    `${bezPustych(JSON.parse(tygodniePrzedRosnacym))} → ${bezPustych(bezRosnacego?.tygodnie)}`);
   // Dwa razy „Cofnij” — plan wraca do stanu sprzed ↗ (dalsze sekcje liczą na niego).
   await s.locator("#cofnij").click();
   await zapisano();
@@ -552,6 +558,75 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     JSON.stringify(poCofnieciuRosnacego) === JSON.stringify(przedRosnacym)
       && JSON.stringify(slotPoCofnieciu?.tygodnie ?? {}) === tygodniePrzedRosnacym,
     `${JSON.stringify(przedRosnacym)} → ${JSON.stringify(poCofnieciuRosnacego)} · T1 ${JSON.stringify(slotPoCofnieciu?.tygodnie?.[1])}`);
+
+  // ── 11b''. ± — przesunięcie powtórzeń od T1 (19.10.2026) ────────────
+  //
+  // Trener: „ćwiczenie idzie T1–T3 8–10 i T4–T6 8–10 — wpiszę w T1 10, idzie
+  // 10–12 i 10–12. Wyjątkiem są ćwiczenia główne z własną periodyzacją”.
+  const powtTygodniaLiczone = async (positionId: string) => {
+    const { wynik } = await zBazy();
+    return wynik.tygodnie.slice(0, 6).map((t: any) =>
+      t.sloty.find((x: any) => x.positionId === positionId)?.powtorzenia as number);
+  };
+  const tygodniePrzedPrzesunieciem = JSON.stringify((await zBazy()).zapisany.plan.sloty
+    .find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {});
+  const powtPrzed = await powtTygodniaLiczone("D1-S02");
+  const plusMinus = () => wiersz(1).locator("td.lp button", { hasText: /^±$/ });
+  const przyAkcesorium = await plusMinus().count();
+  // „G” robi z niego bój — ± znika (własna periodyzacja); „Cofnij” wraca.
+  await wiersz(1).hover();
+  await wiersz(1).locator("td.lp button", { hasText: /^G$/ }).click();
+  await zapisano();
+  const przyBoju = await plusMinus().count();
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("± przy akcesorium, nie przy boju głównym",
+    przyAkcesorium === 1 && przyBoju === 0 && await plusMinus().count() === 1
+      && JSON.stringify((await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {})
+        === tygodniePrzedPrzesunieciem,
+    `akcesorium ${przyAkcesorium} · bój ${przyBoju}`);
+  odpowiedzi.push(String(powtPrzed[0] + 2));
+  await wiersz(1).hover();
+  await plusMinus().click();
+  await zapisano();
+  const powtPo = await powtTygodniaLiczone("D1-S02");
+  const slotPrzesuniety = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
+  sprawdz("± z T1 o 2 więcej — cała progresja idzie o 2, ten sam kształt",
+    powtPo.every((x, i) => x === powtPrzed[i]! + 2) && slotPrzesuniety?.przesunieciePowtorzen === 2,
+    `${powtPrzed.join(" · ")} → ${powtPo.join(" · ")}`);
+  sprawdz("przy Lp. znacznik „powt. +2”, a ± podświetlone",
+    (await wiersz(1).locator(".znacznik-tryb", { hasText: "powt." }).innerText().catch(() => "")) === "powt. +2"
+      && await wiersz(1).locator("td.lp button.wlaczony", { hasText: /^±$/ }).count() === 1);
+  // Przy ciężarze tabela %1RM kończy się na 15 — poza nią odmowa, bez zmian.
+  const pytanPrzed = pytania.length;
+  odpowiedzi.push("15");
+  await wiersz(1).hover();
+  await plusMinus().click();
+  await s.waitForTimeout(400);
+  sprawdz("± powyżej 15 przy ciężarze — okienko z wyjaśnieniem, plan bez zmian",
+    pytania.slice(pytanPrzed).some((m) => /kończy się na 15/.test(m))
+      && JSON.stringify(await powtTygodniaLiczone("D1-S02")) === JSON.stringify(powtPo),
+    pytania.slice(pytanPrzed).join(" | "));
+  // Puste pole — powrót do progresji z planu.
+  odpowiedzi.push("");
+  await wiersz(1).hover();
+  await plusMinus().click();
+  await zapisano();
+  const slotBezPrzesuniecia = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02");
+  sprawdz("± z pustym polem — progresja z planu, bez przesunięcia",
+    slotBezPrzesuniecia?.przesunieciePowtorzen === undefined
+      && [1, 2, 3, 4, 5, 6].every((t) => slotBezPrzesuniecia?.tygodnie?.[t]?.powtorzenia === undefined));
+  // Dwa razy „Cofnij” — plan jak przed ± (dalsze sekcje liczą na niego).
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.locator("#cofnij").click();
+  await zapisano();
+  await s.waitForTimeout(200);
+  sprawdz("„Cofnij” dwa razy — plan jak przed ±",
+    JSON.stringify((await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.tygodnie ?? {})
+      === tygodniePrzedPrzesunieciem
+      && (await zBazy()).zapisany.plan.sloty.find((x: any) => x.positionId === "D1-S02")?.przesunieciePowtorzen === undefined);
 
   // ── 11c. progresja boju w cz.1 i w cz.2 ───────────────────────────
   //
@@ -1750,8 +1825,8 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("w deloadzie stoi, skąd biorą się liczby",
     (await s.locator("#dni .opis-po-cyklu").innerText().catch(() => "")).includes("RPE o 1 niżej"));
   const przyciskiDeloadu = await s.locator("table.sloty .strzalki button").allInnerTexts();
-  sprawdz("w deloadzie nie ma », T, R ani ↗ — kopiowałyby deload na tygodnie pracy",
-    przyciskiDeloadu.length > 0 && przyciskiDeloadu.every((t) => !["»", "T", "R", "↗"].includes(t)),
+  sprawdz("w deloadzie nie ma », T, R, ↗ ani ± — kopiowałyby deload na tygodnie pracy",
+    przyciskiDeloadu.length > 0 && przyciskiDeloadu.every((t) => !["»", "T", "R", "↗", "±"].includes(t)),
     przyciskiDeloadu.join(" "));
 
   await s.click("#przelacz-maksy");

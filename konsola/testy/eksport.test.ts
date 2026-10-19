@@ -40,6 +40,17 @@ const pole = (dane: ReturnType<typeof daneDoArkusza>, positionId: string, tydzie
 };
 
 describe("eksport — arkusz dostaje to, co pokazała konsola", () => {
+  test("przesunięte powtórzenia („±”) idą do arkusza wprost — formuła liczy bez przesunięcia (19.10.2026)", () => {
+    const zapisany = planDomyslny();
+    const bez = przeliczPlan(zapisany.plan).tygodnie.map((t) => t.sloty[1]!.powtorzenia);
+    assert.equal(pole(daneDoArkusza(zapisany), "D1-S02", 1).powtorzenia_reczne, null, "bez przesunięcia — formuła");
+    zapisany.plan.sloty[1]!.przesunieciePowtorzen = 2;
+    const dane = daneDoArkusza(zapisany);
+    for (const t of [1, 2, 3, 4, 5, 6]) {
+      assert.equal(pole(dane, "D1-S02", t).powtorzenia_reczne, bez[t - 1]! + 2, `T${t}`);
+    }
+  });
+
   test("widoczny postęp (skok w górę po zaokrągleniu) idzie do arkusza wprost (18.10.2026)", () => {
     const zapisany = planDomyslny();
     zapisany.plan.sloty[1]!.cwiczenieId = "EX-2497";   // Single Arm Lat Pullover, skok 1 kg

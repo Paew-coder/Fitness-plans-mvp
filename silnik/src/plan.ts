@@ -1,4 +1,4 @@
-import { zGuma } from "./typy.ts";
+import { PROGRESJE_Z_TABELI, zGuma } from "./typy.ts";
 import type {
   Cwiczenie,
   CzescPlanu,
@@ -118,6 +118,25 @@ export type SlotPlanu = {
    * `czescBoju`.
    */
   bojSilowy?: boolean;
+  /**
+   * Przesunięcie powtórzeń („±” w konsoli, 19.10.2026). Trener: „wpiszę w T1
+   * 10 — ma iść 10–12 w T1–T3 i 10–12 w T4–T6; ćwiczenie idzie T1–T6 10–15,
+   * wpiszę 12 — ma iść 12–17”. Dodawane do automatu akcesorium w każdym
+   * tygodniu, więc kształt progresji zostaje, a przy masie ciała ocena
+   * klienta dalej dokłada powtórzenia. Bój, pauzowane i dwubój mają własną
+   * periodyzację — ich to nie dotyczy. Pusto = 0.
+   */
+  przesunieciePowtorzen?: number;
+  /**
+   * Stan sprzed „↗” (RPE 7,5 → 10) — tylko dla konsoli: wyłączenie przywraca
+   * to, co było, zamiast zostawiać powtórzenia wpisane przez przycisk.
+   */
+  przedRpeRosnacym?: {
+    rpe: Record<string, number | null>;
+    /** Tygodnie, którym „↗” wpisało powtórzenia, i ile wpisało. */
+    powtorzenia: Record<string, number>;
+    trybCiezaru: TrybAkcesoriow | null;
+  };
 };
 
 /**
@@ -350,7 +369,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // samego ćwiczenia (po podmianie w T4–T6 — z automatu dla T1).
     const powtorzeniaDeloadu = (w: SlotWyliczony) => cwiczenie.progresja !== "masa ciała" ? w.powtorzenia
       : wzorT1?.cwiczenie?.id === cwiczenie.id ? wzorT1.powtorzenia
-        : powtorzeniaAkcesorium({ coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: 1, przezCalyCykl: true });
+        : powtorzeniaAkcesorium({ coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: 1, przezCalyCykl: true,
+          przesuniecieTrenera: slot.przesunieciePowtorzen, bezTabeli: !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja) });
     const szablon: ParametryTygodnia = wzor
       ? (dwuboj ? { ...DELOAD_DWUBOJU }
         : { serie: wzor.serie, powtorzenia: powtorzeniaDeloadu(wzor), rpe: rpeDeloadu(wzor.rpe) })
@@ -370,6 +390,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
         // Masa ciała: T1–T6 bez restartu w T4 (trener, 10.10.2026).
         przezCalyCykl: cwiczenie.progresja === "masa ciała",
+        przesuniecieTrenera: slot.przesunieciePowtorzen,
+        bezTabeli: !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja),
       });
     // Dwubój: procent z planu albo wpisany przez trenera; RPE tylko jako
     // odpowiednik do stresu — wpisane RPE nic tu nie zmienia.

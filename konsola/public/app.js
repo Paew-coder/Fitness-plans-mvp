@@ -1361,9 +1361,11 @@ function legendaPlanu() {
     ["S", "bój siłowy w hipertrofii — progresja i TOP SET jak w części siłowej"],
     ["R", "licz ciężar akcesorium z RPE"],
     ["↗", "RPE 7,5 → 10 (T1–T6) przy stałych powtórzeniach — ciężar rośnie z RPE"],
+    ["±", "przesuń powtórzenia — wpisujesz T1, pozostałe tygodnie idą o tyle samo (nie przy bojach)"],
     ["TS", "przy numerze: ćwiczenie ma TOP SET"],
     ["RPE", "przy numerze: ciężar liczony z RPE"],
     ["RPE↗", "przy numerze: RPE 7,5 → 10 i stałe powtórzenia"],
+    ["powt. +2", "przy numerze: powtórzenia przesunięte względem progresji z planu"],
     ["●", "ciężar wpisany na sztywno — wyczyść pole, żeby wrócić do liczonego"],
     ["↔", "ciężar na stronę"],
     ["+5%", "korekta z ocen klienta"],
@@ -1871,6 +1873,12 @@ const liczonyDwuboj = (slot) => dwubojowe(slot) && slot.bojGlowny === undefined;
  * powtórzeniach rosnące RPE nie podniosłoby ciężaru. Akcesorium dostaje „R”
  * (ciężar z RPE co tydzień, nie trzymany z bloku); bój i pauzowane liczą
  * z RPE i tak.
+ *
+ * Wyłączenie (19.10.2026, trener: „przy kliknięciu i odkliknięciu powtórzenia
+ * zostają zmienione na sztywno tą samą wartością i nie wracają do stanu
+ * wyjściowego”) przywraca stan sprzed „↗”, zapamiętany przy włączeniu
+ * (`przedRpeRosnacym`): RPE trenera, tryb ciężaru, a powtórzenia wpisane przez
+ * przycisk znikają — chyba że trener je potem zmienił.
  */
 const RPE_ROSNACE = [7.5, 8, 8.5, 9, 9.5, 10];
 function rpeRosnaceMozliwe(slot) {
@@ -1882,20 +1890,100 @@ function przelaczRpeRosnace(slot) {
   const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
   slot.tygodnie ??= {};
   if (maRpeRosnace(slot)) {
-    for (let t = 1; t <= 6; t++) delete slot.tygodnie[t]?.rpe;
-    delete slot.trybCiezaru;
+    const przed = slot.przedRpeRosnacym;
+    for (let t = 1; t <= 6; t++) {
+      const p = slot.tygodnie[t];
+      if (!p) continue;
+      const rpe = przed?.rpe?.[t];
+      if (rpe == null) delete p.rpe;
+      else p.rpe = rpe;
+      const wpisane = przed?.powtorzenia?.[t];
+      if (wpisane !== undefined && p.powtorzenia === wpisane) delete p.powtorzenia;
+    }
+    if (przed?.trybCiezaru) slot.trybCiezaru = przed.trybCiezaru;
+    else delete slot.trybCiezaru;
+    delete slot.przedRpeRosnacym;
     zapiszPozniej(`${lp} · bez RPE 7,5 → 10`);
   } else {
     const t1 = wyliczonyTydzienNr(1)?.sloty.find((s) => s.positionId === slot.positionId);
     const powtorzenia = slot.tygodnie[1]?.powtorzenia ?? t1?.powtorzenia;
+    const przed = { rpe: {}, powtorzenia: {}, trybCiezaru: slot.trybCiezaru ?? null };
     RPE_ROSNACE.forEach((rpe, i) => {
       const p = (slot.tygodnie[i + 1] ??= {});
+      przed.rpe[i + 1] = p.rpe ?? null;
       p.rpe = rpe;
-      if (powtorzenia && p.powtorzenia === undefined) p.powtorzenia = powtorzenia;
+      if (powtorzenia && p.powtorzenia === undefined) {
+        p.powtorzenia = powtorzenia;
+        przed.powtorzenia[i + 1] = powtorzenia;
+      }
     });
+    slot.przedRpeRosnacym = przed;
     if (!bojGlowny(slot) && !liczonyPauza(slot)) slot.trybCiezaru = "licz z RPE";
     zapiszPozniej(`${lp} · RPE 7,5 → 10`);
   }
+  rysujDni();
+}
+
+/**
+ * „±” — przesunięcie powtórzeń (19.10.2026). Trener: „opcja zmiany ilości
+ * powtórzeń, w której — w zależności od tego, w jaki sposób progresuje dane
+ * ćwiczenie — powtórzenia dopasowują mi się do liczby powtórzeń z 1 tygodnia:
+ * ćwiczenie idzie T1–T3 8–10 i T4–T6 8–10, wpiszę w T1 10 — idzie 10–12
+ * i 10–12; idzie T1–T6 10–15, wpiszę 12 — idzie 12–17. Wyjątkiem są
+ * ćwiczenia główne z własną periodyzacją”.
+ *
+ * Cała progresja idzie o tyle samo: tygodnie z automatu przez
+ * `przesunieciePowtorzen` (silnik dolicza je do automatu, więc kształt
+ * progresji zostaje, a przy masie ciała ocena klienta dalej dokłada
+ * powtórzenia), tygodnie z liczbą wpisaną przez trenera albo przez „↗” —
+ * o tę samą różnicę. Puste pole w okienku wraca do progresji z planu.
+ */
+const PROGRESJE_Z_TABELI = ["kg", "dodatkowy ciężar"];
+function przesuniecieMozliwe(slot) {
+  return !!cwiczenie(slot.cwiczenieId) && !bojGlowny(slot) && !liczonyPauza(slot) && !liczonyDwuboj(slot);
+}
+const zeZnakiemPowt = (n) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+function przesunPowtorzenia(slot) {
+  const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
+  const teraz = [1, 2, 3, 4, 5, 6].map((t) =>
+    wyliczonyTydzienNr(t)?.sloty.find((s) => s.positionId === slot.positionId)?.powtorzenia);
+  if (teraz.some((x) => typeof x !== "number")) return;
+  const odpowiedz = prompt(`${lp}: powtórzenia T1–T6 teraz ${teraz.join(" · ")}.\n`
+    + "Ile powtórzeń w T1? Pozostałe tygodnie przesuną się o tyle samo.\n"
+    + "Puste pole — powrót do progresji z planu (bez przesunięcia i bez wpisanych liczb).",
+  String(teraz[0]));
+  if (odpowiedz === null) return;
+  slot.tygodnie ??= {};
+  if (odpowiedz.trim() === "") {
+    for (let t = 1; t <= 6; t++) delete slot.tygodnie[t]?.powtorzenia;
+    delete slot.przesunieciePowtorzen;
+    zapiszPozniej(`${lp} · powtórzenia z planu`);
+    rysujDni();
+    return;
+  }
+  const nowe = Number(odpowiedz.trim().replace(",", "."));
+  const delta = nowe - teraz[0];
+  const po = teraz.map((x) => x + delta);
+  const maks = PROGRESJE_Z_TABELI.includes(cwiczenie(slot.cwiczenieId).progresja) ? 15 : 30;
+  if (!Number.isInteger(nowe) || Math.min(...po) < 1 || Math.max(...po) > maks) {
+    alert(Number.isInteger(nowe) && maks === 15 && Math.max(...po) > 15
+      ? `Przy ćwiczeniu z ciężarem tabela %1RM kończy się na 15 powtórzeniach — wyszłoby ${po.join(" · ")}.`
+      : `Wpisz liczbę całkowitą — w każdym tygodniu od 1 do ${maks} powtórzeń.`);
+    return;
+  }
+  if (delta === 0) return;
+  for (let t = 1; t <= 6; t++) {
+    const p = slot.tygodnie[t];
+    if (p?.powtorzenia !== undefined) p.powtorzenia += delta;
+  }
+  // Powtórzenia wpisane przez „↗” idą razem z resztą — po jego wyłączeniu
+  // dalej rozpoznane jako jego, więc znikną, a zostanie przesunięty automat.
+  const zRosnacego = slot.przedRpeRosnacym?.powtorzenia;
+  if (zRosnacego) for (const t of Object.keys(zRosnacego)) zRosnacego[t] += delta;
+  const suma = (slot.przesunieciePowtorzen ?? 0) + delta;
+  if (suma) slot.przesunieciePowtorzen = suma;
+  else delete slot.przesunieciePowtorzen;
+  zapiszPozniej(`${lp} · powtórzenia T1 ${teraz[0]} → ${nowe}`);
   rysujDni();
 }
 
@@ -2174,11 +2262,23 @@ function rysujSlot(slot, pusty) {
       const wlaczone = maRpeRosnace(slot);
       const rosnace = el("button", `mikro ${wlaczone ? "wlaczony" : ""}`, "↗");
       rosnace.title = wlaczone
-        ? "Zdejmij RPE 7,5 → 10 — RPE i tryb ciężaru wracają do planu, powtórzenia zostają"
+        ? "Zdejmij RPE 7,5 → 10 — RPE, powtórzenia i tryb ciężaru wracają do stanu sprzed ↗"
         : "RPE 7,5 → 10 od T1 do T6 (co 0,5), ciężar liczony z RPE, powtórzenia stałe — progresja ciężarem";
       rosnace.setAttribute("aria-label", rosnace.title);
       rosnace.onclick = () => przelaczRpeRosnace(slot);
       strzalki.append(rosnace);
+    }
+    // ± — przesunięcie powtórzeń całej progresji od T1 (19.10.2026). Nie przy
+    // bojach, pauzowanych i dwuboju: mają własną periodyzację.
+    if (!poCyklu && przesuniecieMozliwe(slot)) {
+      const przesuniecie = slot.przesunieciePowtorzen ?? 0;
+      const plusMinus = el("button", `mikro ${przesuniecie ? "wlaczony" : ""}`, "±");
+      plusMinus.title = przesuniecie
+        ? `Powtórzenia przesunięte o ${zeZnakiemPowt(przesuniecie)} — kliknij, żeby zmienić albo wrócić do planu`
+        : "Przesuń powtórzenia: wpisujesz T1, pozostałe tygodnie idą o tyle samo";
+      plusMinus.setAttribute("aria-label", plusMinus.title);
+      plusMinus.onclick = () => przesunPowtorzenia(slot);
+      strzalki.append(plusMinus);
     }
     komorkaLp.append(strzalki);
   }
@@ -2199,6 +2299,11 @@ function rysujSlot(slot, pusty) {
     const znacznik = el("span", "znacznik-tryb znacznik-dwuboj", "D");
     znacznik.title = "Dwubój — ciężar z % 1RM: cz.1 blok objętościowy, cz.2 intensyfikujący "
       + "(hipertrofia: objętościowy). Zamiast RPE wpisujesz procent. „G” zrobi z niego zwykły bój.";
+    numer.append(znacznik);
+  }
+  if (slot.przesunieciePowtorzen && przesuniecieMozliwe(slot)) {
+    const znacznik = el("span", "znacznik-tryb", `powt. ${zeZnakiemPowt(slot.przesunieciePowtorzen)}`);
+    znacznik.title = `Powtórzenia przesunięte o ${zeZnakiemPowt(slot.przesunieciePowtorzen)} względem progresji z planu`;
     numer.append(znacznik);
   }
   if (maRpeRosnace(slot)) {
@@ -2738,6 +2843,8 @@ function usunZPozycji(slot) {
   delete slot.bojGlowny;
   delete slot.bojSilowy;
   delete slot.trybCiezaru;
+  delete slot.przesunieciePowtorzen;
+  delete slot.przedRpeRosnacym;
   zapiszPozniej(`${lp} · usunięte ćwiczenie`);
   rysujDni();
 }

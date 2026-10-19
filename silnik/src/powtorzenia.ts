@@ -3,6 +3,13 @@ import { ogranicz } from "./pomocnicze.ts";
 import { POWT_MAX, POWT_MIN } from "./rpe.ts";
 
 /**
+ * Górna granica automatu bez tabeli %1RM (masa ciała, czas, guma…). Przy
+ * ciężarze granicą jest tabela (`POWT_MAX`); tu tylko zabezpieczenie przed
+ * liczbą od czapy (19.10.2026: „10–15 → wpiszę 12 → ma iść 12–17”).
+ */
+export const POWT_MAX_BEZ_TABELI = 30;
+
+/**
  * Przesunięcie powtórzeń w obrębie bloku. Blok pierwszy to T1–T3, drugi T4–T6 —
  * objętość rośnie wewnątrz bloku, a T4 restartuje.
  */
@@ -46,7 +53,8 @@ export function offsetCyklu(tydzien: Tydzien): number {
  * Pełny automat powtórzeń akcesorium (kolumna E w arkuszu):
  * baza z coeff, plus przesunięcie tygodnia w bloku (przy masie ciała — w całym
  * cyklu, `offsetCyklu`), plus korekta z odczuć (tylko dla progresji
- * bezciężarowych), obcięte do zakresu tabeli 1–15.
+ * bezciężarowych), plus przesunięcie trenera („±”, 19.10.2026) — obcięte do
+ * zakresu tabeli 1–15, a bez tabeli %1RM do `POWT_MAX_BEZ_TABELI`.
  */
 export function powtorzeniaAkcesorium(args: {
   coeff: Coeff;
@@ -55,9 +63,15 @@ export function powtorzeniaAkcesorium(args: {
   korekta?: number;
   /** Ćwiczenie z masą ciała: powtórzenia rosną T1→T6 bez restartu w T4. */
   przezCalyCykl?: boolean;
+  /** „±” w konsoli — o tyle idzie cała progresja tego ćwiczenia. */
+  przesuniecieTrenera?: number;
+  /** Ciężar nie idzie z tabeli %1RM — powtórzeń może być więcej niż 15. */
+  bezTabeli?: boolean;
 }): number {
-  const { coeff, czesc, tydzien, korekta = 0, przezCalyCykl = false } = args;
+  const { coeff, czesc, tydzien, korekta = 0, przezCalyCykl = false,
+    przesuniecieTrenera = 0, bezTabeli = false } = args;
   const baza = powtorzeniaBazowe(coeff, czesc);
   const przesuniecie = przezCalyCykl ? offsetCyklu(tydzien) : offsetTygodnia(tydzien);
-  return ogranicz(baza + przesuniecie + korekta, POWT_MIN, POWT_MAX);
+  return ogranicz(baza + przesuniecie + korekta + przesuniecieTrenera, POWT_MIN,
+    bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX);
 }

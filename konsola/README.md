@@ -361,9 +361,22 @@ z powrotem. Wpisy klienta (oceny, jego ciężary) zostają zawsze. W polu teksto
 dwubojem) wpisuje RPE 7,5 · 8 · 8,5 · 9 · 9,5 · 10 w T1–T6, ustala stałe
 powtórzenia (z T1, chyba że w tygodniu wpisane inne) i włącza liczenie ciężaru
 z RPE („R”) — ciężar rośnie co tydzień przy tej samej liczbie powtórzeń. Przy
-numerze znacznik „RPE↗”. Drugie kliknięcie zdejmuje RPE i „R” (powtórzenia
-zostają); ⌘Z cofa. Eksport wpisuje takie ciężary do arkusza wprost — arkusz
-zna tylko tryb całego planu (to samo przy samym „R”).
+numerze znacznik „RPE↗”. Drugie kliknięcie przywraca stan sprzed „↗” (od
+19.10.2026): RPE trenera, tryb ciężaru, a powtórzenia wpisane przez przycisk
+znikają, o ile trener ich potem nie zmienił; ⌘Z cofa. Eksport wpisuje takie
+ciężary do arkusza wprost — arkusz zna tylko tryb całego planu (to samo przy
+samym „R”).
+
+**±** w kolumnie Lp. (od 19.10.2026, poza bojem, pauzowanymi i dwubojem —
+mają własną periodyzację) przesuwa powtórzenia całej progresji: okienko pyta
+o T1, pozostałe tygodnie idą o tyle samo. 8–10 i 8–10 z T1 = 10 daje 10–12
+i 10–12; przy masie ciała 10–15 z T1 = 12 daje 12–17. Silnik dolicza
+przesunięcie do automatu (`przesunieciePowtorzen`), więc kształt progresji
+zostaje, a przy masie ciała ocena klienta dalej dokłada powtórzenia; liczby
+wpisane w tygodniach idą o tę samą różnicę. Przy ciężarze granicą jest tabela
+%1RM (15 powtórzeń) — dalej okienko odmawia; bez ciężaru do 30. Puste pole
+wraca do progresji z planu. Przy numerze znacznik „powt. +2”; eksport wpisuje
+takie powtórzenia do arkusza wprost.
 
 **🗑** przy ćwiczeniu (od 17.10.2026) usuwa je z pozycji po potwierdzeniu: znika
 ćwiczenie i to, co było pod nie ustawione (serie, powtórzenia, RPE, ciężar na
