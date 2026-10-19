@@ -184,11 +184,14 @@ async function zrobZrzuty(przegladarka: any, srodowisko: Srodowisko): Promise<vo
   }, [b1r, b2r, KOLOR]);
   await zrzut(s, "superseria");
 
-  // Karta z „dobierz” — wpisana pierwsza seria.
+  // Karta z „dobierz” — wpisana pierwsza seria. W planie 8 powtórzeń przy
+  // RPE 8, a wpisane 10: trener, 19.10.2026 — dobierając ciężar nie trzeba
+  // trzymać się liczby powtórzeń; zrobione 10 z tym samym zapasem się wpisuje,
+  // a ciężar się dostosuje.
   const wiersz = b2.locator(".wykonanie-pola input");
   await ustaw(b2, 100);
   await wiersz.nth(0).fill("30");
-  await wiersz.nth(1).fill("8");
+  await wiersz.nth(1).fill("10");
   await wiersz.nth(1).press("Tab");
   await s.waitForTimeout(700);
   await s.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -196,6 +199,10 @@ async function zrobZrzuty(przegladarka: any, srodowisko: Srodowisko): Promise<vo
   await ustaw(karta, 100);
   await zaznacz(s, karta.locator(".wykonanie").first(), "ramka");
   await zrzut(s, "karta");
+  await zaznacz(s, karta.locator(".zadanie-blok").first(), "ramka");
+  await zaznacz(s, karta.locator(".wykonanie-pola input").first(), "ramka");
+  await zaznacz(s, karta.locator(".wykonanie-pola input").nth(1), "ramka");
+  await zrzut(s, "dobor");
 
   // Ocena na liście: A1 „OK”.
   const a1 = s.locator('#cwiczenia [data-position="D1-S01"]');
@@ -275,6 +282,9 @@ const PLANSZE: Plansza[] = [
   { tytul: "Wpisz swoją serię",
     tresc: "Ciężar inny niż w planie? Wpisz go — od tej serii aplikacja przeliczy resztę planu.",
     ekran: "karta" },
+  { tytul: "Dobierasz ciężar? Powtórzenia nie są sztywne",
+    tresc: "Plan: 8 powtórzeń przy RPE 8. Wyszło 10 i nadal 2 w zapasie? Wpisz 10 — ciężary na resztę planu pójdą w górę.",
+    ekran: "dobor" },
   { tytul: "Oceń ćwiczenie",
     tresc: "Za trudne — będzie lżej. Za łatwe — ciężej. Ćwiczenia bez oceny zapiszą się jako OK.",
     ekran: "ocena" },
@@ -381,7 +391,7 @@ function zrobFilm(plansze: string[]): void {
 
 /** Zrzuty, które pokazuje strona `/instrukcja` (reszta jest tylko na planszach). */
 const NA_STRONE = ["glowna", "instalacja", "ciezary", "maksy", "rpe", "superseria", "ocena",
-  "karta", "prowadzenie", "przerwa", "zakoncz", "koniec"];
+  "dobor", "prowadzenie", "przerwa", "zakoncz", "koniec"];
 
 /** Zrzuty na stronę: szerokość 780 px (ostre na telefonie), WebP. */
 function zapiszEkrany(): void {
