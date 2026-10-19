@@ -28,7 +28,7 @@
  * nie ma — to jest kontrola do puszczenia po zmianach w `public/`.
  */
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -1539,25 +1539,26 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("link z kartoteki jest ten sam co z planu", linkKarty === link, linkKarty || "brak");
   await s.click("#modal-zamknij");
 
-  // ═══ POWRÓT NA LISTĘ: WCZYTANIE ARKUSZA ════════════════════════════
+  // ═══ POWRÓT NA LISTĘ: ARKUSZ Z POWROTEM ═══════════════════════════
   await s.click("#wroc-do-klientow");
   await s.waitForSelector("#ekran-lista:not(.ukryty)");
+  // Trener, 19.10.2026: „z konsoli trenera usuńmy opcję wczytaj z arkusza,
+  // a w opcji nowy plan usuńmy to »np. Zuzanna C«”.
+  sprawdz("na liście nie ma „Wczytaj plan z arkusza”, a nowy plan nie podsuwa przykładowego nazwiska",
+    await s.locator("#form-import").count() === 0
+      && !(await s.locator("#ekran-lista").innerText()).includes("Wczytaj plan z arkusza")
+      && await s.locator('#form-nowy [name="klient"]').getAttribute("placeholder") === null);
 
-  // ── 17. import wyeksportowanego arkusza ───────────────────────────
+  // ── 17. wyeksportowany arkusz wraca do aplikacji ──────────────────
   // Ten sam plik, który przed chwilą wyszedł z eksportu, ma wrócić z tymi
-  // samymi ćwiczeniami. To domyka kółko konsola → arkusz → konsola.
-  await s.fill('#form-import [name="klient"]', KLIENT_Z_ARKUSZA);
-  await s.fill('#form-import [name="wersja"]', "1");
-  // Chromium pod Playwrightem gubi po cichu plik, którego ścieżka ma polskie
-  // znaki — a eksport nazywa pliki nazwiskiem klienta. To ograniczenie samego
-  // sterowania przeglądarką, nie konsoli, więc kopiujemy plik obok pod nazwą
-  // bez ogonków i wczytujemy tę kopię.
-  const kopiaArkusza = join(tmpdir(), "przeglad-ekranow.xlsx");
-  copyFileSync(sciezka, kopiaArkusza);
-  rmSync(sciezka, { force: true });
-  await s.setInputFiles('#form-import [name="plik"]', kopiaArkusza);
-  await s.click("#form-import button[type=submit]");
-  await s.waitForSelector("#ekran-plan:not(.ukryty)", { timeout: 60000 });
+  // samymi ćwiczeniami — to sprawdza, że eksport mówi prawdę. Formularza
+  // w konsoli już nie ma, więc plik idzie wprost do serwera.
+  const wczytanie = await fetch(`${ADRES}/api/import?${new URLSearchParams({ klient: KLIENT_Z_ARKUSZA, wersja: "1" })}`, {
+    method: "POST",
+    headers: { "content-type": "application/octet-stream" },
+    body: readFileSync(sciezka),
+  });
+  sprawdz("serwer przyjmuje wyeksportowany arkusz", wczytanie.ok, String(wczytanie.status));
   const wczytany = await (await fetch(`${ADRES}/api/plany/import-przegladu-1`)).json();
   // Podmiana z kroku 8 dotyczy tygodni od T3 — samo ćwiczenie slotu zostaje
   // tym, które klient przerobił, i takie wychodzi do arkusza.
@@ -1567,15 +1568,15 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     wczytany.zapisany?.plan.sloty.slice(0, 2).map((x: any) => x.cwiczenieId).join(" → ") ?? "brak");
   sprawdz("ćwiczenie z biblioteki wraca z arkusza pod tym samym id",
     !!wczytany.zapisany?.plan.sloty.some((x: any) => x.cwiczenieId === goblet?.id), goblet?.id ?? "");
-  // Arkusz był potrzebny tylko na tę jedną kontrolę — katalog eksportów należy
-  // do trenera i nie ma w nim zostawać plik po przeglądzie.
+  // Arkusz był potrzebny tylko na tę jedną kontrolę.
   rmSync(sciezka, { force: true });
-  rmSync(kopiaArkusza, { force: true });
 
   // ── 18. scalenie dwóch kartotek ───────────────────────────────────
   // Dwie kartoteki tej samej osoby biorą się z literówki. Scalenie przenosi
   // cykle zamiast kazać wpisywać je od nowa.
-  await s.click("#wroc");
+  await s.reload({ waitUntil: "networkidle" });
+  await s.locator("#lista-klientow .pozycja", { hasText: KLIENT_Z_ARKUSZA })
+    .getByRole("button", { name: "Otwórz" }).click();
   await s.waitForSelector("#ekran-klient:not(.ukryty)");
   await s.click("#polacz-klienta");
   await s.waitForSelector("#modal:not(.ukryty)");
