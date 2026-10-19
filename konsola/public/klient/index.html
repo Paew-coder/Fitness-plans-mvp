@@ -84,6 +84,8 @@
     <summary class="baner-naglowek">
       <strong class="baner-tytul">Skąd wziąć ciężary</strong>
       <span id="pomiary-licznik" class="baner-licznik"></span>
+      <button id="pomiary-usun" class="baner-x" type="button"
+        aria-label="Usuń kartę „Skąd wziąć ciężary”" title="Usuń">✕</button>
     </summary>
     <p id="pomiary-tresc"></p>
     <div class="drogi">
@@ -128,13 +130,10 @@
     <span class="akcja-tytul">Oddech i bieg</span>
     <span class="akcja-opis">Rozpiska od trenera poza siłownią</span>
   </button>
-  <!-- Podpowiedź o ekranie głównym usunięta „✕” — stąd wraca (18.10.2026,
-       trener: „u klienta w planie znowu nie ma tego okienka”). Widać tylko
-       wtedy, gdy jest usunięta, a trening nie jest otwarty z ikony. -->
-  <button id="przywroc-instalacje" class="akcja ukryty">
-    <span class="akcja-tytul">Dodaj do ekranu głównego</span>
-    <span class="akcja-opis">Pokaż znowu, jak otwierać trening jak aplikację</span>
-  </button>
+  <!-- Informacje z kart na górze — tu na stałe (19.10.2026, trener: „wszystkie
+       te zakładki na górze niech mają X, żeby je usunąć, ale za to na dole
+       wszystkie te informacje w zakładkach na stałe”). Karty na górze klient
+       zwija albo usuwa; te zostają, bez względu na to, co z tamtymi zrobił. -->
   <!-- Instrukcja (18.10.2026) — ta sama strona, którą trener wysyła przed
        pierwszym planem. W tym samym oknie, z adresem powrotu dopisanym
        w app.js — instrukcja ma wtedy „← Wróć do planu” (patrz niżej). -->
@@ -142,6 +141,42 @@
     <span class="akcja-tytul">Jak korzystać z aplikacji</span>
     <span class="akcja-opis">Krótki film i instrukcja krok po kroku</span>
   </a>
+  <details id="info-ciezary" class="akcja-info">
+    <summary>
+      <span class="akcja-tytul">Skąd wziąć ciężary</span>
+      <span class="akcja-opis">„Dobierz”, RPE i serie maksymalne</span>
+    </summary>
+    <div class="akcja-info-tresc">
+      <p>Gdy przy ćwiczeniu zamiast kilogramów stoi „dobierz”, ciężar ustalasz sam —
+        na jeden z dwóch sposobów:</p>
+      <div class="drogi">
+        <button id="info-od-razu" class="droga glowny">
+          <span class="droga-tytul">Zacznij trening od razu</span>
+          <span class="droga-opis">Ciężar dobierzesz sam, według RPE. Z pierwszej wpisanej
+            serii policzę resztę planu.</span>
+        </button>
+        <button id="info-do-pomiarow" class="droga poboczny">
+          <span class="droga-tytul">Najpierw serie maksymalne</span>
+          <span class="droga-opis">Jedna seria do odmowy na każde ćwiczenie — osobny
+            trening pomiarowy.</span>
+        </button>
+      </div>
+      <p class="drobne">Dobierając ciężar, nie trzymaj się na siłę liczby powtórzeń z planu:
+        wyszło więcej albo mniej przy zapasie z planu (RPE) — wpisz, ile było. Ciężar się
+        dostosuje.</p>
+      <div id="info-rpe"></div>
+    </div>
+  </details>
+  <details id="info-instalacja" class="akcja-info">
+    <summary>
+      <span class="akcja-tytul">Dodaj do ekranu głównego</span>
+      <span class="akcja-opis">Trening jak aplikacja, bez szukania linku</span>
+    </summary>
+    <div class="akcja-info-tresc">
+      <p id="info-instalacja-tresc"></p>
+      <button id="info-zainstaluj" class="glowny ukryty">Dodaj do ekranu głównego</button>
+    </div>
+  </details>
   <!-- „Twój postęp” schowany 17.10.2026, do dopracowania — patrz app.js. -->
   <button id="pokaz-postep" class="akcja ukryty">
     <span class="akcja-tytul">Twój postęp</span>

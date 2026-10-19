@@ -161,7 +161,8 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
 }
 .baner-naglowek .baner-x:hover, .baner-naglowek .baner-x:focus-visible { color: var(--tekst); }
 #baner-instalacji > .baner-naglowek::after,
-#baner-instrukcji > .baner-naglowek::after { order: 1; }
+#baner-instrukcji > .baner-naglowek::after,
+#pomiary-baner > .baner-naglowek::after { order: 1; }
 
 /* „Jak trenować” na ekranie dnia (16.10.2026) — ten sam zwijany baner. */
 .jak-lista { margin: .6rem 0 0 1.1rem; padding: 0; font-size: .88rem; line-height: 1.45;
@@ -227,6 +228,23 @@ details.baner:not([open]) > .baner-naglowek::after { color: var(--tekst-blady); 
   font-size: 1.4rem; color: var(--tekst-blady);
 }
 a.akcja { text-decoration: none; }
+/* Informacje na stałe w „Więcej” (19.10.2026) — karta jak akcja, rozwijana
+   w miejscu: te same treści co karty na górze, które klient może usunąć. */
+.akcja-info {
+  margin-bottom: .6rem; background: var(--karta); border: 1px solid var(--linia); border-radius: 14px;
+}
+.akcja-info > summary {
+  position: relative; display: flex; flex-direction: column; gap: .1rem;
+  padding: .85rem 2.6rem .85rem 1.1rem; list-style: none; cursor: pointer;
+}
+.akcja-info > summary::-webkit-details-marker { display: none; }
+.akcja-info > summary::after {
+  content: "›"; position: absolute; right: 1.1rem; top: 50%; transform: translateY(-50%);
+  font-size: 1.4rem; color: var(--tekst-blady); transition: transform .15s ease;
+}
+.akcja-info[open] > summary::after { transform: translateY(-50%) rotate(90deg); }
+.akcja-info-tresc { padding: 0 1.1rem 1rem; }
+.akcja-info-tresc > p:first-child { margin-top: 0; }
 .akcja-tytul { font-weight: 600; }
 .akcja-opis { font-size: .8rem; color: var(--tekst-blady); }
 

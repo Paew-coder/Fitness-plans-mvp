@@ -147,8 +147,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     await s.locator("#baner-instalacji[open]").isVisible()
       && /ekranu (głównego|początkowego)/.test(await s.locator("#instalacja-tresc").innerText()),
     await s.locator("#instalacja-tresc").innerText().catch(() => "brak"));
-  sprawdz("póki podpowiedź jest, w „Więcej” nie ma pozycji do jej przywracania",
-    !(await s.locator("#przywroc-instalacje").isVisible()));
+  // Trener, 19.10.2026: „na dole żeby wszystkie te informacje były
+  // w zakładkach na stałe” — od pierwszego wejścia, obok kart na górze.
+  sprawdz("w „Więcej” na stałe: jak korzystać, skąd wziąć ciężary, dodaj do ekranu głównego",
+    await s.locator("#pokaz-instrukcje").isVisible() && await s.locator("#info-ciezary").isVisible()
+      && await s.locator("#info-instalacja").isVisible()
+      && !(await s.locator("#info-ciezary[open]").count()) && !(await s.locator("#info-instalacja[open]").count()));
 
   // Instrukcja na górze (18.10.2026): klient trafił na nią dopiero po
   // przeklikaniu całego planu — link był tylko w „Więcej”, na samym dole.
@@ -381,18 +385,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForTimeout(500);
   sprawdz("i nie wraca po ponownym otwarciu",
     !(await s.locator("#baner-instalacji").isVisible()));
-  // 18.10.2026: usuniętą (choćby przypadkiem) przywraca pozycja w „Więcej”.
-  sprawdz("usuniętą da się przywrócić — „Dodaj do ekranu głównego” w „Więcej”",
-    await s.locator("#przywroc-instalacje").isVisible());
-  await s.click("#przywroc-instalacje");
-  sprawdz("przywrócona jest rozwinięta, a pozycja w „Więcej” znika",
-    await s.locator("#baner-instalacji[open]").isVisible()
-      && await s.locator("#instalacja-tresc").isVisible()
-      && !(await s.locator("#przywroc-instalacje").isVisible()));
-  await s.reload({ waitUntil: "networkidle" });
-  await s.waitForTimeout(500);
-  sprawdz("przywrócona zostaje po ponownym otwarciu",
-    await s.locator("#baner-instalacji[open]").isVisible());
+  // 19.10.2026: ta sama informacja zostaje na stałe w „Więcej”.
+  await s.locator("#info-instalacja > summary").click();
+  sprawdz("po „✕” informacja dalej jest w „Więcej” — rozwija się w miejscu",
+    await s.locator("#info-instalacja[open]").isVisible()
+      && /ekranu (głównego|początkowego)/.test(await s.locator("#info-instalacja-tresc").innerText()),
+    await s.locator("#info-instalacja-tresc").innerText().catch(() => "brak"));
+  await s.locator("#info-instalacja > summary").click();
 
   // ── 9. seria maksymalna z telefonu ────────────────────────────────
   await s.click("#pokaz-pomiary");
@@ -1474,7 +1473,25 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("i rozwija się z powrotem tym samym dotknięciem",
     await s.locator("#od-razu").isVisible());
 
-  await s.click("#od-razu");
+  // Trener, 19.10.2026: „wszystkie te zakładki na górze niech mają X, żeby je
+  // usunąć, ale za to na dole wszystkie te informacje w zakładkach na stałe”.
+  await s.locator("#info-ciezary > summary").click();
+  const naDole = await s.locator("#info-ciezary").innerText();
+  sprawdz("„Skąd wziąć ciężary” na stałe w „Więcej”: obie drogi, RPE, powtórzenia przy dobieraniu",
+    naDole.includes("Zacznij trening od razu") && naDole.includes("Najpierw serie maksymalne")
+      && naDole.includes("Co to jest RPE?") && naDole.includes("wpisz, ile było"),
+    naDole.replace(/\s+/g, " ").slice(0, 120));
+  await s.locator("#pomiary-usun").click();
+  sprawdz("„✕” usuwa kartę „Skąd wziąć ciężary” z góry",
+    !(await s.locator("#pomiary-baner").isVisible()) && await s.locator("#info-ciezary").isVisible());
+  await s.reload({ waitUntil: "networkidle" });
+  await s.waitForTimeout(400);
+  sprawdz("usunięta nie wraca po ponownym otwarciu (w tym cyklu)",
+    !(await s.locator("#pomiary-baner").isVisible()));
+
+  // Dalej drogą z „Więcej” — ten sam przycisk co na górze.
+  await s.locator("#info-ciezary > summary").click();
+  await s.click("#info-od-razu");
   await s.waitForSelector("#ekran-seria:not(.ukryty)");
   const panelDoboru = await panel.innerText();
   sprawdz("„zacznij od razu” prowadzi prosto do pierwszej serii",

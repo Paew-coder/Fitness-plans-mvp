@@ -14,6 +14,7 @@ const KLUCZ_WIDOKU = `widok-${TOKEN}`;
 const KLUCZ_HISTORII = `historia-${TOKEN}`;
 const KLUCZ_INSTALACJI = `instalacja-${TOKEN}`;
 const KLUCZ_ZWINIECIA_POMIAROW = `pomiary-zwiniete-${TOKEN}`;
+const KLUCZ_USUNIECIA_POMIAROW = `pomiary-usuniete-${TOKEN}`;
 const KLUCZ_ZWINIECIA_JAK = `jak-trenowac-zwiniete-${TOKEN}`;
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
@@ -35,6 +36,15 @@ const otwarteWykonania = new Set();   // positionId z rozwiniętymi polami „co
 const kluczZwiniecia = () => `${widok?.planId}${widok?.resetOd ? `@${widok.resetOd}` : ""}`;
 let pomiaryZwinieteW = (() => {
   try { return localStorage.getItem(KLUCZ_ZWINIECIA_POMIAROW); } catch { return null; }
+})();
+/**
+ * „✕” przy „Skąd wziąć ciężary” (19.10.2026, trener: „wszystkie te zakładki
+ * na górze niech mają X, żeby je usunąć”). Też per cykl, jak zwinięcie: nowy
+ * plan z nowymi ćwiczeniami bez ciężarów przynosi kartę z powrotem. Treść
+ * zostaje na stałe w „Więcej”.
+ */
+let pomiaryUsunieteW = (() => {
+  try { return localStorage.getItem(KLUCZ_USUNIECIA_POMIAROW); } catch { return null; }
 })();
 /** „Jak trenować” na ekranie dnia zwinięte raz zostaje zwinięte — patrz `rysujJakTrenowac`. */
 let jakTrenowacZwiniete = (() => {
@@ -294,7 +304,8 @@ function rysuj({ pomiary = true } = {}) {
   // Liczone razem z nimi nie schodziły nigdy do zera — i baner o brakujących
   // ciężarach wisiał przez cały cykl w każdym planie z choćby jednym plankiem.
   const brakuje = widok.doZmierzenia.filter((p) => !p.oneRM && !p.bezSerii);
-  $("#pomiary-baner").classList.toggle("ukryty", brakuje.length === 0);
+  $("#pomiary-baner").classList.toggle("ukryty",
+    brakuje.length === 0 || pomiaryUsunieteW === kluczZwiniecia());
   $("#pomiary-baner").open = pomiaryZwinieteW !== kluczZwiniecia();
   // Zwinięty baner to jedna linijka — liczba zostaje, żeby było widać, że
   // sprawa nie jest zamknięta. Krótko, jak „0 z 1” przy tygodniu: dłuższe
@@ -306,6 +317,7 @@ function rysuj({ pomiary = true } = {}) {
     : `W ${brakuje.length} ćwiczeniach nie znam jeszcze Twoich ciężarów. `
       + "Wybierz, jak je ustalić.";
   if (!$("#rpe-baner").firstChild) $("#rpe-baner").append(objasnienieRPE());
+  if (!$("#info-rpe").firstChild) $("#info-rpe").append(objasnienieRPE());
   const zrobione = widok.tygodnie.flatMap((t) => t.dni).filter((d) => d.ukonczony).length;
   const wszystkie = widok.tygodnie.flatMap((t) => t.dni).length;
   // Cykl znaczkiem, postęp słowami i paskiem (18.10.2026).
@@ -3167,10 +3179,10 @@ async function wyslijPomiar(p, karta, ciezar, powtorzenia) {
  *   3. nigdy, gdy aplikacja jest już dodana (otwarta z ikony);
  *   4. „✕” w nagłówku usuwa ją na dobre (trener, 17.10.2026: „poza opcją
  *      chowania dodajmy też x, którym się ją usuwa”);
- *   5. usuniętą przywraca „Dodaj do ekranu głównego” w sekcji „Więcej”
- *      (18.10.2026, trener: „u klienta w planie znowu nie ma tego okienka”).
- *      „✕” stoi tuż przy strzałce zwijania — trafienie w niego przypadkiem
- *      chowało podpowiedź bez śladu i bez drogi powrotu.
+ *   5. ta sama treść jest na stałe w „Więcej” — „Dodaj do ekranu głównego”
+ *      (19.10.2026; wcześniej, od 18.10, pozycja tam tylko przywracała
+ *      usuniętą podpowiedź). „✕” stoi tuż przy strzałce zwijania — trafienie
+ *      w niego przypadkiem nie zabiera już tej informacji.
  * Dawne „Nie teraz” (ten sam klucz w pamięci) liczy się jak zwinięcie.
  *
  * Android daje na to zdarzenie i przycisk. iOS nie daje nic — tam zostaje
@@ -3229,16 +3241,13 @@ function usunInstalacje() {
   rysujInstalacje();
 }
 
-function przywrocInstalacje() {
-  instalacjaUsunieta = false;
-  zwinInstalacje(false);   // czyści pamięć telefonu i rozwija
-  rysujInstalacje();
-  $("#baner-instalacji").scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
 function rysujInstalacje() {
   const baner = $("#baner-instalacji");
-  $("#przywroc-instalacje").classList.toggle("ukryty", jestDodana() || !instalacjaUsunieta);
+  // Karta w „Więcej” — zawsze, także gdy trening jest już otwierany z ikony.
+  $("#info-instalacja-tresc").textContent = jestDodana()
+    ? "Trening jest już na ekranie głównym — otwierasz go z ikony, jak aplikację."
+    : tekstInstalacji();
+  $("#info-zainstaluj").classList.toggle("ukryty", jestDodana() || !zdarzenieInstalacji);
   if (jestDodana() || instalacjaUsunieta) {
     baner.classList.add("ukryty");
     return;
@@ -3262,21 +3271,22 @@ $("#instalacja-nie").onclick = () => zwinInstalacje(true);
 const ADRES_INSTRUKCJI = `/instrukcja?wroc=${encodeURIComponent(`/k/${TOKEN}`)}`;
 $("#pokaz-instrukcje").href = ADRES_INSTRUKCJI;
 $("#instrukcja-otworz").href = ADRES_INSTRUKCJI;
-$("#przywroc-instalacje").onclick = przywrocInstalacje;
 // „✕” siedzi w nagłówku — bez `preventDefault` dotknięcie zwijałoby baner.
 $("#instalacja-usun").addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
   usunInstalacje();
 });
-$("#zainstaluj").onclick = async () => {
+async function zainstaluj() {
   if (!zdarzenieInstalacji) return;
   zdarzenieInstalacji.prompt();
   const { outcome } = await zdarzenieInstalacji.userChoice;
   zdarzenieInstalacji = null;
   if (outcome === "accepted") $("#baner-instalacji").classList.add("ukryty");
-  else rysujInstalacje();
-};
+  rysujInstalacje();
+}
+$("#zainstaluj").onclick = zainstaluj;
+$("#info-zainstaluj").onclick = zainstaluj;
 
 /**
  * Instrukcja na górze strony głównej (18.10.2026). Trener: „klient napisał,
@@ -3354,14 +3364,26 @@ $("#jak-trenowac > summary").addEventListener("click", () => {
     else localStorage.removeItem(KLUCZ_ZWINIECIA_JAK);
   } catch { /* pełna pamięć — zwinięcie trwa do zamknięcia aplikacji */ }
 });
+// „✕” w nagłówku — bez `preventDefault` dotknięcie zwijałoby kartę.
+$("#pomiary-usun").addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  pomiaryUsunieteW = kluczZwiniecia();
+  try { localStorage.setItem(KLUCZ_USUNIECIA_POMIAROW, pomiaryUsunieteW); } catch { /* do zamknięcia */ }
+  $("#pomiary-baner").classList.add("ukryty");
+});
 // Prosto w prowadzenie — tam każda seria ma własny panel z objaśnieniem, jak
 // dobrać ciężar, a tego właśnie potrzebuje ktoś, kto zaczyna bez 1RM.
-$("#od-razu").onclick = () => {
+function zacznijOdRazu() {
   const cel = pierwszyNiezrobiony();
   if (!cel) return;
   biezacy = cel;
   otworz("#ekran-seria");
-};
+}
+$("#od-razu").onclick = zacznijOdRazu;
+// Te same dwie drogi na stałe w „Więcej” (19.10.2026).
+$("#info-od-razu").onclick = zacznijOdRazu;
+$("#info-do-pomiarow").onclick = () => otworz("#ekran-pomiary");
 $("#pokaz-pomiary").onclick = () => otworz("#ekran-pomiary");
 $("#pokaz-moduly").onclick = () => otworz("#ekran-moduly");
 $("#pokaz-postep").onclick = () => otworz("#ekran-postep");
