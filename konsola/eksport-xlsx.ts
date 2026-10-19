@@ -134,9 +134,12 @@ export function daneDoArkusza(zapisany: ZapisanyPlan) {
         // Dwubój (16.10.2026) też — jego tabela jest tylko w aplikacji.
         // Arkusz w pozycji A liczy bój i czeka na wpisane powtórzenia — także
         // gdy aplikacja liczy tam akcesorium (16.10.2026: push press na A1).
+        // Przesunięcie powtórzeń („±”, 19.10.2026) też — formuła arkusza
+        // liczy automat bez niego.
         powtorzenia_reczne: bojGlowny || bezAutomatuArkusza || obliczony?.pauza || obliczony?.dwuboj
           || pozycjaBoju(slot.lp)
           || cwiczenie.progresja === "masa ciała"
+          || Boolean(slot.przesunieciePowtorzen)
           ? (obliczony?.powtorzenia ?? p.powtorzenia ?? null)
           : (p.powtorzenia ?? null),
         // Odczucia klienta jadą razem z planem. Bez nich arkusz startowałby

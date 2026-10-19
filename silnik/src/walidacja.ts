@@ -1,4 +1,4 @@
-import type { Uwaga } from "./typy.ts";
+import { PROGRESJE_Z_TABELI, type Uwaga } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { numerLp, pozycjaBoju } from "./szablon-boju.ts";
 import { konfliktSeriiMaksymalnych } from "./rpe.ts";
@@ -159,13 +159,17 @@ export function sprawdzPlan(
       ),
   );
 
+  // Tabela %1RM kończy się na 15 powtórzeniach — granica dotyczy ćwiczeń,
+  // których ciężar z niej idzie (19.10.2026). Masa ciała, czas czy guma
+  // mogą mieć więcej („10–15 → 12–17”).
   dodaj(
     "POWT_POZA_TABELA",
     "blad",
     `Powtórzenia poza tabelą (>${POWT_MAX})`,
     wynik.tygodnie.flatMap((t) =>
       t.sloty
-        .filter((s) => s.cwiczenie && s.powtorzenia > POWT_MAX)
+        .filter((s) => s.cwiczenie && PROGRESJE_Z_TABELI.includes(s.cwiczenie.progresja)
+          && s.powtorzenia > POWT_MAX)
         .map((s) => `T${t.tydzien} ${s.positionId}`),
     ),
   );

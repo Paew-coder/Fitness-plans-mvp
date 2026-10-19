@@ -70,6 +70,15 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (slot.bojSilowy != null && typeof slot.bojSilowy !== "boolean") {
       return `${gdzie}: bój siłowy musi być prawdą albo fałszem`;
     }
+    // Przesunięcie powtórzeń („±”, 19.10.2026); pusto = 0.
+    if (slot.przesunieciePowtorzen != null && (!Number.isInteger(slot.przesunieciePowtorzen)
+        || Math.abs(slot.przesunieciePowtorzen as number) > 30)) {
+      return `${gdzie}: przesunięcie powtórzeń musi być liczbą całkowitą od −30 do 30`;
+    }
+    // Stan sprzed „↗” — przywracany przy jego wyłączeniu.
+    if (slot.przedRpeRosnacym != null && !jestObiektem(slot.przedRpeRosnacym)) {
+      return `${gdzie}: stan sprzed RPE 7,5 → 10 jest uszkodzony`;
+    }
     // Tryb liczenia ciężaru dla tego jednego ćwiczenia; pusto = jak w planie.
     if (slot.trybCiezaru != null && !TRYBY_AKCESORIOW.includes(slot.trybCiezaru as never)) {
       return `${gdzie}: tryb ciężaru musi być jednym z: ${TRYBY_AKCESORIOW.join(", ")}`;

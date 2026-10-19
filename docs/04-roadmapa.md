@@ -1160,6 +1160,16 @@ Trener (zrzut karty D1): „na tym ćwiczeniu jest wpisany w ciężarze czas, a 
 * **Aplikacja klienta:** przycisk pól serii na karcie ćwiczenia — „Wpisz serie ręcznie” (dawniej „+ zapisz, co poszło”); po wpisaniu dalej „✎ edytuj”. Zdanie o nim w instrukcji (krok 6), zrzuty, film i PDF instrukcji odświeżone. SW `trening-v89`.
 * **Przegląd filmów:** kontrola „ekran nie przewinięty” mierzyła położenie przed kliknięciem „▶ film”, a Playwright przed kliknięciem sam przewija stronę do przycisku (u góry karty, pola serii niżej) — dlatego od kilku dni była czerwona przy działającej aplikacji. Teraz pomiar pod otwartą kartą; po zamknięciu położenie to samo co do piksela.
 
+**98. Kilogramy przy dwóch ćwiczeniach z piłką, „↗” wraca do stanu wyjściowego, „±” przesuwa powtórzenia — 19.10.2026.**
+
+Trener: „tak, przestaw oba na kg. Poza tym przy kliknięciu strzałki ustawiającej RPE od 7,5 do 10 i odkliknięciu jej powtórzenia zostają zmienione na sztywno tą samą wartością i nie wracają do stanu wyjściowego. Chciałbym jeszcze opcję zmiany ilości powtórzeń, w której w zależności od tego, w jaki sposób progresuje dane ćwiczenie, powtórzenia dopasowują mi się do liczby powtórzeń z 1 tygodnia (…) wyjątkiem są ćwiczenia główne z własną periodyzacją”.
+
+* **Hooklying Adductor Squeeze** (EX-1797, „czas”) i **Glute Bridge with MB Squeeze** (EX-1629, „masa ciała”) → „kg”, skok 1 kg, „zatwierdzone” (import bibliotek zachowuje).
+* **„↗” wyłączone wraca do stanu sprzed włączenia.** Włączenie zapamiętuje w pozycji (`przedRpeRosnacym`) RPE trenera, tryb ciężaru i tygodnie, którym wpisało powtórzenia; wyłączenie przywraca RPE i tryb, a te powtórzenia usuwa — chyba że trener je potem zmienił. Pozycje, przy których „↗” wyłączono przed tą poprawką, nie mają zapisu — powtórzenia z nich zdejmuje „±” z pustym polem.
+* **„±” — przesunięcie powtórzeń.** Okienko pyta o T1; cała progresja idzie o tyle samo (8–10/8–10 → 10–12/10–12; masa ciała 10–15 → 12–17). Silnik: `przesunieciePowtorzen` w pozycji, doliczane do automatu akcesorium (deload przy masie ciała — z przesuniętego T1); liczby wpisane w tygodniach (także przez „↗”) idą o tę samą różnicę. Nie przy boju, pauzowanych i dwuboju. Puste pole — progresja z planu (bez przesunięcia i bez wpisanych powtórzeń). Znacznik „powt. +2”, wpis w legendzie, 🗑 czyści, zmiana widoczna w „Zmiany czekają na zatwierdzenie”, eksport wpisuje powtórzenia wprost.
+* **Granica 15 powtórzeń tylko przy ciężarze z tabeli %1RM** (kg, dodatkowy ciężar — `PROGRESJE_Z_TABELI`): automat bez tabeli sięga do 30, a kontrola „Powtórzenia poza tabelą” nie zgłasza masy ciała, czasu ani gumy. Przy masie ciała ocena „za łatwe” może więc teraz dać w T6 więcej niż 15.
+* Testy: silnik `przesuniecie-powtorzen.test.ts` (7), eksport (1); przegląd ekranów: „↗” wraca do stanu wyjściowego, „±” o 2 (kształt, znacznik), odmowa powyżej 15, puste pole, brak „±” przy boju, „Cofnij”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

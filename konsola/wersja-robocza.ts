@@ -169,7 +169,7 @@ export function podsumujZmiany(
     const tygodnie = [...new Set([...Object.keys(s.tygodnie ?? {}), ...Object.keys(k?.tygodnie ?? {})])]
       .filter((t) => parametryTrenera((s.tygodnie as any)?.[t]) !== parametryTrenera((k?.tygodnie as any)?.[t]))
       .map(Number).sort((a, b) => a - b);
-    const ustawienia = ["bojGlowny", "bojSilowy", "trybCiezaru"]
+    const ustawienia = ["bojGlowny", "bojSilowy", "trybCiezaru", "przesunieciePowtorzen"]
       .some((p) => kanonicznie((s as any)[p]) !== kanonicznie((k as any)?.[p]));
     if (tygodnie.length || ustawienia) {
       zmiany.push(`${gdzie}: ${nazwa(po!)} — ${tygodnie.length ? `parametry T${tygodnie.join(", T")}` : "ustawienia"}`

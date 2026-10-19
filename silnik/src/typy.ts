@@ -24,6 +24,13 @@ export type Progresja =
   | "dystans"
   | "ręczne ustawienie";
 
+/**
+ * Progresje, przy których ciężar idzie z tabeli %1RM (19.10.2026). Tabela
+ * kończy się na 15 powtórzeniach — tylko tu 15 jest granicą; przy masie
+ * ciała, czasie czy gumie powtórzeń może być więcej.
+ */
+export const PROGRESJE_Z_TABELI: readonly Progresja[] = ["kg", "dodatkowy ciężar"];
+
 /** Progresje, przy których kolumna CIĘŻAR nie pokazuje liczby, tylko nazwę progresji. */
 export const PROGRESJE_BEZ_CIEZARU: readonly Progresja[] = [
   "masa ciała",
