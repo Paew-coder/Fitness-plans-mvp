@@ -3441,19 +3441,11 @@ async function pokazLinkKlienta(klientId) {
     };
     // Instrukcja dla klienta (18.10.2026): film i opis krok po kroku pod
     // stałym adresem — do wysłania razem z linkiem przed pierwszym planem.
+    // Sam link; „Kopiuj link + instrukcję” zdjęty 19.10.2026 — trener: „nie
+    // działa prawidłowo, więc możesz go usunąć”.
     const instrukcja = `${location.origin}/instrukcja`;
-    const kopiujZInstrukcja = el("button", "", "Kopiuj link + instrukcję");
-    kopiujZInstrukcja.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(
-          `Twój plan treningowy: ${adres}\nJak korzystać z aplikacji: ${instrukcja}`);
-        kopiujZInstrukcja.textContent = "Skopiowane ✓";
-      } catch {
-        kopiujZInstrukcja.textContent = "Zaznacz i skopiuj ręcznie";
-      }
-    };
     const akcje = el("div", "akcje-modala");
-    akcje.append(kopiuj, kopiujZInstrukcja, uniewaznij);
+    akcje.append(kopiuj, uniewaznij);
 
     const linkInstrukcji = el("a", "", instrukcja);
     linkInstrukcji.href = instrukcja;

@@ -1170,6 +1170,10 @@ Trener: „tak, przestaw oba na kg. Poza tym przy kliknięciu strzałki ustawiaj
 * **Granica 15 powtórzeń tylko przy ciężarze z tabeli %1RM** (kg, dodatkowy ciężar — `PROGRESJE_Z_TABELI`): automat bez tabeli sięga do 30, a kontrola „Powtórzenia poza tabelą” nie zgłasza masy ciała, czasu ani gumy. Przy masie ciała ocena „za łatwe” może więc teraz dać w T6 więcej niż 15.
 * Testy: silnik `przesuniecie-powtorzen.test.ts` (7), eksport (1); przegląd ekranów: „↗” wraca do stanu wyjściowego, „±” o 2 (kształt, znacznik), odmowa powyżej 15, puste pole, brak „±” przy boju, „Cofnij”.
 
+**99. Bez „Kopiuj link + instrukcję” — 19.10.2026.**
+
+Trener: „przycisk kopiuj link i instrukcję nie działa prawidłowo, więc możesz go usunąć — zostaw tylko ten faktyczny link do instrukcji, który jest wyżej”. Okno „Link dla klienta”: „Kopiuj link”, link do instrukcji i „Unieważnij link”. Przegląd ekranów pilnuje, że przycisku nie ma, a link do instrukcji się otwiera.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

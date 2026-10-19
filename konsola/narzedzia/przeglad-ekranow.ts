@@ -1530,11 +1530,12 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     ?.find((a) => !a.startsWith("http://127.")) ?? "";
   sprawdz("okno podaje adres, który da się wysłać na telefon",
     doWyslania !== "", doWyslania || "tylko localhost");
-  // Instrukcja dla klienta (18.10.2026) — link i przycisk „link + instrukcja”.
+  // Instrukcja dla klienta (18.10.2026) — sam link; przycisk „Kopiuj link +
+  // instrukcję” zdjęty 19.10.2026.
   const instrukcja = await s.locator('#modal-body a[href$="/instrukcja"]').getAttribute("href");
-  sprawdz("okno linku podaje instrukcję dla klienta, która się otwiera",
+  sprawdz("okno linku podaje instrukcję dla klienta, która się otwiera — bez „Kopiuj link + instrukcję”",
     Boolean(instrukcja) && (await fetch(instrukcja!)).ok
-      && await s.locator("#modal-body button", { hasText: "Kopiuj link + instrukcję" }).isVisible(),
+      && await s.locator("#modal-body button", { hasText: "Kopiuj link + instrukcję" }).count() === 0,
     instrukcja ?? "brak");
   await s.click("#modal-zamknij");
 
