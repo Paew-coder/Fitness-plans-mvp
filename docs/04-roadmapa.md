@@ -1190,6 +1190,15 @@ Trener: „jeżeli ktoś dobiera ciężar w trakcie treningu, a nie z serii maks
 * **Strona `/instrukcja`:** krok 3 — pierwsza seria to ciężar i tyle powtórzeń, ile naprawdę wyszło, plus ramka z przykładem (8 w planie, 10 zrobione z 2 w zapasie → wpisz 10; od razu widać 32,5 kg × 8 w podpowiedziach kolejnych serii; liczy się zapas z planu); krok 6 — „wpisuj to, co naprawdę zrobiłeś”, zrzut „W planie 8 — wpisane 10”; nowe pytanie w „Częstych pytaniach” (także w drugą stronę: 6 zamiast 8 → lżej).
 * **Film i PDF:** nowa plansza „Dobierasz ciężar? Powtórzenia nie są sztywne” (plan 8 przy RPE 8, wyszło 10 i nadal 2 w zapasie → wpisz 10 — ciężary pójdą w górę), z zaznaczonym planem i wpisem; wpis na karcie we wszystkich zrzutach to 30 × 10. Film ~83 s, 13 plansz.
 
+**102. Karty na górze z „✕”, ich treść na stałe w „Więcej” — 19.10.2026.**
+
+Trener (zrzut trzech kart): „wszystkie te zakładki na górze niech mają X, żeby je usunąć, czyli to »skąd wziąć ciężary« też, ale za to na dole żeby wszystkie te informacje były w zakładkach na stałe”.
+
+* **„Skąd wziąć ciężary” ma „✕”** (jak „Jak korzystać z aplikacji” i „Dodaj do ekranu głównego”). Usunięcie per cykl, jak zwijanie (`pomiary-usuniete-<token>` = klucz cyklu): nowy plan z nowymi ćwiczeniami bez ciężarów przynosi kartę z powrotem — tak trener ustalił 10.10.2026.
+* **„Więcej” na stałe**, bez względu na karty na górze: „Jak korzystać z aplikacji” (link), „Skąd wziąć ciężary” (rozwijana: obie drogi z działającymi przyciskami, zdanie, że dobierając ciężar wpisuje się powtórzenia, które wyszły, i „Co to jest RPE?”), „Dodaj do ekranu głównego” (rozwijana: ta sama podpowiedź, na Androidzie przycisk instalacji; otwarta z ikony — że trening już tam jest). Zastępuje pozycję, która od 18.10 tylko przywracała usuniętą podpowiedź (punkt 93).
+* Instrukcja dla klienta: krok 1 — karty na górze zwija się albo usuwa, wszystko jest też w „Więcej”; krok 2 — zdanie o „Więcej”; zrzuty, film i PDF odświeżone (✕ przy „Skąd wziąć ciężary”). SW `trening-v90`.
+* Przegląd klienta: trzy stałe pozycje od pierwszego wejścia; po „✕” podpowiedź instalacji rozwija się w „Więcej”; „Skąd wziąć ciężary” w „Więcej” (drogi, RPE, zdanie o powtórzeniach), „✕” na górze, nie wraca po ponownym otwarciu; dalsza droga „zacznij od razu” przyciskiem z „Więcej”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
