@@ -158,16 +158,19 @@ await zSerwerem(4241, async ({ adres, api }) => {
       await s.waitForSelector(".karta-cw", { state: "detached" });
 
       // Wpisane ciężary i powtórzenia przed otwarciem filmu.
-      await karta.getByRole("button", { name: /zapisz, co poszło/ }).click();
+      await karta.getByRole("button", { name: /Wpisz serie ręcznie/ }).click();
       const pola = karta.locator(".wykonanie-pola input");
       await pola.nth(0).fill("87.5");
       await pola.nth(1).fill("5");
-      const przewiniecie = await s.evaluate(() => scrollY);
       const adresPrzed = s.url();
 
       await karta.locator("button.film-karta").click();
       const okno = s.locator(".karta-cw");
       sprawdz("karta ćwiczenia otwiera się nad treningiem", await okno.isVisible().catch(() => false));
+      // Położenie listy mierzone pod otwartą kartą (19.10.2026): przycisk filmu
+      // stoi u góry karty ćwiczenia, a pola niżej — przed kliknięciem Playwright
+      // sam przewija stronę do przycisku. Klient przycisk widzi, nim go dotknie.
+      const przewiniecie = await s.evaluate(() => scrollY);
       const tekst = (await okno.innerText().catch(() => "")).replace(/\s+/g, " ");
       sprawdz("karta: nazwa polska i angielska, mięśnie, sprzęt, kategoria, źródło filmu",
         ["Wyciskanie sztangi leżąc", "Barbell Bench Press", "mięsień piersiowy większy",
@@ -297,7 +300,7 @@ await zSerwerem(4241, async ({ adres, api }) => {
         await pola.nth(0).inputValue() === "87.5" && await pola.nth(1).inputValue() === "5"
           && Math.abs(await s.evaluate(() => scrollY) - przewiniecie) < 2
           && await s.locator("#ekran-trening:not(.ukryty)").count() === 1,
-        `${await pola.nth(0).inputValue()} kg × ${await pola.nth(1).inputValue()}`);
+        `${await pola.nth(0).inputValue()} kg × ${await pola.nth(1).inputValue()} · przewinięcie ${przewiniecie} → ${await s.evaluate(() => scrollY)}`);
 
       // Systemowe „wstecz” zamyka kartę, nie cofa z treningu.
       await karta.locator("button.film-karta").click();

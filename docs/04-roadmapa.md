@@ -1150,6 +1150,16 @@ Trener: „z konsoli trenera usuńmy opcję wczytaj z arkusza, a w opcji nowy pl
 * Mechanizm wczytywania został w tle: `npm run wczytaj-arkusze` (cały katalog plików) i `POST /api/import` na serwerze. Z tego drugiego korzysta przegląd ekranów — wyeksportowany arkusz wraca z tymi samymi ćwiczeniami, a tak powstały klient służy dalej do sprawdzenia scalania kartotek. Przycisk da się przywrócić bez zmian po stronie serwera.
 * Przegląd ekranów: brak panelu i podpowiedzi na liście; arkusz przyjęty przez serwer (201).
 
+**97. Progresja dwóch ćwiczeń i „Wpisz serie ręcznie” — 19.10.2026.**
+
+Trener (zrzut karty D1): „na tym ćwiczeniu jest wpisany w ciężarze czas, a to ćwiczenie jest robione z ciężarem (z piłką). W side plank hip drop jest czas, a to jest z masą ciała. Poza tym zamiast »+ zapisz, co poszło« dajmy »Wpisz serie ręcznie«”.
+
+* **Supine Iso Adduction Knees to Chest** (EX-3601, biblioteka Catalyst): progresja „czas” → „kg”, skok 1 kg. Reguła importu dała „czas” po słowie „Iso” i nie rozpoznała piłki. Wpis ma „zatwierdzone” — kolejny import bibliotek zachowuje poprawkę (`buduj.py`, `POLA_TRENERA`).
+* **Side plank hip drop** (EX-0181, BAZA): „czas” → „masa ciała”. Eksport poprawia ten wiersz w zakładce BAZA szablonu sam (pola uzgadniane).
+* Obie zmiany działają od razu we wszystkich planach z tymi ćwiczeniami: zamiast „czas” w kolumnie ciężaru — kilogramy (najpierw „dobierz”) albo masa ciała.
+* **Aplikacja klienta:** przycisk pól serii na karcie ćwiczenia — „Wpisz serie ręcznie” (dawniej „+ zapisz, co poszło”); po wpisaniu dalej „✎ edytuj”. Zdanie o nim w instrukcji (krok 6), zrzuty, film i PDF instrukcji odświeżone. SW `trening-v89`.
+* **Przegląd filmów:** kontrola „ekran nie przewinięty” mierzyła położenie przed kliknięciem „▶ film”, a Playwright przed kliknięciem sam przewija stronę do przycisku (u góry karty, pola serii niżej) — dlatego od kilku dni była czerwona przy działającej aplikacji. Teraz pomiar pod otwartą kartą; po zamknięciu położenie to samo co do piksela.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
