@@ -306,7 +306,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     `T2: ${cwiczenie(przedStart, 2).ciezar} → ${cwiczenie(poOcenie, 2).ciezar} kg`);
 
   // ── 6. co faktycznie poszło ───────────────────────────────────────
-  await karty.first().getByRole("button", { name: /zapisz, co poszło/ }).click();
+  await karty.first().getByRole("button", { name: /Wpisz serie ręcznie/ }).click();
   const pola = karty.first().locator(".wykonanie-pola input");
   await pola.nth(0).fill("95");
   await pola.nth(1).fill("5");
@@ -1729,7 +1729,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   sprawdz("pod spodem jedno zdanie, że ciężar dobiera klient",
     await deadBug.locator(".dobor-wlasny").isVisible());
   const polaDeadBuga = deadBug.locator(".wykonanie-pola");
-  sprawdz("pola na kg są na liście od razu, bez szukania „zapisz, co poszło”",
+  sprawdz("pola na kg są na liście od razu, bez szukania „Wpisz serie ręcznie”",
     await polaDeadBuga.isVisible()
     && await polaDeadBuga.locator('input[placeholder="kg"]').count() === 3,
     `${await polaDeadBuga.locator('input[placeholder="kg"]').count()} pól kg`);
@@ -2069,7 +2069,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     rampaBoju.includes("lekko × 8–10 powt.") && rampaBoju.includes("Dalej pierwsza seria robocza")
       && rampaBoju.includes("Serii rozgrzewkowych nie wpisujesz — wpisujesz dopiero serie robocze"),
     rampaBoju.replace(/\n/g, " · ") || "brak rampy");
-  await kartaListy.getByRole("button", { name: /zapisz, co poszło/ }).click();
+  await kartaListy.getByRole("button", { name: /Wpisz serie ręcznie/ }).click();
   const wierszeListy = kartaListy.locator(".wiersz-serii");
   sprawdz("przed pierwszą serią pola puste, bez propozycji",
     await kartaListy.locator(".wiersz-serii.proponowana").count() === 0
@@ -2165,7 +2165,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   for (const [poz, kg, powt] of [["D1-S01", "5", "10"], ["D1-S02", null, "10"]] as const) {
     const karta = s.locator(`#cwiczenia [data-position="${poz}"]`);
-    await karta.getByRole("button", { name: /zapisz, co poszło/ }).click();
+    await karta.getByRole("button", { name: /Wpisz serie ręcznie/ }).click();
     const pierwszy = karta.locator(".wiersz-serii").first().locator("input");
     if (kg) await pierwszy.nth(0).fill(kg);
     await pierwszy.nth(kg ? 1 : 0).fill(powt);
@@ -2233,7 +2233,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // 4 powtórzenia więcej — dość, żeby po zaokrągleniu do skoku ciężar urósł.
   const wiecej = split.powtorzenia + 4;
   const kartaSplit = s.locator('#cwiczenia [data-position="D1-S06"]');
-  await kartaSplit.getByRole("button", { name: /zapisz, co poszło/ }).click();
+  await kartaSplit.getByRole("button", { name: /Wpisz serie ręcznie/ }).click();
   const pierwszySplit = kartaSplit.locator(".wiersz-serii").first().locator("input");
   await pierwszySplit.nth(0).fill(String(split.ciezar));
   await pierwszySplit.nth(1).fill(String(wiecej));

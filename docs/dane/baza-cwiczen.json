@@ -1960,7 +1960,7 @@
    "part": "c",
    "coeff": 0.75,
    "skok_kg": 0.0,
-   "progresja": "czas",
+   "progresja": "masa ciała",
    "film": "https://youtube.com/shorts/kqwm4S7rCMY",
    "uwagi": null,
    "scalone_id": null,

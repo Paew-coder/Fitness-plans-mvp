@@ -1981,7 +1981,8 @@ function polaWykonania(c) {
   const podpisz = () => {
     const opis = opisSerii(serie);
     opisEl.textContent = opis ? `Zrobione: ${opis}` : "";
-    przelacz.textContent = opis ? "✎ edytuj" : "+ zapisz, co poszło";
+    // „Wpisz serie ręcznie” (19.10.2026, trener) — dawniej „+ zapisz, co poszło”.
+    przelacz.textContent = opis ? "✎ edytuj" : "Wpisz serie ręcznie";
   };
   podpisz();
   const pola = el("div", `wykonanie-pola ${otwarte ? "" : "ukryty"}`);
