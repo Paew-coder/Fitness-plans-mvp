@@ -1182,6 +1182,14 @@ Trener: „ten nowy przycisk nie działa — jak wpisuję tam 6 zamiast 8, jak b
 * Teraz liczy serwer (`powtorzeniaOdT1` w silniku, `POST …/tygodnie` z trybem `powtorzenia-od-t1`): przesunięcie = T1 − T1 z progresji planu, powtórzenia wpisane w T1–T6 ustępują, więc cała progresja idzie od T1 bez względu na to, czy liczbę wpisano w okienku, czy wcześniej w polu. Przy „↗” wszystkie tygodnie dostają liczbę z T1 (stałe powtórzenia), a po wyłączeniu „↗” zostaje automat od T1. Okienko podsuwa liczbę z pola T1; konsola najpierw czeka na zapis tego, co trener właśnie wpisał. Odmowa (powyżej 15 przy ciężarze, bój) przychodzi z serwera z wyjaśnieniem.
 * Testy: silnik +7 (m.in. „najpierw 6 w T1, potem ±”), przegląd ekranów: ten sam przebieg w przeglądarce (6 · 7 · 8 · 6 · 7 · 8 przy 8–10), cofanie czterech kroków.
 
+**101. Instrukcja: przy dobieraniu ciężaru powtórzenia nie są sztywne — 19.10.2026.**
+
+Trener: „jeżeli ktoś dobiera ciężar w trakcie treningu, a nie z serii maksymalnej, i ma np. zrobić 8 powtórzeń przy RPE 8, a okaże się, że zrobił 10 i to było jego RPE (2 w zapasie), to też może to wpisać, a ciężar się dostosuje. Nie trzeba za wszelką cenę trzymać się liczby powtórzeń — musimy o tym poinformować i w instrukcji napisanej, i na filmie”.
+
+* Sprawdzone na serwerze: „dobierz” przy 8 @ RPE 8, wpisane 30 kg × 8 → T2 30 kg, T4 32,5 kg; wpisane 30 kg × 10 → T2 32,5 kg, T4 35 kg (silnik liczy 1RM z wpisanych powtórzeń przy RPE z planu).
+* **Strona `/instrukcja`:** krok 3 — pierwsza seria to ciężar i tyle powtórzeń, ile naprawdę wyszło, plus ramka z przykładem (8 w planie, 10 zrobione z 2 w zapasie → wpisz 10; od razu widać 32,5 kg × 8 w podpowiedziach kolejnych serii; liczy się zapas z planu); krok 6 — „wpisuj to, co naprawdę zrobiłeś”, zrzut „W planie 8 — wpisane 10”; nowe pytanie w „Częstych pytaniach” (także w drugą stronę: 6 zamiast 8 → lżej).
+* **Film i PDF:** nowa plansza „Dobierasz ciężar? Powtórzenia nie są sztywne” (plan 8 przy RPE 8, wyszło 10 i nadal 2 w zapasie → wpisz 10 — ciężary pójdą w górę), z zaznaczonym planem i wpisem; wpis na karcie we wszystkich zrzutach to 30 × 10. Film ~83 s, 13 plansz.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
