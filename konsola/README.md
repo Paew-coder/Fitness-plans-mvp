@@ -417,8 +417,8 @@ pokazują przykładowego klienta „Jan Przykładowy”. Na stronie:
 - te same plansze jako prezentacja PDF,
 - opis krok po kroku ze zrzutami i częste pytania.
 
-Link do instrukcji stoi w oknie „Link dla klienta” (przycisk „Kopiuj link +
-instrukcję” kopiuje oba adresy naraz). Klient ma ją w aplikacji dwa razy:
+Link do instrukcji stoi w oknie „Link dla klienta”, pod linkiem do planu.
+Klient ma ją w aplikacji dwa razy:
 na górze strony głównej, pod „Następnym treningiem” (karta zwijana do jednej
 linijki, „✕” ją usuwa; po obejrzeniu zwija się sama), i na stałe w „Więcej”
 — „Jak korzystać z aplikacji”. Otwiera się w tym samym oknie z paskiem
