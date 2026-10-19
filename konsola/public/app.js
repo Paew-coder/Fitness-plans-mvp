@@ -1925,66 +1925,52 @@ function przelaczRpeRosnace(slot) {
 }
 
 /**
- * „±” — przesunięcie powtórzeń (19.10.2026). Trener: „opcja zmiany ilości
- * powtórzeń, w której — w zależności od tego, w jaki sposób progresuje dane
- * ćwiczenie — powtórzenia dopasowują mi się do liczby powtórzeń z 1 tygodnia:
- * ćwiczenie idzie T1–T3 8–10 i T4–T6 8–10, wpiszę w T1 10 — idzie 10–12
- * i 10–12; idzie T1–T6 10–15, wpiszę 12 — idzie 12–17. Wyjątkiem są
- * ćwiczenia główne z własną periodyzacją”.
+ * „±” — powtórzenia całej progresji od T1 (19.10.2026). Trener: „opcja zmiany
+ * ilości powtórzeń, w której — w zależności od tego, w jaki sposób progresuje
+ * dane ćwiczenie — powtórzenia dopasowują mi się do liczby powtórzeń
+ * z 1 tygodnia: ćwiczenie idzie T1–T3 8–10 i T4–T6 8–10, wpiszę w T1 10 —
+ * idzie 10–12 i 10–12; idzie T1–T6 10–15, wpiszę 12 — idzie 12–17. Wyjątkiem
+ * są ćwiczenia główne z własną periodyzacją”.
  *
- * Cała progresja idzie o tyle samo: tygodnie z automatu przez
- * `przesunieciePowtorzen` (silnik dolicza je do automatu, więc kształt
- * progresji zostaje, a przy masie ciała ocena klienta dalej dokłada
- * powtórzenia), tygodnie z liczbą wpisaną przez trenera albo przez „↗” —
- * o tę samą różnicę. Puste pole w okienku wraca do progresji z planu.
+ * Okienko podsuwa to, co stoi w T1 — także liczbę, którą trener właśnie wpisał
+ * w pole (wtedy wystarczy OK). Liczy serwer (`powtorzeniaOdT1` w silniku):
+ * przesunięcie względem progresji z planu, wpisane powtórzenia ustępują.
+ * Pierwsza wersja liczyła różnicę od bieżącego T1 — po wpisaniu 6 w pole
+ * i „±” z 6 wychodziło zero: „w T2 nadal jest 9 po zmianie, a nie 7”.
+ * Puste pole wraca do progresji z planu. Najpierw czeka na zapis tego, co
+ * trener właśnie wpisał w tabeli.
  */
-const PROGRESJE_Z_TABELI = ["kg", "dodatkowy ciężar"];
 function przesuniecieMozliwe(slot) {
   return !!cwiczenie(slot.cwiczenieId) && !bojGlowny(slot) && !liczonyPauza(slot) && !liczonyDwuboj(slot);
 }
 const zeZnakiemPowt = (n) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 function przesunPowtorzenia(slot) {
   const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
-  const teraz = [1, 2, 3, 4, 5, 6].map((t) =>
-    wyliczonyTydzienNr(t)?.sloty.find((s) => s.positionId === slot.positionId)?.powtorzenia);
+  const teraz = [1, 2, 3, 4, 5, 6].map((t) => slot.tygodnie?.[t]?.powtorzenia
+    ?? wyliczonyTydzienNr(t)?.sloty.find((s) => s.positionId === slot.positionId)?.powtorzenia);
   if (teraz.some((x) => typeof x !== "number")) return;
   const odpowiedz = prompt(`${lp}: powtórzenia T1–T6 teraz ${teraz.join(" · ")}.\n`
-    + "Ile powtórzeń w T1? Pozostałe tygodnie przesuną się o tyle samo.\n"
-    + "Puste pole — powrót do progresji z planu (bez przesunięcia i bez wpisanych liczb).",
+    + "Ile powtórzeń w T1? Pozostałe tygodnie ułożą się od tej liczby według progresji ćwiczenia.\n"
+    + "Puste pole — powrót do progresji z planu.",
   String(teraz[0]));
   if (odpowiedz === null) return;
-  slot.tygodnie ??= {};
-  if (odpowiedz.trim() === "") {
-    for (let t = 1; t <= 6; t++) delete slot.tygodnie[t]?.powtorzenia;
-    delete slot.przesunieciePowtorzen;
-    zapiszPozniej(`${lp} · powtórzenia z planu`);
-    rysujDni();
+  const t1 = odpowiedz.trim() === "" ? null : Number(odpowiedz.trim().replace(",", "."));
+  if (t1 !== null && !Number.isInteger(t1)) {
+    alert("Wpisz liczbę całkowitą.");
     return;
   }
-  const nowe = Number(odpowiedz.trim().replace(",", "."));
-  const delta = nowe - teraz[0];
-  const po = teraz.map((x) => x + delta);
-  const maks = PROGRESJE_Z_TABELI.includes(cwiczenie(slot.cwiczenieId).progresja) ? 15 : 30;
-  if (!Number.isInteger(nowe) || Math.min(...po) < 1 || Math.max(...po) > maks) {
-    alert(Number.isInteger(nowe) && maks === 15 && Math.max(...po) > 15
-      ? `Przy ćwiczeniu z ciężarem tabela %1RM kończy się na 15 powtórzeniach — wyszłoby ${po.join(" · ")}.`
-      : `Wpisz liczbę całkowitą — w każdym tygodniu od 1 do ${maks} powtórzeń.`);
-    return;
-  }
-  if (delta === 0) return;
-  for (let t = 1; t <= 6; t++) {
-    const p = slot.tygodnie[t];
-    if (p?.powtorzenia !== undefined) p.powtorzenia += delta;
-  }
-  // Powtórzenia wpisane przez „↗” idą razem z resztą — po jego wyłączeniu
-  // dalej rozpoznane jako jego, więc znikną, a zostanie przesunięty automat.
-  const zRosnacego = slot.przedRpeRosnacym?.powtorzenia;
-  if (zRosnacego) for (const t of Object.keys(zRosnacego)) zRosnacego[t] += delta;
-  const suma = (slot.przesunieciePowtorzen ?? 0) + delta;
-  if (suma) slot.przesunieciePowtorzen = suma;
-  else delete slot.przesunieciePowtorzen;
-  zapiszPozniej(`${lp} · powtórzenia T1 ${teraz[0]} → ${nowe}`);
-  rysujDni();
+  poZapisieTrenera(async () => {
+    try {
+      opiszZmianeSerwera(t1 === null ? `${lp} · powtórzenia z planu` : `${lp} · powtórzenia od T1 = ${t1}`);
+      obraz = await api(`/api/plany/${obraz.zapisany.id}/tygodnie`, {
+        method: "POST",
+        body: { tryb: "powtorzenia-od-t1", positionId: slot.positionId, t1 },
+      });
+      rysujPlan();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
 }
 
 /**

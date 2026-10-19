@@ -11,6 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { przeliczPlan, type Plan, type SlotPlanu } from "../src/plan.ts";
+import { powtorzeniaOdT1 } from "../src/progresja.ts";
 import { sprawdzPlan } from "../src/walidacja.ts";
 
 const EZ_BAR_CURL = "EX-0086";   // kg, coeff 0,25 — objętość 10–12 w bloku
@@ -68,4 +69,62 @@ test("bój główny ma własną periodyzację — przesunięcie go nie rusza", (
 test("deload przy masie ciała wraca do T1 — przesuniętego", () => {
   const w = przeliczPlan(plan({ cwiczenieId: DEAD_BUG, przesunieciePowtorzen: 2 }, { deload: true }));
   assert.equal(w.tygodnieDodatkowe[0]!.sloty[0]!.powtorzenia, 12);
+});
+
+// ── „±” w konsoli: powtorzeniaOdT1 ──────────────────────────────────
+
+const odT1 = (p: Plan, t1: number | null) => {
+  const wynik = powtorzeniaOdT1(p, "D1-S02", t1);
+  if ("blad" in wynik) throw new Error(wynik.blad);
+  return wynik;
+};
+
+test("od T1 = 6 przy 8–10/8–10 — 6–8 i 6–8, liczone od progresji z planu", () => {
+  const p = odT1(plan({ cwiczenieId: "EX-0077" }), 6);   // Dumbbell row, coeff 0,75
+  assert.deepEqual(powtorzenia(plan({ cwiczenieId: "EX-0077" })), [8, 9, 10, 8, 9, 10]);
+  assert.deepEqual(powtorzenia(p), [6, 7, 8, 6, 7, 8]);
+  assert.equal(p.sloty[0]!.przesunieciePowtorzen, -2);
+});
+
+test("trener najpierw wpisał 6 w T1, potem „±” z tą samą liczbą — reszta tygodni idzie za nim (19.10.2026)", () => {
+  // „w T2 nadal jest 9 po zmianie, a nie 7” — pierwsza wersja liczyła różnicę
+  // od bieżącego T1 (już 6), więc wychodziło zero.
+  const wpisane = plan({ cwiczenieId: "EX-0077", tygodnie: { 1: { powtorzenia: 6, serie: 3 }, 3: { powtorzenia: 12 } } });
+  assert.deepEqual(powtorzenia(wpisane), [6, 9, 12, 8, 9, 10]);
+  const p = odT1(wpisane, 6);
+  assert.deepEqual(powtorzenia(p), [6, 7, 8, 6, 7, 8]);
+  assert.deepEqual(p.sloty[0]!.tygodnie, { 1: { serie: 3 }, 3: {} }, "wpisane powtórzenia ustępują, reszta zostaje");
+});
+
+test("masa ciała od T1 = 12 — 12–17", () => {
+  assert.deepEqual(powtorzenia(odT1(plan({ cwiczenieId: DEAD_BUG }), 12)), [12, 13, 14, 15, 16, 17]);
+});
+
+test("ponowne „±” z tą samą liczbą nic nie psuje, inna liczba — od progresji z planu, nie od poprzedniego przesunięcia", () => {
+  const raz = odT1(plan({}), 12);
+  assert.deepEqual(powtorzenia(odT1(raz, 12)), [12, 13, 14, 12, 13, 14]);
+  assert.deepEqual(powtorzenia(odT1(raz, 9)), [9, 10, 11, 9, 10, 11]);
+});
+
+test("puste pole — progresja z planu: bez przesunięcia i bez wpisanych powtórzeń", () => {
+  const p = odT1(plan({ przesunieciePowtorzen: 3, tygodnie: { 2: { powtorzenia: 5, rpe: 8 } } }), null);
+  assert.deepEqual(powtorzenia(p), [10, 11, 12, 10, 11, 12]);
+  assert.equal(p.sloty[0]!.przesunieciePowtorzen, undefined);
+  assert.deepEqual(p.sloty[0]!.tygodnie, { 2: { rpe: 8 } });
+});
+
+test("przy „↗” (stałe powtórzenia) wszystkie tygodnie dostają T1, a zapis „↗” idzie za nimi", () => {
+  const tygodnie = Object.fromEntries([7.5, 8, 8.5, 9, 9.5, 10].map((rpe, i) => [i + 1, { rpe, powtorzenia: 10 }]));
+  const p = odT1(plan({ tygodnie, przedRpeRosnacym: {
+    rpe: {}, powtorzenia: { 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 }, trybCiezaru: null } }), 8);
+  assert.deepEqual(powtorzenia(p), [8, 8, 8, 8, 8, 8]);
+  assert.deepEqual(p.sloty[0]!.przedRpeRosnacym!.powtorzenia, { 2: 8, 3: 8, 4: 8, 5: 8, 6: 8 });
+  assert.equal(p.sloty[0]!.przesunieciePowtorzen, -2, "po wyłączeniu „↗” automat od 8");
+});
+
+test("odmowy: powyżej 15 przy ciężarze, bój główny", () => {
+  const za = powtorzeniaOdT1(plan({}), "D1-S02", 15);   // 10–12 → 15–17
+  assert.ok("blad" in za && /15 powtórzeniach/.test(za.blad), JSON.stringify(za));
+  const boj = powtorzeniaOdT1(plan({ lp: "A1.", cwiczenieId: PRZYSIAD }), "D1-S02", 8);
+  assert.ok("blad" in boj && /własną periodyzację/.test(boj.blad), JSON.stringify(boj));
 });

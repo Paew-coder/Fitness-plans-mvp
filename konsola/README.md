@@ -368,15 +368,17 @@ ciężary do arkusza wprost — arkusz zna tylko tryb całego planu (to samo prz
 samym „R”).
 
 **±** w kolumnie Lp. (od 19.10.2026, poza bojem, pauzowanymi i dwubojem —
-mają własną periodyzację) przesuwa powtórzenia całej progresji: okienko pyta
-o T1, pozostałe tygodnie idą o tyle samo. 8–10 i 8–10 z T1 = 10 daje 10–12
-i 10–12; przy masie ciała 10–15 z T1 = 12 daje 12–17. Silnik dolicza
-przesunięcie do automatu (`przesunieciePowtorzen`), więc kształt progresji
-zostaje, a przy masie ciała ocena klienta dalej dokłada powtórzenia; liczby
-wpisane w tygodniach idą o tę samą różnicę. Przy ciężarze granicą jest tabela
-%1RM (15 powtórzeń) — dalej okienko odmawia; bez ciężaru do 30. Puste pole
-wraca do progresji z planu. Przy numerze znacznik „powt. +2”; eksport wpisuje
-takie powtórzenia do arkusza wprost.
+mają własną periodyzację) układa powtórzenia całej progresji od T1: okienko
+pyta o T1 (podsuwa to, co stoi w polu T1 — wpisaną właśnie liczbę wystarczy
+potwierdzić), pozostałe tygodnie idą według progresji ćwiczenia. 8–10 i 8–10
+z T1 = 10 daje 10–12 i 10–12; przy masie ciała 10–15 z T1 = 12 daje 12–17.
+Liczy serwer (`powtorzeniaOdT1` w silniku): przesunięcie względem progresji
+z planu (`przesunieciePowtorzen`, doliczane do automatu — przy masie ciała
+ocena klienta dalej dokłada powtórzenia), a powtórzenia wpisane w T1–T6
+ustępują; przy „↗” wszystkie tygodnie dostają liczbę z T1. Przy ciężarze
+granicą jest tabela %1RM (15 powtórzeń) — dalej odmowa z wyjaśnieniem; bez
+ciężaru do 30. Puste pole wraca do progresji z planu. Przy numerze znacznik
+„powt. +2”; eksport wpisuje takie powtórzenia do arkusza wprost.
 
 **🗑** przy ćwiczeniu (od 17.10.2026) usuwa je z pozycji po potwierdzeniu: znika
 ćwiczenie i to, co było pod nie ustawione (serie, powtórzenia, RPE, ciężar na
