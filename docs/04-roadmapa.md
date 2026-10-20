@@ -1199,6 +1199,14 @@ Trener (zrzut trzech kart): „wszystkie te zakładki na górze niech mają X, �
 * Instrukcja dla klienta: krok 1 — karty na górze zwija się albo usuwa, wszystko jest też w „Więcej”; krok 2 — zdanie o „Więcej”; zrzuty, film i PDF odświeżone (✕ przy „Skąd wziąć ciężary”). SW `trening-v90`.
 * Przegląd klienta: trzy stałe pozycje od pierwszego wejścia; po „✕” podpowiedź instalacji rozwija się w „Więcej”; „Skąd wziąć ciężary” w „Więcej” (drogi, RPE, zdanie o powtórzeniach), „✕” na górze, nie wraca po ponownym otwarciu; dalsza droga „zacznij od razu” przyciskiem z „Więcej”.
 
+**103. Karty zamknięte „✕” wracają po „Resetuj plan” — 20.10.2026.**
+
+Trener: „zrób tak, że jeżeli ktoś pozamyka te karty z instrukcjami na górze X-em, to po resecie planu z konsoli trenera one wracają”.
+
+* „Skąd wziąć ciężary” miało już reset w kluczu zapisu (`kluczZwiniecia` = plan@resetOd). „Jak korzystać z aplikacji” i „Dodaj do ekranu głównego” zapisują teraz stan razem ze znacznikiem resetu (`stanKarty` / `ustawStanKarty`: „usunieta|<resetOd>”): po „↺ Resetuj plan” serwer podaje nowe `resetOd`, zapis przestaje pasować i karty wracają rozwinięte. Zapis sprzed zmiany (bez „|”) dostaje przy pierwszym odczycie znacznik bieżącego resetu — nic nie wraca bez powodu.
+* Okno „↺ Resetuj plan” w konsoli mówi o tym trenerowi. SW `trening-v91`.
+* Przegląd klienta: trzy karty zamknięte „✕”, po ponownym otwarciu schowane, po resecie wszystkie rozwinięte; ponowne „✕” po resecie działa jak wcześniej.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

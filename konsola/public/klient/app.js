@@ -3201,20 +3201,48 @@ addEventListener("appinstalled", () => $("#baner-instalacji").classList.add("ukr
 const jestDodana = () =>
   matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
-/** Stan w pamięci telefonu: brak — rozwinięta, „zwinieta” (i dawne „nie”), „usunieta”. */
-const stanInstalacji = (() => {
-  try { return localStorage.getItem(KLUCZ_INSTALACJI); } catch { return null; }
-})();
-let instalacjaZwinieta = Boolean(stanInstalacji);
-let instalacjaUsunieta = stanInstalacji === "usunieta";
+/**
+ * Stan karty na górze (zwinięta / usunięta) zapisany razem z resetem planu
+ * (20.10.2026, trener: „jeżeli ktoś pozamyka te karty z instrukcjami na górze
+ * X-em, to po resecie planu z konsoli trenera one wracają”). Zapis to
+ * „usunieta|<resetOd>”: po „↺ Resetuj plan” serwer podaje nowe `resetOd`,
+ * zapis przestaje pasować i karta wraca rozwinięta — jak „Skąd wziąć ciężary”,
+ * która ma reset w kluczu (`kluczZwiniecia`). Zapis sprzed tej zmiany (bez
+ * „|”) dostaje przy pierwszym odczycie znacznik bieżącego resetu — nie wraca
+ * bez powodu, a po następnym resecie już tak.
+ */
+const pamiecKart = new Map();   // gdy telefon nie da nic zapisać — do zamknięcia aplikacji
+const znacznikResetu = () => widok?.resetOd ?? "";
+function stanKarty(klucz) {
+  let zapis = pamiecKart.get(klucz);
+  if (zapis === undefined) {
+    try { zapis = localStorage.getItem(klucz); } catch { zapis = null; }
+    pamiecKart.set(klucz, zapis);
+  }
+  if (!zapis) return null;
+  const kreska = zapis.indexOf("|");
+  if (kreska < 0) {
+    ustawStanKarty(klucz, zapis);
+    return zapis;
+  }
+  return zapis.slice(kreska + 1) === znacznikResetu() ? zapis.slice(0, kreska) : null;
+}
+function ustawStanKarty(klucz, stan) {
+  const zapis = stan ? `${stan}|${znacznikResetu()}` : null;
+  pamiecKart.set(klucz, zapis);
+  try {
+    if (zapis) localStorage.setItem(klucz, zapis);
+    else localStorage.removeItem(klucz);
+  } catch { /* pełna pamięć — stan trwa do zamknięcia aplikacji */ }
+}
+
+/** Stan podpowiedzi: brak — rozwinięta, „zwinieta” (i dawne „nie”), „usunieta”. */
+const instalacjaZwinieta = () => Boolean(stanKarty(KLUCZ_INSTALACJI));
+const instalacjaUsunieta = () => stanKarty(KLUCZ_INSTALACJI) === "usunieta";
 
 /** `przelacz` — czy ustawić `open` samemu; przy dotknięciu nagłówka robi to przeglądarka. */
 function zwinInstalacje(zwin, przelacz = true) {
-  instalacjaZwinieta = zwin;
-  try {
-    if (zwin) localStorage.setItem(KLUCZ_INSTALACJI, "zwinieta");
-    else localStorage.removeItem(KLUCZ_INSTALACJI);
-  } catch { /* pełna pamięć — zwinięcie trwa do zamknięcia aplikacji */ }
+  ustawStanKarty(KLUCZ_INSTALACJI, zwin ? "zwinieta" : null);
   if (przelacz) $("#baner-instalacji").open = !zwin;
 }
 
@@ -3236,8 +3264,7 @@ function tekstInstalacji() {
 }
 
 function usunInstalacje() {
-  instalacjaUsunieta = true;
-  try { localStorage.setItem(KLUCZ_INSTALACJI, "usunieta"); } catch { /* do zamknięcia aplikacji */ }
+  ustawStanKarty(KLUCZ_INSTALACJI, "usunieta");
   rysujInstalacje();
 }
 
@@ -3248,13 +3275,13 @@ function rysujInstalacje() {
     ? "Trening jest już na ekranie głównym — otwierasz go z ikony, jak aplikację."
     : tekstInstalacji();
   $("#info-zainstaluj").classList.toggle("ukryty", jestDodana() || !zdarzenieInstalacji);
-  if (jestDodana() || instalacjaUsunieta) {
+  if (jestDodana() || instalacjaUsunieta()) {
     baner.classList.add("ukryty");
     return;
   }
   $("#instalacja-tresc").textContent = tekstInstalacji();
   $("#zainstaluj").classList.toggle("ukryty", !zdarzenieInstalacji);
-  baner.open = !instalacjaZwinieta;
+  baner.open = !instalacjaZwinieta();
   baner.classList.remove("ukryty");
 }
 
@@ -3297,27 +3324,19 @@ $("#info-zainstaluj").onclick = zainstaluj;
  *   1. od pierwszego wejścia rozwinięta, zaraz pod „Następnym treningiem”;
  *   2. „Schowaj”, dotknięcie nagłówka albo obejrzenie instrukcji zwija ją
  *      do jednej linijki i tak zostaje (pamięć telefonu);
- *   3. „✕” usuwa ją — instrukcja zostaje w „Więcej”.
+ *   3. „✕” usuwa ją — instrukcja zostaje w „Więcej”;
+ *   4. po „↺ Resetuj plan” w konsoli wraca rozwinięta (`stanKarty`).
  * Układ i zachowanie jak przy podpowiedzi o ekranie głównym.
  */
 const KLUCZ_INSTRUKCJI = `instrukcja-${TOKEN}`;
 /** Brak — rozwinięta, „zwinieta”, „usunieta”. */
-let stanInstrukcji = (() => {
-  try { return localStorage.getItem(KLUCZ_INSTRUKCJI); } catch { return null; }
-})();
-
-function ustawInstrukcje(stan) {
-  stanInstrukcji = stan;
-  try {
-    if (stan) localStorage.setItem(KLUCZ_INSTRUKCJI, stan);
-    else localStorage.removeItem(KLUCZ_INSTRUKCJI);
-  } catch { /* pełna pamięć — stan trwa do zamknięcia aplikacji */ }
-}
+const ustawInstrukcje = (stan) => ustawStanKarty(KLUCZ_INSTRUKCJI, stan);
 
 function rysujInstrukcje() {
   const baner = $("#baner-instrukcji");
-  baner.classList.toggle("ukryty", stanInstrukcji === "usunieta");
-  baner.open = !stanInstrukcji;
+  const stan = stanKarty(KLUCZ_INSTRUKCJI);
+  baner.classList.toggle("ukryty", stan === "usunieta");
+  baner.open = !stan;
 }
 
 // Klik, a nie „toggle” — w chwili kliknięcia `open` ma jeszcze stan sprzed przełączenia.
