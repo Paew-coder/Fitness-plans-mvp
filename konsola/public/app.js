@@ -1528,6 +1528,9 @@ $("#resetuj-plan").onclick = () => {
     lista,
     el("p", "wskazowka", "Zostaje cały plan: ćwiczenia, serie, powtórzenia, RPE, ciężary wpisane przez Ciebie, "
       + "serie maksymalne i waga klienta." + (obraz.zmianyDlaKlienta ? " Twoje zmiany dalej czekają na zatwierdzenie." : "")),
+    // 20.10.2026 — karty zamknięte przez klienta „✕” wracają po resecie.
+    el("p", "wskazowka", "Karty z podpowiedziami na górze aplikacji klienta (instrukcja, skąd wziąć "
+      + "ciężary, ekran główny) wrócą rozwinięte, także te, które zamknął."),
     etykieta,
     el("p", "wskazowka ostrzezenie", "Tego nie da się cofnąć."),
     akcje);

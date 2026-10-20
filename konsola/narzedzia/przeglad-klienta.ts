@@ -2340,6 +2340,46 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       stare.status === 409 && biezace.ok, `${stare.status} / ${biezace.status}`);
   }
 
+  // ── 30b. karty na górze wracają po resecie planu (20.10.2026) ──────
+  // Trener: „jeżeli ktoś pozamyka te karty z instrukcjami na górze X-em, to
+  // po resecie planu z konsoli trenera one wracają”.
+  {
+    await api("/api/plany", "POST", { klient: "Reset Karty", wersja: 1 });
+    const idK = (await api("/api/plany")).find((p: any) => p.klient === "Reset Karty").id;
+    const pK = (await api(`/api/plany/${idK}`)).zapisany;
+    pK.plan.sloty[0].cwiczenieId = "EX-0011";
+    pK.plan.sloty[1].cwiczenieId = "EX-0016";   // bez 1RM — „Skąd wziąć ciężary” na górze
+    pK.plan.serieMaksymalne = [{ cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 }];
+    await api(`/api/plany/${idK}`, "PUT", { plan: pK.plan, dataStartu: null, status: "wysłany", zmieniony: pK.zmieniony });
+    const sciezkaK = (await api(`/api/plany/${idK}/link`, "POST")).sciezka;
+    const KARTY = ["#baner-instrukcji", "#pomiary-baner", "#baner-instalacji"];
+    const widoczne = async (tylkoRozwiniete = false) => {
+      const stan: boolean[] = [];
+      for (const k of KARTY) stan.push(await s.locator(`${k}${tylkoRozwiniete ? "[open]" : ""}`).isVisible());
+      return stan;
+    };
+    await s.goto(`${adres}${sciezkaK}`, { waitUntil: "networkidle" });
+    await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+    const naStart = await widoczne(true);
+    for (const x of ["#instrukcja-usun", "#pomiary-usun", "#instalacja-usun"]) await s.click(x);
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(400);
+    const poUsunieciu = await widoczne();
+    await api(`/api/plany/${idK}/reset`, "POST", {});
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(600);
+    const poResecie = await widoczne(true);
+    sprawdz("karty zamknięte „✕” po „Resetuj plan” wracają — rozwinięte",
+      naStart.every(Boolean) && poUsunieciu.every((x) => !x) && poResecie.every(Boolean),
+      `start ${naStart} · po ✕ ${poUsunieciu} · po resecie ${poResecie}`);
+    // Bez kolejnego resetu zamknięta karta znów zostaje zamknięta.
+    await s.click("#instrukcja-usun");
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(400);
+    sprawdz("po resecie „✕” działa jak wcześniej — karta nie wraca sama",
+      !(await s.locator("#baner-instrukcji").isVisible()) && await s.locator("#pomiary-baner").isVisible());
+  }
+
   // ── 31. dwubój: procenty i test 1RM (16.10.2026) ──────────────────
   // Trener: „to, co zaproponowałeś, mi się podoba … skok 1 kg, wdrażaj
   // całość”. Clean bez 1RM: zamiast „dobierz” — test najcięższego czystego
