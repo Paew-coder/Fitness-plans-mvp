@@ -96,7 +96,8 @@ lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
        "export const ZRODLA_WIDEO: readonly ZrodloWideo[] = ["]
 for z in f["zrodla"]:
     lin.append("  " + ts_obiekt(z, (("id", "id"), ("nazwa", "nazwa"), ("platforma", "platforma"),
-                                   ("kanal", "kanal"), ("kanal_id", "kanalId"), ("url", "url"))) + ",")
+                                   ("kanal", "kanal"), ("kanal_id", "kanalId"), ("url", "url"),
+                                   ("pomin_poczatek_s", "pominPoczatekSekund"))) + ",")
 lin += ["];", "", f"/** {len(f['filmy'])} film(y) przypisane do cwiczen. */",
         "export const FILMY_CWICZEN: readonly WpisWideo[] = ["]
 for w in f["filmy"]:

@@ -286,10 +286,15 @@ await zSerwerem(4241, async ({ adres, api }) => {
         await okno.locator(".karta-cw-film iframe").count() === 1 && !srcPoradnika.includes(ID_FILMU)
           && /\/embed\/[\w-]{11}/.test(srcPoradnika) && (await okno.innerText()).includes("Film: "),
         srcPoradnika.split("?")[0]);
+      // 23.10.2026: Catalyst Athletics ma 7-sekundowe intro — odtwarzacz startuje po nim.
+      sprawdz("poradnik Catalyst startuje od 7. sekundy (bez intro kanału)",
+        (await okno.innerText()).includes("Catalyst Athletics")
+          && new URL(srcPoradnika || "about:blank").searchParams.get("start") === "7", srcPoradnika);
       await okno.locator(".karta-cw-nagrania button").first().click();
       await s.waitForTimeout(300);
-      sprawdz("powrót do pierwszego pokazu — znowu film OPEX",
-        (await okno.locator(".karta-cw-film iframe").getAttribute("src").catch(() => "") ?? "").includes(ID_FILMU));
+      const srcPokazu = await okno.locator(".karta-cw-film iframe").getAttribute("src").catch(() => "") ?? "";
+      sprawdz("powrót do pierwszego pokazu — znowu film OPEX, od początku",
+        srcPokazu.includes(ID_FILMU) && !new URL(srcPokazu || "about:blank").searchParams.has("start"));
 
       // Zamknięcie i powrót do treningu.
       await okno.getByRole("button", { name: "Wróć do treningu" }).click();

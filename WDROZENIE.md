@@ -235,6 +235,13 @@ czegokolwiek. Jeśli jest — **najpierw robi kopię bazy**, i dopiero wtedy
 pobiera kod i przebudowuje. Nieudana kopia przerywa całość: lepiej zostać na
 starej wersji niż aktualizować bez możliwości cofnięcia.
 
+Gdy historia gałęzi na GitHubie zostanie przepisana (23.10.2026: linki do
+prywatnych filmów usunięte także ze starych wersji), zwykłe pobranie się nie
+uda — skrypt przechodzi wtedy na nową historię (`git reset --hard`), bo kod na
+serwerze ma tylko odzwierciedlać gałąź. Wyjątek: ktoś zmienił pliki na
+serwerze ręcznie — wtedy nic nie rusza i zostawia w logu wpis „UWAGA”. Dane
+klientów są na woluminie Dockera, poza gitem.
+
 Każda aktualizacja dopisuje się do `~/Fitness-plans-mvp/aktualizacja.log`
 razem z powodem, dla którego się skończyła; przebieg „bez zmian” (co minutę)
 tylko nadpisuje jedną linijkę w `aktualizacja-ostatnio.txt` — widać, że

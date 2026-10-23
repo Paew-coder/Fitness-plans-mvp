@@ -270,3 +270,34 @@ describe("bez nagrań z prywatnego kanału trenera (23.10.2026)", () => {
     assert.equal(bezNagrania("EX-0003"), true);
   });
 });
+
+describe("Catalyst Athletics bez 7-sekundowego intro (23.10.2026)", () => {
+  // Trener: „filmiki na kanale Catalyst Athletics zaczynają się 7-sekundowym
+  // intro, które jest irytujące — mogłyby się zaczynać od 7 sekundy”.
+  test("filmy Catalyst startują od 7 s, czas na karcie bez intro; inne kanały od początku", () => {
+    const filmy = filmyCwiczenia("EX-0004");   // Arnold press: pokaz ToM i poradnik Catalyst
+    const catalyst = filmy.find((f) => f.zrodlo.nazwa === "Catalyst Athletics")!;
+    const wpis = FILMY_CWICZEN.find((w) => w.youtubeId === catalyst.youtubeId)!;
+    assert.equal(catalyst.startSekund, 7);
+    assert.equal(catalyst.czasSekund, wpis.czasSekund! - 7);
+    for (const f of filmy.filter((x) => x.zrodlo.nazwa !== "Catalyst Athletics")) {
+      assert.equal(f.startSekund, undefined, f.tytul);
+    }
+  });
+
+  test("każdy film Catalyst ma po intro co najmniej pół minuty", () => {
+    const catalyst = FILMY_CWICZEN.filter((f) => f.zrodlo === "catalyst-youtube");
+    assert.ok(catalyst.every((w) => w.czasSekund! - 7 >= 20), "krótki film straciłby całe ćwiczenie");
+  });
+
+  test("krótki film nie traci całej treści; zły pominięty początek — kontrola danych", () => {
+    const zrodla = [{ id: "z", nazwa: "Z", platforma: "YouTube", pominPoczatekSekund: 7 }];
+    const wpis = (czasSekund: number): WpisWideo[] =>
+      [{ id: "K", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "ejI1Nlsul9k", zrodlo: "z", tytul: "x", czasSekund }];
+    assert.equal(wideoCwiczenia("EX-0011", wpis(10), zrodla)!.startSekund, undefined);
+    assert.equal(wideoCwiczenia("EX-0011", wpis(10), zrodla)!.czasSekund, 10);
+    assert.equal(wideoCwiczenia("EX-0011", wpis(40), zrodla)!.startSekund, 7);
+    assert.match(sprawdzFilmy(wpis(40), [{ ...zrodla[0]!, pominPoczatekSekund: 0.5 }]).join(), /1–60/);
+    assert.deepEqual(sprawdzFilmy(wpis(40), zrodla), []);
+  });
+});

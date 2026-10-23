@@ -8,7 +8,7 @@ import type { WpisWideo, ZrodloWideo } from "../wideo.ts";
 export const ZRODLA_WIDEO: readonly ZrodloWideo[] = [
   { id: "opex-youtube", nazwa: "OPEX Fitness", platforma: "YouTube", kanal: "@OPEXFitness", kanalId: "UCCgDGih2kSp0A6W_0cVYuaQ", url: "https://www.youtube.com/@OPEXFitness" },
   { id: "tom-youtube", nazwa: "Theory of Motion Exercise Library", platforma: "YouTube", kanal: "@theorylibrary", kanalId: "UC3f1WJ6Uqr1SBkdUkfTChYQ", url: "https://www.youtube.com/@theorylibrary" },
-  { id: "catalyst-youtube", nazwa: "Catalyst Athletics", platforma: "YouTube", kanal: "@CatalystAthletics", kanalId: "UCOe24b2O8eoeHz9fwWuKRVA", url: "https://www.youtube.com/@CatalystAthletics" },
+  { id: "catalyst-youtube", nazwa: "Catalyst Athletics", platforma: "YouTube", kanal: "@CatalystAthletics", kanalId: "UCOe24b2O8eoeHz9fwWuKRVA", url: "https://www.youtube.com/@CatalystAthletics", pominPoczatekSekund: 7 },
 ];
 
 /** 3916 film(y) przypisane do cwiczen. */

@@ -73,7 +73,22 @@ else
   exit 1
 fi
 
-git -C "$KATALOG" merge --ff-only FETCH_HEAD >> "$LOG" 2>&1
+if git -C "$KATALOG" merge-base --is-ancestor HEAD FETCH_HEAD; then
+  git -C "$KATALOG" merge --ff-only FETCH_HEAD >> "$LOG" 2>&1
+else
+  # Historia gałęzi na GitHubie przepisana (23.10.2026: linki do prywatnych
+  # filmów trenera usunięte także ze starych wersji). Kod na serwerze ma tylko
+  # odzwierciedlać gałąź, więc idzie za nią — chyba że ktoś zmienił tu pliki
+  # ręcznie: wtedy stop, nic nie ginie po cichu. Dane klientów leżą na
+  # woluminie Dockera, poza gitem — tego `reset` nie dotyka.
+  if [ -n "$(git -C "$KATALOG" status --porcelain --untracked-files=no)" ]; then
+    powiedz "UWAGA: historia gałęzi na GitHubie przepisana, a na serwerze są ręczne zmiany w plikach — nic nie ruszam"
+    git -C "$KATALOG" status --short --untracked-files=no >> "$LOG" 2>&1
+    exit 1
+  fi
+  powiedz "historia gałęzi na GitHubie przepisana — serwer przechodzi na nową"
+  git -C "$KATALOG" reset --hard FETCH_HEAD >> "$LOG" 2>&1
+fi
 powiedz "kod pobrany"
 
 "${COMPOSE[@]}" up -d --build >> "$LOG" 2>&1

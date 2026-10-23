@@ -1222,6 +1222,14 @@ Trener: „usuń też filmy z kanału CraftMyPlan. Poza tym dodaj mi to ćwiczen
 * 6 linków z kanału CraftMyPlan usunięte tak samo jak w punkcie 104 (BAZA, katalog silnika, zakładka BAZA szablonu arkusza). Filmy z bibliotek zostają u Dumbbell bench press (4), Dumbbell bench press alternating (1) i Incline dumbbell press alternating (2). Bez filmu zostały Dumbbell over head press, Dumbbell over head press alternating i Dumbbell s/a Arnold press.
 * **Barbell shrugs behind the back** (EX-3628): Upper pull vertical (szrugsy wg zasad klasyfikacji), part r, coeff 0,25 (izolacja, jak Calf raises), kg, skok 2,5 kg, obustronne. Film z kanału My PT Hub (sprawdzony oEmbedem: osadzanie dozwolone) gra w aplikacji z podpisem „wybrany przez trenera”. BAZA trenera: 164 z arkusza + 5 dodanych.
 
+**106. Filmy Catalyst Athletics bez 7-sekundowego intro — 23.10.2026.**
+
+Trener: „filmiki na kanale Catalyst Athletics zaczynają się 7-sekundowym intro, które jest irytujące podczas korzystania z aplikacji — mogłyby się zaczynać akurat z tego kanału od 7 sekundy?”
+
+* Ustawienie przy źródle, nie przy 618 wpisach: `pomin_poczatek_s: 7` w `filmy-cwiczen.json` (i w imporcie bibliotek, żeby kolejny import go nie zgubił). Odtwarzacz w aplikacji i w podglądzie konsoli dostaje `start=7`; czas na przycisku „Poradnik” jest bez intro. Przewinąć do początku dalej można. Film krótszy niż intro + 5 s grałby od początku (Catalyst ma najkrótszy 31 s). Link „Otwórz na YouTube” bez zmian.
+* Testy: silnik (`wideo.test.ts`: Catalyst od 7 s, inne kanały od początku, krótki film, kontrola danych 1–60 s), przegląd filmu (poradnik Catalyst z `start=7`, pokaz OPEX bez).
+* Automat na serwerze (`aktualizuj-serwer.sh`) umie przejść na przepisaną historię gałęzi — przygotowanie do punktu 107.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

@@ -26,6 +26,8 @@
  *   i „Poradnik” (omówienie techniki). Przełączenie zatrzymuje poprzedni film.
  * - Ta sama karta służy konsoli trenera do podglądu ćwiczenia przy wyborze
  *   z biblioteki (`opcje.tekstZamkniecia`).
+ * - Filmy kanału z intro (Catalyst Athletics, 23.10.2026) startują od
+ *   `startSekund` — trener: „7-sekundowe intro jest irytujące”.
  */
 
 const HOST_YT = "https://www.youtube-nocookie.com";
@@ -306,6 +308,8 @@ function filmYouTube(ramka, wideo) {
   // Ramkę stawiamy sami, żeby dać jej politykę Referer (patrz wyżej);
   // API podpina się do istniejącej ramki z `enablejsapi=1`.
   const parametry = new URLSearchParams({ enablejsapi: "1", playsinline: "1", rel: "0", origin: location.origin });
+  // Intro kanału pominięte (Catalyst Athletics: 7 s) — film rusza od razu od ćwiczenia.
+  if (wideo.startSekund > 0) parametry.set("start", String(wideo.startSekund));
   const iframe = el("iframe");
   iframe.src = `${HOST_YT}/embed/${encodeURIComponent(wideo.youtubeId)}?${parametry}`;
   iframe.title = wideo.tytul;
