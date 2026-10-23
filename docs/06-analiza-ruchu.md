@@ -165,6 +165,70 @@ JSON/CSV mają dalej wszystkie punkty. „Tylko prawa / lewa strona” przestawi
 też „Stronę ciała” (kąty w tabeli, na wykresie i w powtórzeniach). Wybór
 pamięta przeglądarka na tym urządzeniu (`localStorage`).
 
+## 5b. Środek ciężkości — metoda segmentowa (23.10.2026)
+
+Trener: „dodajmy do aplikacji możliwość analizy środka ciężkości metodą
+segmentową — De Leva razem z rozróżnieniem na płeć, plus wygładzenie
+trajektorii”. To ta sama metoda co w jego pracy magisterskiej (środki
+segmentów na zdjęciu → średnia ważona masą), tylko w każdej klatce filmu.
+Kod: `public/ruch/srodek.js` (czysty moduł, testy w `testy/analiza-ruchu.test.ts`).
+
+**Model segmentów** — wybór w panelu „Środek ciężkości” (zapisuje się w JSON):
+
+| Segment | Końce (de Leva → MediaPipe) | Masa K / M (%) | Środek K / M (% długości od pierwszego końca) |
+|---|---|---|---|
+| głowa | — → środek uszu (punkt) | 6,68 / 6,94 | — |
+| tułów | SUPR/MIDS–MIDH → środek barków – środek bioder | 42,57 / 43,46 | 41,51 / 44,86 |
+| ramię | SJC–EJC → bark – łokieć | 2,55 / 2,71 | 57,54 / 57,72 |
+| przedramię | EJC–WJC → łokieć – nadgarstek | 1,38 / 1,62 | 45,59 / 45,74 |
+| ręka | WJC–MET3 → nadgarstek – ⅓ drogi od palca wskazującego do małego | 0,56 / 0,61 | 74,74 / 79,00 |
+| udo | HJC–KJC → biodro – kolano | 14,78 / 14,16 | 36,12 / 40,95 |
+| podudzie | KJC–LMAL → kolano – kostka | 4,81 / 4,33 | 44,16 / 44,59 |
+| stopa | HEEL–TTIP → pięta – palce stopy | 1,29 / 1,37 | 40,14 / 44,15 |
+
+Źródło: de Leva P., *Adjustments to Zatsiorsky–Seluyanov's segment inertia
+parameters*, J Biomech 1996;29(9):1223–1230, Tabela 4 (pierwszy wiersz każdego
+segmentu; sprawdzone z przedrukiem tabeli i z dokumentacją Visual3D). Trzeci
+model — **Braune i Fischer, jak w pracy magisterskiej** (Ryc. 3): masy 7 / 43 /
+3 / 2 / 1 / 12 / 5 / 2%, środki 0,44 tułowia, 0,47 ramienia, 0,42 przedramienia,
+0,44 uda, 0,42 podudzia, 0,44 stopy od pięty, ręka w połowie śródręcza; głowa —
+ucho. Test odtwarza przykład z pracy: Xc 3,69, Yc 4,84.
+
+**Przybliżenia** (MediaPipe nie ma punktów anatomicznych de Levy): punkty
+MediaPipe zamiast środków stawów; głowa — środek uszu (de Leva liczy od szczytu
+głowy); tułów od środka barków (u de Levy wcięcie jarzmowe mostka / środek
+stawów ramiennych) do środka bioder; głowa III kości śródręcza — na ⅓ drogi
+między punktami palca wskazującego i małego.
+
+**Strony ciała:** ujęcie z boku (rozpoznane z całego nagrania) — strona z pola
+„Strona ciała” liczona podwójnie, bo dalsza ręka i noga są zasłonięte i MediaPipe
+je zgaduje (jak w pracy: „RA 3+3%”); tułów wtedy od jej barku do biodra. Ujęcie
+z przodu i skośne — obie strony osobno.
+
+**Wynik:** w każdej klatce x, y w pikselach i położenie względem stóp — z boku
+nad stopą (pięta 0%, palce 100%; kierunek stopy z obrazu, działa przy osobie
+zwróconej w lewo i w prawo), z przodu między stopami (lewa 0%, prawa 100%).
+Na obrazie symbol (koło w czarno-białe ćwiartki), przerywany pion do linii stóp
+i droga środka ciężkości; wykres w % z pasami powtórzeń; w tabeli powtórzeń
+kolumna „ŚC” (wartość w dole powtórzenia); w CSV pięć kolumn na końcu.
+
+**Pewność:** klatka niepewna („?”), gdy słabo widoczne (poniżej 50%) są punkty
+segmentów o łącznej masie ponad 10% ciała. Niepewne klatki nie wchodzą do serii.
+
+**Wygładzanie:** Butterworth 2. rzędu, 6 Hz (najwyżej 0,4 × kl./s), w przód
+i w tył — bez przesunięcia w czasie; odcięcie poprawione o 0,802 na dwa
+przejścia (Winter). Luki do 5 klatek wypełniane liniowo, dłuższe dzielą serię.
+Na wykresie blada linia — bez wygładzania.
+
+**Obciążenie:** kg i miejsce (barki — środek barków; dłonie — środek rąk)
+plus masa ciała: środek wspólny = średnia ważona masą ciała i obciążenia.
+Bez masy ciała obciążenie nie jest doliczane (komunikat w odczycie).
+
+**Ograniczenia:** 2D z obrazu (płaszczyzna kamery), wynik w pikselach i % stopy,
+nie w centymetrach; przesunięcie punktów bioder o 3 cm przesuwa środek
+ciężkości o ok. 1 cm. Porównania tej samej osoby przy tym samym ustawieniu
+kamery są pewniejsze niż wartości bezwzględne.
+
 ## 6. Sugerowana pozycja
 
 Na zatrzymanej klatce: wybór punktu (dotknięcie albo wiersz tabeli) →

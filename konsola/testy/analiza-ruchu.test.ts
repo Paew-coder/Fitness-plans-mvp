@@ -510,3 +510,134 @@ describe("punkty na obrazie — wybór trenera (23.10.2026)", () => {
     assert.ok(bezBarku.kolory.includes("#1baf7a"), "droga biodra została");
   });
 });
+
+describe("środek ciężkości — metoda segmentowa (23.10.2026)", async () => {
+  // Trener: „dodajmy możliwość analizy środka ciężkości metodą segmentową —
+  // De Leva razem z rozróżnieniem na płeć, plus wygładzenie trajektorii”.
+  const { MODELE_SRODKA, masaModelu, sredniaWazona, srodekKlatki, srodekSesji, wygladzTrajektorie, wzgledemStop } =
+    await import("../public/ruch/srodek.js");
+
+  test("modele: de Leva (K, M) i Braune–Fischer dają razem 100% masy ciała", () => {
+    okolo(masaModelu("deleva-m"), 100, 0.011);
+    okolo(masaModelu("deleva-k"), 100, 0.011);
+    okolo(masaModelu("braune-fischer"), 100, 0.001);
+    // Kobiety i mężczyźni się różnią — np. udo: 14,78% vs 14,16% masy, środek 36% vs 41% długości.
+    assert.deepEqual(MODELE_SRODKA["deleva-k"].udo, [14.78, 0.3612]);
+    assert.deepEqual(MODELE_SRODKA["deleva-m"].udo, [14.16, 0.4095]);
+  });
+
+  test("średnia ważona jak w pracy magisterskiej (Ryc. 7–8): Xc 3,69, Yc 4,84", () => {
+    const x = [5.64, 2.44, 6.08, 8.72, 10.88, 3.16, 4.28, 3.32];
+    const y = [7.80, 5.16, 6.40, 5.72, 5.72, 4.04, 3.48, 0.80];
+    const masa = [7, 43, 6, 4, 2, 24, 10, 4];
+    const w = sredniaWazona(x.map((xi, i) => ({ x: xi, y: y[i]!, masa: masa[i]! })))!;
+    okolo(w.x, 3.6944, 0.0001);
+    okolo(w.y, 4.8416, 0.0001);
+  });
+
+  test("z boku: jedna strona liczona podwójnie, druga (zgadywana) nie ma wpływu", () => {
+    const punkty = sylwetkaZBoku(20, 60, 30);   // prawa strona słabo widoczna (0,3)
+    const w = srodekKlatki(klatka(punkty), WYMIARY, { model: "deleva-m", konczyny: "L" })!;
+    const kon = w.segmenty.filter((q: any) => q.strona);
+    assert.ok(kon.every((q: any) => q.strona === "L") && kon.length === 6);
+    okolo(kon.find((q: any) => q.id === "udo").masa, 2 * 14.16, 1e-9);
+    okolo(w.segmenty.reduce((s: number, q: any) => s + q.masa, 0), 100, 0.011);
+    // Prawa strona w zupełnie innym miejscu — wynik ten sam.
+    const zepsute = punkty.map((q, i) => (LANDMARKI[i]!.strona === "P" ? { ...q, x: 0.05, y: 0.05 } : q));
+    const w2 = srodekKlatki(klatka(zepsute), WYMIARY, { model: "deleva-m", konczyny: "L" })!;
+    okolo(w2.x, w.x, 1e-6);
+    okolo(w2.y, w.y, 1e-6);
+    assert.equal(w.pewny, true);
+    // Obie strony przy słabo widocznej prawej — ponad 10% masy niepewne.
+    const obie = srodekKlatki(klatka(punkty), WYMIARY, { model: "deleva-m", konczyny: "obie" })!;
+    assert.equal(obie.pewny, false);
+  });
+
+  test("środek uda u de Levy: 40,95% (M) i 36,12% (K) długości od biodra", () => {
+    const k = klatka(sylwetkaZBoku(10, 50, 20));
+    const p = (id: string) => ({ x: k.p![INDEKS[id]][0] * W, y: k.p![INDEKS[id]][1] * H });
+    for (const [model, u] of [["deleva-m", 0.4095], ["deleva-k", 0.3612]] as const) {
+      const udo = srodekKlatki(k, WYMIARY, { model, konczyny: "L" })!.segmenty.find((q: any) => q.id === "udo");
+      okolo(udo.x, p("left_hip").x + (p("left_knee").x - p("left_hip").x) * u, 1e-6);
+      okolo(udo.y, p("left_hip").y + (p("left_knee").y - p("left_hip").y) * u, 1e-6);
+    }
+  });
+
+  test("nad stopą: pięta 0%, palce 100% — tak samo przy osobie zwróconej w lewo", () => {
+    const punkty = sylwetkaZBoku(25, 70, 35);
+    const k = klatka(punkty);
+    const w = srodekKlatki(k, WYMIARY, { model: "deleva-k", konczyny: "L" })!;
+    const pieta = k.p![INDEKS.left_heel][0] * W;
+    const palce = k.p![INDEKS.left_foot_index][0] * W;
+    okolo(wzgledemStop(w)!, ((w.x - pieta) / (palce - pieta)) * 100, 1e-6);
+    // Lustro (osoba zwrócona w drugą stronę) — ten sam wynik, z dokładnością do zaokrągleń zapisu.
+    const lustro = punkty.map((q) => ({ ...q, x: 1 - q.x }));
+    const wL = srodekKlatki(klatka(lustro), WYMIARY, { model: "deleva-k", konczyny: "L" })!;
+    okolo(wzgledemStop(wL)!, wzgledemStop(w)!, 0.01);
+  });
+
+  test("z przodu: między stopami — lewa 0%, prawa 100%", () => {
+    const k = klatka(sylwetkaZPrzodu());
+    const w = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "obie" })!;
+    const lewa = k.p![INDEKS.left_ankle][0] * W;
+    const prawa = k.p![INDEKS.right_ankle][0] * W;
+    okolo(wzgledemStop(w)!, ((w.x - lewa) / (prawa - lewa)) * 100, 1e-6);
+  });
+
+  test("obciążenie: tyle samo kg na barkach co masa ciała — środek w połowie drogi do barku", () => {
+    const k = klatka(sylwetkaZBoku(25, 70, 35));
+    const bez = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "L" })!;
+    const z = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "L",
+      obciazenie: { kg: 70, masaCiala: 70, miejsce: "barki" } })!;
+    const bark = { x: k.p![INDEKS.left_shoulder][0] * W, y: k.p![INDEKS.left_shoulder][1] * H };
+    okolo(z.x, (bez.x + bark.x) / 2, 1e-6);
+    okolo(z.y, (bez.y + bark.y) / 2, 1e-6);
+    const bezMasy = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "L", obciazenie: { kg: 70, miejsce: "barki" } })!;
+    okolo(bezMasy.x, bez.x, 1e-9);   // bez masy ciała nie da się doliczyć — wynik bez obciążenia
+  });
+
+  test("wygładzanie: stała bez zmian, 1 Hz zostaje, 12 Hz znika, bez przesunięcia w czasie", () => {
+    assert.ok(wygladzTrajektorie(Array(40).fill(5), 30).every((v: number) => Math.abs(v - 5) < 1e-9));
+    const fps = 60;
+    const czysty = Array.from({ length: 180 }, (_, i) => Math.sin((2 * Math.PI * i) / fps));
+    const zSzumem = czysty.map((v, i) => v + 0.5 * Math.sin((2 * Math.PI * 12 * i) / fps));
+    const g = wygladzTrajektorie(zSzumem, fps);
+    const blad = Math.max(...g.slice(15, -15).map((v: number, i: number) => Math.abs(v - czysty[i + 15]!)));
+    assert.ok(blad < 0.1, `największy błąd ${blad}`);
+    const szczyt = (s: number[]) => s.slice(60, 120).indexOf(Math.max(...s.slice(60, 120)));
+    assert.ok(Math.abs(szczyt(g) - szczyt(czysty)) <= 1, "szczyt w tym samym miejscu");
+  });
+
+  test("wygładzanie: krótka luka wypełniona, długa zostaje pusta; za krótkie — bez zmian", () => {
+    const s = Array.from({ length: 60 }, (_, i) => i);
+    const zLukami = s.map((v, i) => ((i >= 10 && i < 13) || (i >= 30 && i < 50) ? null : v));
+    const g = wygladzTrajektorie(zLukami, 30);
+    assert.ok(g.slice(10, 13).every((v: number | null) => v !== null));
+    assert.ok(g.slice(30, 50).every((v: number | null) => v === null));
+    assert.deepEqual(wygladzTrajektorie([1, null, 3], 30), [1, null, 3]);
+  });
+
+  test("całe nagranie: serie pełne i wygładzone tej samej długości, niepewne klatki puste", () => {
+    const sesja = sesjaPrzysiadow();
+    const s = srodekSesji(sesja, { model: "deleva-k", konczyny: "L", fps: 30 });
+    assert.equal(s.wzgledem.length, sesja.klatki.length);
+    assert.equal(s.wzgledemGladkie.length, sesja.klatki.length);
+    assert.ok(s.wzgledem.some((v: number | null) => v !== null));
+    const bez = srodekSesji(sesja, { model: "deleva-k", konczyny: "L", wygladzanie: false });
+    assert.deepEqual(bez.wzgledemGladkie, bez.wzgledem);
+  });
+
+  test("zapis: ustawienia w JSON wracają po wczytaniu, CSV dostaje kolumny środka ciężkości", () => {
+    const sesja = sesjaPrzysiadow();
+    const bezModelu = doCSV(sesja).split("\r\n")[0]!;
+    assert.ok(!bezModelu.includes("srodek"));
+    sesja.srodekCiezkosci = { model: "deleva-k", konczyny: "L", wygladzanie: true, obciazenieKg: 0, miejsce: "barki", masaCiala: null };
+    const wczytana = zJSON(doJSON(sesja));
+    assert.deepEqual(wczytana.srodekCiezkosci, sesja.srodekCiezkosci);
+    const [naglowek, ...wiersze] = doCSV(sesja).trim().split("\r\n");
+    assert.ok(naglowek!.endsWith("srodek_wzgledem_stop_proc;srodek_wzgledem_stop_proc_wygladzony"));
+    const kolumn = naglowek!.split(";").length;
+    assert.ok(wiersze.every((w) => w.split(";").length === kolumn));
+    assert.ok(wiersze.some((w) => /;1;-?\d+(,\d)?;-?\d+(,\d)?$/.test(w)), "pewna klatka z wartościami w %");
+  });
+});

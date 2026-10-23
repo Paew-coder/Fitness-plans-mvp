@@ -20,6 +20,7 @@
  */
 import { KATY, katyKlatki, punktyKlatki } from "./geometria.js";
 import { GLOWNE_PUNKTY, LANDMARKI, LICZBA_LANDMARKOW, nazwaPunktu } from "./szkielet.js";
+import { srodekSesji, wzgledemStop } from "./srodek.js";
 
 export const FORMAT = "craftmyplan/analiza-ruchu";
 export const WERSJA = 1;
@@ -107,20 +108,33 @@ const liczbaCSV = (n, miejsc) => (n === null || n === undefined ? "" : String(za
  * CSV do arkusza: jedna klatka w wierszu — czas, główne punkty w pikselach
  * z widocznością i wszystkie kąty (2D). Średnik i przecinek dziesiętny, bo
  * tak otwiera polski Excel. Pełne 33 punkty są w JSON-ie.
+ * Z wybranym modelem segmentów (23.10.2026) — na końcu środek ciężkości:
+ * x, y w pikselach, pewność (1/0), położenie względem stóp w % (bez
+ * wygładzenia i wygładzone, jeśli wygładzanie jest włączone).
  */
 export function doCSV(sesja) {
   const wymiary = { szerokosc: sesja.wideo.szerokosc, wysokosc: sesja.wideo.wysokosc };
+  const u = sesja.srodekCiezkosci;
+  const srodek = u?.model ? srodekSesji(sesja, {
+    model: u.model, konczyny: u.konczyny ?? "obie", wygladzanie: u.wygladzanie !== false,
+    obciazenie: u.obciazenieKg > 0 ? { kg: u.obciazenieKg, masaCiala: u.masaCiala, miejsce: u.miejsce } : null,
+  }) : null;
   const naglowek = ["klatka", "t_ms",
     ...GLOWNE_PUNKTY.flatMap((id) => [`${id}_x_px`, `${id}_y_px`, `${id}_widocznosc`]),
-    ...KATY.map((k) => `${k.id}${k.jednostka === "%" ? "_proc" : "_st"}`)];
-  const wiersze = sesja.klatki.map((k) => {
+    ...KATY.map((k) => `${k.id}${k.jednostka === "%" ? "_proc" : "_st"}`),
+    ...(srodek ? ["srodek_ciezkosci_x_px", "srodek_ciezkosci_y_px", "srodek_ciezkosci_pewny",
+      "srodek_wzgledem_stop_proc", "srodek_wzgledem_stop_proc_wygladzony"] : [])];
+  const wiersze = sesja.klatki.map((k, n) => {
     const punkty = punktyKlatki(k, wymiary);
     const katy = katyKlatki(k, wymiary);
+    const w = srodek?.klatki[n];
     return [k.i, liczbaCSV(k.t, 1),
       ...(punkty.length
         ? punkty.flatMap((q) => [liczbaCSV(q.x, 1), liczbaCSV(q.y, 1), liczbaCSV(q.v, 3)])
         : GLOWNE_PUNKTY.flatMap(() => ["", "", ""])),
       ...KATY.map((d) => liczbaCSV(katy?.[d.id]?.wartosc, 1)),
+      ...(srodek ? [liczbaCSV(w?.x, 1), liczbaCSV(w?.y, 1), w ? (w.pewny ? "1" : "0") : "",
+        liczbaCSV(w ? wzgledemStop(w) : null, 1), liczbaCSV(srodek.wzgledemGladkie[n], 1)] : []),
     ].join(";");
   });
   return [naglowek.join(";"), ...wiersze].join("\r\n") + "\r\n";

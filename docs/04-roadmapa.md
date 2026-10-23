@@ -1269,6 +1269,15 @@ Trener: „zrób tak, że jeżeli mamy trajektorie ruchu kolana, biodra i barku,
 * „Tylko prawa / lewa strona” przenosi wybrane trajektorie na widoczną stronę (te same stawy i kolory) — inaczej przy ujęciu, w którym bliżej kamery jest druga strona, wszystkie by zniknęły.
 * Testy: `analiza-ruchu.test.ts` (+1: droga barku znika, biodra zostaje); przegląd ruchu (+5, piksele kolorów trajektorii w środku ruchu: bark schowany → 0 px fioletu, biodro zostaje, dopisek „schowany”, powrót, przeniesienie na prawą).
 
+**112. Środek ciężkości — metoda segmentowa (de Leva K/M, Braune–Fischer) — 23.10.2026.**
+
+Trener (po rozmowie o pracy magisterskiej, de Levie i MediaPipe): „dodajmy do aplikacji możliwość analizy środka ciężkości tą metodą segmentową zgodnie z tym, co pisaliśmy — De Leva razem z rozróżnieniem na płeć, plus to wygładzenie trajektorii itd.”.
+
+* Panel „Środek ciężkości” w analizie ruchu: model segmentów (de Leva 1996 — kobieta / mężczyzna, Braune i Fischer jak w pracy magisterskiej), obciążenie (kg, na barkach albo w dłoniach) z masą ciała, wygładzanie (Butterworth 6 Hz w obie strony). Odczyt dla bieżącej klatki, wykres w % z pasami powtórzeń (blada linia bez wygładzania), kolumna „ŚC” w tabeli powtórzeń, przełącznik „środek ciężkości” na obrazie (symbol, pion do stóp, droga). Ustawienia w zapisie JSON, wynik w CSV (5 kolumn).
+* Z boku — strona z „Strona ciała” podwójnie (jak w pracy: „RA 3+3%”), wynik nad stopą (pięta 0%, palce 100%); z przodu — obie strony, między stopami. Klatka niepewna, gdy słabo widoczne punkty segmentów mają ponad 10% masy ciała.
+* Parametry de Levy z Tabeli 4 (pierwszy wiersz segmentu), sprawdzone z przedrukiem tabeli i dokumentacją Visual3D; przybliżenia (głowa — środek uszu, tułów od środka barków, punkty MediaPipe zamiast środków stawów) opisane na ekranie i w `docs/06-analiza-ruchu.md` (5b).
+* Testy: `analiza-ruchu.test.ts` (+11: masy modeli = 100%, przykład z pracy Xc 3,69 / Yc 4,84, strona podwójnie i niezależność od zgadywanej strony, środek uda 40,95/36,12%, nad stopą w obie strony, między stopami, obciążenie, filtr — stała / 1 Hz / 12 Hz / bez przesunięcia / luki, całe nagranie, JSON i CSV). Przegląd ruchu (+16, sztuczny przysiad z boku i z przodu): prośba o model, modele, „nad stopą” z lewą stroną podwójnie, symbol i droga na obrazie, wykres, kolumna „ŚC”, K ≠ M, obciążenie bez masy i z masą (środek wyżej), bez wygładzania, przełącznik, CSV, powrót z zapisu, telefon i iPad, „między stopami” z przodu.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

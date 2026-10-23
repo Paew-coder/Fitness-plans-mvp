@@ -22,6 +22,9 @@ const liczba = (n) => String(Math.round(n));
 /**
  * `dane`: `{ czasy: ms[], serie: [{id, nazwa, kolor, wartosci}], powtorzenia,
  * biezaca, naWybor(i) }`. Zwraca `{ ustawBiezaca(i), odswiez(dane) }`.
+ * Ten sam wykres pokazuje środek ciężkości w procentach (23.10.2026):
+ * `jednostka` ("°" — domyślnie, albo "%"), `krokSiatki` (30), `zakres`
+ * (zawsze widoczny przedział osi, domyślnie [0, 30]), `opis` (dla czytnika ekranu).
  */
 export function wykresKatow(kontener, dane) {
   let stan = dane;
@@ -41,15 +44,15 @@ export function wykresKatow(kontener, dane) {
     svg.setAttribute("width", String(szer));
     svg.setAttribute("height", String(WYSOKOSC));
     svg.replaceChildren();
-    const { czasy, serie, powtorzenia = [] } = stan;
-    svg.setAttribute("aria-label", `Wykres kątów w czasie: ${serie.map((s) => s.nazwa).join(", ")}`);
+    const { czasy, serie, powtorzenia = [], jednostka = "°", krokSiatki = 30, zakres = [0, 30] } = stan;
+    svg.setAttribute("aria-label", `${stan.opis ?? "Wykres kątów w czasie"}: ${serie.map((s) => s.nazwa).join(", ")}`);
     if (czasy.length < 2) return;
 
     const wszystkie = serie.flatMap((s) => s.wartosci.filter((v) => v !== null));
-    const min = Math.min(0, ...wszystkie);
-    const max = Math.max(30, ...wszystkie);
-    const yMin = Math.floor(min / 30) * 30;
-    const yMax = Math.ceil(max / 30) * 30;
+    const min = Math.min(zakres[0], ...wszystkie);
+    const max = Math.max(zakres[1], ...wszystkie);
+    const yMin = Math.floor(min / krokSiatki) * krokSiatki;
+    const yMax = Math.ceil(max / krokSiatki) * krokSiatki;
     const t0 = czasy[0];
     const t1 = czasy[czasy.length - 1];
     const x0 = MARGINES.lewy;
@@ -74,11 +77,11 @@ export function wykresKatow(kontener, dane) {
       opis.textContent = `#${n + 1}`;
     });
 
-    // Siatka co 30° i oś czasu co sekundę (albo rzadziej przy długich filmach).
-    for (let v = yMin; v <= yMax; v += 30) {
+    // Siatka co 30° (albo co `krokSiatki`) i oś czasu co sekundę (albo rzadziej przy długich filmach).
+    for (let v = yMin; v <= yMax; v += krokSiatki) {
       el("line", { x1: x0, x2: x1, y1: skalaY(v), y2: skalaY(v), class: v === 0 ? "wykres-zero" : "wykres-siatka" }, svg);
       const opis = el("text", { x: x0 - 6, y: skalaY(v) + 4, class: "wykres-opis", "text-anchor": "end" }, svg);
-      opis.textContent = `${v}°`;
+      opis.textContent = `${v}${jednostka}`;
     }
     const krok = Math.max(1, Math.ceil((t1 - t0) / 1000 / 10));
     for (let s = Math.ceil(t0 / 1000); s * 1000 <= t1; s += krok) {
@@ -140,7 +143,7 @@ export function wykresKatow(kontener, dane) {
       znak.className = "znak-serii";
       znak.style.background = s.kolor;
       const v = s.wartosci[i];
-      wiersz.append(znak, `${s.nazwa}: ${v === null ? "—" : `${liczba(v)}°`}`);
+      wiersz.append(znak, `${s.nazwa}: ${v === null ? "—" : `${liczba(v)}${stan.jednostka ?? "°"}`}`);
       podpowiedz.append(wiersz);
     }
     podpowiedz.classList.remove("ukryty");

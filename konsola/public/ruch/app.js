@@ -18,6 +18,7 @@ import {
   sugestieKlatki, ustawSugestie, usunSugestie, zJSON,
 } from "./sesja.js";
 import { GLOWNE_PUNKTY, lustro, nazwaPunktu, punktWidoczny, stronaPunktu, ukryteBezStrony } from "./szkielet.js";
+import { MODELE_SRODKA, srodekSesji, wzgledemStop } from "./srodek.js";
 import { wykresKatow } from "./wykres.js";
 
 const $ = (s) => document.querySelector(s);
@@ -60,6 +61,10 @@ const stan = {
   ukryte: wczytajUkryte(),        // główne punkty schowane z obrazu
   pokazKaty: true,
   pokazTrajektorie: true,
+  pokazSrodek: true,
+  srodek: null,                   // środek ciężkości całego nagrania (srodekSesji) + droga
+  ujecie: null,                   // „bok” / „przod” / „skos” — z całego nagrania
+  wykresSrodka: null,
   trajektorie: new Map(),        // id punktu → kolor (stały, póki wybrany)
   trybSugestii: false,
   maWideo: false,
@@ -151,6 +156,7 @@ async function otworzZapis(plik) {
     stan.sesja = sesja;
     $("#cwiczenie").value = PROFIL[sesja.cwiczenie] ? sesja.cwiczenie : "ogolny";
     pokazUjecie();
+    wpiszUstawieniaSrodka(sesja.srodekCiezkosci);
     komunikat(`Wczytano analizę „${sesja.wideo.nazwa ?? plik.name}”. Film można dołączyć niżej, w „Zapis”.`, { informacja: true });
     przygotujWyniki();
   } catch (blad) {
@@ -320,6 +326,7 @@ function przygotujWyniki({ zachowajKlatke = false } = {}) {
   const zSylwetka = klatekZSylwetka(s);
   const a = s.analiza ?? {};
   const widok = ujecieNagrania(s.klatki, s.wideo);
+  stan.ujecie = widok;
   $("#info-analizy").textContent = [
     `${s.wideo.nazwa ?? "nagranie"} · ${s.wideo.szerokosc}×${s.wideo.wysokosc}`,
     `sylwetka w ${zSylwetka} z ${s.klatki.length} klatek`,
@@ -358,6 +365,7 @@ function przeliczWyniki() {
   const dane = { czasy, serie, powtorzenia: stan.powtorzenia, biezaca: stan.biezaca, naWybor: (i) => { zatrzymaj(); pokazKlatke(i); } };
   if (stan.wykres) stan.wykres.odswiez(dane);
   else stan.wykres = wykresKatow($("#wykres"), dane);
+  przeliczSrodek();
   rysujPowtorzenia(katy);
   rysujWyborTrajektorii();
 }
@@ -374,6 +382,7 @@ async function pokazKlatke(i, { przewinFilm = true } = {}) {
   $("#suwak").value = String(stan.biezaca);
   $("#czas").textContent = `${sekundy(k.t)} · klatka ${stan.biezaca + 1}/${s.klatki.length}`;
   stan.wykres?.ustawBiezaca(stan.biezaca);
+  stan.wykresSrodka?.ustawBiezaca(stan.biezaca);
   rysuj();
   odswiezPanele();
   if (przewinFilm && stan.maWideo && wideo.paused) {
@@ -402,6 +411,7 @@ function rysuj() {
     strona: strona(),
     trajektorie,
     sugestie: sugestieKlatki(stan.sesja, stan.biezaca),
+    srodek: stan.pokazSrodek ? opcjeSrodka() : null,
   });
 }
 
@@ -425,6 +435,7 @@ function odswiezPanele() {
   rysujTabeleKatow(k);
   rysujTabelePunktow(k);
   rysujSugestie();
+  rysujOdczytSrodka();
 }
 
 /** Kąty bieżącej klatki: grupy ze stroną w dwóch kolumnach (L, P), reszta w jednej. */
@@ -838,6 +849,10 @@ function rysujPowtorzenia(katy) {
     ["biodro vs kolano", (r) => (r.glebokosc === null ? "—"
       : `${r.glebokosc > 0 ? "pod" : "nad"} ${liczba(Math.abs(r.glebokosc))}%`)],
     ["kolana/stopy", (r) => (r.kolanaDoStop === null ? "—" : liczba(r.kolanaDoStop, 2))],
+    ...(stan.srodek ? [[konczynySrodka() === "obie" ? "ŚC między stopami" : "ŚC nad stopą", (r) => {
+      const v = stan.srodek.wzgledemGladkie[r.szczyt];
+      return v === null || v === undefined ? "—" : `${liczba(v)}%`;
+    }]] : []),
   ];
   const naglowek = el("tr");
   for (const [nazwa] of kolumny) naglowek.append(el("th", "liczba", nazwa));
@@ -859,8 +874,160 @@ function rysujPowtorzenia(katy) {
   $("#opis-powtorzen").textContent = `Strona ${strona() === "L" ? "lewa" : "prawa"}, kąty ${stan.uklad === "3d" ? "3D" : "2D"}; `
     + "kolano, biodro, stopa (zgięcie grzbietowe) i tułów — największe w powtórzeniu. Wiersz przenosi do dołu powtórzenia. "
     + "Biodro vs kolano: w dole, z obrazu, w % długości uda — „pod” = poniżej równoległej. "
-    + "Kolana/stopy: rozstaw kolan do rozstawu stawów skokowych w dole, przy ujęciu z przodu; poniżej 1 = kolana do środka.";
+    + "Kolana/stopy: rozstaw kolan do rozstawu stawów skokowych w dole, przy ujęciu z przodu; poniżej 1 = kolana do środka."
+    + (stan.srodek ? ` ŚC: środek ciężkości w dole powtórzenia (${konczynySrodka() === "obie" ? "lewa stopa 0%, prawa 100%" : "pięta 0%, palce 100%"}).` : "");
 }
+
+/* ── środek ciężkości ───────────────────────────────────────────── */
+
+// Trener, 23.10.2026: „dodajmy możliwość analizy środka ciężkości metodą
+// segmentową — De Leva razem z rozróżnieniem na płeć, plus wygładzenie”.
+// Ustawienia z pól panelu; zapisują się w analizie (JSON) — po ponownym
+// otwarciu wynik jest ten sam.
+function ustawieniaSrodka() {
+  const liczbaPola = (sel) => {
+    const v = Number(String($(sel).value).replace(",", "."));
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  return {
+    model: MODELE_SRODKA[$("#model-srodka").value] ? $("#model-srodka").value : null,
+    obciazenieKg: liczbaPola("#obciazenie-kg") ?? 0,
+    miejsce: $("#miejsce-obciazenia").value,
+    masaCiala: liczbaPola("#masa-ciala"),
+    wygladzanie: $("#wygladzanie-srodka").checked,
+  };
+}
+
+function wpiszUstawieniaSrodka(u) {
+  $("#model-srodka").value = u?.model && MODELE_SRODKA[u.model] ? u.model : "";
+  $("#obciazenie-kg").value = String(u?.obciazenieKg ?? 0);
+  $("#miejsce-obciazenia").value = u?.miejsce === "dlonie" ? "dlonie" : "barki";
+  $("#masa-ciala").value = u?.masaCiala ? String(u.masaCiala) : "";
+  $("#wygladzanie-srodka").checked = u?.wygladzanie !== false;
+}
+
+// Z boku dalsza ręka i noga są zasłonięte — liczymy stronę z „Strona ciała”
+// podwójnie; z przodu i ze skosu — obie strony.
+const konczynySrodka = () => (stan.ujecie === "bok" ? strona() : "obie");
+
+function przeliczSrodek() {
+  const s = stan.sesja;
+  if (!s) return;
+  const u = ustawieniaSrodka();
+  const konczyny = konczynySrodka();
+  if (u.model) s.srodekCiezkosci = { ...u, konczyny };
+  else delete s.srodekCiezkosci;
+  stan.srodek = null;
+  if (u.model) {
+    stan.srodek = srodekSesji(s, {
+      model: u.model, konczyny, wygladzanie: u.wygladzanie, fps: fpsSesji(s),
+      obciazenie: u.obciazenieKg > 0 ? { kg: u.obciazenieKg, masaCiala: u.masaCiala, miejsce: u.miejsce } : null,
+    });
+    const { szerokosc, wysokosc } = s.wideo;
+    stan.srodek.droga = stan.srodek.xGladkie.map((x, i) => (x === null || stan.srodek.yGladkie[i] === null
+      ? null : { x: x / szerokosc, y: stan.srodek.yGladkie[i] / wysokosc }));
+  }
+  rysujWykresSrodka();
+  rysujOpisSrodka();
+  rysujOdczytSrodka();
+}
+
+function opcjeSrodka() {
+  const s = stan.srodek;
+  const w = s?.klatki[stan.biezaca];
+  if (!w) return null;
+  const { szerokosc, wysokosc } = stan.sesja.wideo;
+  const i = stan.biezaca;
+  return {
+    x: (s.xGladkie[i] ?? w.x) / szerokosc,
+    y: (s.yGladkie[i] ?? w.y) / wysokosc,
+    pewny: w.pewny,
+    podloga: w.stopy.podloga / wysokosc,
+    droga: s.droga,
+    biezacy: i,
+  };
+}
+
+const opisSkali = () => (konczynySrodka() === "obie"
+  ? ["między stopami", "lewa stopa 0% → prawa 100%"]
+  : ["nad stopą", "pięta 0% → palce 100%"]);
+
+function rysujOdczytSrodka() {
+  const p = $("#odczyt-srodka");
+  const s = stan.srodek;
+  if (!stan.sesja) return;
+  if (!s) {
+    p.textContent = "Wybierz model segmentów (płeć osoby) — środek ciężkości policzy się w każdej klatce.";
+    return;
+  }
+  const i = stan.biezaca;
+  const w = s.klatki[i];
+  p.replaceChildren();
+  if (!w) { p.append(`Klatka ${i + 1}: MediaPipe nie znalazł tu sylwetki.`); return; }
+  const v = s.wzgledemGladkie[i] ?? wzgledemStop(w);
+  const [gdzie, skala] = opisSkali();
+  p.append(`Klatka ${i + 1}: środek ciężkości ${gdzie} `, el("strong", null, v === null ? "—" : `${liczba(v)}%`), ` (${skala})`);
+  if (!w.pewny) {
+    p.append(el("span", "niepewny", ` · ? niepewny — słabo widoczne punkty części ciała o masie ${liczba(w.niepewnaMasa * 100)}% ciała`));
+  }
+  const u = ustawieniaSrodka();
+  if (u.obciazenieKg > 0 && !u.masaCiala) p.append(el("span", "niepewny", " · podaj masę ciała, żeby doliczyć obciążenie"));
+}
+
+function rysujOpisSrodka() {
+  const u = ustawieniaSrodka();
+  const konczyny = konczynySrodka();
+  const czesci = [
+    "Metoda segmentowa: środek ciężkości każdej części ciała (głowa, tułów, ramiona, przedramiona, dłonie, uda, podudzia, stopy)"
+      + " z punktów MediaPipe, a potem średnia ważona ich masą — w każdej klatce.",
+  ];
+  if (u.model) {
+    czesci.push(`${MODELE_SRODKA[u.model].nazwa}.`);
+    czesci.push(konczyny === "obie"
+      ? "Ujęcie z przodu albo skośne — obie strony ciała osobno; wynik to położenie między stopami."
+      : `Ujęcie z boku — strona ${konczyny === "L" ? "lewa" : "prawa"} (pole „Strona ciała”) liczona podwójnie, bo dalsza ręka`
+        + " i noga są zasłonięte; wynik to położenie nad stopą.");
+    czesci.push("Przybliżenia: punkty MediaPipe zamiast środków stawów, głowa — środek uszu, tułów — od środka barków do środka bioder.");
+    if (u.wygladzanie) czesci.push("Wygładzanie: filtr Butterwortha 6 Hz w przód i w tył (bez przesunięcia w czasie); blada linia — bez wygładzania.");
+    if (u.obciazenieKg > 0) {
+      czesci.push(u.masaCiala
+        ? `Obciążenie ${liczba(u.obciazenieKg, 1)} kg ${u.miejsce === "dlonie" ? "w dłoniach" : "na barkach"} doliczone do ${liczba(u.masaCiala, 1)} kg masy ciała.`
+        : "Obciążenie nie jest doliczone — brakuje masy ciała.");
+    }
+    czesci.push("„?” — klatka niepewna: słabo widoczne punkty części ciała o łącznej masie ponad 10% ciała.");
+  }
+  $("#opis-srodka").textContent = czesci.join(" ");
+}
+
+function rysujWykresSrodka() {
+  const kontener = $("#wykres-srodka");
+  const s = stan.srodek;
+  kontener.classList.toggle("ukryty", !s);
+  if (!s) return;
+  const [gdzie] = opisSkali();
+  const serie = [{ id: "srodek", nazwa: `środek ciężkości ${gdzie}`, krotko: "ŚC", kolor: "var(--srodek)", wartosci: s.wzgledemGladkie }];
+  if (ustawieniaSrodka().wygladzanie) {
+    serie.unshift({ id: "srodek-surowy", nazwa: "bez wygładzania", krotko: "", kolor: "var(--srodek-blady)", wartosci: s.wzgledem });
+  }
+  const dane = {
+    czasy: stan.sesja.klatki.map((k) => k.t), serie, powtorzenia: stan.powtorzenia, biezaca: stan.biezaca,
+    naWybor: (i) => { zatrzymaj(); pokazKlatke(i); },
+    jednostka: "%", krokSiatki: 25, zakres: [0, 100], opis: "Środek ciężkości w czasie",
+  };
+  if (stan.wykresSrodka) stan.wykresSrodka.odswiez(dane);
+  else stan.wykresSrodka = wykresKatow(kontener, dane);
+}
+
+for (const [pole, zdarzenie] of [["#model-srodka", "change"], ["#obciazenie-kg", "input"], ["#miejsce-obciazenia", "change"],
+  ["#masa-ciala", "input"], ["#wygladzanie-srodka", "change"]]) {
+  $(pole).addEventListener(zdarzenie, () => {
+    if (!stan.sesja) return;
+    przeliczSrodek();
+    rysujPowtorzenia(katyUkladu());
+    rysuj();
+  });
+}
+$("#pokaz-srodek").addEventListener("change", (e) => { stan.pokazSrodek = e.target.checked; rysuj(); });
 
 /* ── trajektorie ────────────────────────────────────────────────── */
 
@@ -1033,5 +1200,12 @@ window.__analizaRuchu = {
   sesja: () => stan.sesja,
   stan: () => ({ biezaca: stan.biezaca, wybrany: stan.wybrany, strona: strona(), uklad: stan.uklad,
     powtorzenia: stan.powtorzenia.length, trajektorie: [...stan.trajektorie.keys()], maWideo: stan.maWideo,
-    ukryte: [...stan.ukryte] }),
+    ukryte: [...stan.ukryte],
+    srodek: stan.srodek ? {
+      model: ustawieniaSrodka().model, konczyny: konczynySrodka(),
+      x: stan.srodek.xGladkie[stan.biezaca] ?? stan.srodek.klatki[stan.biezaca]?.x ?? null,
+      y: stan.srodek.yGladkie[stan.biezaca] ?? stan.srodek.klatki[stan.biezaca]?.y ?? null,
+      wzgledem: stan.srodek.wzgledemGladkie[stan.biezaca] ?? null,
+      pewny: stan.srodek.klatki[stan.biezaca]?.pewny ?? null,
+    } : null }),
 };
