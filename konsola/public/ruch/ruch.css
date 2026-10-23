@@ -159,6 +159,11 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 .wybor-trajektorii label.schowana { opacity: .6; }
 .dopisek-schowana { font-size: .72rem; color: var(--tekst-blady); border: 1px solid var(--linia); border-radius: 3px; padding: 0 .3rem; }
 /* Środek ciężkości (23.10.2026). */
+/* Przy przełączniku: bez modelu — wyraźna prośba o wybór płci (trener: „nie widzę środka ciężkości”). */
+.przelacznik-z-wyborem { display: inline-flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.wybor-modelu-srodka { font-size: .86rem; padding: .2rem .55rem !important; border-radius: 4px; }
+.wybor-modelu-srodka.brak { border: 1px solid var(--akcent) !important; color: var(--akcent) !important; font-weight: 600; }
+#panel-srodka.podswietlony { box-shadow: 0 0 0 3px var(--akcent); transition: box-shadow .3s; }
 .ustawienia-srodka { margin-bottom: .6rem; }
 .ustawienia-srodka input[type="number"] { width: 7rem; }
 .ustawienia-srodka .przelacznik-srodka { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);

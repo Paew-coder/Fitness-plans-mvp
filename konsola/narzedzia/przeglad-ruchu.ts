@@ -400,6 +400,19 @@ await zSerwerem(4231, async ({ adres }) => {
     sprawdz("panel „Środek ciężkości”: bez wybranego modelu — prośba o wybór, bez symbolu na obrazie i bez wykresu",
       (await s.textContent("#odczyt-srodka"))!.includes("Wybierz model segmentów")
         && await pikseleSrodka(s) === 0 && await s.locator("#wykres-srodka.ukryty").count() === 1);
+    // Trener, 23.10.2026: „nie widzę środka ciężkości na nagraniu” — przełącznik był
+    // zaznaczony, a płeć wybiera się w panelu niżej. Teraz prośba stoi przy przełączniku.
+    const wybor = s.locator("#wybierz-model-srodka");
+    await zrzut(s, "ruch-srodek-bez-modelu", ".przelaczniki");
+    sprawdz("przy przełączniku „środek ciężkości” wyraźna prośba o wybór płci, gdy model nie jest wybrany",
+      await wybor.isVisible() && (await wybor.textContent())!.includes("wybierz płeć") && await wybor.evaluate((b: Element) => b.classList.contains("brak")));
+    await wybor.click();
+    await s.waitForTimeout(700);
+    sprawdz("…kliknięcie prowadzi do wyboru modelu w panelu (panel na ekranie, lista wyboru aktywna)",
+      await s.evaluate(() => {
+        const r = document.querySelector("#panel-srodka")!.getBoundingClientRect();
+        return r.top < window.innerHeight && r.bottom > 0 && document.activeElement?.id === "model-srodka";
+      }));
     const modele = await s.locator("#model-srodka option").allTextContents();
     sprawdz("modele: de Leva kobieta i mężczyzna, Braune i Fischer z pracy magisterskiej",
       ["de Leva (1996) — kobieta", "de Leva (1996) — mężczyzna", "Braune i Fischer — jak w pracy magisterskiej"]
@@ -413,6 +426,8 @@ await zSerwerem(4231, async ({ adres }) => {
         && typeof k1.wzgledem === "number" && k1.pewny === true,
       `${(await s.textContent("#odczyt-srodka"))!.trim()}`);
     sprawdz("na obrazie symbol, pion do stóp i droga środka ciężkości", await pikseleSrodka(s) > 100, `${await pikseleSrodka(s)} px`);
+    sprawdz("…a przy przełączniku nazwa wybranego modelu zamiast prośby",
+      (await wybor.textContent())!.startsWith("de Leva (1996) — kobieta") && !await wybor.evaluate((b: Element) => b.classList.contains("brak")));
     sprawdz("wykres środka ciężkości w % — linia wygładzona i blada bez wygładzania",
       await s.locator("#wykres-srodka:not(.ukryty) path.wykres-linia").count() === 2
         && (await s.locator("#wykres-srodka .wykres-opis").allTextContents()).includes("100%"));
@@ -468,6 +483,7 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.setViewportSize({ width: 1366, height: 900 });
     for (let i = 0; i < 19; i++) await s.click("#klatka-dalej");
     await zrzut(s, "ruch-srodek-obraz", "#scena");
+    await zrzut(s, "ruch-srodek-przelaczniki", ".przelaczniki");
     await zrzut(s, "ruch-srodek-panel", "#panel-srodka");
     // Z przodu — obie strony osobno, położenie między stopami.
     await s.setInputFiles("#plik-analizy", plikSztuczny);
