@@ -2529,7 +2529,76 @@ function przegladZrobionej(k, kroki, zrobione, d) {
     rysujPanel();
   };
   blok.append(wroc);
+  // Trener, 23.10.2026: „zaznaczyłem je przypadkiem — dodaj możliwość cofania”.
+  const cofnijTe = el("button", "link cofnij-serie", "↺ Cofnij — ta seria nie była zrobiona");
+  cofnijTe.type = "button";
+  cofnijTe.onclick = () => cofnijSerie(k, kroki, d);
+  blok.append(cofnijTe);
   return blok;
+}
+
+/**
+ * Cofnięcie zrobionej serii (trener, 23.10.2026: „zaznaczyłem je przypadkiem
+ * — dodaj możliwość cofania”). Seria wraca do niezrobionych i staje na
+ * ekranie, a znika to, co się przy niej zapisało: kilogramy i powtórzenia,
+ * ocena tej serii (razem z oceną tygodnia, jeśli to ona ją ustaliła)
+ * i korekta następnej serii. Przy TOP SECIE — jego ciężar i ocena.
+ * Zakończony trening zostaje zakończony — to osobna decyzja klienta.
+ */
+async function cofnijSerie(k, kroki, d) {
+  const topset = k.typ === "topset";
+  const c = topset ? null : d.cwiczenia.find((x) => x.positionId === k.positionId);
+  const wpis = c ? serieWykonane(c)[k.seria - 1] : null;
+  const zapisanyTopSet = topset ? topSetW(d, k.slotTopSetu)?.klient ?? null : null;
+  const oceny = c ? prowadzenie.ocenySerii?.[c.positionId] : null;
+  const coZniknie = [
+    ...(wpis && !pustaSeria(wpis)
+      ? [`wpisane ${wpis.ciezar && wpis.powtorzenia ? `${liczba(wpis.ciezar)} kg × ${wpis.powtorzenia} powt.` : zapisSerii(wpis)}`]
+      : []),
+    ...(zapisanyTopSet?.kg ? [`ciężar ${liczba(zapisanyTopSet.kg)} kg`] : []),
+    ...(oceny?.[k.seria] || zapisanyTopSet?.feedback ? [`ocena „${oceny?.[k.seria] ?? zapisanyTopSet.feedback}”`] : []),
+  ];
+  const tak = await okienko({
+    tytul: "Cofnąć tę serię?",
+    akapity: [
+      topset ? `TOP SET · ${k.nazwa}` : opisKroku(k, d),
+      `Seria wróci do niezrobionych${coZniknie.length ? `, a ${coZniknie.join(" i ")} — znikną` : ""}.`,
+    ],
+    tak: "Cofnij serię",
+    nie: "Zostaw",
+  });
+  if (!tak) return;
+
+  prowadzenie.zrobione = prowadzenie.zrobione.filter((x) => x !== k.klucz);
+  prowadzenie.krok = Math.max(0, kroki.findIndex((x) => x.klucz === k.klucz));
+  prowadzenie.doKiedy = null;
+  prowadzenie.przerwa = 0;
+  if (topset) {
+    if (zapisanyTopSet) {
+      wyslij("/topset", { positionId: k.slotTopSetu, tydzien: biezacy.tydzien, feedback: null, kg: null },
+        () => { const teraz = topSetW(dzienBiezacy(), k.slotTopSetu); if (teraz) teraz.klient = null; },
+        { odswiez: false });
+    }
+  } else if (c) {
+    if (wpis && !pustaSeria(wpis)) {
+      const serie = serieWykonane(c).slice();
+      serie[k.seria - 1] = { ciezar: null, powtorzenia: null };
+      wyslijSerie(c, listaSerii(serie));
+    }
+    if (oceny?.[k.seria]) {
+      delete oceny[k.seria];
+      // Ocena tygodnia — jak przy ocenianiu: z najpóźniejszej ocenionej serii.
+      const numery = Object.keys(oceny).map(Number).sort((a, b) => a - b);
+      const tygodnia = numery.length ? oceny[numery.at(-1)] : null;
+      if (tygodnia !== (c.feedback ?? null)) {
+        wyslij("/odczucie", { positionId: c.positionId, tydzien: prowadzenie.tydzien, feedback: tygodnia },
+          () => { c.feedback = tygodnia; }, { odswiez: false });
+      }
+    }
+    if (prowadzenie.korekty?.[c.positionId]?.od === k.seria + 1) delete prowadzenie.korekty[c.positionId];
+  }
+  zapiszProwadzenie();
+  rysujPanel();
 }
 
 /** „C1. Incline dumbbell curl · seria 3 z 3" albo „TOP SET". */

@@ -1191,10 +1191,59 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     && (await panel.innerText()).includes("Ta seria jest już zrobiona")
     && await panel.locator(".serie-wpisane button.chip.biezaca").isDisabled(),
     `${await seriaNaPanelu()} · ${(await panel.locator(".serie-wpisane").innerText()).replace(/\n/g, " ")}`);
-  await panel.locator(".przeglad-zrobionej button.link").click();
+  await panel.locator(".przeglad-zrobionej button.link:not(.cofnij-serie)").click();
   await s.waitForTimeout(200);
   sprawdz("„Wróć do” prowadzi z powrotem do serii 3",
     await seriaNaPanelu() === "3 z 6", await seriaNaPanelu());
+
+  // Cofnięcie zrobionej serii (trener, 23.10.2026: „zaznaczyłem je przypadkiem
+  // — dodaj możliwość cofania”). Seria wraca do niezrobionych, a jej liczby
+  // znikają także u trenera.
+  const serieBoju = async () => (await api(`/api/klient/${golySciezka.replace("/k/", "")}`))
+    .tygodnie[0].dni[0].cwiczenia[0].serieWykonane;
+  await panel.locator(".serie-wpisane button.chip", { hasText: "2:" }).click();
+  await s.waitForTimeout(200);
+  const cofnijSerieBtn = panel.locator(".przeglad-zrobionej button.cofnij-serie");
+  sprawdz("przy zrobionej serii jest „Cofnij — ta seria nie była zrobiona”",
+    await cofnijSerieBtn.count() === 1
+    && (await cofnijSerieBtn.innerText()).includes("Cofnij — ta seria nie była zrobiona"),
+    (await panel.locator(".przeglad-zrobionej").innerText()).replace(/\n/g, " "));
+  await cofnijSerieBtn.click();
+  const pytanieCofniecia = s.locator(".okienko");
+  await pytanieCofniecia.waitFor();
+  sprawdz("najpierw pytanie, co zniknie (ćwiczenie, seria, wpisane liczby)",
+    (await pytanieCofniecia.innerText()).includes("Cofnąć tę serię?")
+    && (await pytanieCofniecia.innerText()).includes("seria 2 z 6")
+    && /wpisane .*kg × \d+ powt\./.test(await pytanieCofniecia.innerText()),
+    (await pytanieCofniecia.innerText()).replace(/\n/g, " "));
+  await pytanieCofniecia.getByRole("button", { name: "Zostaw" }).click();
+  await s.waitForTimeout(200);
+  sprawdz("„Zostaw” — nic się nie zmienia", (await panel.innerText()).includes("Ta seria jest już zrobiona")
+    && (await serieBoju()).length === 2);
+  const zrobioneIle = async () => Number(/zrobione (\d+)/.exec(await s.locator("#seria-postep").innerText())?.[1]);
+  const zrobionePrzed = await zrobioneIle();
+  await cofnijSerieBtn.click();
+  await s.locator(".okienko").getByRole("button", { name: "Cofnij serię" }).click();
+  await s.waitForTimeout(700);
+  const poCofnieciu = await serieBoju();
+  sprawdz("cofnięta seria wraca do niezrobionych i stoi na ekranie",
+    await seriaNaPanelu() === "2 z 6" && !(await panel.innerText()).includes("już zrobiona")
+    && await panel.getByRole("button", { name: "Zakończ serię" }).count() === 1
+    && await zrobioneIle() === zrobionePrzed - 1,
+    `${await seriaNaPanelu()} · ${await s.locator("#seria-postep").innerText()}`);
+  sprawdz("…a jej liczby znikają też u trenera (zostaje seria 1)",
+    poCofnieciu.length === 1 && (await panel.locator(".serie-wpisane .chip").count()) === 1,
+    JSON.stringify(poCofnieciu));
+  // Zrobiona jeszcze raz (te same 90 kg × 6) — dalej jak zwykle, do serii 3.
+  await polaPanelu.nth(0).fill("90");
+  await polaPanelu.nth(1).fill("6");
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForTimeout(200);
+  if (await s.locator("#licznik").count() > 0) await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForSelector("#panel .panel-pola");
+  sprawdz("po ponownym zrobieniu — seria 2 zapisana, dalej seria 3",
+    await seriaNaPanelu() === "3 z 6" && JSON.stringify((await serieBoju())[1]) === '{"ciezar":90,"powtorzenia":6}',
+    `${await seriaNaPanelu()} · ${JSON.stringify(await serieBoju())}`);
 
   // Reszta boju głównego — po niej TOP SET wiosłowania, potem superseria B1/B2.
   for (let i = 3; i <= 6; i++) {
