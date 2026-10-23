@@ -1228,7 +1228,15 @@ Trener: „filmiki na kanale Catalyst Athletics zaczynają się 7-sekundowym int
 
 * Ustawienie przy źródle, nie przy 618 wpisach: `pomin_poczatek_s: 7` w `filmy-cwiczen.json` (i w imporcie bibliotek, żeby kolejny import go nie zgubił). Odtwarzacz w aplikacji i w podglądzie konsoli dostaje `start=7`; czas na przycisku „Poradnik” jest bez intro. Przewinąć do początku dalej można. Film krótszy niż intro + 5 s grałby od początku (Catalyst ma najkrótszy 31 s). Link „Otwórz na YouTube” bez zmian.
 * Testy: silnik (`wideo.test.ts`: Catalyst od 7 s, inne kanały od początku, krótki film, kontrola danych 1–60 s), przegląd filmu (poradnik Catalyst z `start=7`, pokaz OPEX bez).
-* Automat na serwerze (`aktualizuj-serwer.sh`) umie przejść na przepisaną historię gałęzi — przygotowanie do punktu 107.
+* Automat na serwerze (`aktualizuj-serwer.sh`) umie przejść na przepisaną historię gałęzi — przygotowanie do punktu 107. SW `trening-v92`.
+
+**107. Linki do filmów trenera usunięte z historii repozytorium — 23.10.2026.**
+
+Trener: „wyczyść też te linki z historii repozytorium”.
+
+* `git filter-repo` na gałęzi (od pierwszego commita `main`, który zostaje nietknięty): w każdej wersji plików 20 linków z punktów 104–105 zamienione na `null` (BAZA, katalog silnika, dwa testy), a w każdej wersji szablonu arkusza wyczyszczone ich napisy w zakładce BAZA. Po przepisaniu żaden osiągalny obiekt gałęzi nie zawiera tych filmów; drzewo ostatniej wersji identyczne jak przed przepisaniem. Wszystkie commity mają nowe numery — numery commitów sprzed 23.10.2026 zapisane w tym dokumencie już nie istnieją.
+* Wysłane z `--force-with-lease`. Automat na serwerze przeszedł na nową historię sam (punkt 106) — potwierdzone tym, że serwer podał nowy SW.
+* Czego to nie usuwa: kopii po stronie GitHuba (stare commity zostają dostępne pod dawnym numerem, póki GitHub ich nie wyczyści — o to prosi się GitHub Support) i kopii, które ktoś zdążył pobrać lub rozwidlić.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
