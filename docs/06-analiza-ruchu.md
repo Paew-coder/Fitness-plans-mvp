@@ -147,8 +147,10 @@ liczenia powtórzeń.
 ## 5a. Punkty na obrazie (23.10.2026)
 
 Trener: „chciałbym móc obserwować tylko punkty po prawej stronie bez lewej”.
-Pod przełącznikami, zwinięte: **„Punkty na obrazie”** — „Wszystkie”, „Tylko
-prawa strona”, „Tylko lewa strona” i pole przy każdym z 13 głównych punktów.
+Pod przełącznikami, od razu rozwinięte (zwinięcie pamięta przeglądarka):
+**„Punkty na obrazie”** — tabela ułożona jak ciało (wiersze od głowy do stóp,
+kolumny Lewa i Prawa; pole w nagłówku kolumny zaznacza lub odznacza całą
+stronę) i przyciski „Wszystkie”, „Tylko prawa strona”, „Tylko lewa strona”.
 Schowany punkt znika z obrazu razem z odcinkami do niego, etykietą kąta przy
 nim i punktami, które do niego należą przy „wszystkich 33” (`grupaPunktu`:
 twarz → głowa, palce dłoni → nadgarstek, pięta i palce stopy → staw skokowy;

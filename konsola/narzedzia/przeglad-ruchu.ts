@@ -232,12 +232,17 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.setInputFiles("#plik-analizy", plikSztuczny);
     await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
     await s.waitForTimeout(300);
-    sprawdz("„Punkty na obrazie” pod przełącznikami, zwinięte, domyślnie wszystkie",
-      await s.locator("#punkty-obrazu:not([open])").count() === 1 && await s.textContent("#opis-punktow") === "wszystkie");
+    sprawdz("„Punkty na obrazie” pod przełącznikami, od razu rozwinięte, domyślnie wszystkie",
+      await s.locator("#punkty-obrazu[open]").count() === 1 && await s.textContent("#opis-punktow") === "wszystkie");
+    // Trener, 23.10.2026: „ułóż te punkty w sposób bardziej przejrzysty”.
+    const uklad = await s.evaluate(() => [...document.querySelectorAll("#wybor-punktow tr")].map((w) =>
+      [...w.children].map((k) => k.textContent!.trim() || (k.querySelector("input") ? "☐" : "")).join("|")));
+    sprawdz("układ jak ciało: wiersze od głowy do stóp, kolumny Lewa i Prawa",
+      uklad.join(" / ") === "|Lewa|Prawa / głowa|☐ / bark|☐|☐ / łokieć|☐|☐ / nadgarstek|☐|☐ / biodro|☐|☐ / kolano|☐|☐ / staw skokowy|☐|☐",
+      uklad.join(" / "));
     const przed = await koloryNakladki(s);
     sprawdz("kontrola: na obrazie są punkty obu stron (pomarańczowe i niebieskie)", przed.lewa > 50 && przed.prawa > 50,
       `lewa ${przed.lewa} px, prawa ${przed.prawa} px`);
-    await s.click("#punkty-obrazu summary");
     await s.click('.szybki-wybor-punktow button[data-strona="P"]');
     await s.waitForTimeout(200);
     const poPrawej = await koloryNakladki(s);
@@ -253,15 +258,25 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.mouse.click(kolanoL.x, kolanoL.y);
     sprawdz("…dotknięcie schowanego kolana L go nie wybiera", (await stanEkranu(s)).wybrany !== "left_knee",
       (await stanEkranu(s)).wybrany ?? "nic");
-    await s.locator("#wybor-punktow label", { hasText: "głowa" }).locator("input").uncheck();
+    await s.locator('#wybor-punktow input[data-punkt="glowa"]').uncheck();
     sprawdz("odznaczenie jednego punktu — opis „6 z 13”", await s.textContent("#opis-punktow") === "6 z 13");
+    await s.locator('#wybor-punktow input[data-punkt="right_knee"]').uncheck();
+    const kolumnaP = s.locator('#wybor-punktow input[data-strona="P"]');
+    sprawdz("część prawej strony schowana — pole „Prawa” w nagłówku pół-zaznaczone",
+      await kolumnaP.evaluate((p: HTMLInputElement) => p.indeterminate && !p.checked));
+    await kolumnaP.click();
+    sprawdz("pole „Prawa” w nagłówku pokazuje całą prawą stronę", await s.textContent("#opis-punktow") === "6 z 13"
+      && await s.locator('#wybor-punktow input[data-punkt="right_knee"]').isChecked());
+    await kolumnaP.click();
+    sprawdz("…a drugie kliknięcie chowa całą prawą stronę", await s.textContent("#opis-punktow") === "0 z 13"
+      || await s.textContent("#opis-punktow") === "żaden — sam film");
+    await kolumnaP.click();
     await s.reload();
     await s.setInputFiles("#plik-analizy", plikSztuczny);
     await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
     await s.waitForTimeout(300);
     sprawdz("wybór zostaje po ponownym otwarciu strony", await s.textContent("#opis-punktow") === "6 z 13"
       && (await koloryNakladki(s)).lewa === 0);
-    await s.click("#punkty-obrazu summary");
     for (const [nazwa, w, h] of [["telefon", 390, 844], ["ipad-pion", 820, 1180]] as const) {
       await s.setViewportSize({ width: w, height: h });
       await s.waitForTimeout(300);
@@ -270,6 +285,15 @@ await zSerwerem(4231, async ({ adres }) => {
       await zrzut(s, `ruch-punkty-${nazwa}`, "#punkty-obrazu");
     }
     await s.setViewportSize({ width: 1366, height: 900 });
+    await zrzut(s, "ruch-punkty-laptop", "#punkty-obrazu");
+    await s.click("#punkty-obrazu summary");
+    sprawdz("da się zwinąć — w nagłówku „rozwiń”", await s.locator("#punkty-obrazu:not([open])").count() === 1
+      && await s.evaluate(() => getComputedStyle(document.querySelector("#punkty-obrazu summary")!, "::after").content) === '"rozwiń"');
+    await s.reload();
+    await s.setInputFiles("#plik-analizy", plikSztuczny);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    sprawdz("zwinięcie zostaje po ponownym otwarciu strony", await s.locator("#punkty-obrazu:not([open])").count() === 1);
+    await s.click("#punkty-obrazu summary");
     await s.click('.szybki-wybor-punktow button[data-strona=""]');
     await s.waitForTimeout(200);
     const poWszystkich = await koloryNakladki(s);

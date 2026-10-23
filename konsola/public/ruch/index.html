@@ -113,18 +113,21 @@
           </label>
         </div>
 
-        <details class="punkty-obrazu" id="punkty-obrazu">
+        <details class="punkty-obrazu" id="punkty-obrazu" open>
           <summary>Punkty na obrazie: <span id="opis-punktow">wszystkie</span></summary>
-          <div class="rzad-zrodla szybki-wybor-punktow">
-            <button type="button" data-strona="">Wszystkie</button>
-            <button type="button" data-strona="P">Tylko prawa strona</button>
-            <button type="button" data-strona="L">Tylko lewa strona</button>
+          <div class="uklad-punktow">
+            <table class="tabela-punktow-obrazu" id="wybor-punktow"></table>
+            <div class="szybki-wybor-punktow">
+              <button type="button" data-strona="">Wszystkie</button>
+              <button type="button" data-strona="P">Tylko prawa strona</button>
+              <button type="button" data-strona="L">Tylko lewa strona</button>
+            </div>
           </div>
-          <div class="wybor-punktow" id="wybor-punktow"></div>
           <p class="wskazowka">
             Schowany punkt znika z obrazu razem z liniami i kątem przy nim. Dane się nie zmieniają —
-            tabele, wykres i zapis mają dalej wszystkie punkty. „Tylko prawa / lewa strona” przestawia
-            też stronę ciała dla kątów. Wybór zostaje na tym urządzeniu.
+            tabele, wykres i zapis mają dalej wszystkie punkty. Pole w nagłówku kolumny zaznacza
+            lub odznacza całą stronę; „Tylko prawa / lewa strona” przestawia też stronę ciała dla kątów.
+            Wybór zostaje na tym urządzeniu.
           </p>
         </details>
 

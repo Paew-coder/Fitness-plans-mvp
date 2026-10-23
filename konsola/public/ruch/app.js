@@ -712,23 +712,67 @@ function opisUkrytych() {
   return widoczne === 0 ? "żaden — sam film" : `${widoczne} z ${GLOWNE_PUNKTY.length}`;
 }
 
+// Układ jak ciało (trener, 23.10.2026: „ułóż te punkty w sposób bardziej
+// przejrzysty”): wiersze od głowy do stóp, kolumny — strona lewa i prawa,
+// jak w tabeli kątów. Pole w nagłówku kolumny — cała strona naraz.
+const STAWY = ["shoulder", "elbow", "wrist", "hip", "knee", "ankle"];
+const STRONY = [["L", "left", "Lewa"], ["P", "right", "Prawa"]];
+
+function polePunktu(id) {
+  const pole = el("input");
+  pole.type = "checkbox";
+  pole.dataset.punkt = id;
+  pole.setAttribute("aria-label", nazwaPunktu(id));
+  pole.checked = !stan.ukryte.has(id);
+  pole.addEventListener("change", () => {
+    if (pole.checked) stan.ukryte.delete(id);
+    else stan.ukryte.add(id);
+    zmienionoUkryte();
+  });
+  return pole;
+}
+
 function rysujWyborPunktow() {
   $("#opis-punktow").textContent = opisUkrytych();
-  $("#wybor-punktow").replaceChildren(...GLOWNE_PUNKTY.map((id) => {
-    const etykieta = el("label");
+  const naglowek = el("tr");
+  naglowek.append(el("th"));
+  for (const [s, przedrostek, nazwa] of STRONY) {
+    const ids = STAWY.map((staw) => `${przedrostek}_${staw}`);
+    const widoczne = ids.filter((id) => !stan.ukryte.has(id)).length;
     const pole = el("input");
     pole.type = "checkbox";
-    pole.checked = !stan.ukryte.has(id);
+    pole.dataset.strona = s;
+    pole.setAttribute("aria-label", `${nazwa} strona — wszystkie punkty`);
+    pole.checked = widoczne === ids.length;
+    pole.indeterminate = widoczne > 0 && widoczne < ids.length;
     pole.addEventListener("change", () => {
-      if (pole.checked) stan.ukryte.delete(id);
-      else stan.ukryte.add(id);
+      for (const id of ids) (pole.checked ? stan.ukryte.delete(id) : stan.ukryte.add(id));
       zmienionoUkryte();
     });
     const znak = el("span", "znak-strony");
-    znak.style.background = kolorPunktu(id);
-    etykieta.append(pole, znak, nazwaPunktu(id));
-    return etykieta;
-  }));
+    znak.style.background = kolorPunktu(`${przedrostek}_shoulder`);
+    const etykieta = el("label");
+    etykieta.append(pole, znak, nazwa);
+    const th = el("th");
+    th.append(etykieta);
+    naglowek.append(th);
+  }
+  const glowa = el("tr");
+  const poleGlowy = el("td", "srodek-punktow");
+  poleGlowy.colSpan = 2;
+  poleGlowy.append(polePunktu("glowa"));
+  glowa.append(el("th", null, nazwaPunktu("glowa")), poleGlowy);
+  const wiersze = STAWY.map((staw) => {
+    const w = el("tr");
+    w.append(el("th", null, nazwaPunktu(`left_${staw}`).replace(/ L$/, "")));
+    for (const [, przedrostek] of STRONY) {
+      const td = el("td");
+      td.append(polePunktu(`${przedrostek}_${staw}`));
+      w.append(td);
+    }
+    return w;
+  });
+  $("#wybor-punktow").replaceChildren(naglowek, glowa, ...wiersze);
 }
 
 function zmienionoUkryte() {
@@ -750,6 +794,16 @@ for (const przycisk of document.querySelectorAll(".szybki-wybor-punktow button")
   });
 }
 rysujWyborPunktow();
+
+// Rozwinięte od razu; zwinięcie zostaje na tym urządzeniu.
+const KLUCZ_ZWINIECIA_PUNKTOW = "craftmyplan-ruch-punkty-zwiniete";
+try { if (localStorage.getItem(KLUCZ_ZWINIECIA_PUNKTOW) === "1") $("#punkty-obrazu").open = false; } catch { /* bez pamięci */ }
+$("#punkty-obrazu").addEventListener("toggle", () => {
+  try {
+    if ($("#punkty-obrazu").open) localStorage.removeItem(KLUCZ_ZWINIECIA_PUNKTOW);
+    else localStorage.setItem(KLUCZ_ZWINIECIA_PUNKTOW, "1");
+  } catch { /* bez pamięci */ }
+});
 
 /* ── powtórzenia ────────────────────────────────────────────────── */
 
