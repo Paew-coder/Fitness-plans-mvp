@@ -60,6 +60,19 @@ na początku, wykrywa lukę, odkłada bieżącą klatkę, cofa się po brakując
 je po kolei. Przegląd sprawdza to przy sztucznie zajętym procesorze: 45–49
 uzupełnionych, komplet 132 z 132.
 
+**Początek i koniec filmu (23.10.2026).** Trener: „aplikacja ucina mi
+początek filmu, gdzie osoba stoi prosto przed przysiadem”. Odtwarzanie
+zgłasza dopiero klatki pokazane po starcie, więc pierwsza (widoczna już po
+przewinięciu na 0) przepadała zawsze, a gdy start trwał dłużej (Safari,
+pierwsze uruchomienie modelu) — cały początek, bo przerwy przed pierwszą
+zgłoszoną klatką nikt nie uzupełniał. Zmierzone na filmie z licznikiem
+klatek, gdy przeglądarka przez 1,2 s nie zgłasza klatek: analiza zaczynała
+się od 1000 ms, 90 ze 120 klatek. Teraz klatka 0 liczy się przed startem
+odtwarzania, przerwa za nią uzupełnia się jak każda inna (także przy limicie
+kl./s — co krok analizy), a ostatnie klatki po „ended” (najwyżej trzy) —
+przewinięciem. Wynik: 120 ze 120 od 0 ms, także przy wolnym starcie
+i obciążonym procesorze (przegląd ruchu, „Początek filmu”).
+
 **Karta graficzna.** Gdy przeglądarka ma tylko programową „kartę” (SwiftShader,
 llvmpipe — np. komputer bez sterowników), MediaPipe liczy na niej ~600 ms na
 klatkę. Wtedy od razu procesor.
