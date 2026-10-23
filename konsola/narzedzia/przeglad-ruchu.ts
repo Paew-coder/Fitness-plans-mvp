@@ -131,12 +131,26 @@ function sztucznaAnaliza(): string {
       const [dx, y] = os[l.id] ?? os[czesc]!;
       const x = os[l.id] ? dx : l.strona === "L" ? dx : -dx;
       const nogi = ["knee", "ankle", "heel", "foot_index"].includes(czesc);
-      return { x: (640 + x) / W, y: (y + (nogi ? 0 : dy)) / H, z: 0, visibility: 0.95, presence: 0.95 };
+      return { x: (640 + x + (nogi ? 0 : -dy * 0.7)) / W, y: (y + (nogi ? 0 : dy)) / H, z: 0, visibility: 0.95, presence: 0.95 };
     });
     sesja.klatki.push(klatkaZWyniku(i, i * 40, landmarki, null));
   }
   return doJSON(sesja);
 }
+
+/** Ile pikseli nakładki ma pełny kolor trajektorii barku (fiolet) i biodra (zieleń). */
+const koloryTrajektorii = (s: any) => s.evaluate(() => {
+  const c = document.querySelector("#nakladka") as HTMLCanvasElement;
+  const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+  let fiolet = 0, ziel = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3]! < 200) continue;
+    const [r, g, b] = [d[i]!, d[i + 1]!, d[i + 2]!];
+    if (r > 120 && r < 170 && g > 110 && g < 155 && b > 205) fiolet++;
+    if (r < 70 && g > 150 && g < 200 && b > 95 && b < 150) ziel++;
+  }
+  return { fiolet, ziel };
+});
 
 /** Ile pikseli nakładki ma kolor lewej (pomarańczowy) i prawej (niebieski) strony. */
 const koloryNakladki = (s: any) => s.evaluate(() => {
@@ -243,8 +257,33 @@ await zSerwerem(4231, async ({ adres }) => {
     const przed = await koloryNakladki(s);
     sprawdz("kontrola: na obrazie są punkty obu stron (pomarańczowe i niebieskie)", przed.lewa > 50 && przed.prawa > 50,
       `lewa ${przed.lewa} px, prawa ${przed.prawa} px`);
+    // Trajektorie tylko przy widocznych punktach (trener, 23.10.2026: „jeżeli
+    // któryś z tych punktów nie jest oznaczony, np. bark, to nie wyświetla się
+    // jego trajektoria”). Klatka w środku ruchu — przebyta droga pełnym kolorem.
+    for (let i = 0; i < 6; i++) await s.click("#klatka-dalej");
+    const drogi = (await stanEkranu(s)).trajektorie as string[];
+    const bark = drogi.find((id) => id.endsWith("_shoulder"))!;
+    const zBarkiem = await koloryTrajektorii(s);
+    sprawdz("kontrola: trajektorie barku (fiolet) i biodra (zieleń) na obrazie",
+      zBarkiem.fiolet > 20 && zBarkiem.ziel > 20, `${drogi.join(", ")} · fiolet ${zBarkiem.fiolet} px, zieleń ${zBarkiem.ziel} px`);
+    await s.locator(`#wybor-punktow input[data-punkt="${bark}"]`).uncheck();
+    const bezBarku = await koloryTrajektorii(s);
+    sprawdz("schowany bark — jego trajektorii nie ma, biodro zostaje",
+      bezBarku.fiolet === 0 && bezBarku.ziel > 20, `fiolet ${bezBarku.fiolet} px, zieleń ${bezBarku.ziel} px`);
+    sprawdz("…na liście trajektorii bark oznaczony „schowany”",
+      (await s.locator("#wybor-trajektorii label.schowana").allTextContents()).join().includes("schowany"));
+    await zrzut(s, "ruch-trajektorie-schowany", "#wybor-trajektorii");
+    await s.locator(`#wybor-punktow input[data-punkt="${bark}"]`).check();
+    sprawdz("bark z powrotem — trajektoria wraca", (await koloryTrajektorii(s)).fiolet > 20
+      && await s.locator("#wybor-trajektorii label.schowana").count() === 0);
     await s.click('.szybki-wybor-punktow button[data-strona="P"]');
     await s.waitForTimeout(200);
+    const drogiPrawe = (await stanEkranu(s)).trajektorie as string[];
+    const kolorPrawej = await koloryTrajektorii(s);
+    sprawdz("„Tylko prawa strona” przenosi trajektorie na prawą — drogi barku i biodra dalej widać",
+      drogiPrawe.length === drogi.length && drogiPrawe.every((id) => id === "glowa" || id.startsWith("right_"))
+        && kolorPrawej.fiolet > 20 && kolorPrawej.ziel > 20,
+      `${drogiPrawe.join(", ")} · fiolet ${kolorPrawej.fiolet} px, zieleń ${kolorPrawej.ziel} px`);
     const poPrawej = await koloryNakladki(s);
     const stPrawa = await stanEkranu(s);
     sprawdz("„Tylko prawa strona”: lewej strony nie ma na obrazie, prawa jest",

@@ -155,7 +155,9 @@ Schowany punkt znika z obrazu razem z odcinkami do niego, etykietą kąta przy
 nim i punktami, które do niego należą przy „wszystkich 33” (`grupaPunktu`:
 twarz → głowa, palce dłoni → nadgarstek, pięta i palce stopy → staw skokowy;
 oko, ucho i kącik ust jednej strony znikają razem z całą tą stroną —
-`punktWidoczny`). Szyja przy jednej stronie idzie od jej barku. Schowanego
+`punktWidoczny`). Znika też trajektoria schowanego punktu (na liście trajektorii
+dopisek „schowany”), a „Tylko prawa / lewa strona” przenosi wybrane trajektorie
+na widoczną stronę. Szyja przy jednej stronie idzie od jej barku. Schowanego
 punktu nie da się wybrać dotknięciem obrazu (z tabeli — tak).
 
 To ustawienie ekranu, nie analizy: tabele, wykres, trajektorie i zapis

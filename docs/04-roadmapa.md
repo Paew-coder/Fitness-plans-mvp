@@ -1261,6 +1261,14 @@ Trener: „możesz mi te punkty jakoś ułożyć w sposób bardziej przejrzysty?
 * Panel od razu rozwinięty, w ramce; „zwiń” / „rozwiń” w nagłówku, zwinięcie zostaje na tym urządzeniu.
 * Przegląd ruchu (+6): układ wierszy i kolumn, nagłówek kolumny pół-zaznaczony, pokazuje i chowa całą stronę, zwinięcie i jego zapamiętanie; telefon i iPad bez przewijania w bok.
 
+**111. Trajektorie tylko przy widocznych punktach — 23.10.2026.**
+
+Trener: „zrób tak, że jeżeli mamy trajektorie ruchu kolana, biodra i barku, ale któryś z tych punktów nie jest oznaczony, np. bark, to wtedy nie wyświetla się jego trajektoria — wyświetlają się tylko te, które mają swój punkt oznaczony”.
+
+* `rysujKlatke`: trajektoria rysuje się tylko przy punkcie widocznym w „Punkty na obrazie” (`punktWidoczny`). Wybór trajektorii zostaje — po ponownym zaznaczeniu punktu droga wraca; na liście trajektorii przy schowanym punkcie dopisek „schowany”. Tabela trajektorii (zakres ruchu) bez zmian.
+* „Tylko prawa / lewa strona” przenosi wybrane trajektorie na widoczną stronę (te same stawy i kolory) — inaczej przy ujęciu, w którym bliżej kamery jest druga strona, wszystkie by zniknęły.
+* Testy: `analiza-ruchu.test.ts` (+1: droga barku znika, biodra zostaje); przegląd ruchu (+5, piksele kolorów trajektorii w środku ruchu: bark schowany → 0 px fioletu, biodro zostaje, dopisek „schowany”, powrót, przeniesienie na prawą).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

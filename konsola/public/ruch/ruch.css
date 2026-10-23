@@ -151,6 +151,8 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 .wybor-trajektorii { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin: .7rem 0 .8rem; }
 .wybor-trajektorii label { flex-direction: row; align-items: center; gap: .35rem; font-family: var(--sans);
                            text-transform: none; letter-spacing: normal; font-size: .85rem; color: var(--tekst-slaby); }
+.wybor-trajektorii label.schowana { opacity: .6; }
+.dopisek-schowana { font-size: .72rem; color: var(--tekst-blady); border: 1px solid var(--linia); border-radius: 3px; padding: 0 .3rem; }
 .sugestia { border: 1px solid var(--linia); border-radius: 4px; padding: .55rem .65rem; margin-top: .7rem; font-size: .85rem; }
 .sugestia .naglowek-sugestii { display: flex; justify-content: space-between; gap: .5rem; align-items: center; font-weight: 600; }
 .sugestia ul { margin: .4rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); }

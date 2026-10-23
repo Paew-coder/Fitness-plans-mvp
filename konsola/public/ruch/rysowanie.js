@@ -36,7 +36,7 @@ const KATY_NA_OBRAZIE = [
  *
  * `opcje`: `klatka` (z sesji), `wszystkie` (33 punkty zamiast głównych),
  * `ukryte` — główne punkty, których trener nie chce widzieć (Set; znika też
- * to, co do nich należy: odcinki, palce, kąt przy stawie — `punktWidoczny`),
+ * to, co do nich należy: odcinki, palce, kąt przy stawie, trajektoria — `punktWidoczny`),
  * `wybrany` (id punktu), `katy` (wyniki kątów klatki) + `strona`,
  * `trajektorie` — `[{id, kolor, punkty: [{x,y}|null], biezacy}]` w 0–1,
  * `sugestie` — `[{punkt, x, y}]` w 0–1, z bieżącą pozycją punktu z klatki.
@@ -46,14 +46,17 @@ export function rysujKlatke(ctx, opcje) {
   const dpr = opcje.dpr ?? 1;
   ctx.clearRect(0, 0, w, h);
 
-  for (const tr of opcje.trajektorie ?? []) rysujTrajektorie(ctx, tr, w, h, dpr);
+  const ukryte = opcje.ukryte ?? new Set();
+  const widac = (id) => punktWidoczny(id, ukryte);
+
+  // Droga tylko przy punkcie, który widać (trener, 23.10.2026: „wyświetlają
+  // się tylko te, które mają swój punkt oznaczony”).
+  for (const tr of opcje.trajektorie ?? []) if (widac(tr.id)) rysujTrajektorie(ctx, tr, w, h, dpr);
 
   const k = opcje.klatka;
   if (!k?.p) return;
   const punkty = k.p.map(([x, y, , v]) => ({ x: x * w, y: y * h, z: 0, v }));
   const p = rozwiazywacz(punkty);
-  const ukryte = opcje.ukryte ?? new Set();
-  const widac = (id) => punktWidoczny(id, ukryte);
 
   const linie = opcje.wszystkie ? POLACZENIA : POLACZENIA_CIALA;
   for (const [a, b] of linie) {

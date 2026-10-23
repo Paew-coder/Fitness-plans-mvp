@@ -17,7 +17,7 @@ import {
   BladSesji, doCSV, doJSON, klatekZSylwetka, klatkaZWyniku, nowaSesja, opisSugestii, skutekSugestii,
   sugestieKlatki, ustawSugestie, usunSugestie, zJSON,
 } from "./sesja.js";
-import { GLOWNE_PUNKTY, nazwaPunktu, stronaPunktu, ukryteBezStrony } from "./szkielet.js";
+import { GLOWNE_PUNKTY, lustro, nazwaPunktu, punktWidoczny, stronaPunktu, ukryteBezStrony } from "./szkielet.js";
 import { wykresKatow } from "./wykres.js";
 
 const $ = (s) => document.querySelector(s);
@@ -778,6 +778,7 @@ function rysujWyborPunktow() {
 function zmienionoUkryte() {
   zapiszUkryte();
   rysujWyborPunktow();
+  rysujWyborTrajektorii();
   rysuj();
 }
 
@@ -785,6 +786,16 @@ for (const przycisk of document.querySelectorAll(".szybki-wybor-punktow button")
   przycisk.addEventListener("click", () => {
     const s = przycisk.dataset.strona || null;
     stan.ukryte = ukryteBezStrony(s);
+    // Jedna strona na obrazie — trajektorie przechodzą na nią (te same stawy,
+    // te same kolory), inaczej schowane punkty zabrałyby je z obrazu.
+    if (s) {
+      const nowe = new Map();
+      for (const [id, kolor] of stan.trajektorie) {
+        const cel = stronaPunktu(id) && stronaPunktu(id) !== s ? lustro(id) : id;
+        if (!nowe.has(cel)) nowe.set(cel, kolor);
+      }
+      stan.trajektorie = nowe;
+    }
     // Jedna strona na obrazie — kąty (tabela, wykres, powtórzenia) też z niej.
     if (s && $("#strona").value !== s) {
       $("#strona").value = s;
@@ -880,6 +891,12 @@ function rysujWyborTrajektorii() {
       etykieta.append(znak);
     }
     etykieta.append(nazwaPunktu(id));
+    // Wybrana, ale punkt schowany w „Punkty na obrazie” — drogi na obrazie nie ma.
+    if (stan.trajektorie.has(id) && !punktWidoczny(id, stan.ukryte)) {
+      etykieta.classList.add("schowana");
+      etykieta.title = "Punkt schowany w „Punkty na obrazie” — jego droga nie rysuje się na obrazie";
+      etykieta.append(el("span", "dopisek-schowana", "schowany"));
+    }
     return etykieta;
   }));
   const tabela = $("#tabela-trajektorii");
