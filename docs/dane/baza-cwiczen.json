@@ -1,6 +1,6 @@
 {
  "opis": "BAZA z MasterTemplate 5.17, wiersze 3-202 (164 pozycje) + cwiczenia dodane przez trenera poza arkuszem (wiersz_baza: null).",
- "liczba": 168,
+ "liczba": 169,
  "cwiczenia": [
   {
    "id": "EX-0001",
@@ -262,6 +262,19 @@
    "uwagi": null,
    "scalone_id": null,
    "wiersz_baza": 19
+  },
+  {
+   "id": "EX-3628",
+   "nazwa": "Barbell shrugs behind the back",
+   "kategoria": "Upper pull vertical",
+   "part": "r",
+   "coeff": 0.25,
+   "skok_kg": 2.5,
+   "progresja": "kg",
+   "film": "https://youtu.be/886maSVQUWo",
+   "uwagi": "DODANE PRZEZ TRENERA 23.10.2026 – nie ma tego w BAZIE 5.17. Szrugsy jak w zasadach klasyfikacji (Upper pull vertical); izolacja jak Calf raises: coeff 0,25, skok 2,5 kg.",
+   "scalone_id": null,
+   "wiersz_baza": null
   },
   {
    "id": "EX-0018",

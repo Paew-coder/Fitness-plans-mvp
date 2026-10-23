@@ -46,7 +46,7 @@ describe("kiedy seria maksymalna ma sens", () => {
     }
   });
 
-  test("dotyczy 39 ćwiczeń ze 168 — nie jest to margines", () => {
+  test("dotyczy 39 ćwiczeń ze 169 — nie jest to margines", () => {
     // BAZA trenera; ćwiczenia z bibliotek filmów (09.10.2026) liczą się osobno.
     const bez = katalog.bazaTrenera.filter((c) => !seriaMaksymalnaMaSens(c.progresja));
     // 27.09.2026: +2 — Reverse Nordic i Glute crusher przeszły na masę ciała.

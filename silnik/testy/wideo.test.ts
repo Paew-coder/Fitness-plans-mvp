@@ -23,7 +23,7 @@ import { sprawdzPlan } from "../src/walidacja.ts";
 
 describe("Barbell bench press z biblioteki OPEX", () => {
   test("to istniejące EX-0011, nie nowe ćwiczenie — BAZA trenera bez duplikatu", () => {
-    assert.equal(katalog.bazaTrenera.length, 168, "164 z arkusza + 4 dodane przez trenera");
+    assert.equal(katalog.bazaTrenera.length, 169, "164 z arkusza + 5 dodanych przez trenera");
     const lawka = BAZA_CWICZEN.filter((c) => c.nazwa.toLowerCase() === "barbell bench press");
     assert.equal(lawka.length, 1, "bez duplikatu — także po imporcie bibliotek");
     assert.equal(lawka[0]!.id, "EX-0011");
@@ -69,10 +69,14 @@ describe("biblioteki Theory of Motion i Catalyst Athletics", () => {
   });
 
   test("ćwiczenie z BAZY trenera dostało film, a jego link z arkusza zostaje", () => {
-    // EX-0059 Dumbbell bench press = „2DB Bench Press” z Theory of Motion.
-    const w = wideoCwiczenia("EX-0059")!;
+    // EX-0128 Lat pulldown = „Lat Pulldown” z Theory of Motion.
+    const w = wideoCwiczenia("EX-0128")!;
     assert.equal(w.zrodlo.nazwa, "Theory of Motion Exercise Library");
-    assert.equal(katalog.poId("EX-0059")!.film, null);
+    assert.equal(katalog.poId("EX-0128")!.film, "https://youtu.be/JGeRYIZdojU");
+    // EX-0059 Dumbbell bench press: link z arkusza (kanał CraftMyPlan) usunięty
+    // 23.10.2026 — film z biblioteki („2DB Bench Press”) zostaje.
+    assert.equal(katalog.poId("EX-0059")!.film ?? null, null);
+    assert.equal(wideoCwiczenia("EX-0059")!.zrodlo.nazwa, "Theory of Motion Exercise Library");
   });
 
   test("SLDL z BAZY to martwy ciąg na prostych nogach, nie jednonóż — film stiff-legged", () => {
