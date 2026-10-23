@@ -29,7 +29,7 @@ ZRODLA = [
      "jak": "lista wszystkich filmów kanału (playlista przesłanych UU3f1WJ6Uqr1SBkdUkfTChYQ); każdy film sprawdzony przez oEmbed YouTube — osadzanie dozwolone, autor = ten kanał"},
     {"id": "catalyst-youtube", "nazwa": "Catalyst Athletics", "platforma": "YouTube",
      "kanal": "@CatalystAthletics", "kanal_id": "UCOe24b2O8eoeHz9fwWuKRVA", "url": "https://www.youtube.com/@CatalystAthletics",
-     "playlista": "PLEaPUUsRrMbwMMSS5L2z3eskcz6lHXkj0", "zweryfikowano": "2026-10-09",
+     "playlista": "PLEaPUUsRrMbwMMSS5L2z3eskcz6lHXkj0", "pomin_poczatek_s": 7, "zweryfikowano": "2026-10-09",
      "jak": "playlista „Olympic Weightlifting Exercise Library” (618 filmów); każdy film sprawdzony przez oEmbed YouTube — osadzanie dozwolone, autor = ten kanał"},
 ]
 def zapisz(sciezka, naglowek: dict, klucz: str, wpisy: list):
@@ -181,7 +181,9 @@ opis_f = ("Filmy instruktażowe do ćwiczeń — osobno od BAZY. Wpis wskazuje �
           "poradnik (omówienie techniki); ćwiczenie może mieć kilka filmów. Źródła: OPEX Fitness (test na EX-0011), "
           "Theory of Motion Exercise Library i Catalyst Athletics (import bibliotek 09.10.2026, tylko osadzanie "
           "odtwarzaczem YouTube — filmów nie pobieramy). „przypisal”: „trener” = film przypięty przez trenera w arkuszu "
-          "weryfikacji; „odpiete” = pary (ćwiczenie, film), które trener odpiął — kolejny import ich nie przywraca.")
+          "weryfikacji; „odpiete” = pary (ćwiczenie, film), które trener odpiął — kolejny import ich nie przywraca. "
+          "„pomin_poczatek_s” przy źródle: aplikacja zaczyna filmy tego kanału od tej sekundy (Catalyst Athletics: "
+          "7-sekundowe intro, 23.10.2026).")
 zrodla = [z for z in f_stare["zrodla"] if z["id"] not in ZRODLO_FILMU.values()] + ZRODLA
 zapisz(f"{DANE}/filmy-cwiczen.json", {"opis": opis_f, "zrodla": zrodla, "odpiete": odpiete}, "filmy", wpisy)
 

@@ -33,6 +33,11 @@ export type ZrodloWideo = {
   kanal?: string;
   kanalId?: string;
   url?: string;
+  /**
+   * Od której sekundy aplikacja zaczyna filmy tego źródła — przy kanałach
+   * z intro na początku każdego filmu (Catalyst Athletics: 7 s, 23.10.2026).
+   */
+  pominPoczatekSekund?: number;
 };
 
 export type RolaWideo = "demonstracja" | "poradnik";
@@ -62,7 +67,10 @@ export type Wideo = {
   youtubeId?: string;
   plik?: string;
   tytul: string;
+  /** Ile klient obejrzy — przy pominiętym intro bez niego. */
   czasSekund?: number;
+  /** Odtwarzacz zaczyna od tej sekundy (intro kanału pominięte). */
+  startSekund?: number;
   /** Link do oryginału — `null` dla własnych plików bez strony źródłowej. */
   link: string | null;
   zrodlo: { nazwa: string; platforma: string; url: string | null };
@@ -114,9 +122,13 @@ function opisFilmu(w: WpisWideo, zrodla: readonly ZrodloWideo[]): Wideo | null {
   const zrodlo = { nazwa: z?.nazwa ?? w.zrodlo, platforma: z?.platforma ?? "", url: z?.url ?? null };
   const rola: RolaWideo = w.rola ?? "demonstracja";
   if (w.typ === "youtube" && w.youtubeId && ID_YOUTUBE.test(w.youtubeId)) {
+    // Intro pomijamy tylko wtedy, gdy po nim zostaje film — krótszego nie ruszamy.
+    const start = z?.pominPoczatekSekund && (!w.czasSekund || w.czasSekund > z.pominPoczatekSekund + 5)
+      ? z.pominPoczatekSekund : 0;
     return {
       typ: "youtube", rola, youtubeId: w.youtubeId, tytul: w.tytul,
-      ...(w.czasSekund ? { czasSekund: w.czasSekund } : {}),
+      ...(w.czasSekund ? { czasSekund: w.czasSekund - start } : {}),
+      ...(start ? { startSekund: start } : {}),
       link: w.url ?? `https://www.youtube.com/watch?v=${w.youtubeId}`, zrodlo,
     };
   }
@@ -276,6 +288,12 @@ export function sprawdzFilmy(
   const idWpisow = new Set<string>();
   const pary = new Set<string>();
   const znaneZrodla = new Set(zrodla.map((z) => z.id));
+  for (const z of zrodla) {
+    const s = z.pominPoczatekSekund;
+    if (s !== undefined && !(Number.isInteger(s) && s >= 1 && s <= 60)) {
+      problemy.push(`źródło ${z.id}: pominięty początek ma być liczbą sekund 1–60`);
+    }
+  }
   for (const w of wpisy) {
     if (idWpisow.has(w.id)) problemy.push(`${w.id}: powtórzony identyfikator wpisu`);
     idWpisow.add(w.id);
