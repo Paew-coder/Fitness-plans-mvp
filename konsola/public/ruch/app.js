@@ -930,6 +930,27 @@ function przeliczSrodek() {
   rysujWykresSrodka();
   rysujOpisSrodka();
   rysujOdczytSrodka();
+  rysujWyborModeluSrodka();
+}
+
+// Przy przełączniku „środek ciężkości” widać, czy model jest wybrany.
+// Trener, 23.10.2026: „nie widzę środka ciężkości na nagraniu” — przełącznik
+// był zaznaczony, ale płeć wybiera się w panelu niżej, a tego nic nie mówiło.
+function rysujWyborModeluSrodka() {
+  const przycisk = $("#wybierz-model-srodka");
+  const model = ustawieniaSrodka().model;
+  przycisk.classList.toggle("brak", !model);
+  przycisk.textContent = model ? `${MODELE_SRODKA[model].nazwa} · zmień` : "wybierz płeć osoby →";
+  przycisk.title = model ? "Zmień model segmentów w panelu „Środek ciężkości”"
+    : "Środek ciężkości liczy się po wybraniu płci osoby (modelu segmentów) w panelu „Środek ciężkości”";
+}
+
+function pokazPanelSrodka() {
+  const panel = $("#panel-srodka");
+  panel.scrollIntoView({ behavior: "smooth", block: "center" });
+  panel.classList.add("podswietlony");
+  setTimeout(() => panel.classList.remove("podswietlony"), 1800);
+  $("#model-srodka").focus({ preventScroll: true });
 }
 
 function opcjeSrodka() {
@@ -1027,7 +1048,13 @@ for (const [pole, zdarzenie] of [["#model-srodka", "change"], ["#obciazenie-kg",
     rysuj();
   });
 }
-$("#pokaz-srodek").addEventListener("change", (e) => { stan.pokazSrodek = e.target.checked; rysuj(); });
+$("#pokaz-srodek").addEventListener("change", (e) => {
+  stan.pokazSrodek = e.target.checked;
+  // Zaznaczony bez modelu — od razu tam, gdzie się go wybiera.
+  if (stan.pokazSrodek && !ustawieniaSrodka().model) pokazPanelSrodka();
+  rysuj();
+});
+$("#wybierz-model-srodka").addEventListener("click", pokazPanelSrodka);
 
 /* ── trajektorie ────────────────────────────────────────────────── */
 
