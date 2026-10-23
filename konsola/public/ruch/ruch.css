@@ -64,7 +64,20 @@ label.przycisk.glowny { background: var(--akcent); border-color: var(--akcent); 
 .podsumowanie-analizy { margin: 0 0 .8rem; color: var(--tekst-slaby); font-size: .88rem; }
 .uklad-analizy { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 1.2rem; align-items: start; }
 .kolumna-glowna, .kolumna-boczna { min-width: 0; }
-@media (max-width: 1050px) { .uklad-analizy { grid-template-columns: minmax(0, 1fr); } }
+/*
+ * Jedna kolumna (iPad w pionie, telefon): środek ciężkości zaraz pod filmem
+ * i przełącznikami, a nie na końcu strony (trener, 23.10.2026: „żeby było
+ * możliwe obserwowanie jednocześnie nagrania i wykresu środka ciężkości”).
+ * Na szerokim ekranie stoi na górze prawej kolumny, obok filmu.
+ */
+@media (max-width: 1050px) {
+  .uklad-analizy { display: flex; flex-direction: column; gap: 0; }
+  .kolumna-glowna, .kolumna-boczna { display: contents; }
+  /* min-width 0 — bez tego szeroka tabela powtórzeń rozpychała stronę w bok (iPad w pionie). */
+  .kolumna-glowna > *, .kolumna-boczna > * { order: 3; min-width: 0; max-width: 100%; }
+  .kolumna-glowna > .scena, .kolumna-glowna > .sterowanie, .kolumna-glowna > .przelaczniki { order: 1; }
+  #panel-srodka { order: 2; }
+}
 
 .scena { position: relative; background: #000; border-radius: 6px; overflow: hidden;
          width: 100%; margin: 0 auto; }
@@ -159,16 +172,37 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 .wybor-trajektorii label.schowana { opacity: .6; }
 .dopisek-schowana { font-size: .72rem; color: var(--tekst-blady); border: 1px solid var(--linia); border-radius: 3px; padding: 0 .3rem; }
 /* Środek ciężkości (23.10.2026). */
+.jak-liczone { margin-top: .6rem; font-size: .84rem; }
+/* Obciążenie zwinięte — przysiad zwykle bez sztangi, a wykres ma stać na wysokości filmu. */
+.obciazenie-srodka { font-size: .86rem; margin: -.2rem 0 .5rem; }
+.obciazenie-srodka summary { cursor: pointer; color: var(--tekst-slaby); padding: .15rem 0; }
+.obciazenie-srodka summary span { color: var(--tekst); font-weight: 600; }
+.obciazenie-srodka .ustawienia-srodka { margin-top: .5rem; }
+.jak-liczone summary { cursor: pointer; color: var(--tekst-slaby); }
+.jak-liczone .wskazowka { margin-top: .4rem; }
+/* Tabela powtórzeń: grupy kolumn („Czas”, „Największe w całym ruchu”, „W najgłębszym punkcie”). */
+#tabela-powtorzen th { font-family: var(--sans); text-transform: none; letter-spacing: normal; font-size: .74rem; }
+#tabela-powtorzen th.liczba { white-space: normal; vertical-align: bottom; max-width: 6.2rem; line-height: 1.25; }
+#tabela-powtorzen td { padding: .3rem .45rem; vertical-align: middle; }
+/* Powtórzenie: wiersz z czasami, pod nim największe w ruchu i w najgłębszym punkcie. */
+#tabela-powtorzen tr.wiersz-powtorzenia td { font-family: var(--sans); font-size: .8rem; font-weight: 600; color: var(--tekst);
+  background: var(--panel); padding-top: .45rem; }
+#tabela-powtorzen tr.wiersz-maks td { border-bottom-style: dashed; }
+#tabela-powtorzen td.rodzaj-wiersza { text-align: left; font-family: var(--sans); font-size: .78rem; color: var(--tekst-slaby); }
+#tabela-powtorzen tr.wiersz-dol td.rodzaj-wiersza { color: var(--tekst); font-weight: 600; }
 /* Przy przełączniku: bez modelu — wyraźna prośba o wybór płci (trener: „nie widzę środka ciężkości”). */
 .przelacznik-z-wyborem { display: inline-flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .wybor-modelu-srodka { font-size: .86rem; padding: .2rem .55rem !important; border-radius: 4px; }
 .wybor-modelu-srodka.brak { border: 1px solid var(--akcent) !important; color: var(--akcent) !important; font-weight: 600; }
 #panel-srodka.podswietlony { box-shadow: 0 0 0 3px var(--akcent); transition: box-shadow .3s; }
-.ustawienia-srodka { margin-bottom: .6rem; }
-.ustawienia-srodka input[type="number"] { width: 7rem; }
-.ustawienia-srodka .przelacznik-srodka { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);
-  text-transform: none; letter-spacing: normal; font-size: .86rem; color: var(--tekst-slaby); padding-bottom: .45rem; }
-.ustawienia-srodka .przelacznik-srodka input { width: 1.1rem; height: 1.1rem; accent-color: var(--akcent); }
+.ustawienia-srodka { margin-bottom: .6rem; gap: .6rem .7rem; }
+.ustawienia-srodka input[type="number"] { width: 5.2rem; }
+.ustawienia-srodka #miejsce-obciazenia { max-width: 11.5rem; }
+.ustawienia-srodka .model-srodka { flex: 1 1 16rem; }
+.ustawienia-srodka .model-srodka select { width: 100%; }
+#panel-srodka .przelacznik-srodka { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);
+  text-transform: none; letter-spacing: normal; font-size: .84rem; color: var(--tekst-slaby); margin-top: .3rem; }
+#panel-srodka .przelacznik-srodka input { width: 1.1rem; height: 1.1rem; accent-color: var(--akcent); }
 .odczyt-srodka { font-size: .95rem; margin: .4rem 0 .6rem; }
 .odczyt-srodka strong { font-family: var(--mono); font-size: 1.05rem; color: var(--srodek); }
 .odczyt-srodka .niepewny { color: var(--tekst-blady); }

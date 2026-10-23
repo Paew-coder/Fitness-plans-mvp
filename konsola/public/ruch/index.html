@@ -135,36 +135,6 @@
           </p>
         </details>
 
-        <section class="panel" id="panel-srodka">
-          <h2>Środek ciężkości</h2>
-          <div class="rzad-zrodla ustawienia-srodka">
-            <label>Model segmentów (płeć osoby)
-              <select id="model-srodka">
-                <option value="">— wybierz —</option>
-                <option value="deleva-k">de Leva (1996) — kobieta</option>
-                <option value="deleva-m">de Leva (1996) — mężczyzna</option>
-                <option value="braune-fischer">Braune i Fischer — jak w pracy magisterskiej</option>
-              </select>
-            </label>
-            <label>Obciążenie (kg)
-              <input id="obciazenie-kg" type="number" min="0" max="500" step="0.5" value="0" inputmode="decimal">
-            </label>
-            <label>Gdzie
-              <select id="miejsce-obciazenia">
-                <option value="barki">na barkach (sztanga)</option>
-                <option value="dlonie">w dłoniach (hantle, kettlebell)</option>
-              </select>
-            </label>
-            <label>Masa ciała (kg)
-              <input id="masa-ciala" type="number" min="20" max="250" step="0.1" inputmode="decimal" placeholder="przy obciążeniu">
-            </label>
-            <label class="przelacznik-srodka"><input type="checkbox" id="wygladzanie-srodka" checked> wygładzanie (filtr 6 Hz)</label>
-          </div>
-          <p class="odczyt-srodka" id="odczyt-srodka"></p>
-          <div class="wykres ukryty" id="wykres-srodka"></div>
-          <p class="wskazowka" id="opis-srodka"></p>
-        </section>
-
         <section class="panel">
           <h2>Kąty w czasie</h2>
           <div class="legenda-ruchu" id="legenda"></div>
@@ -186,6 +156,44 @@
       </div>
 
       <aside class="kolumna-boczna">
+        <section class="panel" id="panel-srodka">
+          <h2>Środek ciężkości</h2>
+          <div class="rzad-zrodla ustawienia-srodka">
+            <label class="model-srodka">Model segmentów (płeć osoby)
+              <select id="model-srodka">
+                <option value="">— wybierz —</option>
+                <option value="deleva-k">de Leva (1996) — kobieta</option>
+                <option value="deleva-m">de Leva (1996) — mężczyzna</option>
+                <option value="braune-fischer">Braune i Fischer — jak w pracy magisterskiej</option>
+              </select>
+            </label>
+          </div>
+          <details class="obciazenie-srodka" id="obciazenie-srodka">
+          <summary>Obciążenie: <span id="opis-obciazenia">bez obciążenia</span></summary>
+          <div class="rzad-zrodla ustawienia-srodka">
+            <label>Obciążenie (kg)
+              <input id="obciazenie-kg" type="number" min="0" max="500" step="0.5" value="0" inputmode="decimal">
+            </label>
+            <label>Gdzie
+              <select id="miejsce-obciazenia">
+                <option value="barki">na barkach (sztanga)</option>
+                <option value="dlonie">w dłoniach (hantle, kettlebell)</option>
+              </select>
+            </label>
+            <label>Masa ciała (kg)
+              <input id="masa-ciala" type="number" min="20" max="250" step="0.1" inputmode="decimal" placeholder="przy obciążeniu">
+            </label>
+          </div>
+          </details>
+          <p class="odczyt-srodka" id="odczyt-srodka"></p>
+          <div class="wykres ukryty" id="wykres-srodka"></div>
+          <label class="przelacznik-srodka"><input type="checkbox" id="wygladzanie-srodka" checked> wygładzanie (filtr 6 Hz)</label>
+          <details class="jak-liczone">
+            <summary>Jak to jest liczone</summary>
+            <p class="wskazowka" id="opis-srodka"></p>
+          </details>
+        </section>
+
         <section class="panel">
           <h2 id="tytul-klatki">Klatka</h2>
           <h3>Kąty</h3>

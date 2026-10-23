@@ -8,7 +8,7 @@
  *   biodrami. Mniej zależne od ustawienia kamery, ale głębia jest szacowana.
  *
  * Konwencje kliniczne (trener jest fizjoterapeutą): zgięcie kolana, biodra
- * i łokcia 0° = wyprost; zgięcie grzbietowe stopy 0° = goleń prostopadle do
+ * i łokcia 0° = wyprost; zgięcie grzbietowe stawu skokowego 0° = goleń prostopadle do
  * stopy, plus = goleń pochylona nad palce. Oś Y obrazu i modelu rośnie w dół,
  * więc pion „w górę” to (0, −1).
  *
@@ -50,7 +50,7 @@ export const KATY = [
     zgiecie(p(`${s}_hip`), p(`${s}_knee`), p(`${s}_ankle`), d)),
   ...strony("biodro", "Zgięcie biodra", "0° = tułów w linii z udem", (p, s, d) =>
     zgiecie(p(`${s}_shoulder`), p(`${s}_hip`), p(`${s}_knee`), d)),
-  ...strony("skokowy", "Zgięcie grzbietowe stopy", "0° = goleń prostopadle do stopy, + = goleń nad palcami", (p, s, d) =>
+  ...strony("skokowy", "Zgięcie grzbietowe stawu skokowego", "0° = goleń prostopadle do stopy, + = goleń nad palcami", (p, s, d) =>
     grzbietowe(p(`${s}_knee`), p(`${s}_ankle`), p(`${s}_heel`), p(`${s}_foot_index`), d), { widacZ: "boku" }),
   ...strony("lokiec", "Zgięcie łokcia", "0° = wyprost", (p, s, d) =>
     zgiecie(p(`${s}_shoulder`), p(`${s}_elbow`), p(`${s}_wrist`), d)),

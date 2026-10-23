@@ -641,3 +641,22 @@ describe("środek ciężkości — metoda segmentowa (23.10.2026)", async () => 
     assert.ok(wiersze.some((w) => /;1;-?\d+(,\d)?;-?\d+(,\d)?$/.test(w)), "pewna klatka z wartościami w %");
   });
 });
+
+describe("najgłębszy punkt powtórzenia (23.10.2026)", async () => {
+  // Trener: „w pracy magisterskiej sczytywałem zakresy w stawach w najgłębszym
+  // momencie przysiadu” — klatka, w której biodro (krętarz) jest najniżej.
+  const { najglebszaKlatka } = await import("../public/ruch/profile.js");
+
+  test("klatka z biodrem najniżej na obrazie; przy słabo widocznym biodrze tej strony — druga strona", () => {
+    const sesja = sesjaPrzysiadow();
+    const p = { poczatek: 0, szczyt: 0, koniec: sesja.klatki.length - 1 };
+    const y = (i: number, id: string) => sesja.klatki[i]!.p![INDEKS[id]][1];
+    const i = najglebszaKlatka(sesja, WYMIARY, p, "L");
+    assert.ok(sesja.klatki.every((_k: unknown, j: number) => y(j, "left_hip") <= y(i, "left_hip")));
+    // Lewe biodro niewidoczne w każdej klatce — liczy się prawe.
+    const bezLewego = { ...sesja, klatki: sesja.klatki.map((k: any) => ({ ...k,
+      p: k.p.map((q: number[], n: number) => (n === INDEKS.left_hip ? [q[0], 0.01, q[2], 0.1, 0.1] : q)) })) };
+    const j = najglebszaKlatka(bezLewego, WYMIARY, p, "L");
+    assert.ok(sesja.klatki.every((_k: unknown, n: number) => y(n, "right_hip") <= y(j, "right_hip")));
+  });
+});

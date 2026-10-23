@@ -342,7 +342,7 @@ function przygotujWyniki({ zachowajKlatke = false } = {}) {
 }
 
 /** Podpisy przy końcach linii wykresu — krótkie, żeby się mieściły. */
-const KROTKO = { kolano: "kolano", biodro: "biodro", skokowy: "stopa", tulow: "tułów", lokiec: "łokieć", ramie: "ramię" };
+const KROTKO = { kolano: "kolano", biodro: "biodro", skokowy: "zgięcie grzb.", tulow: "tułów", lokiec: "łokieć", ramie: "ramię" };
 
 /** To, co zależy od układu (2D/3D) i strony: wykres, powtórzenia, trajektorie. */
 function przeliczWyniki() {
@@ -837,45 +837,78 @@ function rysujPowtorzenia(katy) {
   const tabela = $("#tabela-powtorzen");
   const podsumowanie = p.podsumowanie(stan.sesja, katy, strona(), stan.powtorzenia);
   const st = (m) => (m ? `${liczba(m.wartosc)}°` : "—");
-  const kolumny = [
-    ["#", (r) => String(r.numer)],
+  /*
+   * Kąty dwa razy (trener, 23.10.2026): największe w całym ruchu — jak dotąd
+   * — i w najgłębszym punkcie, czyli tam, gdzie w pracy magisterskiej
+   * „sczytywał zakresy w stawach” (biodro najniżej). Dwa wiersze na
+   * powtórzenie, te same kolumny jedna pod drugą — tabela mieści się obok
+   * filmu, a wartości da się porównać wzrokiem. Nazwy pełne, bez „stopa”
+   * zamiast zgięcia grzbietowego stawu skokowego.
+   */
+  const procent = (v) => (v === null || v === undefined ? "—" : `${liczba(v)}%`);
+  const czasy = [
     ["ruch", (r) => sekundy(r.czas * 1000)],
     ["w dół", (r) => sekundy(r.zejscie * 1000)],
     ["w górę", (r) => sekundy(r.wstawanie * 1000)],
-    ["kolano", (r) => st(r.kolanoMaks)],
-    ["biodro", (r) => st(r.biodroMaks)],
-    ["stopa", (r) => st(r.skokowyMaks)],
-    ["tułów", (r) => st(r.tulowMaks)],
-    ["biodro vs kolano", (r) => (r.glebokosc === null ? "—"
-      : `${r.glebokosc > 0 ? "pod" : "nad"} ${liczba(Math.abs(r.glebokosc))}%`)],
-    ["kolana/stopy", (r) => (r.kolanaDoStop === null ? "—" : liczba(r.kolanaDoStop, 2))],
-    ...(stan.srodek ? [[konczynySrodka() === "obie" ? "ŚC między stopami" : "ŚC nad stopą", (r) => {
-      const v = stan.srodek.wzgledemGladkie[r.szczyt];
-      return v === null || v === undefined ? "—" : `${liczba(v)}%`;
-    }]] : []),
   ];
+  const katyKolumny = [
+    ["zgięcie kolana", "kolano"], ["zgięcie biodra", "biodro"],
+    ["zgięcie grzbietowe stawu skokowego", "skokowy"], ["pochylenie tułowia", "tulow"],
+  ];
+  const wDole = [
+    ["biodro względem kolana", (r) => (r.glebokosc === null ? "—"
+      : `${r.glebokosc > 0 ? "pod" : "nad"} ${liczba(Math.abs(r.glebokosc))}%`)],
+    ["rozstaw kolan do stóp", (r) => (r.kolanaDoStop === null ? "—" : liczba(r.kolanaDoStop, 2))],
+    ...(stan.srodek ? [[`środek ciężkości ${konczynySrodka() === "obie" ? "między stopami" : "nad stopą"}`,
+      (r) => procent(stan.srodek.wzgledemGladkie[r.dol])]] : []),
+  ];
+  // Czasy w wierszu nad kątami — osiem kolumn zamiast dwunastu mieści się obok filmu i na iPadzie.
+  const liczbaKolumn = 1 + katyKolumny.length + wDole.length;
   const naglowek = el("tr");
-  for (const [nazwa] of kolumny) naglowek.append(el("th", "liczba", nazwa));
-  const wiersze = podsumowanie.map((r) => {
-    const w = el("tr", "klikalny");
-    w.title = "Pokaż dół tego powtórzenia";
-    for (const [, f] of kolumny) w.append(el("td", "liczba", f(r)));
-    w.addEventListener("click", () => { zatrzymaj(); pokazKlatke(r.szczyt); });
-    return w;
+  for (const nazwa of ["", ...katyKolumny.map(([n]) => n), ...wDole.map(([n]) => n)]) {
+    naglowek.append(el("th", "liczba", nazwa));
+  }
+  const wiersze = podsumowanie.flatMap((r) => {
+    const doDolu = () => { zatrzymaj(); pokazKlatke(r.dol); };
+    const opis = el("tr", "klikalny wiersz-powtorzenia");
+    const maks = el("tr", "klikalny wiersz-maks");
+    const dol = el("tr", "klikalny wiersz-dol");
+    for (const w of [opis, maks, dol]) {
+      w.title = "Pokaż najgłębszy punkt tego powtórzenia";
+      w.addEventListener("click", doDolu);
+    }
+    const tytul = el("td", "", `Powtórzenie ${r.numer} · ${czasy.map(([n, f]) => `${n} ${f(r)}`).join(" · ")}`);
+    tytul.colSpan = liczbaKolumn;
+    opis.append(tytul);
+    maks.append(el("td", "rodzaj-wiersza", "największe w ruchu"));
+    dol.append(el("td", "rodzaj-wiersza", "w najgłębszym punkcie"));
+    for (const [, klucz] of katyKolumny) {
+      maks.append(el("td", "liczba", st(r[`${klucz}Maks`])));
+      dol.append(el("td", "liczba", st(r[`${klucz}Dol`])));
+    }
+    for (const [, f] of wDole) {
+      maks.append(el("td", "liczba", ""));
+      dol.append(el("td", "liczba", f(r)));
+    }
+    return [opis, maks, dol];
   });
   if (wiersze.length === 0) {
     const w = el("tr");
     const td = el("td", "niepewny", "Nie znalazłem pełnego powtórzenia (zejście i powrót).");
-    td.colSpan = kolumny.length;
+    td.colSpan = liczbaKolumn;
     w.append(td);
     wiersze.push(w);
   }
   tabela.replaceChildren(naglowek, ...wiersze);
-  $("#opis-powtorzen").textContent = `Strona ${strona() === "L" ? "lewa" : "prawa"}, kąty ${stan.uklad === "3d" ? "3D" : "2D"}; `
-    + "kolano, biodro, stopa (zgięcie grzbietowe) i tułów — największe w powtórzeniu. Wiersz przenosi do dołu powtórzenia. "
-    + "Biodro vs kolano: w dole, z obrazu, w % długości uda — „pod” = poniżej równoległej. "
-    + "Kolana/stopy: rozstaw kolan do rozstawu stawów skokowych w dole, przy ujęciu z przodu; poniżej 1 = kolana do środka."
-    + (stan.srodek ? ` ŚC: środek ciężkości w dole powtórzenia (${konczynySrodka() === "obie" ? "lewa stopa 0%, prawa 100%" : "pięta 0%, palce 100%"}).` : "");
+  $("#opis-powtorzen").textContent = `Strona ${strona() === "L" ? "lewa" : "prawa"}, kąty ${stan.uklad === "3d" ? "3D" : "2D"}. `
+    + "„Największe w ruchu” — najwięcej, ile było w powtórzeniu (każdy kąt w swojej klatce). "
+    + "„W najgłębszym punkcie” — wszystko z jednej klatki: tej, w której biodro jest najniżej na obrazie "
+    + "(jak krętarz najbliżej podłoża); wiersz przenosi do niej. "
+    + "Biodro względem kolana: o ile biodro jest niżej („pod”) albo wyżej („nad”) niż kolano, w % długości uda — "
+    + "„pod” = poniżej równoległej. "
+    + "Rozstaw kolan do stóp: odległość kolan do odległości stawów skokowych, tylko przy ujęciu z przodu "
+    + "(z boku kolana się nakrywają — wtedy „—”); poniżej 1 = kolana do środka, powyżej 1 = na zewnątrz."
+    + (stan.srodek ? ` Środek ciężkości: ${konczynySrodka() === "obie" ? "lewa stopa 0%, prawa 100%" : "pięta 0%, palce 100%"}.` : "");
 }
 
 /* ── środek ciężkości ───────────────────────────────────────────── */
@@ -904,6 +937,20 @@ function wpiszUstawieniaSrodka(u) {
   $("#miejsce-obciazenia").value = u?.miejsce === "dlonie" ? "dlonie" : "barki";
   $("#masa-ciala").value = u?.masaCiala ? String(u.masaCiala) : "";
   $("#wygladzanie-srodka").checked = u?.wygladzanie !== false;
+  // Analiza z obciążeniem — pola od razu widać.
+  if (u?.obciazenieKg > 0) $("#obciazenie-srodka").open = true;
+  rysujOpisObciazenia();
+}
+
+// „60 kg”, „62,5 kg” — bez „,0” przy pełnych kilogramach.
+const kg = (v) => liczba(v, Number.isInteger(v) ? 0 : 1);
+
+function rysujOpisObciazenia() {
+  const u = ustawieniaSrodka();
+  $("#opis-obciazenia").textContent = u.obciazenieKg > 0
+    ? `${kg(u.obciazenieKg)} kg ${u.miejsce === "dlonie" ? "w dłoniach" : "na barkach"}`
+      + (u.masaCiala ? ` · masa ciała ${kg(u.masaCiala)} kg` : " · brak masy ciała")
+    : "bez obciążenia";
 }
 
 // Z boku dalsza ręka i noga są zasłonięte — liczymy stronę z „Strona ciała”
@@ -931,6 +978,7 @@ function przeliczSrodek() {
   rysujOpisSrodka();
   rysujOdczytSrodka();
   rysujWyborModeluSrodka();
+  rysujOpisObciazenia();
 }
 
 // Przy przełączniku „środek ciężkości” widać, czy model jest wybrany.
@@ -1012,7 +1060,7 @@ function rysujOpisSrodka() {
     if (u.wygladzanie) czesci.push("Wygładzanie: filtr Butterwortha 6 Hz w przód i w tył (bez przesunięcia w czasie); blada linia — bez wygładzania.");
     if (u.obciazenieKg > 0) {
       czesci.push(u.masaCiala
-        ? `Obciążenie ${liczba(u.obciazenieKg, 1)} kg ${u.miejsce === "dlonie" ? "w dłoniach" : "na barkach"} doliczone do ${liczba(u.masaCiala, 1)} kg masy ciała.`
+        ? `Obciążenie ${kg(u.obciazenieKg)} kg ${u.miejsce === "dlonie" ? "w dłoniach" : "na barkach"} doliczone do ${kg(u.masaCiala)} kg masy ciała.`
         : "Obciążenie nie jest doliczone — brakuje masy ciała.");
     }
     czesci.push("„?” — klatka niepewna: słabo widoczne punkty części ciała o łącznej masie ponad 10% ciała.");
