@@ -520,8 +520,9 @@ describe("katalog BAZY 5.17", () => {
     assert.equal(bazaTrenera.wymagajaceDecyzji().length, 16);
     // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania,
     // + pauzowany przysiad low bar (02.10.2026, film dopisze trener)
-    // + „S/l clean” (17.10.2026, bez linku).
-    assert.equal(bazaTrenera.bezFilmu().length, 29);
+    // + „S/l clean” (17.10.2026, bez linku)
+    // + 15 ćwiczeń, z których 23.10.2026 zniknęły linki do prywatnego kanału trenera.
+    assert.equal(bazaTrenera.bezFilmu().length, 44);
   });
 });
 

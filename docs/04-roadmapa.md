@@ -1207,6 +1207,14 @@ Trener: „zrób tak, że jeżeli ktoś pozamyka te karty z instrukcjami na gór
 * Okno „↺ Resetuj plan” w konsoli mówi o tym trenerowi. SW `trening-v91`.
 * Przegląd klienta: trzy karty zamknięte „✕”, po ponownym otwarciu schowane, po resecie wszystkie rozwinięte; ponowne „✕” po resecie działa jak wcześniej.
 
+**104. Bez nagrań z prywatnego kanału trenera — 23.10.2026.**
+
+Trener: „popraw bazę ćwiczeń tak, żeby nie było w niej żadnych nagrań z [mojego prywatnego] kanału. Cała reszta nagrań może zostać — to często są moi klienci i nie chcę ich nigdzie wstawiać”.
+
+* Autor każdego linku YouTube spoza zweryfikowanych bibliotek (ToM, Catalyst, OPEX) sprawdzony przez oEmbed: 14 filmów z prywatnego kanału trenera przy 15 ćwiczeniach BAZY (jeden film wisiał przy dwóch). Linki usunięte z `docs/dane/baza-cwiczen.json` (pole `film: null`), z katalogu silnika (generator) i z zakładki BAZA szablonu `arkusz/MasterTemplate-5-18.xlsx` — eksport planu do xlsx bierze wiersze BAZY z szablonu. Filmy z kanału CraftMyPlan i z innych kanałów zostały.
+* Dwa z tych ćwiczeń (Eccentric pull up, Incline dumbbell press) mają filmy z bibliotek i klient widzi je jak dotąd; 13 zostało bez filmu — kontrola planu zgłosi przy nich „Ćwiczenie bez nagrania”, dopóki trener nie poda nowego linku. Ta kontrola liczy teraz także filmy z bibliotek (wcześniej patrzyła tylko na link z arkusza).
+* Ćwiczenia własne trenera i filmy rozgrzewek leżą w bazie na serwerze, nie w repozytorium — tych zmiana nie dotyczy. Stare wersje plików zostają w historii repozytorium.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

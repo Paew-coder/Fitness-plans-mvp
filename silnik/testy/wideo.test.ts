@@ -18,7 +18,8 @@ import {
   sprawdzFilmy, wideoCwiczenia, type WpisWideo,
 } from "../src/wideo.ts";
 import { dobierzCwiczenia } from "../src/dobor-cwiczen.ts";
-import type { Plan } from "../src/plan.ts";
+import { przeliczPlan, type Plan } from "../src/plan.ts";
+import { sprawdzPlan } from "../src/walidacja.ts";
 
 describe("Barbell bench press z biblioteki OPEX", () => {
   test("to istniejące EX-0011, nie nowe ćwiczenie — BAZA trenera bez duplikatu", () => {
@@ -238,5 +239,30 @@ describe("filmy niezależne od BAZY", () => {
   test("wpis z błędnym id YouTube nie trafia do aplikacji jako film", () => {
     const zly: WpisWideo[] = [{ id: "X", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "<script>", zrodlo: "opex-youtube", tytul: "x" }];
     assert.equal(wideoCwiczenia("EX-0011", zly), null);
+  });
+});
+
+describe("bez nagrań z prywatnego kanału trenera (23.10.2026)", () => {
+  // Trener: „żeby nie było w niej żadnych nagrań z [mojego] kanału — to często
+  // są moi klienci”. Linki zniknęły z BAZY i z szablonu arkusza.
+  const plan = (cwiczenieId: string): Plan => ({
+    nazwa: "x", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "objętość", serieMaksymalne: [],
+    sloty: [{ positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId, kategoriaSzkieletu: null }],
+  });
+  const bezNagrania = (id: string) => {
+    const p = plan(id);
+    return sprawdzPlan(p, przeliczPlan(p)).some((u) => u.kod === "BEZ_FILMU");
+  };
+
+  test("Incline dumbbell press bez linku z arkusza, ale z filmami z bibliotek — kontrola nie zgłasza „bez nagrania”", () => {
+    const c = katalog.poId("EX-0111")!;
+    assert.equal(c.film ?? null, null);
+    assert.ok(filmyCwiczenia("EX-0111").length > 0);
+    assert.equal(bezNagrania("EX-0111"), false);
+  });
+
+  test("ćwiczenie bez żadnego filmu dalej jest zgłaszane", () => {
+    assert.equal(filmyCwiczenia("EX-0003").length, 0);
+    assert.equal(bezNagrania("EX-0003"), true);
   });
 });
