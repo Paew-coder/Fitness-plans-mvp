@@ -1253,6 +1253,14 @@ Trener: „jak wstawiam nagranie przysiadu do analizy, to aplikacja ucina mi poc
 * Teraz: klatka 0 liczona przed startem odtwarzania, przerwa za nią uzupełniana przewinięciem jak każda inna (także przy „najwyżej 15/30 kl./s”), ostatnie klatki po końcu odtwarzania — też (najwyżej trzy). Dotyczy wgranego filmu i nagrania kamerą. Zapisane wcześniej analizy (.json) mają dalej ucięty początek — wystarczy przeliczyć film jeszcze raz.
 * Przegląd ruchu, „Początek filmu” (+10): film z licznikiem klatek (ffmpeg, 4 s, 30 kl./s) — każda klatka, obciążony procesor, wolny start odtwarzania, 15 kl./s i 15 kl./s z wolnym startem: pierwsza klatka 0 ms, komplet klatek, największa przerwa jedna klatka, po analizie film stoi na początku. Na starej wersji wszystkie pięć czerwone.
 
+**110. Punkty na obrazie — układ jak ciało, od razu widoczne — 23.10.2026.**
+
+Trener: „możesz mi te punkty jakoś ułożyć w sposób bardziej przejrzysty? I tak, żeby to było od razu widoczne bez konieczności rozwijania — ewentualnie może być możliwość zwinięcia tego z powrotem”.
+
+* Zamiast 13 pól w rzędzie — tabela: wiersze od głowy do stóp (głowa, bark, łokieć, nadgarstek, biodro, kolano, staw skokowy), kolumny Lewa i Prawa z kropką koloru strony, jak w tabeli kątów. Pole w nagłówku kolumny zaznacza lub odznacza całą stronę (pół-zaznaczone, gdy strona jest schowana częściowo). Przyciski „Wszystkie / Tylko prawa / Tylko lewa strona” obok tabeli, na telefonie pod nią w rzędzie.
+* Panel od razu rozwinięty, w ramce; „zwiń” / „rozwiń” w nagłówku, zwinięcie zostaje na tym urządzeniu.
+* Przegląd ruchu (+6): układ wierszy i kolumn, nagłówek kolumny pół-zaznaczony, pokazuje i chowa całą stronę, zwinięcie i jego zapamiętanie; telefon i iPad bez przewijania w bok.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
