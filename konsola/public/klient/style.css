@@ -708,6 +708,8 @@ p.dobor.dobor-zapisane { color: var(--ok); }
   background: var(--ok-tlo); border: 1px solid var(--ok); font-size: .85rem;
 }
 .przeglad-zrobionej .link { color: var(--tekst); font-weight: 600; }
+/* Cofnięcie zrobionej serii (23.10.2026) — osobna linijka, spokojniejszy kolor niż „Wróć do”. */
+.przeglad-zrobionej .cofnij-serie { flex-basis: 100%; text-align: left; color: var(--tekst-slaby); font-weight: 500; }
 
 /* Na liście dnia: bieżące ćwiczenie w akcencie, stan jako przycisk powrotu. */
 .cwiczenie.biezace, .topset.biezace { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }

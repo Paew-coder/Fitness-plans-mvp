@@ -1279,6 +1279,14 @@ Trener (po rozmowie o pracy magisterskiej, de Levie i MediaPipe): „dodajmy do 
 * Testy: `analiza-ruchu.test.ts` (+11: masy modeli = 100%, przykład z pracy Xc 3,69 / Yc 4,84, strona podwójnie i niezależność od zgadywanej strony, środek uda 40,95/36,12%, nad stopą w obie strony, między stopami, obciążenie, filtr — stała / 1 Hz / 12 Hz / bez przesunięcia / luki, całe nagranie, JSON i CSV). Przegląd ruchu (+16, sztuczny przysiad z boku i z przodu): prośba o model, modele, „nad stopą” z lewą stroną podwójnie, symbol i droga na obrazie, wykres, kolumna „ŚC”, K ≠ M, obciążenie bez masy i z masą (środek wyżej), bez wygładzania, przełącznik, CSV, powrót z zapisu, telefon i iPad, „między stopami” z przodu.
 * Tego samego dnia, trener: „nie widzę środka ciężkości na nagraniu” — przełącznik był zaznaczony, ale model (płeć) wybiera się w panelu niżej i nic o tym nie mówiło. Teraz przy przełączniku „środek ciężkości” stoi wyraźny przycisk „wybierz płeć osoby →” (przewija do panelu, podświetla go i ustawia kursor na liście modeli; to samo po zaznaczeniu przełącznika bez modelu), a po wyborze — nazwa modelu z „zmień”. Przegląd ruchu +3.
 
+**113. Cofnięcie zrobionej serii w aplikacji klienta — 23.10.2026.**
+
+Trener (zrzut z prowadzonego treningu: A1 i A2 z „✓”, „Ta seria jest już zrobiona — możesz ją poprawić”): „chciałbym, żebyśmy dodali możliwość cofania serii — tutaj mi pokazuje, że już mam zrobioną część serii z tego dnia treningowego, ale zaznaczyłem je przypadkiem”.
+
+* Przy zrobionej serii, pod „↩ Wróć do…”, przycisk „↺ Cofnij — ta seria nie była zrobiona”. Najpierw okienko „Cofnąć tę serię?” z nazwą ćwiczenia, numerem serii i tym, co zniknie (np. „wpisane 90 kg × 6 powt.”, ocena) — „Cofnij serię” / „Zostaw”.
+* Po cofnięciu: seria wraca do niezrobionych i stoi na ekranie z „Zakończ serię”; znika znacznik na mapie dnia i w liczniku „zrobione”; jej kilogramy i powtórzenia znikają też u trenera (lista serii bez niej), ocena tej serii — z oceną tygodnia, jeśli to ona ją ustaliła — i korekta następnej serii. Przy TOP SECIE — jego ciężar i ocena. Zakończony trening zostaje zakończony. SW `trening-v93`.
+* Przegląd klienta (+6): przycisk przy zrobionej serii, pytanie z wpisanymi liczbami, „Zostaw” niczego nie zmienia, cofnięta seria na ekranie i licznik o jeden mniej, liczby znikają u trenera, ponowne zrobienie zapisuje serię i prowadzi dalej.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
