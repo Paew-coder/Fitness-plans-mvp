@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15171F">
+  <title>Trening</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <!-- iOS nie czyta ikon z manifestu — bierze wyłącznie to i wyłącznie PNG.
+       Bez tego dodanie do ekranu głównego iPhone'a daje zrzut strony
+       zamiast ikony. -->
+  <link rel="apple-touch-icon" href="/klient/ikona-180.png">
+  <!-- Manifest bez `start_url`: przeglądarka bierze wtedy adres otwartej strony,
+       czyli /k/<token>. Z `start_url` aplikacja dodana do ekranu głównego
+       otwierałaby /klient/ — adres bez tokenu, czyli pustkę. -->
+  <link rel="manifest" href="/klient/manifest.json">
+  <link rel="stylesheet" href="/klient/style.css">
+  <link rel="stylesheet" href="/klient/karta-cwiczenia.css">
+</head>
+<body>
+
+<div id="stan-polaczenia" class="offline ukryty">Offline — zapiszę, gdy wróci zasięg</div>
+
+<!-- ── wybór treningu ─────────────────────────────────────────────── -->
+<div id="ekran-tygodnie" class="ekran">
+  <!-- Nagłówek planu (18.10.2026: „strona główna … bardziej przejrzysta
+       i profesjonalna, bez zmiany działania”): imię, cykl, pasek postępu. -->
+  <header class="gora naglowek-planu">
+    <p class="nadtytul">Twój plan treningowy</p>
+    <h1 id="tytul">—</h1>
+    <p id="podtytul" class="podtytul-planu"></p>
+    <div id="postep-cyklu" class="postep-cyklu ukryty" role="progressbar"
+      aria-label="Postęp cyklu" aria-valuemin="0" aria-valuemax="100">
+      <div class="postep-cyklu-wypelnienie"></div>
+    </div>
+  </header>
+
+  <!-- Jednym dotknięciem do treningu, który jest następny — bez szukania go
+       na liście (prośba trenera z 25.09.2026). Chowa się po całym cyklu. -->
+  <button id="nastepny-trening" class="nastepny-trening ukryty"></button>
+
+  <!-- Wszystkie treningi z cyklu odhaczone. Bez tego ostatni trening kończył
+       się tak samo jak każdy inny, a klient zostawał z listą samych ptaszków
+       i bez odpowiedzi na pytanie „i co teraz". -->
+  <section id="baner-koniec" class="baner koniec ukryty">
+    <strong>Cykl zrobiony — wszystkie treningi za Tobą</strong>
+    <p id="koniec-tresc"></p>
+  </section>
+
+  <!-- Trener właśnie poprawia plan albo szykuje kolejny cykl. Pokazujemy
+       ostatni, który klient dostał — zamiast zabierać mu ekran. -->
+  <section id="baner-przygotowania" class="baner ukryty">
+    <strong>Trener przygotowuje nowy plan</strong>
+    <p>Poniżej jest ostatni, który dostałeś. Otwórz aplikację ponownie,
+       gdy trener się odezwie.</p>
+  </section>
+
+  <!-- Instrukcja na górze (18.10.2026). Trener: „klient napisał, że na
+       instrukcję i filmik natrafił dopiero po przeklikaniu samodzielnie
+       wszystkiego w planie, więc chyba musimy dać go gdzieś na górze, ale
+       z możliwością minimalizowania / usunięcia tej informacji”. Zwijana do
+       jednej linijki, „✕” usuwa — instrukcja zostaje w „Więcej”. Patrz app.js. -->
+  <details id="baner-instrukcji" class="baner ukryty" open>
+    <summary class="baner-naglowek">
+      <strong class="baner-tytul">Jak korzystać z aplikacji</strong>
+      <button id="instrukcja-usun" class="baner-x" type="button"
+        aria-label="Usuń podpowiedź o instrukcji" title="Usuń">✕</button>
+    </summary>
+    <p>Pierwszy raz? Minutowy film i instrukcja krok po kroku: jak zrobić trening,
+       wpisać ciężar i ocenić ćwiczenie.</p>
+    <div class="akcje-baneru">
+      <a id="instrukcja-otworz" class="glowny" href="/instrukcja">▶ Obejrzyj instrukcję</a>
+      <button id="instrukcja-schowaj" class="poboczny">Schowaj</button>
+    </div>
+  </details>
+  <!-- Dwie drogi do ciężarów. Dotąd była jedna — seria maksymalna — i baner
+       mówił „bez nich nie policzę ciężarów". Teraz klient może zacząć od razu
+       i dobrać ciężar według RPE; pierwsza wpisana seria liczy resztę planu.
+
+       Zwijany do jednej linijki (prośba trenera z 10.10.2026): klient, który
+       wybrał już drogę i trenuje, miał całą kartę nad listą przy każdym
+       wejściu. Stan zwinięcia pamięta telefon — patrz app.js. -->
+  <details id="pomiary-baner" class="baner ukryty" open>
+    <summary class="baner-naglowek">
+      <strong class="baner-tytul">Skąd wziąć ciężary</strong>
+      <span id="pomiary-licznik" class="baner-licznik"></span>
+      <button id="pomiary-usun" class="baner-x" type="button"
+        aria-label="Usuń kartę „Skąd wziąć ciężary”" title="Usuń">✕</button>
+    </summary>
+    <p id="pomiary-tresc"></p>
+    <div class="drogi">
+      <button id="od-razu" class="droga glowny">
+        <span class="droga-tytul">Zacznij trening od razu</span>
+        <span class="droga-opis">Ciężar dobierzesz sam, według RPE. Z pierwszej
+          wpisanej serii policzę resztę planu.</span>
+      </button>
+      <button id="do-pomiarow" class="droga poboczny">
+        <span class="droga-tytul">Najpierw serie maksymalne</span>
+        <span class="droga-opis">Jedna seria do odmowy na każde ćwiczenie —
+          osobny trening pomiarowy.</span>
+      </button>
+    </div>
+    <div id="rpe-baner"></div>
+  </details>
+
+  <!-- Podpowiedź o dodaniu do ekranu głównego — od pierwszego wejścia
+       w link, zwijana do jednej linijki (17.10.2026). Patrz app.js. -->
+  <details id="baner-instalacji" class="baner ukryty" open>
+    <summary class="baner-naglowek">
+      <strong class="baner-tytul">Dodaj do ekranu głównego</strong>
+      <button id="instalacja-usun" class="baner-x" type="button"
+        aria-label="Usuń podpowiedź o ekranie głównym" title="Usuń">✕</button>
+    </summary>
+    <p id="instalacja-tresc"></p>
+    <div class="akcje-baneru">
+      <button id="zainstaluj" class="glowny ukryty">Dodaj do ekranu głównego</button>
+      <button id="instalacja-nie" class="poboczny">Schowaj</button>
+    </div>
+  </details>
+
+  <h2 class="sekcja-tytul">Tygodnie cyklu</h2>
+  <div id="tygodnie"></div>
+
+  <h2 class="sekcja-tytul">Więcej</h2>
+  <button id="pokaz-pomiary" class="akcja">
+    <span class="akcja-tytul">Serie maksymalne</span>
+    <span class="akcja-opis">Twoje maksy — wpisz albo popraw</span>
+  </button>
+  <button id="pokaz-moduly" class="akcja ukryty">
+    <span class="akcja-tytul">Oddech i bieg</span>
+    <span class="akcja-opis">Rozpiska od trenera poza siłownią</span>
+  </button>
+  <!-- Informacje z kart na górze — tu na stałe (19.10.2026, trener: „wszystkie
+       te zakładki na górze niech mają X, żeby je usunąć, ale za to na dole
+       wszystkie te informacje w zakładkach na stałe”). Karty na górze klient
+       zwija albo usuwa; te zostają, bez względu na to, co z tamtymi zrobił. -->
+  <!-- Instrukcja (18.10.2026) — ta sama strona, którą trener wysyła przed
+       pierwszym planem. W tym samym oknie, z adresem powrotu dopisanym
+       w app.js — instrukcja ma wtedy „← Wróć do planu” (patrz niżej). -->
+  <a id="pokaz-instrukcje" class="akcja" href="/instrukcja">
+    <span class="akcja-tytul">Jak korzystać z aplikacji</span>
+    <span class="akcja-opis">Krótki film i instrukcja krok po kroku</span>
+  </a>
+  <details id="info-ciezary" class="akcja-info">
+    <summary>
+      <span class="akcja-tytul">Skąd wziąć ciężary</span>
+      <span class="akcja-opis">„Dobierz”, RPE i serie maksymalne</span>
+    </summary>
+    <div class="akcja-info-tresc">
+      <p>Gdy przy ćwiczeniu zamiast kilogramów stoi „dobierz”, ciężar ustalasz sam —
+        na jeden z dwóch sposobów:</p>
+      <div class="drogi">
+        <button id="info-od-razu" class="droga glowny">
+          <span class="droga-tytul">Zacznij trening od razu</span>
+          <span class="droga-opis">Ciężar dobierzesz sam, według RPE. Z pierwszej wpisanej
+            serii policzę resztę planu.</span>
+        </button>
+        <button id="info-do-pomiarow" class="droga poboczny">
+          <span class="droga-tytul">Najpierw serie maksymalne</span>
+          <span class="droga-opis">Jedna seria do odmowy na każde ćwiczenie — osobny
+            trening pomiarowy.</span>
+        </button>
+      </div>
+      <p class="drobne">Dobierając ciężar, nie trzymaj się na siłę liczby powtórzeń z planu:
+        wyszło więcej albo mniej przy zapasie z planu (RPE) — wpisz, ile było. Ciężar się
+        dostosuje.</p>
+      <div id="info-rpe"></div>
+    </div>
+  </details>
+  <details id="info-instalacja" class="akcja-info">
+    <summary>
+      <span class="akcja-tytul">Dodaj do ekranu głównego</span>
+      <span class="akcja-opis">Trening jak aplikacja, bez szukania linku</span>
+    </summary>
+    <div class="akcja-info-tresc">
+      <p id="info-instalacja-tresc"></p>
+      <button id="info-zainstaluj" class="glowny ukryty">Dodaj do ekranu głównego</button>
+    </div>
+  </details>
+  <!-- „Twój postęp” schowany 17.10.2026, do dopracowania — patrz app.js. -->
+  <button id="pokaz-postep" class="akcja ukryty">
+    <span class="akcja-tytul">Twój postęp</span>
+    <span class="akcja-opis">Ciężary i powtórzenia przez wszystkie cykle</span>
+  </button>
+</div>
+
+<!-- ── postęp ─────────────────────────────────────────────────────── -->
+<div id="ekran-postep" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-postepu">←</button>
+    <div>
+      <h1>Twój postęp</h1>
+      <p class="drobne">Twoje cykle, ciężary i waga.</p>
+    </div>
+  </header>
+  <div id="postep"></div>
+</div>
+
+<!-- ── oddech i bieg ──────────────────────────────────────────────── -->
+<div id="ekran-moduly" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-modulow">←</button>
+    <div>
+      <h1>Oddech i bieg</h1>
+      <p class="drobne">Praca obok siłowni. Czas jest zadaniem, tempo celem.</p>
+    </div>
+  </header>
+  <div id="moduly"></div>
+</div>
+
+<!-- ── trening ────────────────────────────────────────────────────── -->
+<div id="ekran-trening" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-treningu">←</button>
+    <div>
+      <p id="trening-tydzien" class="nadtytul"></p>
+      <h1 id="trening-tytul">—</h1>
+      <p id="trening-postep" class="drobne"></p>
+    </div>
+  </header>
+
+  <!-- Jak trenować (16.10.2026): lista albo prowadzenie, i co zmienia ciężar.
+       Treść rysuje `rysujJakTrenowac` w app.js — zależy od ćwiczeń dnia. -->
+  <details id="jak-trenowac" class="baner jak-trenowac" open>
+    <summary class="baner-naglowek"><strong class="baner-tytul">Jak trenować</strong></summary>
+    <ul id="jak-trenowac-tresc" class="jak-lista"></ul>
+  </details>
+
+  <button id="prowadz" class="glowny szeroki prowadz">▶ Prowadź mnie seria po serii</button>
+
+  <div id="topset" class="topset ukryty"></div>
+  <div id="cwiczenia"></div>
+
+  <button id="zakoncz" class="glowny szeroki">Zakończ trening</button>
+  <p class="drobne srodek" id="notka-ok">Ćwiczenia bez oceny zapiszą się jako „OK".</p>
+</div>
+
+<!-- ── prowadzenie: seria po serii ────────────────────────────────── -->
+<div id="ekran-seria" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-serii">←</button>
+    <div>
+      <p id="seria-tydzien" class="nadtytul"></p>
+      <h1 id="seria-tytul">—</h1>
+      <p id="seria-postep" class="drobne"></p>
+    </div>
+  </header>
+  <div class="pasek"><div id="pasek-wypelnienie"></div></div>
+  <!-- Jeden panel naraz. Całość rysuje `rysujPanel` w app.js — statyczny
+       szkielet byłby tu ściemą, bo panel serii, przerwa i koniec treningu
+       nie mają ze sobą wspólnego ani jednego pola. -->
+  <div id="panel"></div>
+</div>
+
+<!-- ── serie maksymalne ───────────────────────────────────────────── -->
+<div id="ekran-pomiary" class="ekran ukryty">
+  <header class="gora sticky">
+    <button class="wstecz" id="wroc-z-pomiarow">←</button>
+    <div>
+      <h1>Serie maksymalne</h1>
+      <p class="drobne">Jedna seria do odmowy. Wpisz ciężar i ile powtórzeń wyszło.</p>
+    </div>
+  </header>
+  <div id="pomiary"></div>
+</div>
+
+<script src="/klient/app.js" type="module"></script>
+</body>
+</html>

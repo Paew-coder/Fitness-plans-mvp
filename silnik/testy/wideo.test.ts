@@ -1,0 +1,303 @@
+/**
+ * Filmy ćwiczeń osobno od BAZY — test biblioteki OPEX Fitness (09.10.2026)
+ * i import bibliotek Theory of Motion i Catalyst Athletics (ten sam dzień).
+ *
+ * Trener: „każde ćwiczenie ma mieć własny identyfikator i przypisany film,
+ * baza niezależna od źródła wideo, w przyszłości własne MP4 bez przebudowy
+ * bazy”. Potem: „jeżeli w pierwszej bazie mamy już ćwiczenie, a na kanale
+ * z poradnikami jest to samo, to ćwiczenie może zawierać dwa nagrania —
+ * jedno standardowe, a drugie poradnikowe”.
+ */
+import { test, describe } from "node:test";
+import assert from "node:assert/strict";
+import { katalog } from "../src/katalog.ts";
+import { BAZA_CWICZEN } from "../src/dane/cwiczenia.ts";
+import { FILMY_CWICZEN, ZRODLA_WIDEO } from "../src/dane/filmy.ts";
+import {
+  filmyCwiczenia, idZLinkuYoutube, kartaCwiczenia, kartaDlaKlienta, kartaPodgladu, kartaRozgrzewki,
+  sprawdzFilmy, wideoCwiczenia, type WpisWideo,
+} from "../src/wideo.ts";
+import { dobierzCwiczenia } from "../src/dobor-cwiczen.ts";
+import { przeliczPlan, type Plan } from "../src/plan.ts";
+import { sprawdzPlan } from "../src/walidacja.ts";
+
+describe("Barbell bench press z biblioteki OPEX", () => {
+  test("to istniejące EX-0011, nie nowe ćwiczenie — BAZA trenera bez duplikatu", () => {
+    assert.equal(katalog.bazaTrenera.length, 169, "164 z arkusza + 5 dodanych przez trenera");
+    const lawka = BAZA_CWICZEN.filter((c) => c.nazwa.toLowerCase() === "barbell bench press");
+    assert.equal(lawka.length, 1, "bez duplikatu — także po imporcie bibliotek");
+    assert.equal(lawka[0]!.id, "EX-0011");
+    // Nazwa z BAZY bez zmian: po niej import arkusza i reguły klasycznych bojów.
+    assert.equal(lawka[0]!.nazwa, "Barbell bench press");
+    assert.equal(katalog.poNazwie("Barbell Bench Press")?.id, "EX-0011");
+  });
+
+  test("opis ćwiczenia: nazwy, mięśnie, sprzęt, kategoria", () => {
+    const k = kartaCwiczenia(katalog.poId("EX-0011")!)!;
+    assert.equal(k.nazwaEn, "Barbell Bench Press");
+    assert.equal(k.nazwaPl, "Wyciskanie sztangi leżąc");
+    assert.deepEqual(k.miesnieGlowne, ["mięsień piersiowy większy"]);
+    assert.deepEqual(k.miesniePomocnicze, ["triceps", "przednia część mięśnia naramiennego"]);
+    assert.deepEqual(k.sprzet, ["sztanga", "ławka pozioma"]);
+    assert.equal(k.rodzaj, "trening siłowy");
+    assert.equal(k.kategoria, "Upper push horizontal");
+  });
+
+  test("pierwszy film: YouTube ejI1Nlsul9k z kanału OPEX Fitness, z linkiem do oryginału", () => {
+    const w = wideoCwiczenia("EX-0011")!;
+    assert.equal(w.typ, "youtube");
+    assert.equal(w.rola, "demonstracja");
+    assert.equal(w.youtubeId, "ejI1Nlsul9k");
+    assert.equal(w.tytul, "Barbell Bench Press - OPEX Exercise Library");
+    assert.equal(w.link, "https://www.youtube.com/watch?v=ejI1Nlsul9k");
+    assert.deepEqual(w.zrodlo, { nazwa: "OPEX Fitness", platforma: "YouTube", url: "https://www.youtube.com/@OPEXFitness" });
+    const z = ZRODLA_WIDEO.find((x) => x.id === "opex-youtube")!;
+    assert.equal(z.kanalId, "UCCgDGih2kSp0A6W_0cVYuaQ");
+  });
+});
+
+describe("biblioteki Theory of Motion i Catalyst Athletics", () => {
+  test("wyciskanie ma pokazy i poradniki: najpierw pokazy (OPEX, ToM), potem poradniki (Catalyst, ToM)", () => {
+    const filmy = filmyCwiczenia("EX-0011");
+    const role = filmy.map((f) => f.rola);
+    assert.deepEqual(role, [...role].sort((a, b) => (a === b ? 0 : a === "demonstracja" ? -1 : 1)), "pokazy przed poradnikami");
+    // ToM wrzucał to samo ćwiczenie kilka razy — wszystkie nagrania są przy ćwiczeniu.
+    const zrodla = (rola: string) => [...new Set(filmy.filter((f) => f.rola === rola).map((f) => f.zrodlo.nazwa))];
+    assert.deepEqual(zrodla("demonstracja"), ["OPEX Fitness", "Theory of Motion Exercise Library"]);
+    assert.deepEqual(zrodla("poradnik"), ["Catalyst Athletics", "Theory of Motion Exercise Library"]);
+    assert.equal(kartaCwiczenia(katalog.poId("EX-0011")!)!.filmy.length, filmy.length);
+  });
+
+  test("ćwiczenie z BAZY trenera dostało film, a jego link z arkusza zostaje", () => {
+    // EX-0128 Lat pulldown = „Lat Pulldown” z Theory of Motion.
+    const w = wideoCwiczenia("EX-0128")!;
+    assert.equal(w.zrodlo.nazwa, "Theory of Motion Exercise Library");
+    assert.equal(katalog.poId("EX-0128")!.film, "https://youtu.be/JGeRYIZdojU");
+    // EX-0059 Dumbbell bench press: link z arkusza (kanał CraftMyPlan) usunięty
+    // 23.10.2026 — film z biblioteki („2DB Bench Press”) zostaje.
+    assert.equal(katalog.poId("EX-0059")!.film ?? null, null);
+    assert.equal(wideoCwiczenia("EX-0059")!.zrodlo.nazwa, "Theory of Motion Exercise Library");
+  });
+
+  test("SLDL z BAZY to martwy ciąg na prostych nogach, nie jednonóż — film stiff-legged", () => {
+    // EX-0018 nie jest jednostronne (decyzja trenera), więc „Single Leg Deadlift” byłoby błędem.
+    const tytuly = filmyCwiczenia("EX-0018").map((f) => f.tytul.toLowerCase());
+    assert.ok(tytuly.length > 0);
+    assert.ok(tytuly.every((t) => /stiff|sldl/.test(t)), tytuly.join(" | "));
+  });
+
+  test("każde ćwiczenie z biblioteki ma film, źródło i komplet pól BAZY", () => {
+    const zBibliotek = katalog.wszystkie.filter((c) => c.biblioteka);
+    assert.ok(zBibliotek.length > 2500, `ćwiczeń z bibliotek: ${zBibliotek.length}`);
+    for (const c of zBibliotek) {
+      const filmy = filmyCwiczenia(c.id);
+      assert.ok(filmy.length > 0, `${c.id} ${c.nazwa}: bez filmu`);
+      assert.equal(c.film, `https://youtu.be/${(filmy.find((f) => f.rola === "demonstracja") ?? filmy[0])!.youtubeId}`, c.id);
+      assert.ok(["tom", "catalyst"].includes(c.biblioteka!), c.id);
+      assert.ok(c.kategoria && c.part && c.coeff && c.progresja, c.id);
+    }
+    // Catalyst to poradniki (omówienie techniki); ToM — pokazy i kilka dłuższych poradników.
+    const catalyst = FILMY_CWICZEN.filter((f) => f.zrodlo === "catalyst-youtube");
+    assert.ok(catalyst.length > 400, `filmów Catalyst: ${catalyst.length}`);
+    assert.ok(catalyst.every((f) => f.rola === "poradnik"));
+  });
+
+  test("nazwy unikalne bez względu na wielkość liter — import arkusza szuka po nazwie", () => {
+    const nazwy = katalog.wszystkie.map((c) => c.nazwa.toLocaleLowerCase("pl"));
+    assert.equal(new Set(nazwy).size, nazwy.length);
+  });
+
+  test("id ćwiczeń z bibliotek idą po BAZIE trenera i się nie powtarzają", () => {
+    // Ćwiczenia dodane przez trenera po imporcie bibliotek (od 17.10.2026)
+    // dostają numery za nimi — import bierze kolejny numer po wszystkich.
+    const nr = (c: { id: string }) => Number(c.id.slice(3));
+    const ids = katalog.wszystkie.filter((c) => c.biblioteka).map(nr);
+    const [min, maxBib] = [Math.min(...ids), Math.max(...ids)];
+    for (const c of katalog.bazaTrenera) assert.ok(nr(c) < min || nr(c) > maxBib, c.id);
+    assert.equal(new Set(katalog.wszystkie.map((c) => c.id)).size, katalog.wszystkie.length);
+  });
+
+  test("generator nie losuje ćwiczeń z bibliotek — tylko z BAZY trenera", () => {
+    const plan = {
+      nazwa: "t", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "objętość", serieMaksymalne: [],
+      sloty: ["Lower push", "Core", "Upper pull horizontal", "Lower pull"].flatMap((k, i) =>
+        ["A", "B", "C", "D", "E"].map((lp, j) => ({ positionId: `D${i + 1}-S0${j + 1}`, dzien: i + 1, lp: `${lp}1`,
+          cwiczenieId: null, kategoriaSzkieletu: k, tygodnie: {} }))),
+    } as unknown as Plan;
+    for (let ziarno = 0; ziarno < 20; ziarno++) {
+      let x = ziarno + 1;
+      const los = () => ((x = (x * 16807) % 2147483647) / 2147483647);
+      const { plan: wynik } = dobierzCwiczenia(plan, { los });
+      for (const s of wynik.sloty) {
+        if (s.cwiczenieId) assert.equal(katalog.poId(s.cwiczenieId)!.biblioteka, undefined, s.cwiczenieId);
+      }
+    }
+  });
+});
+
+describe("podgląd filmów w konsoli (▶ przy ćwiczeniu w planie, 10.10.2026)", () => {
+  test("id filmu z każdej postaci linku YouTube; inne adresy — nic", () => {
+    for (const link of ["https://youtu.be/t5Ft8OMG_D8", "https://youtu.be/t5Ft8OMG_D8?si=abc",
+      "https://www.youtube.com/watch?v=t5Ft8OMG_D8&t=3", "https://youtube.com/shorts/t5Ft8OMG_D8",
+      "https://www.youtube.com/embed/t5Ft8OMG_D8", "https://m.youtube.com/watch?feature=x&v=t5Ft8OMG_D8"]) {
+      assert.equal(idZLinkuYoutube(link), "t5Ft8OMG_D8", link);
+    }
+    for (const link of [undefined, "", "https://vimeo.com/123456789", "https://example.com/watch?v=t5Ft8OMG_D8",
+      "https://youtu.be/krotkie"]) {
+      assert.equal(idZLinkuYoutube(link), null, String(link));
+    }
+  });
+
+  test("ćwiczenie z filmami: ta sama karta, co u klienta", () => {
+    const c = katalog.poId("EX-0011")!;
+    assert.deepEqual(kartaPodgladu(c), kartaCwiczenia(c));
+  });
+
+  test("ćwiczenie BAZY tylko z linkiem w arkuszu: link jako film w karcie", () => {
+    const c = katalog.poId("EX-0062")!;
+    assert.equal(kartaCwiczenia(c), null, "bez wpisu w filmach");
+    const k = kartaPodgladu(c)!;
+    assert.equal(k.filmy.length, 1);
+    assert.equal(k.wideo?.youtubeId, idZLinkuYoutube(c.film));
+    assert.equal(k.wideo?.link, c.film);
+    assert.match(k.wideo!.zrodlo.nazwa, /arkusz/);
+    assert.equal(k.nazwa, c.nazwa);
+  });
+
+  // Trener, 16.10.2026: „przycisk film przenosi do YouTube zamiast otwierać
+  // film w aplikacji”.
+  test("klient: link YouTube z arkusza też gra w karcie — podpis bez słowa „arkusz”", () => {
+    const c = katalog.poId("EX-0174")!;
+    assert.match(c.film!, /youtube\.com\/shorts\//);
+    const k = kartaDlaKlienta(c)!;
+    assert.equal(k.wideo?.youtubeId, "fL2C8V9-GVE");
+    assert.equal(k.wideo?.link, c.film);
+    assert.doesNotMatch(k.wideo!.zrodlo.nazwa, /arkusz|BAZA/);
+    assert.equal(k.wideo!.zrodlo.platforma, "YouTube");
+    // Ćwiczenie z wpisami w filmach — bez zmian, ta sama karta co dotąd.
+    const lawka = katalog.poId("EX-0011")!;
+    assert.deepEqual(kartaDlaKlienta(lawka), kartaCwiczenia(lawka));
+  });
+
+  test("każde ćwiczenie BAZY z linkiem YouTube ma u klienta kartę z filmem", () => {
+    const zLinkiem = katalog.bazaTrenera.filter((c) => idZLinkuYoutube(c.film));
+    assert.ok(zLinkiem.length > 100);
+    for (const c of zLinkiem) assert.ok(kartaDlaKlienta(c)?.wideo, c.nazwa);
+  });
+
+  test("rozgrzewka: link YouTube → karta z filmem; inny link albo brak → bez karty", () => {
+    const k = kartaRozgrzewki("https://youtu.be/t5Ft8OMG_D8")!;
+    assert.equal(k.nazwa, "Rozgrzewka");
+    assert.equal(k.wideo?.youtubeId, "t5Ft8OMG_D8");
+    assert.deepEqual(k.filmy, [k.wideo]);
+    assert.equal(kartaRozgrzewki("https://vimeo.com/123456"), null);
+    assert.equal(kartaRozgrzewki("https://youtu.be/abc"), null, "złe id filmu");
+    assert.equal(kartaRozgrzewki(null), null);
+  });
+
+  test("ćwiczenie bez filmu i bez linku — brak karty", () => {
+    const bez = katalog.bazaTrenera.find((c) => !c.film && filmyCwiczenia(c.id).length === 0)!;
+    assert.ok(bez, "w BAZIE są ćwiczenia bez filmu");
+    assert.equal(kartaPodgladu(bez), null);
+  });
+});
+
+describe("filmy niezależne od BAZY", () => {
+  test("dane filmów są spójne z BAZĄ", () => {
+    assert.deepEqual(sprawdzFilmy(), []);
+  });
+
+  test("zamiana YouTube na własny MP4 = zmiana jednego wpisu; ćwiczenie i karta te same", () => {
+    const wlasne: WpisWideo[] = [{ id: "WID-0001", cwiczenieId: "EX-0011", typ: "plik",
+      plik: "/filmy/EX-0011.mp4", zrodlo: "wlasne", tytul: "Wyciskanie sztangi leżąc" }];
+    const zrodla = [{ id: "wlasne", nazwa: "CraftMyPlan", platforma: "własne" }];
+    const k = kartaCwiczenia(katalog.poId("EX-0011")!, wlasne, zrodla)!;
+    assert.equal(k.cwiczenieId, "EX-0011");
+    assert.equal(k.nazwaPl, "Wyciskanie sztangi leżąc");
+    assert.deepEqual(k.wideo, { typ: "plik", rola: "demonstracja", plik: "/filmy/EX-0011.mp4", tytul: "Wyciskanie sztangi leżąc",
+      link: null, zrodlo: { nazwa: "CraftMyPlan", platforma: "własne", url: null } });
+    assert.deepEqual(k.filmy, [k.wideo]);
+    assert.deepEqual(sprawdzFilmy(wlasne, zrodla), []);
+  });
+
+  test("kontrola łapie złe wpisy: nieznane ćwiczenie, ten sam film dwa razy, zła rola, złe id YouTube, plik bez adresu", () => {
+    const zle: WpisWideo[] = [
+      { id: "A", cwiczenieId: "EX-9999", typ: "youtube", youtubeId: "ejI1Nlsul9k", zrodlo: "opex-youtube", tytul: "x" },
+      { id: "B", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "ejI1Nlsul9k", zrodlo: "opex-youtube", tytul: "x" },
+      { id: "B2", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "ejI1Nlsul9k", zrodlo: "opex-youtube", tytul: "x", rola: "poradnik" },
+      { id: "B3", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "aaaaaaaaaaa", zrodlo: "opex-youtube", tytul: "x", rola: "reklama" as never },
+      { id: "C", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "za-krotkie", zrodlo: "opex-youtube", tytul: "x" },
+      { id: "C", cwiczenieId: "EX-0059", typ: "plik", zrodlo: "nieznane", tytul: "x" },
+    ];
+    const problemy = sprawdzFilmy(zle).join(" | ");
+    assert.match(problemy, /nie ma ćwiczenia EX-9999/);
+    assert.match(problemy, /B2: ten sam film już jest przy EX-0011/);
+    assert.match(problemy, /B3: nieznana rola/);
+    assert.doesNotMatch(problemy, /\bB:/, "drugi, inny film przy ćwiczeniu jest w porządku");
+    assert.match(problemy, /złe id filmu YouTube/);
+    assert.match(problemy, /powtórzony identyfikator/);
+    assert.match(problemy, /nieznane źródło/);
+    assert.match(problemy, /plik bez adresu/);
+  });
+
+  test("wpis z błędnym id YouTube nie trafia do aplikacji jako film", () => {
+    const zly: WpisWideo[] = [{ id: "X", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "<script>", zrodlo: "opex-youtube", tytul: "x" }];
+    assert.equal(wideoCwiczenia("EX-0011", zly), null);
+  });
+});
+
+describe("bez nagrań z prywatnego kanału trenera (23.10.2026)", () => {
+  // Trener: „żeby nie było w niej żadnych nagrań z [mojego] kanału — to często
+  // są moi klienci”. Linki zniknęły z BAZY i z szablonu arkusza.
+  const plan = (cwiczenieId: string): Plan => ({
+    nazwa: "x", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "objętość", serieMaksymalne: [],
+    sloty: [{ positionId: "D1-S02", dzien: 1, lp: "B1.", cwiczenieId, kategoriaSzkieletu: null }],
+  });
+  const bezNagrania = (id: string) => {
+    const p = plan(id);
+    return sprawdzPlan(p, przeliczPlan(p)).some((u) => u.kod === "BEZ_FILMU");
+  };
+
+  test("Incline dumbbell press bez linku z arkusza, ale z filmami z bibliotek — kontrola nie zgłasza „bez nagrania”", () => {
+    const c = katalog.poId("EX-0111")!;
+    assert.equal(c.film ?? null, null);
+    assert.ok(filmyCwiczenia("EX-0111").length > 0);
+    assert.equal(bezNagrania("EX-0111"), false);
+  });
+
+  test("ćwiczenie bez żadnego filmu dalej jest zgłaszane", () => {
+    assert.equal(filmyCwiczenia("EX-0003").length, 0);
+    assert.equal(bezNagrania("EX-0003"), true);
+  });
+});
+
+describe("Catalyst Athletics bez 7-sekundowego intro (23.10.2026)", () => {
+  // Trener: „filmiki na kanale Catalyst Athletics zaczynają się 7-sekundowym
+  // intro, które jest irytujące — mogłyby się zaczynać od 7 sekundy”.
+  test("filmy Catalyst startują od 7 s, czas na karcie bez intro; inne kanały od początku", () => {
+    const filmy = filmyCwiczenia("EX-0004");   // Arnold press: pokaz ToM i poradnik Catalyst
+    const catalyst = filmy.find((f) => f.zrodlo.nazwa === "Catalyst Athletics")!;
+    const wpis = FILMY_CWICZEN.find((w) => w.youtubeId === catalyst.youtubeId)!;
+    assert.equal(catalyst.startSekund, 7);
+    assert.equal(catalyst.czasSekund, wpis.czasSekund! - 7);
+    for (const f of filmy.filter((x) => x.zrodlo.nazwa !== "Catalyst Athletics")) {
+      assert.equal(f.startSekund, undefined, f.tytul);
+    }
+  });
+
+  test("każdy film Catalyst ma po intro co najmniej pół minuty", () => {
+    const catalyst = FILMY_CWICZEN.filter((f) => f.zrodlo === "catalyst-youtube");
+    assert.ok(catalyst.every((w) => w.czasSekund! - 7 >= 20), "krótki film straciłby całe ćwiczenie");
+  });
+
+  test("krótki film nie traci całej treści; zły pominięty początek — kontrola danych", () => {
+    const zrodla = [{ id: "z", nazwa: "Z", platforma: "YouTube", pominPoczatekSekund: 7 }];
+    const wpis = (czasSekund: number): WpisWideo[] =>
+      [{ id: "K", cwiczenieId: "EX-0011", typ: "youtube", youtubeId: "ejI1Nlsul9k", zrodlo: "z", tytul: "x", czasSekund }];
+    assert.equal(wideoCwiczenia("EX-0011", wpis(10), zrodla)!.startSekund, undefined);
+    assert.equal(wideoCwiczenia("EX-0011", wpis(10), zrodla)!.czasSekund, 10);
+    assert.equal(wideoCwiczenia("EX-0011", wpis(40), zrodla)!.startSekund, 7);
+    assert.match(sprawdzFilmy(wpis(40), [{ ...zrodla[0]!, pominPoczatekSekund: 0.5 }]).join(), /1–60/);
+    assert.deepEqual(sprawdzFilmy(wpis(40), zrodla), []);
+  });
+});
