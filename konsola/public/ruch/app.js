@@ -17,7 +17,7 @@ import {
   BladSesji, doCSV, doJSON, klatekZSylwetka, klatkaZWyniku, nowaSesja, opisSugestii, skutekSugestii,
   sugestieKlatki, ustawSugestie, usunSugestie, zJSON,
 } from "./sesja.js";
-import { GLOWNE_PUNKTY, nazwaPunktu, stronaPunktu } from "./szkielet.js";
+import { GLOWNE_PUNKTY, nazwaPunktu, stronaPunktu, ukryteBezStrony } from "./szkielet.js";
 import { wykresKatow } from "./wykres.js";
 
 const $ = (s) => document.querySelector(s);
@@ -33,6 +33,21 @@ const sekundy = (ms) => `${liczba(ms / 1000, 2)} s`;
 
 /* ── stan ekranu ────────────────────────────────────────────────── */
 
+// Punkty schowane z obrazu (23.10.2026) — ustawienie trenera na tym urządzeniu,
+// nie część analizy: zapis JSON ma zawsze wszystkie 33 punkty.
+const KLUCZ_UKRYTYCH = "craftmyplan-ruch-ukryte-punkty";
+function wczytajUkryte() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(KLUCZ_UKRYTYCH) ?? "[]");
+    return new Set(Array.isArray(lista) ? lista.filter((id) => GLOWNE_PUNKTY.includes(id)) : []);
+  } catch {
+    return new Set();
+  }
+}
+function zapiszUkryte() {
+  try { localStorage.setItem(KLUCZ_UKRYTYCH, JSON.stringify([...stan.ukryte])); } catch { /* bez pamięci — tylko do zamknięcia karty */ }
+}
+
 const stan = {
   sesja: null,
   katy: { "2d": null, "3d": null },
@@ -42,6 +57,7 @@ const stan = {
   biezaca: 0,
   wybrany: null,
   wszystkie: false,
+  ukryte: wczytajUkryte(),        // główne punkty schowane z obrazu
   pokazKaty: true,
   pokazTrajektorie: true,
   trajektorie: new Map(),        // id punktu → kolor (stały, póki wybrany)
@@ -380,6 +396,7 @@ function rysuj() {
     dpr,
     klatka: k,
     wszystkie: stan.wszystkie,
+    ukryte: stan.ukryte,
     wybrany: stan.wybrany,
     katy: stan.pokazKaty ? katyKlatki(k, wymiary()) : null,
     strona: strona(),
@@ -575,7 +592,7 @@ plotno.addEventListener("pointerdown", (e) => {
     return;
   }
   const id = punktPodPalcem(stan.sesja.klatki[stan.biezaca], x * r.width, y * r.height, r.width, r.height,
-    { wszystkie: stan.wszystkie, zasieg: e.pointerType === "touch" ? 36 : 22 });
+    { wszystkie: stan.wszystkie, ukryte: stan.ukryte, zasieg: e.pointerType === "touch" ? 36 : 22 });
   wybierzPunkt(id);
 });
 plotno.addEventListener("pointermove", (e) => {
@@ -676,9 +693,63 @@ $("#uklad").addEventListener("change", (e) => {
 });
 $("#strona").addEventListener("change", (e) => {
   stan.strona = e.target.value;
+  if (!stan.sesja) return;
   przeliczWyniki();
   rysuj();
 });
+
+/* ── punkty na obrazie ──────────────────────────────────────────── */
+
+// Trener, 23.10.2026: „chciałbym móc obserwować tylko punkty po prawej
+// stronie bez lewej w niektórych sytuacjach”. Wybór dotyczy tylko obrazu.
+function opisUkrytych() {
+  const widoczne = GLOWNE_PUNKTY.length - stan.ukryte.size;
+  if (stan.ukryte.size === 0) return "wszystkie";
+  for (const [s, opis] of [["P", "tylko prawa strona"], ["L", "tylko lewa strona"]]) {
+    const wzor = ukryteBezStrony(s);
+    if (wzor.size === stan.ukryte.size && [...wzor].every((id) => stan.ukryte.has(id))) return opis;
+  }
+  return widoczne === 0 ? "żaden — sam film" : `${widoczne} z ${GLOWNE_PUNKTY.length}`;
+}
+
+function rysujWyborPunktow() {
+  $("#opis-punktow").textContent = opisUkrytych();
+  $("#wybor-punktow").replaceChildren(...GLOWNE_PUNKTY.map((id) => {
+    const etykieta = el("label");
+    const pole = el("input");
+    pole.type = "checkbox";
+    pole.checked = !stan.ukryte.has(id);
+    pole.addEventListener("change", () => {
+      if (pole.checked) stan.ukryte.delete(id);
+      else stan.ukryte.add(id);
+      zmienionoUkryte();
+    });
+    const znak = el("span", "znak-strony");
+    znak.style.background = kolorPunktu(id);
+    etykieta.append(pole, znak, nazwaPunktu(id));
+    return etykieta;
+  }));
+}
+
+function zmienionoUkryte() {
+  zapiszUkryte();
+  rysujWyborPunktow();
+  rysuj();
+}
+
+for (const przycisk of document.querySelectorAll(".szybki-wybor-punktow button")) {
+  przycisk.addEventListener("click", () => {
+    const s = przycisk.dataset.strona || null;
+    stan.ukryte = ukryteBezStrony(s);
+    // Jedna strona na obrazie — kąty (tabela, wykres, powtórzenia) też z niej.
+    if (s && $("#strona").value !== s) {
+      $("#strona").value = s;
+      $("#strona").dispatchEvent(new Event("change"));
+    }
+    zmienionoUkryte();
+  });
+}
+rysujWyborPunktow();
 
 /* ── powtórzenia ────────────────────────────────────────────────── */
 
@@ -890,5 +961,6 @@ $("#anuluj-nagrywanie").addEventListener("click", () => {
 window.__analizaRuchu = {
   sesja: () => stan.sesja,
   stan: () => ({ biezaca: stan.biezaca, wybrany: stan.wybrany, strona: strona(), uklad: stan.uklad,
-    powtorzenia: stan.powtorzenia.length, trajektorie: [...stan.trajektorie.keys()], maWideo: stan.maWideo }),
+    powtorzenia: stan.powtorzenia.length, trajektorie: [...stan.trajektorie.keys()], maWideo: stan.maWideo,
+    ukryte: [...stan.ukryte] }),
 };

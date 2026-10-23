@@ -10,8 +10,9 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
-  GLOWNE_PUNKTY, INDEKS, LANDMARKI, POLACZENIA, rozwiazywacz,
+  GLOWNE_PUNKTY, grupaPunktu, INDEKS, LANDMARKI, POLACZENIA, punktWidoczny, rozwiazywacz, ukryteBezStrony,
 } from "../public/ruch/szkielet.js";
+import { KOLORY, punktPodPalcem, rysujKlatke } from "../public/ruch/rysowanie.js";
 import {
   KATY, katPrzy, katyKlatki, punktyKlatki, punktyWUkladzie, stronaBlizejKamery, ujecie, ujecieNagrania,
 } from "../public/ruch/geometria.js";
@@ -404,5 +405,90 @@ describe("zapis sesji", () => {
     assert.equal(punktyKlatki(k, WYMIARY, { wszystkie: true }).length, 34);
     const bark = punktyKlatki(k, WYMIARY).find((q) => q.id === "left_shoulder")!;
     okolo(bark.x, 640, 0.5);
+  });
+});
+
+describe("punkty na obrazie — wybór trenera (23.10.2026)", () => {
+  // Trener: „chciałbym móc obserwować tylko punkty po prawej stronie bez lewej”.
+  test("każdy z 33 punktów należy do jednego z głównych: twarz → głowa, palce → nadgarstek, stopa → staw skokowy", () => {
+    assert.deepEqual(
+      ["nose", "left_eye", "right_ear", "mouth_left", "right_thumb", "left_index", "right_pinky",
+        "left_foot_index", "right_heel", "left_knee", "glowa"].map(grupaPunktu),
+      ["glowa", "glowa", "glowa", "glowa", "right_wrist", "left_wrist", "right_wrist",
+        "left_ankle", "right_ankle", "left_knee", "glowa"]);
+    for (const l of LANDMARKI) assert.ok(GLOWNE_PUNKTY.includes(grupaPunktu(l.id)), l.id);
+  });
+
+  test("„tylko prawa” chowa sześć punktów lewej strony, głowa zostaje", () => {
+    assert.deepEqual([...ukryteBezStrony("P")].sort(),
+      ["left_ankle", "left_elbow", "left_hip", "left_knee", "left_shoulder", "left_wrist"]);
+    assert.ok([...ukryteBezStrony("L")].every((id) => id.startsWith("right_")));
+    assert.equal(ukryteBezStrony(null).size, 0);
+    // Lewe oko i ucho znikają razem z lewą stroną, ale nie przy schowanym jednym kolanie.
+    assert.equal(punktWidoczny("left_eye", ukryteBezStrony("P")), false);
+    assert.equal(punktWidoczny("right_eye", ukryteBezStrony("P")), true);
+    assert.equal(punktWidoczny("left_eye", new Set(["left_knee"])), true);
+    assert.equal(punktWidoczny("left_heel", new Set(["left_ankle"])), false);
+    assert.equal(punktWidoczny("nose", new Set(["glowa"])), false);
+  });
+
+  /** Płótno, które zapisuje, co i jakim kolorem zostało narysowane. */
+  function plotno() {
+    const stan: Record<string, any> = { canvas: { width: W, height: H } };
+    const kropki: { x: number; y: number; kolor: string }[] = [];
+    const odcinki: { x: number; y: number }[][] = [];
+    const napisy: string[] = [];
+    let start: { x: number; y: number } | null = null;
+    const ctx = new Proxy(stan, {
+      get(cel, nazwa: string) {
+        if (nazwa in cel) return cel[nazwa];
+        if (nazwa === "measureText") return () => ({ width: 20 });
+        if (nazwa === "arc") return (x: number, y: number) => kropki.push({ x, y, kolor: cel.fillStyle });
+        if (nazwa === "moveTo") return (x: number, y: number) => { start = { x, y }; };
+        if (nazwa === "lineTo") return (x: number, y: number) => { odcinki.push([start!, { x, y }]); };
+        if (nazwa === "fillText") return (tekst: string) => napisy.push(tekst);
+        return () => {};
+      },
+      set(cel, nazwa: string, wartosc) { cel[nazwa] = wartosc; return true; },
+    });
+    return { ctx, kropki, odcinki, napisy };
+  }
+
+  const k = klatka(sylwetkaZPrzodu());
+  const naObrazie = (id: string) => ({ x: k.p[INDEKS[id]][0] * W, y: k.p[INDEKS[id]][1] * H });
+  // Lewe punkty z własnym miejscem — w sztucznej sylwetce uszy, oczy i usta obu stron leżą w jednym.
+  const inne = LANDMARKI.filter((l) => l.strona !== "L").map((l) => naObrazie(l.id));
+  const lewe = LANDMARKI.filter((l) => l.strona === "L").map((l) => naObrazie(l.id))
+    .filter((q) => !inne.some((r) => Math.hypot(q.x - r.x, q.y - r.y) < 0.5));
+  const dotyka = (o: { x: number; y: number }[]) => o.some((q) => lewe.some((l) => Math.hypot(q.x - l.x, q.y - l.y) < 0.5));
+
+  test("tylko prawa strona: bez pomarańczowych kropek i bez linii do lewej strony — także przy 33 punktach", () => {
+    const bez = plotno();
+    rysujKlatke(bez.ctx, { klatka: k, wszystkie: true });
+    assert.ok(bez.kropki.some((q) => q.kolor === KOLORY.L), "kontrola: bez wyboru lewa strona jest");
+    assert.ok(bez.odcinki.some(dotyka), "kontrola: bez wyboru linie idą do lewej strony");
+
+    const prawa = plotno();
+    rysujKlatke(prawa.ctx, { klatka: k, wszystkie: true, ukryte: ukryteBezStrony("P") });
+    assert.equal(prawa.kropki.filter((q) => q.kolor === KOLORY.L).length, 0);
+    assert.ok(prawa.kropki.filter((q) => q.kolor === KOLORY.P).length >= 6 + 6, "prawe główne + palce i stopa");
+    assert.ok(prawa.kropki.some((q) => q.kolor === KOLORY.srodek), "głowa zostaje");
+    assert.ok(lewe.length >= 8);
+    assert.ok(!prawa.odcinki.some(dotyka), "żadna linia nie dochodzi do lewej strony");
+    assert.ok(prawa.odcinki.length > 5, "prawa strona ma swój szkielet");
+  });
+
+  test("kąt na obrazie tylko przy widocznym stawie; schowany punkt nie łapie się pod palcem", () => {
+    const katy = katyKlatki(k, WYMIARY);
+    const lewa = plotno();
+    rysujKlatke(lewa.ctx, { klatka: k, katy, strona: "L", ukryte: ukryteBezStrony("P") });
+    assert.equal(lewa.napisy.length, 0, "kąty lewej strony przy schowanej lewej — bez etykiet");
+    const prawa = plotno();
+    rysujKlatke(prawa.ctx, { klatka: k, katy, strona: "P", ukryte: ukryteBezStrony("P") });
+    assert.ok(prawa.napisy.length > 0);
+
+    const kolano = naObrazie("left_knee");
+    assert.equal(punktPodPalcem(k, kolano.x, kolano.y, W, H), "left_knee");
+    assert.equal(punktPodPalcem(k, kolano.x, kolano.y, W, H, { ukryte: ukryteBezStrony("P") }), null);
   });
 });

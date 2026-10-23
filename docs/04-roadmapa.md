@@ -1238,6 +1238,13 @@ Trener: „wyczyść też te linki z historii repozytorium”.
 * Wysłane z `--force-with-lease`. Automat na serwerze przeszedł na nową historię sam (punkt 106) — potwierdzone tym, że serwer podał nowy SW.
 * Czego to nie usuwa: kopii po stronie GitHuba (stare commity zostają dostępne pod dawnym numerem, póki GitHub ich nie wyczyści — o to prosi się GitHub Support) i kopii, które ktoś zdążył pobrać lub rozwidlić.
 
+**108. Analiza ruchu: wybór punktów widocznych na obrazie — 23.10.2026.**
+
+Trener (pytanie o zaznaczenia w „Trajektoriach”, które nie chowały punktów): „dodajmy faktycznie tą opcję, żebym mógł samodzielnie ustalić, jakie punkty będą widoczne na analizie — chciałbym np. móc obserwować tylko punkty po prawej stronie bez lewej w niektórych sytuacjach”.
+
+* „Punkty na obrazie” pod przełącznikami (zwinięte; w nagłówku stan: „wszystkie”, „tylko prawa strona”, „6 z 13”…): przyciski „Wszystkie”, „Tylko prawa strona”, „Tylko lewa strona” i pole przy każdym z 13 głównych punktów, z kropką w kolorze strony. Schowany punkt znika z obrazu razem z liniami, kątem przy nim, palcami i stopą; przy jednej stronie znikają też oko, ucho i kącik ust drugiej. Dotknięcie obrazu nie wybiera schowanego punktu. Dane bez zmian — tabele, wykres, trajektorie i zapis mają wszystkie punkty. „Tylko prawa / lewa” przestawia też stronę ciała dla kątów. Wybór zostaje w przeglądarce na tym urządzeniu. Opis w `docs/06-analiza-ruchu.md` (5a).
+* Testy: `analiza-ruchu.test.ts` (+4: przynależność 33 punktów, „tylko prawa”, rysowanie na płótnie zapisującym kolory i linie, kąt i dotknięcie przy schowanym punkcie). Przegląd ruchu (+11, bez filmu — sztuczna analiza): piksele lewej strony na obrazie 314 → 0 po „Tylko prawa strona”, prawa zostaje; strona kątów P; tabela z obiema stronami; dotknięcie schowanego kolana; „6 z 13”; wybór po ponownym otwarciu; telefon i iPad bez przewijania w bok; „Wszystkie”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

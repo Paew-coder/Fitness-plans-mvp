@@ -111,6 +111,46 @@ export function stronaPunktu(id) {
   return i === undefined ? null : LANDMARKI[i].strona;
 }
 
+/**
+ * Który z głównych punktów „niesie” dany punkt na obrazie — do wyboru, co
+ * widać na analizie (trener, 23.10.2026: „chciałbym móc obserwować tylko
+ * punkty po prawej stronie bez lewej”). Twarz należy do głowy, palce dłoni
+ * do nadgarstka, pięta i palce stopy do stawu skokowego; główne — same do siebie.
+ */
+export function grupaPunktu(id) {
+  const i = INDEKS[id];
+  if (i === undefined) return id;
+  if (i <= 10) return "glowa";
+  const strona = id.startsWith("left_") ? "left" : "right";
+  if (/_(heel|foot_index)$/.test(id)) return `${strona}_ankle`;
+  if (/_(pinky|index|thumb)$/.test(id)) return `${strona}_wrist`;
+  return id;
+}
+
+/**
+ * Czy punkt widać na obrazie przy schowanych głównych punktach (`ukryte`).
+ * Znika razem ze swoim głównym; oko, ucho i kącik ust jednej strony — także
+ * razem z całą tą stroną (przy „tylko prawa” lewe oko nie zostaje samo).
+ */
+export function punktWidoczny(id, ukryte) {
+  if (ukryte.has(grupaPunktu(id))) return false;
+  const s = stronaPunktu(id);
+  if (s === null || GLOWNE_PUNKTY.includes(id)) return true;
+  return GLOWNE_PUNKTY.some((g) => stronaPunktu(g) === s && !ukryte.has(g));
+}
+
+/**
+ * Główne punkty schowane przy „tylko jedna strona”: `"P"` chowa lewą stronę,
+ * `"L"` — prawą; głowa zostaje. Bez strony — nic schowane.
+ */
+export function ukryteBezStrony(widoczna) {
+  if (!widoczna) return new Set();
+  return new Set(GLOWNE_PUNKTY.filter((id) => {
+    const s = stronaPunktu(id);
+    return s !== null && s !== widoczna;
+  }));
+}
+
 /** Odpowiednik punktu po drugiej stronie ciała (`left_hip` ↔ `right_hip`). */
 export function lustro(id) {
   if (id.startsWith("left_")) return `right_${id.slice(5)}`;
