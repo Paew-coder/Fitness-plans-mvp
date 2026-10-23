@@ -1215,6 +1215,13 @@ Trener: „popraw bazę ćwiczeń tak, żeby nie było w niej żadnych nagrań z
 * Dwa z tych ćwiczeń (Eccentric pull up, Incline dumbbell press) mają filmy z bibliotek i klient widzi je jak dotąd; 13 zostało bez filmu — kontrola planu zgłosi przy nich „Ćwiczenie bez nagrania”, dopóki trener nie poda nowego linku. Ta kontrola liczy teraz także filmy z bibliotek (wcześniej patrzyła tylko na link z arkusza).
 * Ćwiczenia własne trenera i filmy rozgrzewek leżą w bazie na serwerze, nie w repozytorium — tych zmiana nie dotyczy. Stare wersje plików zostają w historii repozytorium.
 
+**105. Bez filmów z kanału CraftMyPlan; nowe ćwiczenie „Barbell shrugs behind the back” — 23.10.2026.**
+
+Trener: „usuń też filmy z kanału CraftMyPlan. Poza tym dodaj mi to ćwiczenie do bazy” (link do filmu „Barbell Shrugs Behind The Back”).
+
+* 6 linków z kanału CraftMyPlan usunięte tak samo jak w punkcie 104 (BAZA, katalog silnika, zakładka BAZA szablonu arkusza). Filmy z bibliotek zostają u Dumbbell bench press (4), Dumbbell bench press alternating (1) i Incline dumbbell press alternating (2). Bez filmu zostały Dumbbell over head press, Dumbbell over head press alternating i Dumbbell s/a Arnold press.
+* **Barbell shrugs behind the back** (EX-3628): Upper pull vertical (szrugsy wg zasad klasyfikacji), part r, coeff 0,25 (izolacja, jak Calf raises), kg, skok 2,5 kg, obustronne. Film z kanału My PT Hub (sprawdzony oEmbedem: osadzanie dozwolone) gra w aplikacji z podpisem „wybrany przez trenera”. BAZA trenera: 164 z arkusza + 5 dodanych.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

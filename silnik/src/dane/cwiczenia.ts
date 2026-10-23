@@ -4,7 +4,7 @@
 
 import type { Cwiczenie } from "../typy.ts";
 
-/** 168 cwiczen z BAZY 5.17 i 3420 z bibliotek filmow. */
+/** 169 cwiczen z BAZY 5.17 i 3420 z bibliotek filmow. */
 export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0001", nazwa: "Abduction machine", kategoria: "Lower pull", part: "d", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/H98IP8rARy4", scaloneId: "EX-0098" },
   { id: "EX-0002", nazwa: "Adduction machine", kategoria: "Lower push", part: "s", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/CjAVezAggkI", scaloneId: "EX-0099" },
@@ -25,6 +25,7 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0015", nazwa: "Barbell oscilation", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 2.5, progresja: "kg" },
   { id: "EX-0016", nazwa: "Barbell row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/bm0_q9bR_HA" },
   { id: "EX-0017", nazwa: "Barbell row dead stop pins", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/qelbH7YGpms" },
+  { id: "EX-3628", nazwa: "Barbell shrugs behind the back", kategoria: "Upper pull vertical", part: "r", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/886maSVQUWo", uwagi: "DODANE PRZEZ TRENERA 23.10.2026 – nie ma tego w BAZIE 5.17. Szrugsy jak w zasadach klasyfikacji (Upper pull vertical); izolacja jak Calf raises: coeff 0,25, skok 2,5 kg." },
   { id: "EX-0018", nazwa: "Barbell SLDL", kategoria: "Lower pull", part: "d", coeff: 0.25, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/lI8-igvsnVQ" },
   { id: "EX-0019", nazwa: "Bayesian curl", kategoria: "Bicep", part: "r", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/7sEMu6sxk9c" },
   { id: "EX-0020", nazwa: "Bear renegade row", kategoria: "Core", part: "c", coeff: 0.5, skokKg: 2.5, progresja: "kg", jednostronne: true },
@@ -55,8 +56,8 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0055", nazwa: "Deficit reverse lunge", kategoria: "Lower push", part: "s", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtube.com/shorts/mTOMsoRLXl0", jednostronne: true },
   { id: "EX-0056", nazwa: "Dips", kategoria: "Upper push horizontal", part: "b", coeff: 1.0, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/ebNGIOsFSe0", uwagi: "DO WERYFIKACJI – konflikt category/part/coeff" },
   { id: "EX-0057", nazwa: "Dips weighted", kategoria: "Upper push horizontal", part: "b", coeff: 1.0, skokKg: 2.5, progresja: "dodatkowy ciężar", film: "https://youtube.com/shorts/HYqNyAx-32w" },
-  { id: "EX-0059", nazwa: "Dumbbell bench press", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: null },
-  { id: "EX-0060", nazwa: "Dumbbell bench press alternating", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: null, jednostronne: true },
+  { id: "EX-0059", nazwa: "Dumbbell bench press", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg" },
+  { id: "EX-0060", nazwa: "Dumbbell bench press alternating", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", jednostronne: true },
   { id: "EX-0061", nazwa: "Dumbbell curl", kategoria: "Bicep", part: "r", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/iixND1P2lik", scaloneId: "EX-0026, EX-0027, EX-0028, EX-0032" },
   { id: "EX-0062", nazwa: "Dumbbell external rotation", kategoria: "Upper pull horizontal", part: "r", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/t5Ft8OMG_D8" },
   { id: "EX-0063", nazwa: "Dumbbell face down curl", kategoria: "Bicep", part: "r", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/jWKKcsAhZxc" },
@@ -65,10 +66,10 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0069", nazwa: "Dumbbell lateral raise", kategoria: "Upper push vertical", part: "b", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/XPPfnSEATJA", scaloneId: "EX-0070" },
   { id: "EX-0071", nazwa: "Dumbbell lunges", kategoria: "Lower push", part: "s", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/8fZxWTiIJWo", jednostronne: true },
   { id: "EX-0073", nazwa: "Dumbbell OH press", kategoria: "Tricep", part: "b", coeff: 0.25, skokKg: 1.0, progresja: "kg" },
-  { id: "EX-0075", nazwa: "Dumbbell over head press", kategoria: "Upper push vertical", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: null, scaloneId: "EX-0074" },
-  { id: "EX-0076", nazwa: "Dumbbell over head press alternating", kategoria: "Upper push vertical", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: null, jednostronne: true },
+  { id: "EX-0075", nazwa: "Dumbbell over head press", kategoria: "Upper push vertical", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", scaloneId: "EX-0074" },
+  { id: "EX-0076", nazwa: "Dumbbell over head press alternating", kategoria: "Upper push vertical", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", jednostronne: true },
   { id: "EX-0077", nazwa: "Dumbbell row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtu.be/DMo3HJoawrU" },
-  { id: "EX-0079", nazwa: "Dumbbell s/a Arnold press", kategoria: "Upper push vertical", part: "b", coeff: 0.5, skokKg: 1.0, progresja: "kg", film: null, jednostronne: true },
+  { id: "EX-0079", nazwa: "Dumbbell s/a Arnold press", kategoria: "Upper push vertical", part: "b", coeff: 0.5, skokKg: 1.0, progresja: "kg", jednostronne: true },
   { id: "EX-0080", nazwa: "Dumbbell s/a row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.5, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/ZRSGpBUVcNw", scaloneId: "EX-0078", jednostronne: true },
   { id: "EX-0081", nazwa: "Dumbbell seal row", kategoria: "Upper pull horizontal", part: "r", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtube.com/shorts/zc-eFPRdPf0" },
   { id: "EX-0082", nazwa: "Dumbbells jumps", kategoria: "Lower push", part: "s", coeff: 0.75, skokKg: 2.5, progresja: "kg" },
@@ -98,7 +99,7 @@ export const BAZA_CWICZEN: readonly Cwiczenie[] = [
   { id: "EX-0109", nazwa: "Incline dumbbell curl (front)", kategoria: "Bicep", part: "r", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/aDpreKl6uI4" },
   { id: "EX-0110", nazwa: "Incline dumbbell fly", kategoria: "Upper push horizontal", part: "b", coeff: 0.5, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/JSDpq14vCZ8", scaloneId: "EX-0066" },
   { id: "EX-0111", nazwa: "Incline dumbbell press", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", uwagi: "DO WERYFIKACJI – konflikt category/part/coeff", scaloneId: "EX-0068" },
-  { id: "EX-0112", nazwa: "Incline dumbbell press alternating", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: null, jednostronne: true },
+  { id: "EX-0112", nazwa: "Incline dumbbell press alternating", kategoria: "Upper push horizontal", part: "b", coeff: 0.75, skokKg: 2.5, progresja: "kg", jednostronne: true },
   { id: "EX-0113", nazwa: "Incline sit-ups", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 0.0, progresja: "masa ciała", film: "https://youtu.be/DAnTf16NcT0" },
   { id: "EX-0114", nazwa: "Jefferson cable", kategoria: "Lower pull", part: "d", coeff: 0.25, skokKg: 1.0, progresja: "kg", film: "https://youtu.be/N8gaQgvEYv0", scaloneId: "EX-0115" },
   { id: "EX-0117", nazwa: "Kettlebell march", kategoria: "Core", part: "c", coeff: 0.75, skokKg: 2.5, progresja: "kg", film: "https://youtube.com/shorts/a9tTen2zwuM", jednostronne: true },

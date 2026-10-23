@@ -417,12 +417,13 @@ describe("katalog BAZY 5.17", () => {
   // filmów (import 09.10.2026), które są w tym samym katalogu.
   const bazaTrenera = new Katalog(katalog.bazaTrenera);
 
-  test("zawiera 164 ćwiczenia z arkusza i 4 dodane przez trenera", () => {
+  test("zawiera 164 ćwiczenia z arkusza i 5 dodanych przez trenera", () => {
     // Dodane: Sumo deadlift (EX-0204), „Barbell low bar squat paused 3sec”
     // (EX-0205, 02.10.2026 — progresja pauzowana), 17.10.2026: „B/l dragonflag
-    // bent knees” (EX-3626) i „S/l clean” (EX-3627) — numery za bibliotekami.
-    const DODANE = ["EX-0204", "EX-0205", "EX-3626", "EX-3627"];
-    assert.equal(katalog.bazaTrenera.length, 168);
+    // bent knees” (EX-3626) i „S/l clean” (EX-3627) — numery za bibliotekami;
+    // 23.10.2026: „Barbell shrugs behind the back” (EX-3628).
+    const DODANE = ["EX-0204", "EX-0205", "EX-3626", "EX-3627", "EX-3628"];
+    assert.equal(katalog.bazaTrenera.length, 169);
     // Rozdzielone celowo: arkusz to arkusz, a to, co trener dołożył później,
     // ma być widać. Inaczej za pół roku nikt nie odróżni jednego od drugiego.
     const zArkusza = katalog.bazaTrenera.filter((c) => !DODANE.includes(c.id));
@@ -434,6 +435,10 @@ describe("katalog BAZY 5.17", () => {
     const clean = katalog.poNazwie("s/l clean")!;
     assert.deepEqual([clean.kategoria, clean.progresja, clean.skokKg, clean.jednostronne],
       ["Lower pull", "kg", 1, true]);
+    const szrugsy = katalog.poNazwie("barbell shrugs behind the back")!;
+    assert.deepEqual([szrugsy.id, szrugsy.kategoria, szrugsy.part, szrugsy.coeff, szrugsy.skokKg, szrugsy.progresja,
+      szrugsy.jednostronne, szrugsy.film],
+      ["EX-3628", "Upper pull vertical", "r", 0.25, 2.5, "kg", undefined, "https://youtu.be/886maSVQUWo"]);
   });
 
   test("wyszukiwanie po ID i po nazwie", () => {
@@ -480,7 +485,7 @@ describe("katalog BAZY 5.17", () => {
 
   test("filtr kategorii; pusta kategoria = pełna baza", () => {
     assert.equal(bazaTrenera.wKategorii("Tricep").length, 9);
-    assert.equal(bazaTrenera.wKategorii(null).length, 168);
+    assert.equal(bazaTrenera.wKategorii(null).length, 169);
     assert.equal(katalog.wKategorii(null).length, katalog.wszystkie.length);
   });
 
@@ -521,8 +526,9 @@ describe("katalog BAZY 5.17", () => {
     // 26 z arkusza + Sumo deadlift, do którego trener nie podał jeszcze nagrania,
     // + pauzowany przysiad low bar (02.10.2026, film dopisze trener)
     // + „S/l clean” (17.10.2026, bez linku)
-    // + 15 ćwiczeń, z których 23.10.2026 zniknęły linki do prywatnego kanału trenera.
-    assert.equal(bazaTrenera.bezFilmu().length, 44);
+    // + 15 ćwiczeń, z których 23.10.2026 zniknęły linki do prywatnego kanału trenera
+    // + 6 z kanałem CraftMyPlan (ten sam dzień).
+    assert.equal(bazaTrenera.bezFilmu().length, 50);
   });
 });
 
