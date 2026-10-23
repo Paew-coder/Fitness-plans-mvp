@@ -437,6 +437,7 @@ describe("punkty na obrazie — wybór trenera (23.10.2026)", () => {
     const stan: Record<string, any> = { canvas: { width: W, height: H } };
     const kropki: { x: number; y: number; kolor: string }[] = [];
     const odcinki: { x: number; y: number }[][] = [];
+    const kolory: string[] = [];
     const napisy: string[] = [];
     let start: { x: number; y: number } | null = null;
     const ctx = new Proxy(stan, {
@@ -445,13 +446,13 @@ describe("punkty na obrazie — wybór trenera (23.10.2026)", () => {
         if (nazwa === "measureText") return () => ({ width: 20 });
         if (nazwa === "arc") return (x: number, y: number) => kropki.push({ x, y, kolor: cel.fillStyle });
         if (nazwa === "moveTo") return (x: number, y: number) => { start = { x, y }; };
-        if (nazwa === "lineTo") return (x: number, y: number) => { odcinki.push([start!, { x, y }]); };
+        if (nazwa === "lineTo") return (x: number, y: number) => { odcinki.push([start!, { x, y }]); kolory.push(cel.strokeStyle); };
         if (nazwa === "fillText") return (tekst: string) => napisy.push(tekst);
         return () => {};
       },
       set(cel, nazwa: string, wartosc) { cel[nazwa] = wartosc; return true; },
     });
-    return { ctx, kropki, odcinki, napisy };
+    return { ctx, kropki, odcinki, napisy, kolory };
   }
 
   const k = klatka(sylwetkaZPrzodu());
@@ -490,5 +491,22 @@ describe("punkty na obrazie — wybór trenera (23.10.2026)", () => {
     const kolano = naObrazie("left_knee");
     assert.equal(punktPodPalcem(k, kolano.x, kolano.y, W, H), "left_knee");
     assert.equal(punktPodPalcem(k, kolano.x, kolano.y, W, H, { ukryte: ukryteBezStrony("P") }), null);
+  });
+
+  test("trajektoria schowanego punktu nie rysuje się na obrazie, reszta tak (23.10.2026)", () => {
+    // Trener: „jeżeli któryś z tych punktów nie jest oznaczony, np. bark, to nie
+    // wyświetla się jego trajektoria — wyświetlają się tylko te, które mają swój punkt”.
+    const droga = [{ x: 0.4, y: 0.3 }, { x: 0.42, y: 0.35 }, { x: 0.44, y: 0.4 }];
+    const trajektorie = [
+      { id: "right_shoulder", kolor: "#9085e9", punkty: droga, biezacy: 2 },
+      { id: "right_hip", kolor: "#1baf7a", punkty: droga, biezacy: 2 },
+    ];
+    const wszystkie = plotno();
+    rysujKlatke(wszystkie.ctx, { klatka: k, trajektorie });
+    assert.ok(wszystkie.kolory.includes("#9085e9") && wszystkie.kolory.includes("#1baf7a"), "kontrola: obie drogi są");
+    const bezBarku = plotno();
+    rysujKlatke(bezBarku.ctx, { klatka: k, trajektorie, ukryte: new Set(["right_shoulder"]) });
+    assert.ok(!bezBarku.kolory.includes("#9085e9"), "droga barku zniknęła");
+    assert.ok(bezBarku.kolory.includes("#1baf7a"), "droga biodra została");
   });
 });
