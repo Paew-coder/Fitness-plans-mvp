@@ -2,6 +2,7 @@ import { PROGRESJE_Z_TABELI, type Uwaga } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { numerLp, pozycjaBoju } from "./szablon-boju.ts";
 import { konfliktSeriiMaksymalnych } from "./rpe.ts";
+import { filmyCwiczenia } from "./wideo.ts";
 import { POWT_MAX } from "./rpe.ts";
 import type { Plan, PlanWyliczony } from "./plan.ts";
 
@@ -127,7 +128,11 @@ export function sprawdzPlan(
     "BEZ_FILMU",
     "ostrzezenie",
     "Ćwiczenie bez nagrania",
-    zCwiczeniem.filter((s) => !s.cwiczenie!.film).map((s) => `${s.positionId} ${s.cwiczenie!.nazwa}`),
+    // Film z bibliotek (filmy-cwiczen.json) też się liczy — link z arkusza
+    // mógł zniknąć (23.10.2026: bez nagrań z prywatnego kanału trenera).
+    zCwiczeniem
+      .filter((s) => !s.cwiczenie!.film && filmyCwiczenia(s.cwiczenie!.id).length === 0)
+      .map((s) => `${s.positionId} ${s.cwiczenie!.nazwa}`),
   );
 
   dodaj(
