@@ -278,6 +278,63 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.evaluate(() => localStorage.clear());
     await s.reload();
 
+    // ── początek filmu (23.10.2026) ───────────────────────────────
+    // Trener: „aplikacja ucina mi początek filmu, gdzie osoba stoi prosto przed
+    // przysiadem — potrzebuję filmów od samego początku, tak jak je prześlę”.
+    // Film z licznikiem klatek (ffmpeg): pierwsza klatka analizy ma być
+    // pierwszą klatką filmu, bez względu na to, jak szybko ruszy odtwarzanie.
+    console.log("\n  Początek filmu");
+    const licznik = join(robocze, "licznik.webm");
+    let maFfmpeg = true;
+    try {
+      execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=duration=4:size=640x360:rate=30",
+        "-c:v", "libvpx", "-b:v", "800k", "-g", "60", licznik]);
+    } catch { maFfmpeg = false; }
+    if (!maFfmpeg) console.log("  — pominięty (brak ffmpeg)");
+    for (const [opis, gestosc, obciazenie] of maFfmpeg ? [
+      ["każda klatka", "0", "nie"], ["każda klatka, obciążony procesor", "0", "stale"],
+      ["każda klatka, wolny start odtwarzania (jak Safari)", "0", "start"], ["najwyżej 15 kl./s", "15", "nie"],
+      ["najwyżej 15 kl./s, wolny start odtwarzania", "15", "start"],
+    ] as const : []) {
+      await s.goto(`${adres}/ruch/`);
+      await s.waitForFunction(() => (document.querySelector("#model") as HTMLSelectElement).options.length > 0);
+      await s.selectOption("#gestosc", gestosc);
+      if (obciazenie === "stale") {
+        await s.evaluate(() => {
+          (window as any).__obciazenie = setInterval(() => {
+            const t = performance.now();
+            while (performance.now() - t < 30) { /* zajęty */ }
+          }, 40);
+        });
+      }
+      if (obciazenie === "start") {
+        // Film rusza, a przeglądarka przez 1,2 s nie zgłasza klatek (start
+        // analizy: drugie play() — pierwsze mierzy odstęp klatek).
+        await s.evaluate(() => {
+          const play = HTMLMediaElement.prototype.play;
+          let ile = 0;
+          HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+            const wynik = play.call(this);
+            if (++ile === 2) { const t = performance.now(); while (performance.now() - t < 1200) { /* zajęty */ } }
+            return wynik;
+          };
+        });
+      }
+      await s.setInputFiles("#plik-wideo", licznik);
+      const ok = await czekajNaAnalize(s, 120_000);
+      if (obciazenie === "stale") await s.evaluate(() => clearInterval((window as any).__obciazenie));
+      const ses = ok ? await sesjaEkranu(s) : null;
+      const pierwsza = ses?.klatki[0]?.t ?? NaN;
+      const oczekiwane = gestosc === "0" ? 120 : 60;
+      const czasy = (ses?.klatki ?? []).map((k: any) => k.t);
+      const najwiekszaPrzerwa = Math.max(...czasy.slice(1).map((t: number, i: number) => t - czasy[i]!));
+      sprawdz(`${opis}: analiza od pierwszej klatki filmu, bez dziury na początku`,
+        ok && pierwsza < 1 && Math.abs(czasy.length - oczekiwane) <= 2 && najwiekszaPrzerwa < (gestosc === "0" ? 50 : 100),
+        `pierwsza klatka ${pierwsza} ms, ${czasy.length} klatek (film: ${oczekiwane}), największa przerwa ${najwiekszaPrzerwa.toFixed(1)} ms`);
+      const film = ok ? await s.evaluate(() => (document.querySelector("#wideo") as HTMLVideoElement).currentTime) : NaN;
+      sprawdz(`${opis}: po analizie film stoi na początku`, film < 0.05, `${film} s`);
+    }
+
     // ── przysiad z przodu ─────────────────────────────────────────
     if (!PRZOD) console.log("\n  Przysiad z przodu — pominięty (brak WIDEO_PRZYSIAD_PRZOD)");
     else {

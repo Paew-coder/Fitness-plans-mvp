@@ -212,16 +212,41 @@ async function zmierzKrok(wideo) {
 async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwano }) {
   const tempo = wideo.playbackRate;
   wideo.playbackRate = 1;
-  // Najkrótszy widziany odstęp między klatkami = odstęp klatek filmu.
-  let krok = maksFps ? Infinity : await zmierzKrok(wideo);
-  await przewin(wideo, 0);
+  // Najkrótszy widziany odstęp między klatkami = odstęp klatek filmu. Przy
+  // limicie kl./s krok analizy jest rzadszy, ale nigdy gęstszy niż film.
+  let krokFilmu = await zmierzKrok(wideo);
+  const krokAnalizy = () => (maksFps ? Math.max(krokFilmu, 1 / maksFps) : krokFilmu);
   const minOdstep = maksFps ? 1 / maksFps - 0.002 : 0;
-  let ostatnia = -Infinity;
   let przerwane = false;
   let skonczone = false;
   let uzupelnione = 0;
   // Bieżąca klatka odłożona na bok, gdy trzeba się cofnąć po zgubione.
   const odlozona = document.createElement("canvas");
+  const uzupelnij = async (od, doT, ile) => {
+    for (let k = 1; k <= ile; k++) {
+      const tm = od + ((doT - od) * k) / (ile + 1);
+      await przewin(wideo, tm + (Number.isFinite(krokFilmu) ? krokFilmu / 4 : 0));
+      policz(tm * 1000);
+      uzupelnione++;
+    }
+  };
+
+  /*
+   * Pierwsza klatka filmu — zanim ruszy odtwarzanie. Trener, 23.10.2026:
+   * „aplikacja ucina mi początek filmu, gdzie osoba stoi prosto przed
+   * przysiadem”. Odtwarzanie zgłasza dopiero klatkę, która pokaże się po
+   * starcie — pierwsza (już widoczna po przewinięciu) przepadała zawsze,
+   * a gdy start trwa dłużej (Safari, pierwsze uruchomienie modelu), także
+   * cały początek: przerwa przed pierwszą zgłoszoną klatką nie była
+   * uzupełniana. Teraz klatka 0 jest liczona tutaj, a przerwa za nią —
+   * jak każda inna niżej.
+   */
+  await przewin(wideo, 0);
+  policz(0);
+  let ostatnia = 0;
+  // Ta sama klatka zgłoszona drugi raz (po starcie albo po uzupełnianiu).
+  const taSama = (t) => t - ostatnia < (Number.isFinite(krokFilmu) ? krokFilmu / 2 : 1e-4);
+
   await new Promise((koniec) => {
     let straznik = null;
     const pilnuj = () => {
@@ -243,9 +268,9 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
       clearTimeout(straznik);
       if (przerwano?.()) { przerwane = true; return zakoncz(); }
       const t = meta.mediaTime;
-      // Ta sama klatka drugi raz (po powrocie z uzupełniania) — już policzona.
-      if (t > ostatnia + 1e-4 && t - ostatnia >= minOdstep) {
+      if (!taSama(t) && t - ostatnia >= minOdstep) {
         const odstep = t - ostatnia;
+        const krok = krokAnalizy();
         /*
          * Zgubione klatki. Przy obciążonym procesorze przeglądarka potrafi
          * pokazać dwie klatki w jednym odświeżeniu ekranu i wywołać nas tylko
@@ -253,26 +278,20 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
          * (07.10.2026). Wtedy odkładamy bieżącą klatkę, cofamy się po
          * brakujące (przewinięcie — wolne, ale to rzadkie), liczymy je
          * po kolei i dopiero potem bieżącą. Znaczniki czasu dalej rosną.
-         * Tylko przy „każdej klatce filmu” — przy limicie kl./s pomijanie
-         * jest zamierzone.
+         * Przy limicie kl./s — co krok analizy (pomijanie gęstszych klatek
+         * jest zamierzone, dziura dłuższa niż krok — nie).
          */
-        if (!maksFps && Number.isFinite(krok) && Number.isFinite(ostatnia) && odstep > 1.5 * krok) {
+        if (Number.isFinite(krok) && odstep > 1.5 * krok) {
           odlozona.width = wideo.videoWidth;
           odlozona.height = wideo.videoHeight;
           odlozona.getContext("2d").drawImage(wideo, 0, 0);
-          const brakuje = Math.round(odstep / krok) - 1;
-          for (let k = 1; k <= brakuje; k++) {
-            const tm = ostatnia + (odstep * k) / (brakuje + 1);
-            await przewin(wideo, tm + krok / 4);
-            policz(tm * 1000);
-            uzupelnione++;
-          }
+          await uzupelnij(ostatnia, t, Math.round(odstep / krok) - 1);
           policz(t * 1000, odlozona);
-          await przewin(wideo, t + krok / 4);
+          await przewin(wideo, t + (Number.isFinite(krokFilmu) ? krokFilmu / 4 : 0));
         } else {
           policz(t * 1000);
         }
-        if (Number.isFinite(ostatnia)) krok = Math.min(krok, odstep);
+        if (!maksFps) krokFilmu = Math.min(krokFilmu, odstep);
         ostatnia = t;
       }
       postep?.(czas > 0 ? Math.min(1, t / czas) : 0);
@@ -286,6 +305,17 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
     pilnuj();
     wideo.play().catch(zakoncz);
   });
+
+  /*
+   * Ostatnia klatka: „ended” przychodzi, zanim odtwarzanie zgłosi ostatnią
+   * pokazaną klatkę. Najwyżej trzy kroki — dźwięk dłuższy niż obraz nie ma
+   * dorobić serii kopii ostatniej klatki.
+   */
+  const krok = krokAnalizy();
+  if (!przerwane && Number.isFinite(krok) && Number.isFinite(krokFilmu)) {
+    const brakuje = Math.min(3, Math.floor((czas - krokFilmu / 2 - ostatnia) / krok));
+    if (brakuje > 0) await uzupelnij(ostatnia, ostatnia + krok * (brakuje + 1), brakuje);
+  }
   wideo.playbackRate = tempo;
   return { przerwano: przerwane, uzupelnione };
 }
