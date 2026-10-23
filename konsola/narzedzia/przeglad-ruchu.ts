@@ -27,7 +27,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { doliczBledy, pilnujBledow, podsumuj, sprawdz, wczytajPlaywrighta, zSerwerem } from "./przegladarka.ts";
-import { zJSON } from "../public/ruch/sesja.js";
+import { doJSON, klatkaZWyniku, nowaSesja, zJSON } from "../public/ruch/sesja.js";
+import { INDEKS, LANDMARKI } from "../public/ruch/szkielet.js";
 
 const WERSJA = "0.10.35";
 const PAMIEC = join(homedir(), ".cache", "craftmyplan", `mediapipe-${WERSJA}`);
@@ -108,6 +109,50 @@ async function czekajNaAnalize(s: any, ms = 300_000): Promise<boolean> {
 }
 
 /**
+ * Sztuczna analiza z przodu (bez MediaPipe i bez filmu): lewa strona osoby po
+ * prawej stronie obrazu, prawa po lewej, lekki ruch w dół i w górę. Do kontroli
+ * ekranu, które nie potrzebują prawdziwego nagrania.
+ */
+function sztucznaAnaliza(): string {
+  const W = 1280, H = 720;
+  const sesja = nowaSesja({ cwiczenie: "przysiad", wideo: { nazwa: "sztuczna.webm", szerokosc: W, wysokosc: H },
+    analiza: { biblioteka: "sztuczna", model: "brak" } });
+  const os: Record<string, [number, number]> = {
+    nose: [0, 110], left_ear: [25, 105], right_ear: [-25, 105], left_eye: [12, 100], right_eye: [-12, 100],
+    left_eye_inner: [6, 100], right_eye_inner: [-6, 100], left_eye_outer: [18, 100], right_eye_outer: [-18, 100],
+    mouth_left: [10, 125], mouth_right: [-10, 125],
+    shoulder: [90, 180], elbow: [110, 280], wrist: [115, 370], pinky: [118, 395], index: [112, 400], thumb: [100, 390],
+    hip: [70, 400], knee: [75, 520], ankle: [75, 640], heel: [75, 660], foot_index: [85, 680],
+  };
+  for (let i = 0; i < 12; i++) {
+    const dy = 40 * Math.sin((i / 11) * Math.PI);
+    const landmarki = LANDMARKI.map((l) => {
+      const czesc = l.id.replace(/^(left|right)_/, "");
+      const [dx, y] = os[l.id] ?? os[czesc]!;
+      const x = os[l.id] ? dx : l.strona === "L" ? dx : -dx;
+      const nogi = ["knee", "ankle", "heel", "foot_index"].includes(czesc);
+      return { x: (640 + x) / W, y: (y + (nogi ? 0 : dy)) / H, z: 0, visibility: 0.95, presence: 0.95 };
+    });
+    sesja.klatki.push(klatkaZWyniku(i, i * 40, landmarki, null));
+  }
+  return doJSON(sesja);
+}
+
+/** Ile pikseli nakładki ma kolor lewej (pomarańczowy) i prawej (niebieski) strony. */
+const koloryNakladki = (s: any) => s.evaluate(() => {
+  const c = document.querySelector("#nakladka") as HTMLCanvasElement;
+  const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+  let lewa = 0, prawa = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3]! < 200) continue;
+    const [r, g, b] = [d[i]!, d[i + 1]!, d[i + 2]!];
+    if (r > 200 && g > 80 && g < 130 && b < 90) lewa++;
+    if (r < 90 && g > 110 && g < 160 && b > 200) prawa++;
+  }
+  return { lewa, prawa };
+});
+
+/**
  * Pozycja punktu z bieżącej klatki na ekranie (do kliknięcia). Najpierw
  * obraz na ekran — kliknięcie w przycisk z boku przewija stronę, a współrzędne
  * sprzed przewinięcia trafiałyby obok.
@@ -176,6 +221,62 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.waitForSelector("#komunikat:not(.ukryty)", { timeout: 10_000 }).catch(() => null);
     sprawdz("film, którego przeglądarka nie otworzy — czytelny komunikat",
       (await s.textContent("#komunikat"))?.includes("nie odtworzy") ?? false, (await s.textContent("#komunikat")) ?? "");
+
+    // ── punkty na obrazie (23.10.2026) — bez filmu ───────────────
+    // Trener: „chciałbym móc obserwować tylko punkty po prawej stronie bez lewej”.
+    console.log("\n  Punkty na obrazie");
+    const plikSztuczny = join(robocze, "sztuczna-analiza.json");
+    writeFileSync(plikSztuczny, sztucznaAnaliza());
+    await s.evaluate(() => localStorage.clear());
+    await s.reload();
+    await s.setInputFiles("#plik-analizy", plikSztuczny);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.waitForTimeout(300);
+    sprawdz("„Punkty na obrazie” pod przełącznikami, zwinięte, domyślnie wszystkie",
+      await s.locator("#punkty-obrazu:not([open])").count() === 1 && await s.textContent("#opis-punktow") === "wszystkie");
+    const przed = await koloryNakladki(s);
+    sprawdz("kontrola: na obrazie są punkty obu stron (pomarańczowe i niebieskie)", przed.lewa > 50 && przed.prawa > 50,
+      `lewa ${przed.lewa} px, prawa ${przed.prawa} px`);
+    await s.click("#punkty-obrazu summary");
+    await s.click('.szybki-wybor-punktow button[data-strona="P"]');
+    await s.waitForTimeout(200);
+    const poPrawej = await koloryNakladki(s);
+    const stPrawa = await stanEkranu(s);
+    sprawdz("„Tylko prawa strona”: lewej strony nie ma na obrazie, prawa jest",
+      poPrawej.lewa === 0 && poPrawej.prawa > 50, `lewa ${poPrawej.lewa} px, prawa ${poPrawej.prawa} px`);
+    sprawdz("…opis „tylko prawa strona”, kąty przestawione na prawą, sześć lewych punktów schowanych",
+      await s.textContent("#opis-punktow") === "tylko prawa strona" && stPrawa.strona === "P"
+        && stPrawa.ukryte.length === 6 && stPrawa.ukryte.every((id: string) => id.startsWith("left_")));
+    sprawdz("…tabela punktów dalej ma obie strony (dane się nie zmieniają)",
+      await s.locator('#tabela-punktow tr[data-punkt="left_knee"]').count() === 1);
+    const kolanoL = await punktNaEkranie(s, INDEKS.left_knee!);
+    await s.mouse.click(kolanoL.x, kolanoL.y);
+    sprawdz("…dotknięcie schowanego kolana L go nie wybiera", (await stanEkranu(s)).wybrany !== "left_knee",
+      (await stanEkranu(s)).wybrany ?? "nic");
+    await s.locator("#wybor-punktow label", { hasText: "głowa" }).locator("input").uncheck();
+    sprawdz("odznaczenie jednego punktu — opis „6 z 13”", await s.textContent("#opis-punktow") === "6 z 13");
+    await s.reload();
+    await s.setInputFiles("#plik-analizy", plikSztuczny);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.waitForTimeout(300);
+    sprawdz("wybór zostaje po ponownym otwarciu strony", await s.textContent("#opis-punktow") === "6 z 13"
+      && (await koloryNakladki(s)).lewa === 0);
+    await s.click("#punkty-obrazu summary");
+    for (const [nazwa, w, h] of [["telefon", 390, 844], ["ipad-pion", 820, 1180]] as const) {
+      await s.setViewportSize({ width: w, height: h });
+      await s.waitForTimeout(300);
+      sprawdz(`${nazwa}: rozwinięty wybór punktów bez przewijania w bok`,
+        await s.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+      await zrzut(s, `ruch-punkty-${nazwa}`, "#punkty-obrazu");
+    }
+    await s.setViewportSize({ width: 1366, height: 900 });
+    await s.click('.szybki-wybor-punktow button[data-strona=""]');
+    await s.waitForTimeout(200);
+    const poWszystkich = await koloryNakladki(s);
+    sprawdz("„Wszystkie” przywraca obie strony", await s.textContent("#opis-punktow") === "wszystkie"
+      && poWszystkich.lewa > 50 && poWszystkich.prawa > 50);
+    await s.evaluate(() => localStorage.clear());
+    await s.reload();
 
     // ── przysiad z przodu ─────────────────────────────────────────
     if (!PRZOD) console.log("\n  Przysiad z przodu — pominięty (brak WIDEO_PRZYSIAD_PRZOD)");

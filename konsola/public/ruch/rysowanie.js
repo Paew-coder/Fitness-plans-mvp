@@ -6,7 +6,7 @@
  * ekranie × gęstość pikseli, żeby linie były ostre na iPadzie.
  */
 import { pewny } from "./geometria.js";
-import { GLOWNE_PUNKTY, INDEKS, LANDMARKI, POLACZENIA, PROG_WIDOCZNOSCI, rozwiazywacz } from "./szkielet.js";
+import { GLOWNE_PUNKTY, INDEKS, LANDMARKI, POLACZENIA, PROG_WIDOCZNOSCI, punktWidoczny, rozwiazywacz } from "./szkielet.js";
 
 /** Kolory stron ciała i trajektorii — te same na nakładce i na wykresie. */
 export const KOLORY = {
@@ -35,6 +35,8 @@ const KATY_NA_OBRAZIE = [
  * Rysuje jedną klatkę.
  *
  * `opcje`: `klatka` (z sesji), `wszystkie` (33 punkty zamiast głównych),
+ * `ukryte` — główne punkty, których trener nie chce widzieć (Set; znika też
+ * to, co do nich należy: odcinki, palce, kąt przy stawie — `punktWidoczny`),
  * `wybrany` (id punktu), `katy` (wyniki kątów klatki) + `strona`,
  * `trajektorie` — `[{id, kolor, punkty: [{x,y}|null], biezacy}]` w 0–1,
  * `sugestie` — `[{punkt, x, y}]` w 0–1, z bieżącą pozycją punktu z klatki.
@@ -50,15 +52,24 @@ export function rysujKlatke(ctx, opcje) {
   if (!k?.p) return;
   const punkty = k.p.map(([x, y, , v]) => ({ x: x * w, y: y * h, z: 0, v }));
   const p = rozwiazywacz(punkty);
+  const ukryte = opcje.ukryte ?? new Set();
+  const widac = (id) => punktWidoczny(id, ukryte);
 
   const linie = opcje.wszystkie ? POLACZENIA : POLACZENIA_CIALA;
-  for (const [a, b] of linie) odcinek(ctx, punkty[a], punkty[b], dpr);
+  for (const [a, b] of linie) {
+    if (widac(LANDMARKI[a].id) && widac(LANDMARKI[b].id)) odcinek(ctx, punkty[a], punkty[b], dpr);
+  }
   // Szyja: od środka barków do głowy — w szkielecie MediaPipe jej nie ma.
-  odcinek(ctx, p("srodek_barkow"), p("glowa"), dpr);
+  // Przy jednej stronie — od jej barku.
+  const barkL = widac("left_shoulder");
+  const barkP = widac("right_shoulder");
+  if (widac("glowa") && (barkL || barkP)) {
+    odcinek(ctx, p(barkL && barkP ? "srodek_barkow" : barkL ? "left_shoulder" : "right_shoulder"), p("glowa"), dpr);
+  }
 
-  const ids = opcje.wszystkie
+  const ids = (opcje.wszystkie
     ? [...LANDMARKI.map((l) => l.id).filter((id) => !GLOWNE_PUNKTY.includes(id)), ...GLOWNE_PUNKTY]
-    : GLOWNE_PUNKTY;
+    : GLOWNE_PUNKTY).filter(widac);
   for (const id of ids) {
     const glowny = GLOWNE_PUNKTY.includes(id);
     punktNaObrazie(ctx, p(id), kolorPunktu(id), (glowny ? 5.5 : 3.2) * dpr, dpr);
@@ -77,7 +88,7 @@ export function rysujKlatke(ctx, opcje) {
     const przedrostek = opcje.strona === "P" ? "right" : "left";
     for (const { kat, punkt } of KATY_NA_OBRAZIE) {
       const wynik = opcje.katy[`${kat}_${opcje.strona.toLowerCase()}`];
-      if (!pewny(wynik)) continue;
+      if (!pewny(wynik) || !widac(`${przedrostek}_${punkt}`)) continue;
       etykieta(ctx, p(`${przedrostek}_${punkt}`), `${Math.round(wynik.wartosc)}°`, dpr);
     }
   }
@@ -211,13 +222,15 @@ function rysujSugestie(ctx, obecny, sugerowany, dpr) {
 
 /**
  * Punkt najbliżej miejsca dotknięcia (w pikselach płótna), w promieniu
- * `zasieg`. Szuka wśród głównych punktów, a przy `wszystkie` — wśród 33.
+ * `zasieg`. Szuka wśród głównych punktów, a przy `wszystkie` — wśród 33;
+ * punktów schowanych (`ukryte`) nie ma na obrazie, więc ich nie łapie.
  */
-export function punktPodPalcem(klatka, x, y, w, h, { wszystkie = false, zasieg = 30 } = {}) {
+export function punktPodPalcem(klatka, x, y, w, h, { wszystkie = false, zasieg = 30, ukryte = new Set() } = {}) {
   if (!klatka?.p) return null;
   const punkty = klatka.p.map(([px, py, , v]) => ({ x: px * w, y: py * h, z: 0, v }));
   const p = rozwiazywacz(punkty);
-  const ids = wszystkie ? [...GLOWNE_PUNKTY, ...LANDMARKI.map((l) => l.id)] : GLOWNE_PUNKTY;
+  const ids = (wszystkie ? [...GLOWNE_PUNKTY, ...LANDMARKI.map((l) => l.id)] : GLOWNE_PUNKTY)
+    .filter((id) => punktWidoczny(id, ukryte));
   let naj = null;
   for (const id of ids) {
     const q = p(id);

@@ -131,6 +131,23 @@ w dole (% uda; „pod” = poniżej równoległej), rozstaw kolan do stóp (z pr
 Nowe ćwiczenie = nowy wpis w `PROFILE`; profil „Inne ćwiczenie” działa bez
 liczenia powtórzeń.
 
+## 5a. Punkty na obrazie (23.10.2026)
+
+Trener: „chciałbym móc obserwować tylko punkty po prawej stronie bez lewej”.
+Pod przełącznikami, zwinięte: **„Punkty na obrazie”** — „Wszystkie”, „Tylko
+prawa strona”, „Tylko lewa strona” i pole przy każdym z 13 głównych punktów.
+Schowany punkt znika z obrazu razem z odcinkami do niego, etykietą kąta przy
+nim i punktami, które do niego należą przy „wszystkich 33” (`grupaPunktu`:
+twarz → głowa, palce dłoni → nadgarstek, pięta i palce stopy → staw skokowy;
+oko, ucho i kącik ust jednej strony znikają razem z całą tą stroną —
+`punktWidoczny`). Szyja przy jednej stronie idzie od jej barku. Schowanego
+punktu nie da się wybrać dotknięciem obrazu (z tabeli — tak).
+
+To ustawienie ekranu, nie analizy: tabele, wykres, trajektorie i zapis
+JSON/CSV mają dalej wszystkie punkty. „Tylko prawa / lewa strona” przestawia
+też „Stronę ciała” (kąty w tabeli, na wykresie i w powtórzeniach). Wybór
+pamięta przeglądarka na tym urządzeniu (`localStorage`).
+
 ## 6. Sugerowana pozycja
 
 Na zatrzymanej klatce: wybór punktu (dotknięcie albo wiersz tabeli) →

@@ -78,7 +78,17 @@ label.przycisk.glowny { background: var(--akcent); border-color: var(--akcent); 
 .przelaczniki { display: flex; gap: .4rem 1.1rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.2rem; }
 .przelaczniki label { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);
                       text-transform: none; letter-spacing: normal; font-size: .86rem; color: var(--tekst-slaby); }
-.przelaczniki input[type="checkbox"], .wybor-trajektorii input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--akcent); }
+.przelaczniki input[type="checkbox"], .wybor-trajektorii input[type="checkbox"],
+.wybor-punktow input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--akcent); }
+
+/* Punkty na obrazie (23.10.2026) — zwinięte pod przełącznikami. */
+.punkty-obrazu { margin: -.5rem 0 1.2rem; font-size: .86rem; }
+.punkty-obrazu summary { cursor: pointer; color: var(--tekst-slaby); padding: .3rem 0; }
+.punkty-obrazu summary span { color: var(--tekst); font-weight: 600; }
+.punkty-obrazu .szybki-wybor-punktow { margin-top: .5rem; }
+.punkty-obrazu .wskazowka { margin-bottom: 0; }
+/* Ciemna obwódka jak przy punktach na filmie — biała głowa widoczna też w jasnym motywie. */
+.wybor-punktow .znak-strony { box-shadow: 0 0 0 1px rgba(0,0,0,.45); }
 
 /* ── tabele ─────────────────────────────────────────────────────── */
 .przewijana { overflow-x: auto; }
@@ -124,8 +134,8 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 .wykres-podpowiedz-czas { font-family: var(--mono); color: var(--tekst-blady); font-size: .7rem; margin-bottom: .15rem; }
 
 /* ── trajektorie i sugestie ─────────────────────────────────────── */
-.wybor-trajektorii { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin: .7rem 0 .8rem; }
-.wybor-trajektorii label { flex-direction: row; align-items: center; gap: .35rem; font-family: var(--sans);
+.wybor-trajektorii, .wybor-punktow { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin: .7rem 0 .8rem; }
+.wybor-trajektorii label, .wybor-punktow label { flex-direction: row; align-items: center; gap: .35rem; font-family: var(--sans);
                            text-transform: none; letter-spacing: normal; font-size: .85rem; color: var(--tekst-slaby); }
 .sugestia { border: 1px solid var(--linia); border-radius: 4px; padding: .55rem .65rem; margin-top: .7rem; font-size: .85rem; }
 .sugestia .naglowek-sugestii { display: flex; justify-content: space-between; gap: .5rem; align-items: center; font-weight: 600; }
