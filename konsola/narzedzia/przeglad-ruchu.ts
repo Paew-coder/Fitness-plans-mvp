@@ -138,6 +138,52 @@ function sztucznaAnaliza(): string {
   return doJSON(sesja);
 }
 
+/**
+ * Sztuczny przysiad z boku (23.10.2026, środek ciężkości): osoba zwrócona
+ * w prawo, lewa strona bliżej kamery (prawa słabo widoczna i przesunięta —
+ * jak zgadywana przez MediaPipe). Goleń, udo i tułów pochylają się
+ * i wracają — jedno powtórzenie.
+ */
+function sztucznyPrzysiadZBoku(): string {
+  const W = 1280, H = 720;
+  const sesja = nowaSesja({ cwiczenie: "przysiad", wideo: { nazwa: "przysiad-bok.webm", szerokosc: W, wysokosc: H },
+    analiza: { biblioteka: "sztuczna", model: "brak" } });
+  const rad = (st: number) => (st * Math.PI) / 180;
+  for (let i = 0; i < 40; i++) {
+    const g = Math.sin((i / 39) * Math.PI);   // 0 → 1 → 0
+    const [a, b, c] = [5 + 30 * g, 5 + 85 * g, 5 + 40 * g];
+    const kostka = { x: 600, y: 640 };
+    const kolano = { x: kostka.x + 190 * Math.sin(rad(a)), y: kostka.y - 190 * Math.cos(rad(a)) };
+    const biodro = { x: kolano.x - 190 * Math.sin(rad(b)), y: kolano.y - 190 * Math.cos(rad(b)) };
+    const bark = { x: biodro.x + 250 * Math.sin(rad(c)), y: biodro.y - 250 * Math.cos(rad(c)) };
+    const ucho = { x: bark.x + 60 * Math.sin(rad(c)) + 10, y: bark.y - 60 * Math.cos(rad(c)) };
+    const px: Record<string, { x: number; y: number }> = {
+      ear: ucho, eye: { x: ucho.x + 20, y: ucho.y - 5 }, eye_inner: { x: ucho.x + 22, y: ucho.y - 5 },
+      eye_outer: { x: ucho.x + 18, y: ucho.y - 5 }, mouth: { x: ucho.x + 22, y: ucho.y + 20 },
+      shoulder: bark, elbow: { x: bark.x + 110, y: bark.y + 10 }, wrist: { x: bark.x + 220, y: bark.y + 15 },
+      pinky: { x: bark.x + 245, y: bark.y + 20 }, index: { x: bark.x + 250, y: bark.y + 15 }, thumb: { x: bark.x + 240, y: bark.y + 10 },
+      hip: biodro, knee: kolano, ankle: kostka, heel: { x: kostka.x - 30, y: kostka.y + 15 }, foot_index: { x: kostka.x + 130, y: kostka.y + 15 },
+    };
+    const landmarki = LANDMARKI.map((l) => {
+      const czesc = l.id === "nose" ? "eye" : l.id.startsWith("mouth_") ? "mouth" : l.id.replace(/^(left|right)_/, "");
+      const q = px[czesc]!;
+      const prawa = l.strona === "P";
+      return { x: (q.x + (prawa ? 12 : 0)) / W, y: q.y / H, z: 0, visibility: prawa ? 0.3 : 0.95, presence: prawa ? 0.3 : 0.95 };
+    });
+    sesja.klatki.push(klatkaZWyniku(i, i * 33.3, landmarki, null));
+  }
+  return doJSON(sesja);
+}
+
+/** Piksele nakładki w kolorze środka ciężkości (#33d6ff): droga, pion, obwódka symbolu. */
+const pikseleSrodka = (s: any) => s.evaluate(() => {
+  const c = document.querySelector("#nakladka") as HTMLCanvasElement;
+  const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+  let n = 0;
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3]! > 200 && d[i]! < 110 && d[i + 1]! > 180 && d[i + 2]! > 220) n++;
+  return n;
+});
+
 /** Ile pikseli nakładki ma pełny kolor trajektorii barku (fiolet) i biodra (zieleń). */
 const koloryTrajektorii = (s: any) => s.evaluate(() => {
   const c = document.querySelector("#nakladka") as HTMLCanvasElement;
@@ -340,6 +386,98 @@ await zSerwerem(4231, async ({ adres }) => {
       && poWszystkich.lewa > 50 && poWszystkich.prawa > 50);
     await s.evaluate(() => localStorage.clear());
     await s.reload();
+
+    // ── środek ciężkości (23.10.2026) — bez filmu ────────────────
+    // Trener: „dodajmy możliwość analizy środka ciężkości metodą segmentową —
+    // De Leva razem z rozróżnieniem na płeć, plus wygładzenie trajektorii”.
+    console.log("\n  Środek ciężkości");
+    const plikBok = join(robocze, "przysiad-bok.json");
+    writeFileSync(plikBok, sztucznyPrzysiadZBoku());
+    await s.goto(`${adres}/ruch/`);
+    await s.setInputFiles("#plik-analizy", plikBok);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.waitForTimeout(300);
+    sprawdz("panel „Środek ciężkości”: bez wybranego modelu — prośba o wybór, bez symbolu na obrazie i bez wykresu",
+      (await s.textContent("#odczyt-srodka"))!.includes("Wybierz model segmentów")
+        && await pikseleSrodka(s) === 0 && await s.locator("#wykres-srodka.ukryty").count() === 1);
+    const modele = await s.locator("#model-srodka option").allTextContents();
+    sprawdz("modele: de Leva kobieta i mężczyzna, Braune i Fischer z pracy magisterskiej",
+      ["de Leva (1996) — kobieta", "de Leva (1996) — mężczyzna", "Braune i Fischer — jak w pracy magisterskiej"]
+        .every((m) => modele.includes(m)), modele.join(" | "));
+    await s.selectOption("#model-srodka", "deleva-k");
+    await s.waitForTimeout(200);
+    for (let i = 0; i < 19; i++) await s.click("#klatka-dalej");
+    const k1 = (await stanEkranu(s)).srodek;
+    sprawdz("z boku: lewa strona (bliżej kamery) liczona podwójnie, wynik „nad stopą” w %",
+      k1?.konczyny === "L" && (await s.textContent("#odczyt-srodka"))!.includes("nad stopą")
+        && typeof k1.wzgledem === "number" && k1.pewny === true,
+      `${(await s.textContent("#odczyt-srodka"))!.trim()}`);
+    sprawdz("na obrazie symbol, pion do stóp i droga środka ciężkości", await pikseleSrodka(s) > 100, `${await pikseleSrodka(s)} px`);
+    sprawdz("wykres środka ciężkości w % — linia wygładzona i blada bez wygładzania",
+      await s.locator("#wykres-srodka:not(.ukryty) path.wykres-linia").count() === 2
+        && (await s.locator("#wykres-srodka .wykres-opis").allTextContents()).includes("100%"));
+    sprawdz("tabela powtórzeń: kolumna „ŚC nad stopą”",
+      (await s.locator("#tabela-powtorzen th").allTextContents()).includes("ŚC nad stopą"));
+    await s.selectOption("#model-srodka", "deleva-m");
+    await s.waitForTimeout(150);
+    const k2 = (await stanEkranu(s)).srodek;
+    sprawdz("mężczyzna — inne proporcje, inny wynik niż u kobiety", Math.abs(k2.wzgledem - k1.wzgledem) > 0.05,
+      `K ${k1.wzgledem.toFixed(1)}% · M ${k2.wzgledem.toFixed(1)}%`);
+    await s.fill("#obciazenie-kg", "60");
+    await s.waitForTimeout(150);
+    sprawdz("obciążenie bez masy ciała — prośba o masę, wynik bez obciążenia",
+      (await s.textContent("#odczyt-srodka"))!.includes("podaj masę ciała")
+        && Math.abs((await stanEkranu(s)).srodek.y - k2.y) < 1e-6);
+    await s.fill("#masa-ciala", "60");
+    await s.waitForTimeout(150);
+    const k3 = (await stanEkranu(s)).srodek;
+    sprawdz("60 kg na barkach przy 60 kg masy ciała — środek wyżej, w stronę barków", k3.y < k2.y - 20,
+      `y ${k2.y.toFixed(0)} → ${k3.y.toFixed(0)} px`);
+    await s.uncheck("#wygladzanie-srodka");
+    await s.waitForTimeout(150);
+    sprawdz("bez wygładzania — jedna linia na wykresie",
+      await s.locator("#wykres-srodka path.wykres-linia").count() === 1);
+    await s.check("#wygladzanie-srodka");
+    await s.uncheck("#pokaz-srodek");
+    sprawdz("przełącznik „środek ciężkości” chowa symbol z obrazu", await pikseleSrodka(s) === 0);
+    await s.check("#pokaz-srodek");
+    await s.selectOption("#model-srodka", "deleva-k");
+    await s.fill("#obciazenie-kg", "0");
+    const [pobranieAnalizy] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-json")]);
+    const plikZSrodkiem = join(robocze, "z-srodkiem.json");
+    await pobranieAnalizy.saveAs(plikZSrodkiem);
+    const [pobranieTabeli] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-csv")]);
+    const csvZSrodkiem = join(robocze, "z-srodkiem.csv");
+    await pobranieTabeli.saveAs(csvZSrodkiem);
+    sprawdz("CSV: kolumny środka ciężkości na końcu",
+      readFileSync(csvZSrodkiem, "utf-8").split("\r\n")[0]!.endsWith("srodek_wzgledem_stop_proc;srodek_wzgledem_stop_proc_wygladzony"));
+    await s.reload();
+    await s.setInputFiles("#plik-analizy", plikZSrodkiem);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.waitForTimeout(300);
+    sprawdz("zapisana analiza wraca z modelem i wynikiem (de Leva — kobieta, masa ciała)",
+      await s.inputValue("#model-srodka") === "deleva-k" && await s.inputValue("#masa-ciala") === "60"
+        && (await s.textContent("#odczyt-srodka"))!.includes("nad stopą"));
+    for (const [nazwa, w, h] of [["telefon", 390, 844], ["ipad-pion", 820, 1180]] as const) {
+      await s.setViewportSize({ width: w, height: h });
+      await s.waitForTimeout(300);
+      sprawdz(`${nazwa}: panel środka ciężkości bez przewijania w bok`,
+        await s.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+      await zrzut(s, `ruch-srodek-${nazwa}`, "#panel-srodka");
+    }
+    await s.setViewportSize({ width: 1366, height: 900 });
+    for (let i = 0; i < 19; i++) await s.click("#klatka-dalej");
+    await zrzut(s, "ruch-srodek-obraz", "#scena");
+    await zrzut(s, "ruch-srodek-panel", "#panel-srodka");
+    // Z przodu — obie strony osobno, położenie między stopami.
+    await s.setInputFiles("#plik-analizy", plikSztuczny);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.selectOption("#model-srodka", "deleva-m");
+    await s.waitForTimeout(200);
+    const przod = (await stanEkranu(s)).srodek;
+    sprawdz("z przodu: obie strony osobno, położenie między stopami",
+      przod?.konczyny === "obie" && (await s.textContent("#odczyt-srodka"))!.includes("między stopami"),
+      (await s.textContent("#odczyt-srodka"))!.trim());
 
     // ── początek filmu (23.10.2026) ───────────────────────────────
     // Trener: „aplikacja ucina mi początek filmu, gdzie osoba stoi prosto przed

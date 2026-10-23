@@ -6,6 +6,9 @@
   --seria-2: #eb6834;
   --seria-3: #1baf7a;
   --seria-4: #eda100;
+  /* Środek ciężkości (23.10.2026) — ten sam odcień co symbol na filmie, ciemniejszy na jasnym tle. */
+  --srodek: #0a8fbf;
+  --srodek-blady: rgba(10, 143, 191, .35);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -13,6 +16,8 @@
     --seria-2: #d95926;
     --seria-3: #199e70;
     --seria-4: #c98500;
+    --srodek: #33d6ff;
+    --srodek-blady: rgba(51, 214, 255, .35);
   }
 }
 
@@ -153,6 +158,15 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
                            text-transform: none; letter-spacing: normal; font-size: .85rem; color: var(--tekst-slaby); }
 .wybor-trajektorii label.schowana { opacity: .6; }
 .dopisek-schowana { font-size: .72rem; color: var(--tekst-blady); border: 1px solid var(--linia); border-radius: 3px; padding: 0 .3rem; }
+/* Środek ciężkości (23.10.2026). */
+.ustawienia-srodka { margin-bottom: .6rem; }
+.ustawienia-srodka input[type="number"] { width: 7rem; }
+.ustawienia-srodka .przelacznik-srodka { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);
+  text-transform: none; letter-spacing: normal; font-size: .86rem; color: var(--tekst-slaby); padding-bottom: .45rem; }
+.ustawienia-srodka .przelacznik-srodka input { width: 1.1rem; height: 1.1rem; accent-color: var(--akcent); }
+.odczyt-srodka { font-size: .95rem; margin: .4rem 0 .6rem; }
+.odczyt-srodka strong { font-family: var(--mono); font-size: 1.05rem; color: var(--srodek); }
+.odczyt-srodka .niepewny { color: var(--tekst-blady); }
 .sugestia { border: 1px solid var(--linia); border-radius: 4px; padding: .55rem .65rem; margin-top: .7rem; font-size: .85rem; }
 .sugestia .naglowek-sugestii { display: flex; justify-content: space-between; gap: .5rem; align-items: center; font-weight: 600; }
 .sugestia ul { margin: .4rem 0 0; padding-left: 1.1rem; color: var(--tekst-slaby); }

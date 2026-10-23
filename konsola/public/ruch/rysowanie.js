@@ -15,6 +15,8 @@ export const KOLORY = {
   srodek: "#ffffff",
   wybrany: "#ffd84d",
   sugestia: "#ffd84d",
+  // Środek ciężkości (23.10.2026) — kolor, którego nie ma szkielet ani trajektorie.
+  srodekCiezkosci: "#33d6ff",
 };
 
 /** Kolory kolejnych trajektorii (stała kolejność, nie zależy od liczby). */
@@ -40,6 +42,8 @@ const KATY_NA_OBRAZIE = [
  * `wybrany` (id punktu), `katy` (wyniki kątów klatki) + `strona`,
  * `trajektorie` — `[{id, kolor, punkty: [{x,y}|null], biezacy}]` w 0–1,
  * `sugestie` — `[{punkt, x, y}]` w 0–1, z bieżącą pozycją punktu z klatki.
+ * `srodek` — środek ciężkości: `{x, y, pewny, podloga, droga: [{x,y}|null], biezacy}`
+ * w 0–1 (symbol, pion do podłoża i droga w całym nagraniu).
  */
 export function rysujKlatke(ctx, opcje) {
   const { width: w, height: h } = ctx.canvas;
@@ -52,6 +56,9 @@ export function rysujKlatke(ctx, opcje) {
   // Droga tylko przy punkcie, który widać (trener, 23.10.2026: „wyświetlają
   // się tylko te, które mają swój punkt oznaczony”).
   for (const tr of opcje.trajektorie ?? []) if (widac(tr.id)) rysujTrajektorie(ctx, tr, w, h, dpr);
+  if (opcje.srodek?.droga) {
+    rysujTrajektorie(ctx, { kolor: KOLORY.srodekCiezkosci, punkty: opcje.srodek.droga, biezacy: opcje.srodek.biezacy }, w, h, dpr);
+  }
 
   const k = opcje.klatka;
   if (!k?.p) return;
@@ -96,7 +103,50 @@ export function rysujKlatke(ctx, opcje) {
     }
   }
 
+  if (opcje.srodek && opcje.srodek.x !== null && opcje.srodek.x !== undefined) rysujSrodek(ctx, opcje.srodek, w, h, dpr);
+
   for (const s of opcje.sugestie ?? []) rysujSugestie(ctx, p(s.punkt), { x: s.x * w, y: s.y * h }, dpr);
+}
+
+/**
+ * Środek ciężkości: klasyczny symbol (koło w czarno-białe ćwiartki) i pion
+ * do linii stóp — widać, nad którą częścią stopy leży. Niepewny — blado,
+ * z przerywaną obwódką.
+ */
+function rysujSrodek(ctx, s, w, h, dpr) {
+  const x = s.x * w;
+  const y = s.y * h;
+  ctx.save();
+  ctx.globalAlpha = s.pewny ? 1 : 0.5;
+  if (s.podloga !== null && s.podloga !== undefined && s.podloga * h > y) {
+    ctx.setLineDash([5 * dpr, 4 * dpr]);
+    ctx.strokeStyle = "rgba(0,0,0,.5)";
+    ctx.lineWidth = 4 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, s.podloga * h);
+    ctx.stroke();
+    ctx.strokeStyle = KOLORY.srodekCiezkosci;
+    ctx.lineWidth = 2 * dpr;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const r = 8 * dpr;
+  for (let c = 0; c < 4; c++) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.arc(x, y, r, (c * Math.PI) / 2, ((c + 1) * Math.PI) / 2);
+    ctx.closePath();
+    ctx.fillStyle = c % 2 ? "#ffffff" : "#000000";
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, r + 1.5 * dpr, 0, Math.PI * 2);
+  ctx.lineWidth = 2.5 * dpr;
+  if (!s.pewny) ctx.setLineDash([3 * dpr, 3 * dpr]);
+  ctx.strokeStyle = KOLORY.srodekCiezkosci;
+  ctx.stroke();
+  ctx.restore();
 }
 
 export function kolorPunktu(id) {
