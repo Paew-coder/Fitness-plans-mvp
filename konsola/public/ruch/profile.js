@@ -11,7 +11,7 @@
  */
 import { punktyWUkladzie, ujecie } from "./geometria.js";
 import { maksimum, seria, wykryjPowtorzenia, wymiarySesji } from "./przebieg.js";
-import { rozwiazywacz } from "./szkielet.js";
+import { PROG_WIDOCZNOSCI, rozwiazywacz } from "./szkielet.js";
 
 export const PROFILE = [
   {
@@ -63,9 +63,29 @@ export function powtorzeniaProfilu(profil, katy, strona) {
 }
 
 /**
+ * Najgłębszy punkt powtórzenia — klatka, w której biodro jest najniżej na
+ * obrazie. Trener, 23.10.2026: w pracy magisterskiej „sczytywałem zakresy
+ * w stawach w najgłębszym momencie przysiadu” — tam odległość krętarza
+ * większego od podłoża była najmniejsza. Biodro strony z analizy; gdy w
+ * klatce słabo widoczne — drugiej strony; gdy obie — środek bioder.
+ */
+export function najglebszaKlatka(sesja, wymiary, p, strona) {
+  const [tej, drugiej] = strona === "P" ? ["right_hip", "left_hip"] : ["left_hip", "right_hip"];
+  let naj = null;
+  for (let i = p.poczatek; i <= p.koniec; i++) {
+    const punkty = punktyWUkladzie(sesja.klatki[i], wymiary, "2d");
+    if (!punkty) continue;
+    const q = rozwiazywacz(punkty);
+    const biodro = [q(tej), q(drugiej)].find((b) => b.v >= PROG_WIDOCZNOSCI) ?? q("srodek_bioder");
+    if (naj === null || biodro.y > naj.y) naj = { i, y: biodro.y };
+  }
+  return naj?.i ?? p.szczyt;
+}
+
+/**
  * Przysiad — w każdym powtórzeniu: czasy zejścia i wstawania, największe
- * zgięcia, pochylenie tułowia, głębokość w dole i (z przodu) kolana
- * względem stóp.
+ * zgięcia w całym ruchu, kąty w najgłębszym punkcie (biodro najniżej),
+ * a w nim też głębokość i (z przodu) kolana względem stóp.
  */
 function podsumowaniePrzysiadu(sesja, katy, strona, powtorzenia) {
   const wymiary = wymiarySesji(sesja);
@@ -78,7 +98,9 @@ function podsumowaniePrzysiadu(sesja, katy, strona, powtorzenia) {
 
   return powtorzenia.map((p, n) => {
     const t = (i) => sesja.klatki[i].t;
-    const dolKlatka = sesja.klatki[p.szczyt];
+    const dol = najglebszaKlatka(sesja, wymiary, p, strona);
+    const wDole = (s) => (s[dol] === null || s[dol] === undefined ? null : { wartosc: s[dol], klatka: dol });
+    const dolKlatka = sesja.klatki[dol];
     const punkty = punktyWUkladzie(dolKlatka, wymiary, "2d");
     let glebokosc = null;
     let kolanaDoStop = null;
@@ -104,6 +126,11 @@ function podsumowaniePrzysiadu(sesja, katy, strona, powtorzenia) {
       biodroMaks: maksimum(biodro, p.poczatek, p.koniec),
       skokowyMaks: maksimum(skokowy, p.poczatek, p.koniec),
       tulowMaks: maksimum(tulow, p.poczatek, p.koniec),
+      dol,
+      kolanoDol: wDole(kolano),
+      biodroDol: wDole(biodro),
+      skokowyDol: wDole(skokowy),
+      tulowDol: wDole(tulow),
       glebokosc,
       kolanaDoStop,
     };

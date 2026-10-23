@@ -431,13 +431,49 @@ await zSerwerem(4231, async ({ adres }) => {
     sprawdz("wykres środka ciężkości w % — linia wygładzona i blada bez wygładzania",
       await s.locator("#wykres-srodka:not(.ukryty) path.wykres-linia").count() === 2
         && (await s.locator("#wykres-srodka .wykres-opis").allTextContents()).includes("100%"));
-    sprawdz("tabela powtórzeń: kolumna „ŚC nad stopą”",
-      (await s.locator("#tabela-powtorzen th").allTextContents()).includes("ŚC nad stopą"));
+    // Trener, 23.10.2026: „sczytywałem zakresy w stawach w najgłębszym momencie
+    // przysiadu — czy możemy też dodać coś takiego, bez usuwania tego, co już mamy?”
+    const naglowkiTabeli = await s.locator("#tabela-powtorzen tr:first-child th").allTextContents();
+    const rodzaje = await s.locator("#tabela-powtorzen td.rodzaj-wiersza").allTextContents();
+    const opisPowtorzenia = (await s.locator("#tabela-powtorzen tr.wiersz-powtorzenia").first().textContent())!;
+    sprawdz("tabela powtórzeń: wiersz z czasami, pod nim „największe w ruchu” i „w najgłębszym punkcie”",
+      JSON.stringify(rodzaje) === JSON.stringify(["największe w ruchu", "w najgłębszym punkcie"])
+        && /^Powtórzenie 1 · ruch [\d,]+ s · w dół [\d,]+ s · w górę [\d,]+ s$/.test(opisPowtorzenia.trim()),
+      `${opisPowtorzenia.trim()} | ${rodzaje.join(" | ")}`);
+    sprawdz("…pełne nazwy kolumn: zgięcie grzbietowe stawu skokowego, biodro względem kolana, rozstaw kolan do stóp, środek ciężkości",
+      ["zgięcie kolana", "zgięcie biodra", "zgięcie grzbietowe stawu skokowego", "pochylenie tułowia",
+        "biodro względem kolana", "rozstaw kolan do stóp", "środek ciężkości nad stopą"].every((n) => naglowkiTabeli.includes(n))
+        && !naglowkiTabeli.includes("stopa"),
+      naglowkiTabeli.join(" | "));
+    sprawdz("…tabela mieści się w panelu na laptopie (bez przewijania w bok)",
+      await s.locator("#tabela-powtorzen").evaluate((e: Element) => e.scrollWidth <= e.parentElement!.clientWidth + 1));
+    await s.locator("#tabela-powtorzen tr.wiersz-dol").first().click();
+    await s.waitForTimeout(300);
+    const najglebiej = await s.evaluate(() => {
+      const a = (window as any).__analizaRuchu;
+      const ses = a.sesja();
+      const y = (i: number) => ses.klatki[i].p[23][1];   // left_hip — strona bliżej kamery
+      const naj = ses.klatki.reduce((m: number, _k: any, i: number) => (y(i) > y(m) ? i : m), 0);
+      return { tu: a.stan().biezaca, naj, ytu: y(a.stan().biezaca), ynaj: y(naj) };
+    });
+    sprawdz("wiersz przenosi do klatki, w której biodro jest najniżej",
+      najglebiej.ytu === najglebiej.ynaj, `klatka ${najglebiej.tu + 1} (najniżej: ${najglebiej.naj + 1})`);
+    const kolumnaKolana = naglowkiTabeli.indexOf("zgięcie kolana");
+    const kolanoWDole = (await s.locator("#tabela-powtorzen tr.wiersz-dol").first().locator("td").nth(kolumnaKolana).textContent())!.trim();
+    const kolanoZTabeliKatow = (await s.locator("#tabela-katow tr", { hasText: "Zgięcie kolana" }).locator("td").nth(1).textContent())!.trim();
+    sprawdz("…a „w najgłębszym punkcie” to kąty z tej jednej klatki (zgodne z tabelą kątów obok)",
+      !!kolanoWDole && kolanoWDole === kolanoZTabeliKatow, `${kolanoWDole} vs ${kolanoZTabeliKatow}`);
+    sprawdz("tabela kątów obok: „Zgięcie grzbietowe stawu skokowego”",
+      await s.locator("#tabela-katow", { hasText: "Zgięcie grzbietowe stawu skokowego" }).count() === 1);
     await s.selectOption("#model-srodka", "deleva-m");
     await s.waitForTimeout(150);
     const k2 = (await stanEkranu(s)).srodek;
     sprawdz("mężczyzna — inne proporcje, inny wynik niż u kobiety", Math.abs(k2.wzgledem - k1.wzgledem) > 0.05,
       `K ${k1.wzgledem.toFixed(1)}% · M ${k2.wzgledem.toFixed(1)}%`);
+    sprawdz("obciążenie zwinięte, w nagłówku „bez obciążenia”",
+      await s.locator("#obciazenie-srodka:not([open])").count() === 1
+        && await s.textContent("#opis-obciazenia") === "bez obciążenia");
+    await s.click("#obciazenie-srodka summary");
     await s.fill("#obciazenie-kg", "60");
     await s.waitForTimeout(150);
     sprawdz("obciążenie bez masy ciała — prośba o masę, wynik bez obciążenia",
@@ -446,6 +482,9 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.fill("#masa-ciala", "60");
     await s.waitForTimeout(150);
     const k3 = (await stanEkranu(s)).srodek;
+    sprawdz("…w nagłówku obciążenia: „60 kg na barkach · masa ciała 60 kg”",
+      await s.textContent("#opis-obciazenia") === "60 kg na barkach · masa ciała 60 kg",
+      (await s.textContent("#opis-obciazenia")) ?? "");
     sprawdz("60 kg na barkach przy 60 kg masy ciała — środek wyżej, w stronę barków", k3.y < k2.y - 20,
       `y ${k2.y.toFixed(0)} → ${k3.y.toFixed(0)} px`);
     await s.uncheck("#wygladzanie-srodka");
@@ -473,14 +512,37 @@ await zSerwerem(4231, async ({ adres }) => {
     sprawdz("zapisana analiza wraca z modelem i wynikiem (de Leva — kobieta, masa ciała)",
       await s.inputValue("#model-srodka") === "deleva-k" && await s.inputValue("#masa-ciala") === "60"
         && (await s.textContent("#odczyt-srodka"))!.includes("nad stopą"));
+    // Trener, 23.10.2026: „żeby było możliwe obserwowanie jednocześnie nagrania
+    // i wykresu środka ciężkości”. Szeroki ekran — obok filmu; wąski — pod nim.
+    const ramka = (sel: string) => s.locator(sel).first().evaluate((e: Element) => {
+      const r = e.getBoundingClientRect();
+      return { top: r.top + scrollY, bottom: r.bottom + scrollY, left: r.left, right: r.right };
+    });
+    {
+      const scena = await ramka("#scena");
+      const panelSrodka = await ramka("#panel-srodka");
+      const wykres = await ramka("#wykres-srodka");
+      sprawdz("szeroki ekran: środek ciężkości w prawej kolumnie, obok filmu — wykres na wysokości filmu",
+        panelSrodka.left >= scena.right && wykres.top < scena.bottom,
+        `film ${Math.round(scena.top)}–${Math.round(scena.bottom)} px, wykres od ${Math.round(wykres.top)} px`);
+    }
     for (const [nazwa, w, h] of [["telefon", 390, 844], ["ipad-pion", 820, 1180]] as const) {
       await s.setViewportSize({ width: w, height: h });
       await s.waitForTimeout(300);
       sprawdz(`${nazwa}: panel środka ciężkości bez przewijania w bok`,
         await s.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+      const przelaczniki = await ramka(".przelaczniki");
+      const panelSrodka = await ramka("#panel-srodka");
+      const punktyObrazu = await ramka("#punkty-obrazu");
+      sprawdz(`${nazwa}: środek ciężkości zaraz pod filmem i przełącznikami`,
+        panelSrodka.top >= przelaczniki.bottom && panelSrodka.bottom <= punktyObrazu.top,
+        `przełączniki do ${Math.round(przelaczniki.bottom)}, panel ${Math.round(panelSrodka.top)}–${Math.round(panelSrodka.bottom)}, punkty od ${Math.round(punktyObrazu.top)}`);
       await zrzut(s, `ruch-srodek-${nazwa}`, "#panel-srodka");
     }
     await s.setViewportSize({ width: 1366, height: 900 });
+    await zrzut(s, "ruch-powtorzenia", "#panel-powtorzen");
+    await s.evaluate(() => scrollTo(0, 0));
+    await zrzut(s, "ruch-szeroki");
     for (let i = 0; i < 19; i++) await s.click("#klatka-dalej");
     await zrzut(s, "ruch-srodek-obraz", "#scena");
     await zrzut(s, "ruch-srodek-przelaczniki", ".przelaczniki");
@@ -546,7 +608,8 @@ await zSerwerem(4231, async ({ adres }) => {
       const czasy = (ses?.klatki ?? []).map((k: any) => k.t);
       const najwiekszaPrzerwa = Math.max(...czasy.slice(1).map((t: number, i: number) => t - czasy[i]!));
       sprawdz(`${opis}: analiza od pierwszej klatki filmu, bez dziury na początku`,
-        ok && pierwsza < 1 && Math.abs(czasy.length - oczekiwane) <= 2 && najwiekszaPrzerwa < (gestosc === "0" ? 50 : 100),
+        // Przerwa do 1,5 kroku jest dopuszczalna z założenia (dłuższą analiza uzupełnia).
+        ok && pierwsza < 1 && Math.abs(czasy.length - oczekiwane) <= 2 && najwiekszaPrzerwa <= (gestosc === "0" ? 50.5 : 100.5),
         `pierwsza klatka ${pierwsza} ms, ${czasy.length} klatek (film: ${oczekiwane}), największa przerwa ${najwiekszaPrzerwa.toFixed(1)} ms`);
       const film = ok ? await s.evaluate(() => (document.querySelector("#wideo") as HTMLVideoElement).currentTime) : NaN;
       sprawdz(`${opis}: po analizie film stoi na początku`, film < 0.05, `${film} s`);
@@ -583,16 +646,17 @@ await zSerwerem(4231, async ({ adres }) => {
       }
       const st = await stanEkranu(s);
       sprawdz(`powtórzenia: ${POWTORZEN_PRZOD}, jak na filmie`, st.powtorzenia === POWTORZEN_PRZOD, `${st.powtorzenia}`);
-      const wiersze = await s.locator("#tabela-powtorzen tr.klikalny").count();
-      sprawdz("tabela powtórzeń ma wiersz na każde", wiersze === st.powtorzenia);
+      const wiersze = await s.locator("#tabela-powtorzen tr.wiersz-dol").count();
+      sprawdz("tabela powtórzeń ma wiersze na każde", wiersze === st.powtorzenia);
       // Z przodu: zgięcia grzbietowego stopy nie widać (było −19°), a rozstaw kolan do stóp — tak.
       sprawdz("rozpoznane ujęcie z przodu", (await s.textContent("#info-analizy"))!.includes("ujęcie z przodu"));
-      const kolumny = await s.$$eval("#tabela-powtorzen tr", (tr) => tr.map((w) => [...w.children].map((c) => c.textContent)));
-      const iStopa = kolumny[0]!.indexOf("stopa");
-      const iKolana = kolumny[0]!.indexOf("kolana/stopy");
-      sprawdz("z przodu: stopa „—”, kolana/stopy z liczbą",
-        kolumny.slice(1).every((w) => w[iStopa] === "—" && /\d/.test(w[iKolana] ?? "")),
-        kolumny.slice(1).map((w) => `${w[iStopa]} / ${w[iKolana]}`).join(", "));
+      const naglowki = await s.$$eval("#tabela-powtorzen tr:first-child th", (th) => th.map((c) => c.textContent));
+      const wDole = await s.$$eval("#tabela-powtorzen tr.wiersz-dol", (tr) => tr.map((w) => [...w.children].map((c) => c.textContent)));
+      const iStopa = naglowki.indexOf("zgięcie grzbietowe stawu skokowego");
+      const iKolana = naglowki.indexOf("rozstaw kolan do stóp");
+      sprawdz("z przodu: zgięcie grzbietowe „—”, rozstaw kolan do stóp z liczbą",
+        wDole.every((w) => w[iStopa] === "—" && /\d/.test(w[iKolana] ?? "")),
+        wDole.map((w) => `${w[iStopa]} / ${w[iKolana]}`).join(", "));
 
       // Dół pierwszego powtórzenia — kliknięcie w wiersz.
       await s.locator("#tabela-powtorzen tr.klikalny").first().click();

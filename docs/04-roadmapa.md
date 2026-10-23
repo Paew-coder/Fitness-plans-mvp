@@ -1287,6 +1287,15 @@ Trener (zrzut z prowadzonego treningu: A1 i A2 z „✓”, „Ta seria jest ju�
 * Po cofnięciu: seria wraca do niezrobionych i stoi na ekranie z „Zakończ serię”; znika znacznik na mapie dnia i w liczniku „zrobione”; jej kilogramy i powtórzenia znikają też u trenera (lista serii bez niej), ocena tej serii — z oceną tygodnia, jeśli to ona ją ustaliła — i korekta następnej serii. Przy TOP SECIE — jego ciężar i ocena. Zakończony trening zostaje zakończony. SW `trening-v93`.
 * Przegląd klienta (+6): przycisk przy zrobionej serii, pytanie z wpisanymi liczbami, „Zostaw” niczego nie zmienia, cofnięta seria na ekranie i licznik o jeden mniej, liczby znikają u trenera, ponowne zrobienie zapisuje serię i prowadzi dalej.
 
+**114. Analiza ruchu: środek ciężkości obok filmu, kąty w najgłębszym punkcie, pełne nazwy — 23.10.2026.**
+
+Trener: „segment »Środek ciężkości« dajmy bliżej samego ekranu z nagraniem, tak, żeby było możliwe obserwowanie jednocześnie nagrania i wykresu. W »Powtórzeniach« są maksymalne kąty i to jest okej, ale w pracy magisterskiej sczytywałem zakresy w stawach w najgłębszym momencie przysiadu — możemy też dodać coś takiego, bez usuwania tego, co już mamy? Możemy też dostosować nazwy — zamiast »stopa« zgięcie grzbietowe stawu skokowego”.
+
+* Panel „Środek ciężkości” na górze prawej kolumny, obok filmu (wykres na wysokości filmu); w jednej kolumnie — zaraz pod filmem i przełącznikami (CSS: kolumny `display: contents`, kolejność). Obciążenie zwinięte z opisem w nagłówku, „wygładzanie” pod wykresem, opis metody pod „Jak to jest liczone”.
+* Tabela powtórzeń: wiersz z czasami („Powtórzenie 1 · ruch · w dół · w górę”), pod nim „największe w ruchu” i „w najgłębszym punkcie” (klatka z biodrem najniżej — `najglebszaKlatka`); biodro względem kolana, rozstaw kolan do stóp i środek ciężkości z tej klatki, wiersz przenosi do niej. Osiem kolumn zamiast dwunastu — tabela mieści się obok filmu na laptopie i na iPadzie bez przewijania w bok.
+* Pełne nazwy: zgięcie kolana / biodra, zgięcie grzbietowe stawu skokowego (też w tabeli kątów i na wykresie), pochylenie tułowia, biodro względem kolana, rozstaw kolan do stóp; opis pod tabelą tłumaczy oba wskaźniki.
+* Testy: `analiza-ruchu.test.ts` (+1: najgłębsza klatka). Przegląd ruchu (+10): panel obok filmu na szerokim ekranie i pod filmem w jednej kolumnie (telefon, iPad), układ i nazwy tabeli, tabela bez przewijania, wiersz → klatka z biodrem najniżej, kąty „w najgłębszym punkcie” zgodne z tabelą kątów tej klatki, obciążenie zwinięte i opis w nagłówku. Próg przerwy przy 15 kl./s poprawiony na ≤ 1,5 kroku (dopuszczalne z założenia).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

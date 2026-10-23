@@ -144,6 +144,21 @@ w dole (% uda; „pod” = poniżej równoległej), rozstaw kolan do stóp (z pr
 Nowe ćwiczenie = nowy wpis w `PROFILE`; profil „Inne ćwiczenie” działa bez
 liczenia powtórzeń.
 
+**Najgłębszy punkt (23.10.2026).** Trener: „w pracy magisterskiej sczytywałem
+zakresy w stawach w najgłębszym momencie przysiadu”. Tabela powtórzeń ma dla
+każdego powtórzenia wiersz z czasami i dwa wiersze kątów z tymi samymi
+kolumnami: **największe w ruchu** (każdy kąt w swojej klatce — jak dotąd)
+i **w najgłębszym punkcie** — wszystko z jednej klatki, tej, w której biodro
+jest najniżej na obrazie (jak krętarz większy najbliżej podłoża w pracy;
+biodro strony z analizy, przy słabej widoczności — drugiej, potem środek bioder;
+`najglebszaKlatka` w `profile.js`). Biodro względem kolana, rozstaw kolan do
+stóp i środek ciężkości — też z tej klatki; wiersz przenosi do niej. Pełne
+nazwy kolumn: zgięcie kolana, zgięcie biodra, zgięcie grzbietowe stawu
+skokowego, pochylenie tułowia, biodro względem kolana (% długości uda, „pod” =
+poniżej równoległej), rozstaw kolan do stóp (tylko z przodu; < 1 = kolana do
+środka). Kąt „Zgięcie grzbietowe stopy” nazywa się teraz „Zgięcie grzbietowe
+stawu skokowego”.
+
 ## 5a. Punkty na obrazie (23.10.2026)
 
 Trener: „chciałbym móc obserwować tylko punkty po prawej stronie bez lewej”.
@@ -211,6 +226,11 @@ zwróconej w lewo i w prawo), z przodu między stopami (lewa 0%, prawa 100%).
 Na obrazie symbol (koło w czarno-białe ćwiartki), przerywany pion do linii stóp
 i droga środka ciężkości; wykres w % z pasami powtórzeń; w tabeli powtórzeń
 kolumna „ŚC” (wartość w dole powtórzenia); w CSV pięć kolumn na końcu.
+
+**Miejsce na ekranie:** na szerokim ekranie panel stoi na górze prawej
+kolumny, obok filmu (wykres na wysokości filmu); w jednej kolumnie (iPad
+w pionie, telefon) — zaraz pod filmem i przełącznikami. Obciążenie zwinięte
+(„Obciążenie: bez obciążenia”), opis metody pod „Jak to jest liczone”.
 
 **Pewność:** klatka niepewna („?”), gdy słabo widoczne (poniżej 50%) są punkty
 segmentów o łącznej masie ponad 10% ciała. Niepewne klatki nie wchodzą do serii.
