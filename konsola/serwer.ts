@@ -32,6 +32,7 @@ import { podsumujZmiany } from "./wersja-robocza.ts";
 import { sprawdzModuly } from "./ksztalt-modulow.ts";
 import { dniOd, dzisiaj } from "./czas.ts";
 import { adresyLokalnejSieci } from "./adresy.ts";
+import { wersjaNarzedzia } from "./wersja-narzedzia.ts";
 import { katalog } from "../silnik/src/katalog.ts";
 import { PROGRESJE_BEZ_CIEZARU } from "../silnik/src/typy.ts";
 import { zwyczajowyTopSet } from "../silnik/src/top-set.ts";
@@ -73,6 +74,8 @@ import { KOMUNIKAT_ZDROWOTNY } from "./ai/sygnaly.ts";
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(KATALOG, "public");
 const PORT = Number(process.env.PORT ?? 4173);
+/** Wersja do zapisu w analizie ruchu — ustalana raz, przy starcie (commit się w trakcie nie zmienia). */
+const WERSJA_NARZEDZIA = wersjaNarzedzia();
 
 /**
  * Właściciel danych w tej instalacji.
@@ -1437,6 +1440,9 @@ const serwer = createServer(async (req, res) => {
         dni: s.dni.length,
       })));
     }
+
+    // Wersja narzędzia do zapisu w analizie ruchu (24.10.2026) — trener cytuje ją w artykule.
+    if (sciezka === "/api/wersja" && req.method === "GET") return json(res, { wersja: WERSJA_NARZEDZIA });
 
     if (sciezka === "/api/ja" && req.method === "GET") {
       const trener = auth.trenerPoId(trenerId);

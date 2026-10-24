@@ -143,6 +143,8 @@ node_modules/
 
 # konsola — dane lokalne trenera
 konsola/dane/
+# Skrót commita zapisywany przy wdrożeniu (wersja narzędzia w analizie ruchu).
+konsola/wersja-commit.txt
 
 # Automat aktualizacji na serwerze (aktualizuj-serwer.sh): stan ostatniego
 # sprawdzenia i blokada przebiegu.

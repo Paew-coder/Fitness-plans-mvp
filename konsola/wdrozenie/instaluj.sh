@@ -57,6 +57,8 @@ echo "domena: $DOMENA"
 echo "e-mail do certyfikatu: $EMAIL"
 
 krok "4/5  Uruchomienie"
+# Skrót commita do obrazu — wersja narzędzia w zapisach analizy ruchu.
+git -C "$KATALOG" rev-parse --short=7 HEAD > "$KATALOG/konsola/wersja-commit.txt"
 docker compose up -d --build
 echo "kontenery wstały"
 

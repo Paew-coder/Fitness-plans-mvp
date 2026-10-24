@@ -151,6 +151,12 @@ export function przewin(wideo, sekundy) {
 /** Największy bok obrazu podawanego do MediaPipe — więcej nie poprawia wyniku, tylko spowalnia. */
 const MAKS_BOK = 960;
 
+/** Wymiary płótna analizy (dłuższy bok najwyżej 960 px) — na nim liczy się sylwetka i śledzi sztanga. */
+export function wymiaryAnalizy(wideo) {
+  const skala = Math.min(1, MAKS_BOK / Math.max(wideo.videoWidth, wideo.videoHeight));
+  return { szerokosc: Math.round(wideo.videoWidth * skala), wysokosc: Math.round(wideo.videoHeight * skala) };
+}
+
 /**
  * Analiza całego filmu, klatka po klatce.
  *
@@ -166,23 +172,40 @@ const MAKS_BOK = 960;
  *
  * `maksFps` — ile klatek na sekundę najwyżej (np. 30 przy nagraniu 60 kl./s);
  * `null` — każda klatka filmu.
- * `naKlatke(t, wynik)`, `postep(ulamek)`, `przerwano()` → `true` kończy.
+ * `naKlatke(t, wynik, obraz)`, `postep(ulamek)`, `przerwano()` → `true` kończy.
+ * `obraz` — piksele płótna tej klatki (`wytnij(x, y, w, h)`), do śledzenia
+ * sztangi w tym samym przejściu (24.10.2026); przy `odczyt: true` płótno jest
+ * ustawione na częste odczyty.
  */
-export async function analizujWideo(wideo, detektor, { maksFps = null, naKlatke, postep, przerwano }) {
+export async function analizujWideo(wideo, detektor, { maksFps = null, naKlatke, postep, przerwano, odczyt = false }) {
+  return przejdzFilm(wideo, {
+    maksFps, postep, przerwano, odczyt,
+    naObraz: (tMs, plotno, obraz) => naKlatke(tMs, detektor.wykryj(plotno, tMs), obraz),
+  });
+}
+
+/**
+ * Przejście przez film klatka po klatce — to samo co przy analizie, bez
+ * MediaPipe (24.10.2026: ponowne śledzenie sztangi po korekcie trenera).
+ * `od` — `{ sekundy, tMs }`: od której klatki (przewinięcie i jej czas);
+ * `doSekundy` — klatki późniejsze już nie idą do `naObraz(tMs, plotno, obraz)`.
+ */
+export async function przejdzFilm(wideo, { maksFps = null, od = null, doSekundy = Infinity, naObraz, postep, przerwano, odczyt = false }) {
   const czas = await ustalCzasTrwania(wideo);
-  const skala = Math.min(1, MAKS_BOK / Math.max(wideo.videoWidth, wideo.videoHeight));
   const plotno = document.createElement("canvas");
-  plotno.width = Math.round(wideo.videoWidth * skala);
-  plotno.height = Math.round(wideo.videoHeight * skala);
-  const ctx = plotno.getContext("2d");
+  const { szerokosc, wysokosc } = wymiaryAnalizy(wideo);
+  plotno.width = szerokosc;
+  plotno.height = wysokosc;
+  const ctx = plotno.getContext("2d", odczyt ? { willReadFrequently: true } : undefined);
+  const obraz = { szerokosc: plotno.width, wysokosc: plotno.height, wytnij: (x, y, w, h) => ctx.getImageData(x, y, w, h) };
   const policz = (tMs, zrodlo = wideo) => {
     ctx.drawImage(zrodlo, 0, 0, plotno.width, plotno.height);
-    naKlatke(tMs, detektor.wykryj(plotno, tMs));
+    naObraz(tMs, plotno, obraz);
   };
   const tryb = "requestVideoFrameCallback" in HTMLVideoElement.prototype ? "odtwarzanie" : "przewijanie";
   const wynik = tryb === "odtwarzanie"
-    ? await przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwano })
-    : await przezPrzewijanie(wideo, czas, { fps: maksFps ?? 30, policz, postep, przerwano });
+    ? await przezOdtwarzanie(wideo, czas, { maksFps, od, doSekundy, policz, postep, przerwano })
+    : await przezPrzewijanie(wideo, czas, { fps: maksFps ?? 30, od, doSekundy, policz, postep, przerwano });
   return { ...wynik, tryb, czas };
 }
 
@@ -191,8 +214,8 @@ export async function analizujWideo(wideo, detektor, { maksFps = null, naKlatke,
  * bez liczenia (bez obciążenia przeglądarka ich nie gubi). Przeglądarka nie
  * podaje liczby klatek na sekundę, a bez niej nie widać, że klatki brakuje.
  */
-async function zmierzKrok(wideo) {
-  await przewin(wideo, 0);
+async function zmierzKrok(wideo, od = 0) {
+  await przewin(wideo, od);
   const czasy = [];
   await new Promise((gotowe) => {
     const straz = setTimeout(gotowe, 3000);
@@ -209,12 +232,12 @@ async function zmierzKrok(wideo) {
   return odstepy.length ? Math.min(...odstepy) : Infinity;
 }
 
-async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwano }) {
+async function przezOdtwarzanie(wideo, czas, { maksFps, od = null, doSekundy = Infinity, policz, postep, przerwano }) {
   const tempo = wideo.playbackRate;
   wideo.playbackRate = 1;
   // Najkrótszy widziany odstęp między klatkami = odstęp klatek filmu. Przy
   // limicie kl./s krok analizy jest rzadszy, ale nigdy gęstszy niż film.
-  let krokFilmu = await zmierzKrok(wideo);
+  let krokFilmu = await zmierzKrok(wideo, od?.sekundy ?? 0);
   const krokAnalizy = () => (maksFps ? Math.max(krokFilmu, 1 / maksFps) : krokFilmu);
   const minOdstep = maksFps ? 1 / maksFps - 0.002 : 0;
   let przerwane = false;
@@ -241,9 +264,9 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
    * uzupełniana. Teraz klatka 0 jest liczona tutaj, a przerwa za nią —
    * jak każda inna niżej.
    */
-  await przewin(wideo, 0);
-  policz(0);
-  let ostatnia = 0;
+  await przewin(wideo, od?.sekundy ?? 0);
+  policz(od?.tMs ?? 0);
+  let ostatnia = (od?.tMs ?? 0) / 1000;
   // Ta sama klatka zgłoszona drugi raz (po starcie albo po uzupełnianiu).
   const taSama = (t) => t - ostatnia < (Number.isFinite(krokFilmu) ? krokFilmu / 2 : 1e-4);
 
@@ -268,6 +291,8 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
       clearTimeout(straznik);
       if (przerwano?.()) { przerwane = true; return zakoncz(); }
       const t = meta.mediaTime;
+      // Do zadanej klatki (ponowne śledzenie do następnego punktu kontrolnego).
+      if (t > doSekundy + 1e-4) return zakoncz();
       if (!taSama(t) && t - ostatnia >= minOdstep) {
         const odstep = t - ostatnia;
         const krok = krokAnalizy();
@@ -312,7 +337,7 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
    * dorobić serii kopii ostatniej klatki.
    */
   const krok = krokAnalizy();
-  if (!przerwane && Number.isFinite(krok) && Number.isFinite(krokFilmu)) {
+  if (!przerwane && doSekundy === Infinity && Number.isFinite(krok) && Number.isFinite(krokFilmu)) {
     const brakuje = Math.min(3, Math.floor((czas - krokFilmu / 2 - ostatnia) / krok));
     if (brakuje > 0) await uzupelnij(ostatnia, ostatnia + krok * (brakuje + 1), brakuje);
   }
@@ -320,13 +345,14 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, policz, postep, przerwan
   return { przerwano: przerwane, uzupelnione };
 }
 
-async function przezPrzewijanie(wideo, czas, { fps, policz, postep, przerwano }) {
+async function przezPrzewijanie(wideo, czas, { fps, od = null, doSekundy = Infinity, policz, postep, przerwano }) {
   wideo.pause();
   // Ostatnia klatka trochę przed końcem: przewinięcie dokładnie na koniec
   // potrafi dać pusty obraz.
   const wszystkie = Math.max(1, Math.floor((czas - 0.001) * fps) + 1);
-  for (let i = 0; i < wszystkie; i++) {
+  for (let i = Math.round((od?.sekundy ?? 0) * fps); i < wszystkie; i++) {
     if (przerwano?.()) return { przerwano: true };
+    if (i / fps > doSekundy + 1e-4) break;
     await przewin(wideo, i / fps);
     policz((i / fps) * 1000);
     postep?.((i + 1) / wszystkie);

@@ -635,10 +635,14 @@ describe("środek ciężkości — metoda segmentowa (23.10.2026)", async () => 
     const wczytana = zJSON(doJSON(sesja));
     assert.deepEqual(wczytana.srodekCiezkosci, sesja.srodekCiezkosci);
     const [naglowek, ...wiersze] = doCSV(sesja).trim().split("\r\n");
-    assert.ok(naglowek!.endsWith("srodek_wzgledem_stop_proc;srodek_wzgledem_stop_proc_wygladzony"));
-    const kolumn = naglowek!.split(";").length;
-    assert.ok(wiersze.every((w) => w.split(";").length === kolumn));
-    assert.ok(wiersze.some((w) => /;1;-?\d+(,\d)?;-?\d+(,\d)?$/.test(w)), "pewna klatka z wartościami w %");
+    // Pięć kolumn środka ciężkości za kątami — jak w pierwszej wersji; od 24.10.2026 dalej wyniki osobno.
+    const kolumny = naglowek!.split(";");
+    const n = kolumny.indexOf("srodek_ciezkosci_pewny");
+    assert.deepEqual(kolumny.slice(n - 2, n + 3), ["srodek_ciezkosci_x_px", "srodek_ciezkosci_y_px", "srodek_ciezkosci_pewny",
+      "srodek_wzgledem_stop_proc", "srodek_wzgledem_stop_proc_wygladzony"]);
+    assert.ok(wiersze.every((w) => w.split(";").length === kolumny.length));
+    assert.ok(wiersze.some((w) => { const k = w.split(";"); return k[n] === "1" && /^-?\d+(,\d)?$/.test(k[n + 1]!) && /^-?\d+(,\d)?$/.test(k[n + 2]!); }),
+      "pewna klatka z wartościami w %");
   });
 });
 
@@ -658,5 +662,343 @@ describe("najgłębszy punkt powtórzenia (23.10.2026)", async () => {
       p: k.p.map((q: number[], n: number) => (n === INDEKS.left_hip ? [q[0], 0.01, q[2], 0.1, 0.1] : q)) })) };
     const j = najglebszaKlatka(bezLewego, WYMIARY, p, "L");
     assert.ok(sesja.klatki.every((_k: unknown, n: number) => y(n, "right_hip") <= y(j, "right_hip")));
+  });
+});
+
+/* ── punkt sztangi (24.10.2026) ─────────────────────────────────── */
+// Trener (badanie do doktoratu: high bar bez wskazówki, high bar ze wskazówką,
+// low bar, kamera z boku): „rozbuduj moduł o punkt sztangi, który zastąpi
+// obecne liczenie obciążenia w punkcie barku”.
+
+/**
+ * Sztuczny obraz: nieruchome ziarniste tło i znacznik jak koniec gryfu
+ * z naklejką (różowy środek, czarny pierścień, jasny brzeg) o środku w (cx, cy).
+ * `zaslonieta` — bez znacznika (gryf zasłonięty).
+ */
+const OBRAZ = { szerokosc: 480, wysokosc: 360 };
+const tloObrazu = (() => {
+  let ziarno = 11;
+  const los = () => ((ziarno = (ziarno * 16807) % 2147483647) / 2147483647);
+  const d = new Uint8ClampedArray(OBRAZ.szerokosc * OBRAZ.wysokosc * 4);
+  for (let i = 0; i < OBRAZ.szerokosc * OBRAZ.wysokosc; i++) {
+    const v = 85 + 50 * los();
+    d.set([v, v, v + 8, 255], i * 4);
+  }
+  return d;
+})();
+function obrazZeZnacznikiem(cx: number, cy: number, { zaslonieta = false } = {}) {
+  const d = new Uint8ClampedArray(tloObrazu);
+  if (!zaslonieta) {
+    for (let y = Math.floor(cy - 15); y <= cy + 15; y++) {
+      for (let x = Math.floor(cx - 15); x <= cx + 15; x++) {
+        const r = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+        if (r > 14 || x < 0 || y < 0 || x >= OBRAZ.szerokosc || y >= OBRAZ.wysokosc) continue;
+        d.set(r < 6 ? [235, 40, 200] : r < 10 ? [20, 20, 20] : [210, 210, 210], (y * OBRAZ.szerokosc + x) * 4);
+      }
+    }
+  }
+  return {
+    ...OBRAZ,
+    wytnij: (x0: number, y0: number, w: number, h: number) => {
+      const data = new Uint8ClampedArray(w * h * 4);
+      for (let y = 0; y < h; y++) data.set(d.subarray(((y0 + y) * OBRAZ.szerokosc + x0) * 4, ((y0 + y) * OBRAZ.szerokosc + x0 + w) * 4), y * w * 4);
+      return { data, width: w, height: h };
+    },
+  };
+}
+/** Tor znacznika: w dół i w górę z lekkim kołysaniem — jak koniec gryfu w przysiadzie. */
+const torZnacznika = Array.from({ length: 50 }, (_, i) => ({
+  x: 220 + 14 * Math.sin(i / 7) + 0.37 * i,
+  y: 70 + 160 * Math.sin((i / 49) * Math.PI),
+}));
+
+describe("punkt sztangi — śledzenie na obrazie (24.10.2026)", async () => {
+  const { sledzSekwencje, utworzSledzenie, punktDoZapisu, punktySztangi, podsumowanieSledzenia, nastepnyPunktKontrolny,
+    TRYBY_SLEDZENIA } = await import("../public/ruch/sztanga.js");
+
+  test("wzór obrazu: znacznik przesuwany po obrazie śledzony z błędem poniżej 1 px, każda klatka pewna", () => {
+    const obrazy = torZnacznika.map((q) => obrazZeZnacznikiem(q.x, q.y));
+    const w = sledzSekwencje(obrazy, { tryb: "wzorzec", x: torZnacznika[0]!.x, y: torZnacznika[0]!.y });
+    const bledy = w.map((q: any, i: number) => Math.hypot(q.x - torZnacznika[i]!.x, q.y - torZnacznika[i]!.y));
+    assert.ok(Math.max(...bledy) < 1, `największy błąd ${Math.max(...bledy).toFixed(2)} px`);
+    assert.ok(w.every((q: any) => q.pewny && q.pewnosc >= TRYBY_SLEDZENIA.wzorzec.prog));
+  });
+
+  test("naklejka: punkt na środku naklejki (także przy dotknięciu obok), błąd poniżej 0,5 px", () => {
+    const obrazy = torZnacznika.map((q) => obrazZeZnacznikiem(q.x, q.y));
+    const w = sledzSekwencje(obrazy, { tryb: "naklejka", x: torZnacznika[0]!.x + 3, y: torZnacznika[0]!.y - 2 });
+    const bledy = w.map((q: any, i: number) => Math.hypot(q.x - torZnacznika[i]!.x, q.y - torZnacznika[i]!.y));
+    assert.ok(Math.max(...bledy) < 0.5, `największy błąd ${Math.max(...bledy).toFixed(2)} px`);
+    assert.ok(w.every((q: any) => q.pewny));
+  });
+
+  test("gryf zasłonięty przez kilka klatek: te klatki „?” (niepewne), potem punkt wraca na znacznik", () => {
+    for (const tryb of ["wzorzec", "naklejka"]) {
+      const obrazy = torZnacznika.map((q, i) => obrazZeZnacznikiem(q.x, q.y, { zaslonieta: i >= 20 && i < 23 }));
+      const w = sledzSekwencje(obrazy, { tryb, x: torZnacznika[0]!.x, y: torZnacznika[0]!.y });
+      assert.deepEqual(w.map((q: any, i: number) => (q.pewny ? null : i)).filter((i: number | null) => i !== null), [20, 21, 22], tryb);
+      const poPowrocie = w.slice(23).map((q: any, i: number) => Math.hypot(q.x - torZnacznika[i + 23]!.x, q.y - torZnacznika[i + 23]!.y));
+      assert.ok(Math.max(...poPowrocie) < 1, `${tryb}: po powrocie błąd ${Math.max(...poPowrocie).toFixed(2)} px`);
+    }
+  });
+
+  test("zaznaczenie bez naklejki w trybie naklejki albo przy brzegu obrazu — czytelny błąd, nie zgadywanie", () => {
+    const obraz = obrazZeZnacznikiem(200, 200);
+    assert.match(utworzSledzenie({ tryb: "naklejka" }).start(obraz, 60, 60).blad, /koloru|naklejk/);
+    assert.match(utworzSledzenie({ tryb: "wzorzec" }).start(obraz, 3, 3).blad, /brzegu/);
+    assert.throws(() => utworzSledzenie().krok(obraz), /punktu startowego/);
+  });
+
+  test("zapis punktu: 0–1, pewność, źródło; punkty kontrolne, zgubione klatki i koniec ponownego śledzenia", () => {
+    assert.deepEqual(punktDoZapisu({ x: 240, y: 90, pewnosc: 0.87654 }, 480, 360), { x: 0.5, y: 0.25, pewnosc: 0.877, zrodlo: "sledzenie" });
+    const sesja = nowaSesja({ cwiczenie: "przysiad", wideo: { nazwa: "s.webm", szerokosc: 1920, wysokosc: 1080 }, analiza: {} });
+    sesja.sztanga = { tryb: "wzorzec", prog: 0.6 };
+    const pewnosci = [1, 0.9, 0.5, 0.95, 1, 0.8];
+    pewnosci.forEach((p, i) => sesja.klatki.push({ ...klatkaZWyniku(i, i * 33, null, null),
+      sztanga: { x: 0.5, y: 0.25, pewnosc: p, zrodlo: i === 0 || i === 4 ? "korekta" : "sledzenie" } }));
+    const px = punktySztangi(sesja);
+    assert.deepEqual([px[0].x, px[0].y], [960, 270]);
+    assert.deepEqual(px.map((q: any) => q.pewny), [true, true, false, true, true, true]);
+    const p = podsumowanieSledzenia(sesja);
+    assert.deepEqual([p.zPunktem, p.pewnych, p.zgubione, p.kontrolne], [6, 5, [2], [0, 4]]);
+    assert.equal(nastepnyPunktKontrolny(sesja.klatki, 0), 4);
+    assert.equal(nastepnyPunktKontrolny(sesja.klatki, 4), 6);
+  });
+});
+
+describe("trzy wyniki: ciało, sztanga, układ (24.10.2026)", async () => {
+  const { srodekKlatki, srodekSesji, polozenieNadStopa, pikseleNadStopa } = await import("../public/ruch/srodek.js");
+
+  /** Przysiad z sztangą: punkt końca gryfu przesunięty o (dx, dy) px od barku w każdej klatce. */
+  const zeSztanga = (dx: number, dy: number) => {
+    const sesja = sesjaPrzysiadow();
+    sesja.sztanga = { tryb: "naklejka", prog: 0.5 };
+    for (const k of sesja.klatki) {
+      const bark = k.p![INDEKS.left_shoulder];
+      k.sztanga = { x: bark[0] + dx / W, y: bark[1] + dy / H, pewnosc: 0.95, zrodlo: "sledzenie" };
+    }
+    return sesja;
+  };
+  const USTAWIENIA = { model: "deleva-m", konczyny: "L", wygladzanie: false, fps: 30,
+    obciazenie: { kg: 100, masaCiala: 80, miejsce: "sztanga" } };
+
+  test("środek układu policzony ręcznie: (80 kg × ciało + 100 kg × koniec gryfu) / 180 kg", () => {
+    const k = klatka(sylwetkaZBoku(25, 70, 35));
+    const cialo = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "L" })!;
+    const gryf = { x: 700, y: 180, pewny: true };
+    const w = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "L",
+      obciazenie: { kg: 100, masaCiala: 80, miejsce: "sztanga", punkt: gryf } })!;
+    okolo(w.x, (80 * cialo.x + 100 * 700) / 180, 1e-9);
+    okolo(w.y, (80 * cialo.y + 100 * 180) / 180, 1e-9);
+    assert.deepEqual([w.cialo.x, w.cialo.y], [cialo.x, cialo.y]);
+    assert.equal(w.pewny, true);
+    // Niepewny punkt sztangi w tej klatce — układ niepewny, ciało nie.
+    const bezGryfu = srodekKlatki(k, WYMIARY, { model: "deleva-m", konczyny: "L",
+      obciazenie: { kg: 100, masaCiala: 80, miejsce: "sztanga", punkt: { ...gryf, pewny: false } } })!;
+    assert.equal(bezGryfu.pewny, false);
+    assert.equal(bezGryfu.cialo.pewny, true);
+  });
+
+  test("w nagraniu trzy serie: ciało, sztanga, układ — px i % stopy; układ zgodny z wyliczeniem ręcznym", () => {
+    const sesja = zeSztanga(-8, 6);
+    const s = srodekSesji(sesja, USTAWIENIA);
+    assert.ok(s.wyniki.cialo && s.wyniki.sztanga && s.wyniki.uklad);
+    const i = 60;
+    const gryf = { x: sesja.klatki[i]!.sztanga.x * W, y: sesja.klatki[i]!.sztanga.y * H };
+    okolo(s.wyniki.sztanga.x[i], gryf.x, 1e-9);
+    okolo(s.wyniki.uklad.x[i], (80 * s.wyniki.cialo.x[i] + 100 * gryf.x) / 180, 1e-9);
+    const stopy = s.klatki[i]!.stopy;
+    okolo(s.wyniki.sztanga.wzgledem[i], ((gryf.x - stopy.pieta.x) / (stopy.palce.x - stopy.pieta.x)) * 100, 1e-9);
+    okolo(s.wyniki.sztanga.piksele[i], gryf.x - stopy.pieta.x, 1e-9);
+    // Pierwsza wersja (kolumny „srodek_ciezkosci_…”) — to samo co układ.
+    assert.deepEqual(s.x, s.wyniki.uklad.x);
+    // Bez obciążenia — tylko ciało i sztanga.
+    const bez = srodekSesji(sesja, { ...USTAWIENIA, obciazenie: null });
+    assert.equal(bez.wyniki.uklad, null);
+    assert.ok(bez.wyniki.sztanga);
+  });
+
+  test("high bar i low bar: ten sam ruch, gryf w innym miejscu → inny środek układu, ciało to samo", () => {
+    const high = srodekSesji(zeSztanga(-8, 6), USTAWIENIA);
+    const low = srodekSesji(zeSztanga(-30, 35), USTAWIENIA);
+    assert.deepEqual(high.wyniki.cialo.wzgledem, low.wyniki.cialo.wzgledem);
+    const i = 60;
+    // Low bar: gryf 22 px dalej w tył → układ w tył o 100/180 z tego (w pikselach).
+    okolo(high.wyniki.uklad.x[i] - low.wyniki.uklad.x[i], (22 * 100) / 180, 1e-6);
+    assert.ok(high.wyniki.uklad.wzgledem[i] - low.wyniki.uklad.wzgledem[i] > 5);
+    // Ten sam ruch z obciążeniem „na barkach” nie widzi różnicy — dlatego punkt sztangi.
+    const barki = srodekSesji(zeSztanga(-8, 6), { ...USTAWIENIA, obciazenie: { ...USTAWIENIA.obciazenie, miejsce: "barki" } });
+    const barkiLow = srodekSesji(zeSztanga(-30, 35), { ...USTAWIENIA, obciazenie: { ...USTAWIENIA.obciazenie, miejsce: "barki" } });
+    assert.deepEqual(barki.wyniki.uklad.x, barkiLow.wyniki.uklad.x);
+  });
+
+  test("położenie dowolnego punktu nad stopą: % i piksele od pięty — także przy osobie zwróconej w lewo", () => {
+    const wPrawo = { pieta: { x: 100 }, palce: { x: 300 } };
+    const wLewo = { pieta: { x: 300 }, palce: { x: 100 } };
+    assert.equal(polozenieNadStopa(150, wPrawo), 25);
+    assert.equal(polozenieNadStopa(250, wLewo), 25);
+    assert.equal(pikseleNadStopa(150, wPrawo), 50);
+    assert.equal(pikseleNadStopa(250, wLewo), 50);
+    assert.equal(polozenieNadStopa(150, { pieta: { x: 100 }, palce: { x: 102 } }), null);
+  });
+});
+
+describe("miary w powtórzeniu: start, w stronę palców, dół, zakresy, śródstopie (24.10.2026)", async () => {
+  const { miaryPowtorzenia, miarySrodkaPowtorzen, pasmoZUstawien, PASMO_SRODSTOPIA } = await import("../public/ruch/miary-srodka.js");
+
+  test("seria o znanym przebiegu: każda miara policzona ręcznie", () => {
+    //            0   1   2   3   4   5   6
+    const proc = [30, 35, 45, 55, 50, 40, 30];
+    const px = proc.map((v) => v * 2);
+    const m = miaryPowtorzenia({ proc, px }, { poczatek: 0, dol: 3, koniec: 6 });
+    assert.deepEqual(m.start, { proc: 30, px: 60, klatka: 0 });
+    assert.deepEqual(m.doPalcow, { proc: 25, px: 50, polozenieProc: 55, polozeniePx: 110, klatka: 3 });
+    assert.deepEqual(m.wDole, { proc: 55, px: 110, klatka: 3 });
+    assert.deepEqual(m.zakres, { proc: 25, px: 50 });
+    assert.deepEqual(m.zakresZejscie, { proc: 25, px: 50 });
+    assert.deepEqual(m.zakresWstawanie, { proc: 25, px: 50 });
+    // W paśmie 40–60%: 45, 55, 50, 40 — 4 z 7 klatek.
+    okolo(m.wPasmie, (4 / 7) * 100, 1e-9);
+    assert.deepEqual([m.klatekZWynikiem, m.klatekWPowtorzeniu], [7, 7]);
+  });
+
+  test("najdalej w stronę palców: przed najgłębszym punktem; klatki „?” (null) się nie liczą; własne pasmo", () => {
+    const proc = [null, 40, 62, 58, 50, null, 70, 45];
+    const m = miaryPowtorzenia({ proc, px: proc }, { poczatek: 0, dol: 4, koniec: 7 }, [45, 55]);
+    assert.equal(m.start!.klatka, 1);
+    assert.deepEqual([m.doPalcow!.proc, m.doPalcow!.klatka], [22, 2]);
+    assert.equal(m.zakresZejscie.proc, 22);
+    assert.equal(m.zakresWstawanie.proc, 25);   // 70 − 45, bez klatki „?”
+    assert.equal(m.zakres.proc, 30);            // 70 − 40
+    // W paśmie 45–55%: 50, 45 — 2 z 6 klatek z wynikiem.
+    okolo(m.wPasmie, (2 / 6) * 100, 1e-9);
+    assert.equal(m.klatekZWynikiem, 6);
+  });
+
+  test("pasmo z ustawień: kolejność, granice 0–100, złe wartości → 40–60%", () => {
+    assert.deepEqual(PASMO_SRODSTOPIA, [40, 60]);
+    assert.deepEqual(pasmoZUstawien([65, 35]), [35, 65]);
+    assert.deepEqual(pasmoZUstawien([-5, 120]), [0, 100]);
+    assert.deepEqual(pasmoZUstawien([50, 50]), [40, 60]);
+    assert.deepEqual(pasmoZUstawien(undefined), [40, 60]);
+  });
+
+  test("trzy wyniki w powtórzeniach przysiadu: ciało, sztanga, układ; układ w śródstopiu dłużej niż sama sztanga", () => {
+    const { srodekSesji } = srodek;
+    const sesja = sesjaPrzysiadow();
+    for (const k of sesja.klatki) {
+      const bark = k.p![INDEKS.left_shoulder];
+      k.sztanga = { x: bark[0] - 8 / W, y: bark[1] + 6 / H, pewnosc: 0.95, zrodlo: "sledzenie" };
+    }
+    const s = srodekSesji(sesja, { model: "deleva-m", konczyny: "L", fps: 30, obciazenie: { kg: 100, masaCiala: 80, miejsce: "sztanga" } });
+    const powtorzenia = [{ numer: 1, poczatek: 15, dol: 45, koniec: 75 }, { numer: 2, poczatek: 105, dol: 135, koniec: 165 }];
+    const m = miarySrodkaPowtorzen(s.wyniki, powtorzenia);
+    assert.equal(m.length, 2);
+    for (const r of m) {
+      assert.ok(r.cialo && r.sztanga && r.uklad);
+      // Układ między ciałem a sztangą — także w najgłębszym punkcie.
+      const [a, b] = [r.cialo.wDole!.proc!, r.sztanga.wDole!.proc!].sort((x, y) => x - y);
+      assert.ok(r.uklad.wDole!.proc! > a! && r.uklad.wDole!.proc! < b!);
+    }
+  });
+});
+
+const srodek = await import("../public/ruch/srodek.js");
+
+describe("zapis wersja 2 — sztanga, badanie, wersja narzędzia (24.10.2026)", async () => {
+  const { doCSVPowtorzen, opisNarzedzia, WERSJA } = await import("../public/ruch/sesja.js");
+
+  test("stary plik (wersja 1, bez sztangi) otwiera się jak dotąd, zapis idzie już jako wersja 2", () => {
+    const stary = {
+      format: "craftmyplan/analiza-ruchu", wersja: 1, utworzono: "2026-10-20T10:00:00.000Z", cwiczenie: "przysiad",
+      wideo: { nazwa: "stary.mp4", szerokosc: W, wysokosc: H, czasTrwania: 1000 },
+      analiza: { biblioteka: "@mediapipe/tasks-vision 0.10.35", model: "pose_landmarker_full" },
+      landmarki: LANDMARKI.map((l) => l.id),
+      klatki: [klatka(sylwetkaZBoku(10, 20, 10), 0, 0), klatka(sylwetkaZBoku(20, 40, 20), 1, 33.3)],
+      sugestie: [],
+      srodekCiezkosci: { model: "deleva-k", konczyny: "L", wygladzanie: true, obciazenieKg: 60, miejsce: "barki", masaCiala: 60 },
+    };
+    const s = zJSON(JSON.stringify(stary));
+    assert.equal(s.klatki.length, 2);
+    assert.equal(s.klatki[0].sztanga, undefined);
+    assert.equal(WERSJA, 2);
+    assert.equal(JSON.parse(doJSON(s)).wersja, 2);
+    const csv = doCSV(s).split("\r\n")[0]!;
+    assert.ok(!csv.includes("sztanga_punkt"), "bez sztangi — bez jej kolumn");
+    assert.ok(csv.includes(";cialo_x_px;") && csv.includes(";uklad_x_px;") && !csv.includes(";sztanga_x_px;"));
+  });
+
+  test("plik z uszkodzonym punktem sztangi — czytelny błąd", () => {
+    const sesja = sesjaPrzysiadow();
+    sesja.klatki[3].sztanga = { x: 1.4, y: 0.2, pewnosc: 0.9, zrodlo: "sledzenie" };
+    assert.throws(() => zJSON(doJSON(sesja)), /Klatka 3: punkt sztangi/);
+    sesja.klatki[3].sztanga = { x: 0.4, y: 0.2, pewnosc: 0.9, zrodlo: "zgadywanie" };
+    assert.throws(() => zJSON(doJSON(sesja)), BladSesji);
+  });
+
+  test("JSON i CSV: punkt sztangi w każdej klatce, trzy wyniki, kod osoby, warunek, wersja narzędzia i parametry", () => {
+    const sesja = sesjaPrzysiadow();
+    sesja.sztanga = { tryb: "naklejka", prog: 0.5, parametry: {} };
+    sesja.klatki.forEach((k: any, i: number) => {
+      const bark = k.p[INDEKS.left_shoulder];
+      k.sztanga = { x: bark[0], y: bark[1] + 0.01, pewnosc: i === 7 ? 0.2 : 0.95, zrodlo: i === 0 ? "korekta" : "sledzenie" };
+    });
+    sesja.srodekCiezkosci = { model: "deleva-m", konczyny: "L", wygladzanie: true, obciazenieKg: 100, miejsce: "sztanga",
+      masaCiala: 80, pasmo: [40, 60] };
+    sesja.badanie = { kodOsoby: "P07", warunek: "LB" };
+    sesja.narzedzie = opisNarzedzia(sesja, "0.2.0+abc1234");
+    const wczytana = zJSON(doJSON(sesja));
+    assert.deepEqual(wczytana.klatki[7].sztanga, { x: sesja.klatki[7].sztanga.x, y: sesja.klatki[7].sztanga.y, pewnosc: 0.2, zrodlo: "sledzenie" });
+    assert.equal(wczytana.narzedzie.wersja, "0.2.0+abc1234");
+    assert.equal(wczytana.narzedzie.parametry.modelSegmentow, "de Leva (1996) — mężczyzna");
+    assert.equal(wczytana.narzedzie.parametry.odciecieHz, 6);
+    assert.equal(wczytana.narzedzie.parametry.poprawkaDwochPrzejsc, 0.802);
+    assert.deepEqual(wczytana.narzedzie.parametry.pasmoSrodstopia, [40, 60]);
+    assert.equal(wczytana.narzedzie.parametry.sledzenieSztangi.tryb, "naklejka");
+
+    const [naglowek, ...wiersze] = doCSV(wczytana).trim().split("\r\n");
+    const kolumny = naglowek!.split(";");
+    assert.ok(kolumny.indexOf("sztanga_punkt_x_px") > kolumny.indexOf("srodek_wzgledem_stop_proc_wygladzony"), "nowe kolumny na końcu");
+    for (const k of ["cialo", "sztanga", "uklad"]) assert.ok(kolumny.includes(`${k}_wzgledem_stop_proc_wygladzony`) && kolumny.includes(`${k}_od_piety_px`));
+    assert.deepEqual(kolumny.slice(-14, -10), ["wersja_narzedzia", "kod_osoby", "warunek", "model_segmentow"]);
+    const w7 = wiersze[7]!.split(";");
+    assert.equal(w7[kolumny.indexOf("sztanga_pewna")], "0");
+    assert.equal(w7[kolumny.indexOf("sztanga_x_px")], "", "niepewna klatka — bez wyniku");
+    assert.equal(w7[kolumny.indexOf("wersja_narzedzia")], "0.2.0+abc1234");
+    assert.equal(w7[kolumny.indexOf("kod_osoby")], "P07");
+    assert.equal(w7[kolumny.indexOf("odciecie_hz")], "6");
+    assert.equal(w7[kolumny.indexOf("pasmo_srodstopia_od_proc")], "40");
+
+    const powt = doCSVPowtorzen(wczytana, [{ numer: 1, poczatek: 15, dol: 45, koniec: 75 }]).trim().split("\r\n");
+    const nag = powt[0]!.split(";");
+    assert.equal(powt.length, 1 + 3 * 2, "powtórzenie × 3 wyniki × surowa i wygładzona");
+    assert.deepEqual(powt.slice(1).map((w) => w.split(";").slice(2, 4).join(" ")),
+      ["cialo surowa", "sztanga surowa", "uklad surowa", "cialo wygladzona", "sztanga wygladzona", "uklad wygladzona"]);
+    assert.ok(nag.includes("czas_w_srodstopiu_proc") && nag.includes("przesuniecie_do_palcow_zejscie_proc") && nag.includes("klatka_najdalej_do_palcow"));
+    assert.ok(powt.slice(1).every((w) => w.split(";").length === nag.length));
+  });
+});
+
+describe("wersja narzędzia do zapisu (24.10.2026)", async () => {
+  const { commitZGita, wersjaNarzedzia } = await import("../wersja-narzedzia.ts");
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+
+  test("numer z package.json + skrót commita: ze zmiennej, z pliku wdrożenia, z katalogu .git; bez nich — „lokalna”", () => {
+    const repo = mkdtempSync(join(tmpdir(), "wersja-"));
+    const konsola = join(repo, "konsola");
+    mkdirSync(konsola);
+    writeFileSync(join(konsola, "package.json"), JSON.stringify({ version: "0.2.0" }));
+    assert.equal(wersjaNarzedzia({ katalog: konsola, srodowisko: {} }), "0.2.0+lokalna");
+    mkdirSync(join(repo, ".git", "refs", "heads", "galaz"), { recursive: true });
+    writeFileSync(join(repo, ".git", "HEAD"), "ref: refs/heads/galaz/x\n");
+    writeFileSync(join(repo, ".git", "packed-refs"), "# pack-refs\n1234567890abcdef1234567890abcdef12345678 refs/heads/galaz/x\n");
+    assert.equal(commitZGita(repo), "1234567");
+    writeFileSync(join(repo, ".git", "refs", "heads", "galaz", "x"), "abcdef0123456789abcdef0123456789abcdef01\n");
+    assert.equal(wersjaNarzedzia({ katalog: konsola, srodowisko: {} }), "0.2.0+abcdef0");
+    writeFileSync(join(konsola, "wersja-commit.txt"), "c9a4bd9\n");
+    assert.equal(wersjaNarzedzia({ katalog: konsola, srodowisko: {} }), "0.2.0+c9a4bd9");
+    assert.equal(wersjaNarzedzia({ katalog: konsola, srodowisko: { CRAFTMYPLAN_COMMIT: "FEDCBA987" } }), "0.2.0+fedcba9");
   });
 });

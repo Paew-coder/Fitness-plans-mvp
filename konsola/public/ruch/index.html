@@ -35,6 +35,7 @@
         </select>
       </label>
     </div>
+    <label class="przelacznik-sztangi"><input type="checkbox" id="ze-sztanga"> Przysiad ze sztangą — przed analizą zaznaczę koniec gryfu</label>
     <div class="rzad-zrodla przyciski-zrodla">
       <label class="przycisk glowny" for="plik-wideo">Wgraj wideo</label>
       <input id="plik-wideo" type="file" accept="video/*" class="ukryty-plik">
@@ -65,6 +66,26 @@
       <button id="anuluj-nagrywanie" type="button" class="link">Anuluj</button>
       <span id="czas-nagrania" class="czas-nagrania"></span>
     </div>
+  </section>
+
+  <section class="panel ukryty" id="panel-zaznaczania">
+    <h2>Zaznacz koniec gryfu</h2>
+    <p class="wskazowka">
+      Pierwsza klatka filmu. Dotknij środka końca gryfu (albo środka naklejki). Przeciągnij, żeby poprawić —
+      w rogu widać powiększenie. Potem „Analizuj”: sylwetka i sztanga liczą się w jednym przejściu.
+    </p>
+    <div class="scena scena-zaznaczania" id="scena-zaznaczania"><canvas id="klatka-startowa"></canvas></div>
+    <div class="rzad-zrodla ustawienia-zaznaczania">
+      <label>Śledzenie
+        <select id="tryb-sledzenia">
+          <option value="wzorzec">koniec gryfu — wzór obrazu</option>
+          <option value="naklejka">kolorowa naklejka na końcu gryfu</option>
+        </select>
+      </label>
+      <button id="analizuj-ze-sztanga" type="button" class="glowny" disabled>Analizuj</button>
+      <button id="analizuj-bez-sztangi" type="button" class="link">Analizuj bez sztangi</button>
+    </div>
+    <p class="wskazowka" id="stan-zaznaczania">Gryf nie jest jeszcze zaznaczony.</p>
   </section>
 
   <section class="panel ukryty" id="panel-postepu">
@@ -147,6 +168,12 @@
           <p class="wskazowka" id="opis-powtorzen"></p>
         </section>
 
+        <section class="panel ukryty" id="panel-miar-srodka">
+          <h2>Środek ciężkości i sztanga w powtórzeniach</h2>
+          <div class="przewijana"><table class="tabela" id="tabela-miar-srodka"></table></div>
+          <p class="wskazowka" id="opis-miar-srodka"></p>
+        </section>
+
         <section class="panel">
           <h2>Trajektorie</h2>
           <p class="wskazowka">Do czterech punktów naraz. Droga punktu w całym nagraniu — blado; do bieżącej klatki — pełnym kolorem. Na obrazie tylko przy punktach, które widać (wybór w „Punkty na obrazie”).</p>
@@ -176,7 +203,8 @@
             </label>
             <label>Gdzie
               <select id="miejsce-obciazenia">
-                <option value="barki">na barkach (sztanga)</option>
+                <option value="sztanga">sztanga — punkt na obrazie (koniec gryfu)</option>
+                <option value="barki" selected>na barkach (punkt barku)</option>
                 <option value="dlonie">w dłoniach (hantle, kettlebell)</option>
               </select>
             </label>
@@ -184,10 +212,69 @@
               <input id="masa-ciala" type="number" min="20" max="250" step="0.1" inputmode="decimal" placeholder="przy obciążeniu">
             </label>
           </div>
+          <p class="wskazowka">Kilogramy — wszystko na gryfie: gryf i talerze.</p>
           </details>
+          <div class="pasek-sztangi" id="pasek-sztangi">
+            <span id="opis-sztangi">Sztanga: nie zaznaczona</span>
+            <button id="zaznacz-sztange" type="button">Zaznacz koniec gryfu</button>
+            <button id="nastepna-niepewna" type="button" class="link ukryty">następna klatka „?” →</button>
+            <button id="cofnij-korekte" type="button" class="link ukryty">cofnij poprawkę w tej klatce</button>
+          </div>
+          <p class="wskazowka ukryty" id="instrukcja-sztangi"></p>
+          <details class="obciazenie-srodka ukryty" id="ustawienia-sledzenia">
+            <summary>Śledzenie sztangi: <span id="opis-trybu-sledzenia">wzór obrazu</span></summary>
+            <div class="rzad-zrodla ustawienia-srodka">
+              <label>Sposób
+                <select id="tryb-sledzenia-analizy">
+                  <option value="wzorzec">koniec gryfu — wzór obrazu</option>
+                  <option value="naklejka">kolorowa naklejka na końcu gryfu</option>
+                </select>
+              </label>
+              <button id="sledz-od-nowa" type="button">Śledź od nowa</button>
+            </div>
+            <p class="wskazowka">„Śledź od nowa” liczy sztangę w całym filmie jeszcze raz, od każdego punktu kontrolnego
+              (pierwsze zaznaczenie i Twoje poprawki zostają). Potrzebny film.</p>
+          </details>
+          <div class="postep-sztangi ukryty" id="postep-sztangi">
+            <span id="opis-postepu-sztangi">Śledzę sztangę…</span>
+            <progress id="pasek-postepu-sztangi" max="1" value="0"></progress>
+            <button id="przerwij-sztange" type="button" class="link">Przerwij</button>
+          </div>
           <p class="odczyt-srodka" id="odczyt-srodka"></p>
+          <div class="wyniki-srodka ukryty" id="wyniki-srodka"></div>
           <div class="wykres ukryty" id="wykres-srodka"></div>
-          <label class="przelacznik-srodka"><input type="checkbox" id="wygladzanie-srodka" checked> wygładzanie (filtr 6 Hz)</label>
+          <div class="rzad-zrodla ustawienia-wykresu-srodka">
+            <label class="przelacznik-srodka"><input type="checkbox" id="wygladzanie-srodka" checked> wygładzanie (filtr 6 Hz)</label>
+            <span class="pasmo-srodstopia" id="ustawienia-pasma">
+              śródstopie
+              <input id="pasmo-od" type="number" min="0" max="100" step="1" value="40" inputmode="numeric" aria-label="Śródstopie od (% stopy)">
+              –
+              <input id="pasmo-do" type="number" min="0" max="100" step="1" value="60" inputmode="numeric" aria-label="Śródstopie do (% stopy)">
+              % stopy
+            </span>
+          </div>
+          <details class="jak-liczone" id="jak-nagrac">
+            <summary>Jak nagrać i zaznaczyć sztangę</summary>
+            <ol class="kroki-sztangi">
+              <li><strong>Kamera z boku</strong>, prostopadle do gryfu (patrzy wzdłuż gryfu, na jego koniec), 3–4 m od osoby,
+                na wysokości bioder, nieruchomo (statyw). Cała osoba i oba końce ruchu sztangi w kadrze.</li>
+              <li><strong>Naklejka</strong> (najpewniej): okrągła, jaskrawa (różowa, zielona, pomarańczowa), 3–5 cm,
+                na środku końca gryfu od strony kamery. Kolor, którego nie ma na ubraniu ani w tle.</li>
+              <li><strong>Zaznacz gryf na klatce 1</strong>: przed wgraniem filmu zaznacz „Przysiad ze sztangą”, dotknij
+                środka końca gryfu (albo naklejki) i wybierz sposób śledzenia — „naklejka”, gdy jest naklejka.
+                Potem „Analizuj”.</li>
+              <li><strong>Sprawdź śledzenie</strong>: przejdź film klatka po klatce albo odtwórz go powoli — czerwony
+                pierścień ma siedzieć na końcu gryfu. „następna klatka „?”” przenosi do klatek do sprawdzenia.</li>
+              <li><strong>Popraw</strong>: na klatce, gdzie punkt uciekł, „Popraw sztangę” i przeciągnij pierścień na
+                koniec gryfu. Ta klatka staje się punktem kontrolnym (biała obwódka), a śledzenie liczy się od niej
+                od nowa — do następnego punktu kontrolnego.</li>
+              <li><strong>„?” przy klatce</strong> — program nie jest pewny, gdzie jest gryf (zasłonięty, rozmazany,
+                wyszedł z kadru). Taka klatka nie wchodzi do wyników. Pojedyncze „?” można zostawić; serię — popraw.</li>
+              <li><strong>Pas śródstopia</strong> (zielony pas nad stopą i w tle wykresu): 40–60% długości stopy od pięty.
+                Środek ciężkości układu w pasie = ciężar nad środkiem stopy. Tabela „Środek ciężkości i sztanga
+                w powtórzeniach” pokazuje, ile czasu był w pasie i jak daleko uciekał w stronę palców.</li>
+            </ol>
+          </details>
           <details class="jak-liczone">
             <summary>Jak to jest liczone</summary>
             <p class="wskazowka" id="opis-srodka"></p>
@@ -218,10 +305,26 @@
         <section class="panel">
           <h2>Zapis</h2>
           <p class="wskazowka">Pełny zapis — 33 punkty MediaPipe w każdej klatce, z czasem i sugestiami. CSV: główne punkty i kąty do arkusza.</p>
+          <div class="rzad-zrodla ustawienia-badania">
+            <label>Kod osoby
+              <input id="kod-osoby" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="np. P01">
+            </label>
+            <label>Warunek
+              <select id="warunek">
+                <option value="">—</option>
+                <option value="HB-bez-wskazowki">high bar bez wskazówki</option>
+                <option value="HB-ze-wskazowka">high bar ze wskazówką</option>
+                <option value="LB">low bar</option>
+              </select>
+            </label>
+          </div>
+          <p class="wskazowka" id="nazwa-pliku"></p>
           <div class="rzad-zrodla">
             <button id="pobierz-json" type="button">Pobierz analizę (.json)</button>
-            <button id="pobierz-csv" type="button">Pobierz CSV</button>
+            <button id="pobierz-csv" type="button">Pobierz CSV (klatki)</button>
+            <button id="pobierz-csv-powtorzen" type="button" class="ukryty">Pobierz CSV (powtórzenia)</button>
           </div>
+          <p class="wskazowka" id="wersja-narzedzia"></p>
           <div class="rzad-zrodla ukryty" id="dolacz-wideo-rzad">
             <label class="przycisk" for="plik-dolacz">Dołącz film do tej analizy</label>
             <input id="plik-dolacz" type="file" accept="video/*" class="ukryty-plik">

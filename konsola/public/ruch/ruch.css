@@ -9,6 +9,12 @@
   /* Środek ciężkości (23.10.2026) — ten sam odcień co symbol na filmie, ciemniejszy na jasnym tle. */
   --srodek: #0a8fbf;
   --srodek-blady: rgba(10, 143, 191, .35);
+  /* Sztanga i środek ciężkości układu (24.10.2026) — jak na filmie, ciemniejsze na jasnym tle. */
+  --sztanga: #d6283c;
+  --sztanga-blada: rgba(214, 40, 60, .3);
+  --uklad: #4f8a00;
+  --uklad-blady: rgba(79, 138, 0, .3);
+  --pasmo: rgba(120, 190, 30, .14);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -18,6 +24,11 @@
     --seria-4: #c98500;
     --srodek: #33d6ff;
     --srodek-blady: rgba(51, 214, 255, .35);
+    --sztanga: #ff5a6e;
+    --sztanga-blada: rgba(255, 90, 110, .3);
+    --uklad: #b4f03a;
+    --uklad-blady: rgba(180, 240, 58, .3);
+    --pasmo: rgba(180, 240, 58, .12);
   }
 }
 
@@ -84,7 +95,56 @@ label.przycisk.glowny { background: var(--akcent); border-color: var(--akcent); 
 .scena video, .scena canvas, .scena .bez-filmu { position: absolute; inset: 0; width: 100%; height: 100%; }
 .scena video { object-fit: fill; }
 .scena canvas { touch-action: manipulation; cursor: crosshair; }
-.scena.tryb-sugestii canvas { touch-action: none; }
+.scena.tryb-sugestii canvas, .scena.tryb-sztangi canvas { touch-action: none; }
+.scena.tryb-sztangi { box-shadow: 0 0 0 3px var(--sztanga); }
+
+/* ── sztanga (24.10.2026) ───────────────────────────────────────── */
+.przelacznik-sztangi { flex-direction: row; align-items: center; gap: .45rem; margin-top: .9rem; font-family: var(--sans);
+  text-transform: none; letter-spacing: normal; font-size: .9rem; color: var(--tekst); }
+.przelacznik-sztangi input { width: 1.15rem; height: 1.15rem; accent-color: var(--akcent); }
+.scena-zaznaczania { margin-bottom: .8rem; }
+.scena-zaznaczania canvas { cursor: crosshair; touch-action: none; }
+.ustawienia-zaznaczania { margin-bottom: .5rem; }
+#stan-zaznaczania.niepewny { color: var(--zle); }
+.pasek-sztangi { display: flex; flex-wrap: wrap; gap: .4rem .7rem; align-items: center; font-size: .86rem; margin: .1rem 0 .5rem; }
+.pasek-sztangi #opis-sztangi { color: var(--tekst-slaby); }
+#zaznacz-sztange.aktywny { background: var(--sztanga); border-color: var(--sztanga); color: #fff; }
+#instrukcja-sztangi { margin: -.2rem 0 .6rem; color: var(--tekst); }
+.postep-sztangi { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; font-size: .84rem; margin: .3rem 0 .6rem; }
+.postep-sztangi progress { flex: 1 1 8rem; height: .6rem; accent-color: var(--sztanga); }
+.wyniki-srodka { display: flex; flex-wrap: wrap; gap: .3rem 1rem; align-items: center; font-size: .84rem; margin: -.2rem 0 .4rem; }
+.pozycja-wyniku { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+.wynik-srodka { display: inline-flex; flex-direction: row; align-items: center; gap: .35rem; font-family: var(--sans);
+  text-transform: none; letter-spacing: normal; font-size: .84rem; color: var(--tekst-slaby); cursor: pointer; }
+.wynik-srodka input { width: 1.05rem; height: 1.05rem; accent-color: var(--akcent); margin: 0; }
+.wynik-srodka strong { font-family: var(--mono); color: var(--tekst); }
+.znak-wyniku { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; flex: none; }
+.znak-cialo { background: conic-gradient(#000 0 25%, #fff 0 50%, #000 0 75%, #fff 0); box-shadow: 0 0 0 2px var(--srodek); }
+.znak-sztanga { background: transparent; box-shadow: inset 0 0 0 2.5px var(--sztanga); position: relative; }
+.znak-sztanga::after { content: ""; position: absolute; inset: 35%; border-radius: 50%; background: var(--sztanga); }
+.znak-uklad { background: conic-gradient(#000 0 25%, #fff 0 50%, #000 0 75%, #fff 0); box-shadow: 0 0 0 2px var(--uklad); }
+.znak-pasma { border-radius: 2px; width: .9rem; background: var(--pasmo); box-shadow: inset 0 0 0 1px var(--uklad); }
+.ustawienia-wykresu-srodka { gap: .3rem 1.2rem; align-items: center; margin-top: .3rem; }
+.pasmo-srodstopia { display: inline-flex; align-items: center; gap: .3rem; font-size: .84rem; color: var(--tekst-slaby); }
+.pasmo-srodstopia input { width: 3.6rem; padding: .2rem .3rem; }
+.kroki-sztangi { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .84rem; color: var(--tekst-slaby); }
+.kroki-sztangi li { margin-bottom: .4rem; }
+.kroki-sztangi strong { color: var(--tekst); }
+/* Przycisk „i” przy mierze i dymek z objaśnieniem (najechanie albo dotknięcie). */
+button.info { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 1.15rem; height: 1.15rem; min-width: 0; min-height: 0; padding: 0 !important; margin-left: .3rem;
+  border-radius: 50%; border: 1px solid var(--linia-mocna); background: var(--plaszczyzna); color: var(--tekst-slaby);
+  font: italic 600 .72rem/1 Georgia, serif; text-transform: none; letter-spacing: 0; cursor: help; vertical-align: .05rem; }
+@media (pointer: coarse) { button.info { width: 1.5rem; height: 1.5rem; font-size: .8rem; } }
+button.info:hover, button.info:focus-visible { border-color: var(--akcent); color: var(--akcent); }
+.dymek { position: absolute; z-index: 20; background: var(--plaszczyzna); color: var(--tekst); border: 1px solid var(--linia-mocna);
+  border-radius: 6px; padding: .55rem .7rem; font-size: .82rem; line-height: 1.4; box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  white-space: normal; text-transform: none; letter-spacing: normal; font-family: var(--sans); font-weight: 400; text-align: left; }
+.ustawienia-badania { margin-bottom: .4rem; }
+.ustawienia-badania input[type="text"] { width: 7rem; }
+#nazwa-pliku { word-break: break-word; }
+#nazwa-pliku .do-sprawdzenia { color: var(--akcent); }
+#nazwa-pliku .niepewny { color: var(--zle); }
 .bez-filmu { display: flex; align-items: flex-end; justify-content: center; padding: .8rem;
              color: #969DB1; font-size: .8rem; background: #0F1117; }
 
@@ -155,6 +215,9 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 .wykres-opis { fill: var(--tekst-blady); font-size: 11px; font-family: var(--mono); }
 .wykres-podpis { fill: var(--tekst-slaby); font-size: 11px; }
 .wykres-powtorzenie { fill: var(--akcent-tlo); opacity: .55; }
+.wykres-pasmo { fill: var(--pasmo); stroke: var(--uklad-blady); stroke-width: 1; stroke-dasharray: 4 3; }
+.wykres-opis-pasma { fill: var(--uklad); }
+.wykres-znacznik-sztangi .wykres-znacznik-kreska { stroke: var(--sztanga); stroke-width: 1.5; }
 .wykres-kursor { stroke: var(--akcent); stroke-width: 2; }
 .wykres-celownik { stroke: var(--tekst-blady); stroke-width: 1; stroke-dasharray: 3 3; }
 .wykres-podpowiedz {
@@ -190,6 +253,18 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 #tabela-powtorzen tr.wiersz-maks td { border-bottom-style: dashed; }
 #tabela-powtorzen td.rodzaj-wiersza { text-align: left; font-family: var(--sans); font-size: .78rem; color: var(--tekst-slaby); }
 #tabela-powtorzen tr.wiersz-dol td.rodzaj-wiersza { color: var(--tekst); font-weight: 600; }
+/* Tabela miar środka ciężkości i sztangi w powtórzeniach (24.10.2026) — jak tabela powtórzeń. */
+#tabela-miar-srodka th { font-family: var(--sans); text-transform: none; letter-spacing: normal; font-size: .74rem; }
+#tabela-miar-srodka th.liczba { white-space: normal; vertical-align: bottom; max-width: 7rem; line-height: 1.25; }
+#tabela-miar-srodka td { padding: .3rem .45rem; vertical-align: middle; }
+#tabela-miar-srodka tr.wiersz-powtorzenia td { font-family: var(--sans); font-size: .8rem; font-weight: 600; color: var(--tekst);
+  background: var(--panel); padding-top: .45rem; }
+#tabela-miar-srodka td.rodzaj-wiersza { text-align: left; font-family: var(--sans); font-size: .8rem; color: var(--tekst); white-space: nowrap; }
+/* Na telefonie tabela przewija się w bok — nazwa wyniku zostaje przy lewej krawędzi. */
+#tabela-miar-srodka td.rodzaj-wiersza { position: sticky; left: 0; z-index: 1; background: var(--plaszczyzna); }
+#tabela-miar-srodka td.rodzaj-wiersza .znak-wyniku { margin-right: .4rem; vertical-align: -.1rem; }
+#tabela-miar-srodka tr.wiersz-uklad td { font-weight: 600; }
+#tabela-miar-srodka td.do-klatki { text-decoration: underline dotted; text-underline-offset: 3px; }
 /* Przy przełączniku: bez modelu — wyraźna prośba o wybór płci (trener: „nie widzę środka ciężkości”). */
 .przelacznik-z-wyborem { display: inline-flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .wybor-modelu-srodka { font-size: .86rem; padding: .2rem .55rem !important; border-radius: 4px; }
@@ -197,7 +272,7 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 #panel-srodka.podswietlony { box-shadow: 0 0 0 3px var(--akcent); transition: box-shadow .3s; }
 .ustawienia-srodka { margin-bottom: .6rem; gap: .6rem .7rem; }
 .ustawienia-srodka input[type="number"] { width: 5.2rem; }
-.ustawienia-srodka #miejsce-obciazenia { max-width: 11.5rem; }
+.ustawienia-srodka #miejsce-obciazenia { max-width: 100%; }
 .ustawienia-srodka .model-srodka { flex: 1 1 16rem; }
 .ustawienia-srodka .model-srodka select { width: 100%; }
 #panel-srodka .przelacznik-srodka { flex-direction: row; align-items: center; gap: .4rem; font-family: var(--sans);

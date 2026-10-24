@@ -27,6 +27,7 @@
 import { punktyWUkladzie } from "./geometria.js";
 import { wypelnijLuki } from "./przebieg.js";
 import { PROG_WIDOCZNOSCI, rozwiazywacz } from "./szkielet.js";
+import { punktySztangi } from "./sztanga.js";
 
 /**
  * Masa segmentu (% masy ciała; kończyny — jedna strona) i położenie jego
@@ -95,10 +96,14 @@ const naOdcinku = (a, b, u) => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y)
  * i noga są zasłonięte, MediaPipe je zgaduje — tak samo liczył trener w pracy,
  * „RA 3+3%”). Wtedy tułów też z tej strony (bark → biodro), bo z boku obie
  * strony leżą na sobie.
- * `obciazenie`: `{ kg, masaCiala, miejsce: "barki" | "dlonie" }` — sztanga albo
- * hantle jako dodatkowa masa w tym miejscu.
+ * `obciazenie`: `{ kg, masaCiala, miejsce: "barki" | "dlonie" | "sztanga", punkt }` —
+ * sztanga albo hantle jako dodatkowa masa w tym miejscu. „sztanga” (24.10.2026)
+ * — w punkcie końca gryfu na obrazie: `punkt` `{x, y, pewny}` w pikselach;
+ * bez punktu w tej klatce (albo z niepewnym) wynik jest niepewny.
  *
- * Zwraca `{ x, y, pewny, niepewnaMasa, segmenty, stopy }` albo `null`.
+ * Zwraca `{ x, y, pewny, niepewnaMasa, segmenty, stopy, cialo, ladunek }` albo `null`:
+ * `x, y` — środek ciężkości z obciążeniem (bez obciążenia — samego ciała),
+ * `cialo` — samo ciało `{x, y, pewny}`, `ladunek` — miejsce obciążenia albo `null`.
  * `pewny` — punkty segmentów o łącznej masie powyżej 10% są słabo widoczne
  * (poniżej progu widoczności) → wynik niepewny.
  */
@@ -138,15 +143,26 @@ export function srodekKlatki(klatka, wymiary, { model, konczyny = "obie", obciaz
   if (!srodek) return null;
   const masa = segmenty.reduce((s, q) => s + q.masa, 0);
   const niepewnaMasa = segmenty.filter((q) => !q.pewny).reduce((s, q) => s + q.masa, 0) / masa;
+  const cialo = { x: srodek.x, y: srodek.y, pewny: niepewnaMasa <= 0.1 };
 
+  let ladunek = null;
+  let pewnyLadunek = true;
   if (obciazenie?.kg > 0 && obciazenie.masaCiala > 0) {
-    const miejsce = obciazenie.miejsce === "dlonie"
-      ? sredniaWazona(segmenty.filter((q) => q.id === "reka").map((q) => ({ ...q, masa: 1 })))
-      : strony.length === 1 ? p(`${strony[0][0]}_shoulder`) : p("srodek_barkow");
-    srodek = sredniaWazona([
-      { ...srodek, masa: obciazenie.masaCiala },
-      { x: miejsce.x, y: miejsce.y, masa: obciazenie.kg },
-    ]);
+    if (obciazenie.miejsce === "sztanga") {
+      ladunek = obciazenie.punkt ? { x: obciazenie.punkt.x, y: obciazenie.punkt.y, pewny: !!obciazenie.punkt.pewny } : null;
+      pewnyLadunek = !!ladunek?.pewny;
+    } else {
+      const miejsce = obciazenie.miejsce === "dlonie"
+        ? sredniaWazona(segmenty.filter((q) => q.id === "reka").map((q) => ({ ...q, masa: 1 })))
+        : strony.length === 1 ? p(`${strony[0][0]}_shoulder`) : p("srodek_barkow");
+      ladunek = { x: miejsce.x, y: miejsce.y, pewny: true };
+    }
+    if (ladunek) {
+      srodek = sredniaWazona([
+        { ...srodek, masa: obciazenie.masaCiala },
+        { x: ladunek.x, y: ladunek.y, masa: obciazenie.kg },
+      ]);
+    }
   }
 
   // Stopy do odniesienia: przy jednej stronie — jej pięta i palce; przy obu — stawy skokowe.
@@ -156,7 +172,7 @@ export function srodekKlatki(klatka, wymiary, { model, konczyny = "obie", obciaz
         podloga: Math.max(...["left_heel", "right_heel", "left_foot_index", "right_foot_index"].map((id) => p(id).y)) };
   if (strony.length === 1) stopy.podloga = Math.max(stopy.pieta.y, stopy.palce.y);
 
-  return { x: srodek.x, y: srodek.y, pewny: niepewnaMasa <= 0.1, niepewnaMasa, segmenty, stopy };
+  return { x: srodek.x, y: srodek.y, pewny: cialo.pewny && pewnyLadunek, niepewnaMasa, segmenty, stopy, cialo, ladunek };
 }
 
 /**
@@ -169,11 +185,29 @@ export function srodekKlatki(klatka, wymiary, { model, konczyny = "obie", obciaz
  */
 export function wzgledemStop(wynik) {
   if (!wynik) return null;
-  const { stopy } = wynik;
+  return polozenieNadStopa(wynik.x, wynik.stopy);
+}
+
+/** Położenie dowolnego punktu (x w pikselach) względem stóp tej klatki, w % — jak `wzgledemStop`. */
+export function polozenieNadStopa(x, stopy) {
+  if (x === null || x === undefined || !stopy) return null;
   const [od, doP] = stopy.pieta ? [stopy.pieta, stopy.palce] : [stopy.lewa, stopy.prawa];
   const dl = doP.x - od.x;
   if (Math.abs(dl) < 5) return null;
-  return ((wynik.x - od.x) / dl) * 100;
+  return ((x - od.x) / dl) * 100;
+}
+
+/**
+ * To samo w pikselach: odległość od pięty (z przodu — od lewej stopy),
+ * dodatnia w stronę palców (prawej stopy). Do miar w powtórzeniu, które
+ * trener chce mieć w pikselach i w % stopy.
+ */
+export function pikseleNadStopa(x, stopy) {
+  if (x === null || x === undefined || !stopy) return null;
+  const [od, doP] = stopy.pieta ? [stopy.pieta, stopy.palce] : [stopy.lewa, stopy.prawa];
+  const dl = doP.x - od.x;
+  if (Math.abs(dl) < 5) return null;
+  return (x - od.x) * Math.sign(dl);
 }
 
 /* ── wygładzanie ────────────────────────────────────────────────── */
@@ -188,8 +222,14 @@ export function wzgledemStop(wynik) {
  * nagranie na kawałki filtrowane osobno i zostają `null`. Kawałek krótszy
  * niż 6 klatek zostaje bez zmian.
  */
-export function wygladzTrajektorie(wartosci, fps, odciecie = 6) {
-  const fc = Math.min(odciecie, fps * 0.4);
+export const ODCIECIE_HZ = 6;
+export const POPRAWKA_DWOCH_PRZEJSC = 0.802;
+
+/** Odcięcie, które faktycznie działa przy danej liczbie klatek na sekundę (najwyżej 0,4 × kl./s). */
+export const odciecieDlaFps = (fps, odciecie = ODCIECIE_HZ) => Math.min(odciecie, fps * 0.4);
+
+export function wygladzTrajektorie(wartosci, fps, odciecie = ODCIECIE_HZ) {
+  const fc = odciecieDlaFps(fps, odciecie);
   if (!(fc > 0) || wartosci.length < 6) return [...wartosci];
   const wypelnione = wypelnijLuki(wartosci, 5);
   const wynik = [...wypelnione];
@@ -199,7 +239,7 @@ export function wygladzTrajektorie(wartosci, fps, odciecie = 6) {
     let j = i;
     while (j < wypelnione.length && wypelnione[j] !== null) j++;
     if (j - i >= 6) {
-      const gladkie = filtrujWObieStrony(wypelnione.slice(i, j), fps, fc / 0.802);
+      const gladkie = filtrujWObieStrony(wypelnione.slice(i, j), fps, fc / POPRAWKA_DWOCH_PRZEJSC);
       for (let k = i; k < j; k++) wynik[k] = gladkie[k - i];
     }
     i = j;
@@ -249,17 +289,49 @@ export function fpsZKlatek(klatki) {
 /**
  * Środek ciężkości we wszystkich klatkach.
  * `ustawienia`: `{ model, konczyny, obciazenie, wygladzanie, fps }`.
- * Zwraca `{ klatki: [wynik|null], x, y, wzgledem, xGladkie, yGladkie, wzgledemGladkie }`
+ * Zwraca `{ klatki: [wynik|null], x, y, wzgledem, xGladkie, yGladkie, wzgledemGladkie, wyniki }`
  * — serie pełne (do zapisu) i wygładzone (do ekranu, gdy wygładzanie włączone;
- * inaczej te same). Niepewne klatki mają `null` w seriach.
+ * inaczej te same). Niepewne klatki mają `null` w seriach. `x, y, wzgledem`
+ * to środek ciężkości z obciążeniem, jak w pierwszej wersji (kolumny CSV
+ * „srodek_ciezkosci_…” znaczą to samo co wcześniej).
+ *
+ * `wyniki` (24.10.2026, badanie z punktem sztangi) — trzy wyniki osobno, każdy
+ * jako `seria` (niżej): `cialo` — samo ciało, `sztanga` — punkt końca gryfu
+ * (gdy jest w analizie), `uklad` — ciało + obciążenie (gdy są kg i masa ciała).
+ * Każda: `x, y` (piksele filmu), `wzgledem` (% stopy), `piksele` (od pięty,
+ * w stronę palców) — surowe i `…Gladkie` tym samym filtrem.
  */
 export function srodekSesji(sesja, { model, konczyny = "obie", obciazenie = null, wygladzanie = true, fps = fpsZKlatek(sesja.klatki) }) {
   const wymiary = { szerokosc: sesja.wideo.szerokosc, wysokosc: sesja.wideo.wysokosc };
-  const klatki = sesja.klatki.map((k) => srodekKlatki(k, wymiary, { model, konczyny, obciazenie }));
-  const pewne = (f) => klatki.map((w) => (w?.pewny ? f(w) : null));
-  const x = pewne((w) => w.x);
-  const y = pewne((w) => w.y);
-  const wzgledem = pewne((w) => wzgledemStop(w));
+  const sztanga = punktySztangi(sesja);
+  const klatki = sesja.klatki.map((k, i) => srodekKlatki(k, wymiary, { model, konczyny,
+    obciazenie: obciazenie && { ...obciazenie, punkt: obciazenie.miejsce === "sztanga" ? sztanga[i] : undefined } }));
   const gladz = (seria) => (wygladzanie ? wygladzTrajektorie(seria, fps) : seria);
-  return { klatki, x, y, wzgledem, xGladkie: gladz(x), yGladkie: gladz(y), wzgledemGladkie: gladz(wzgledem) };
+  const glowny = seriaWyniku(klatki.map((w) => (w?.pewny ? w : null)), klatki, gladz);
+  const zObciazeniem = obciazenie?.kg > 0 && obciazenie.masaCiala > 0;
+  const wyniki = {
+    cialo: seriaWyniku(klatki.map((w) => (w?.cialo.pewny ? w.cialo : null)), klatki, gladz),
+    sztanga: sztanga.some(Boolean) ? seriaWyniku(sztanga.map((q) => (q?.pewny ? q : null)), klatki, gladz) : null,
+    uklad: zObciazeniem ? glowny : null,
+  };
+  return {
+    klatki, x: glowny.x, y: glowny.y, wzgledem: glowny.wzgledem,
+    xGladkie: glowny.xGladkie, yGladkie: glowny.yGladkie, wzgledemGladkie: glowny.wzgledemGladkie,
+    wyniki, sztanga,
+  };
+}
+
+/**
+ * Seria jednego wyniku: punkty `{x, y}` w pikselach (albo `null` — klatka
+ * niepewna), położenie względem stóp z tej samej klatki.
+ */
+function seriaWyniku(punkty, klatki, gladz) {
+  const x = punkty.map((q) => q?.x ?? null);
+  const y = punkty.map((q) => q?.y ?? null);
+  const wzgledem = punkty.map((q, i) => (q ? polozenieNadStopa(q.x, klatki[i]?.stopy) : null));
+  const piksele = punkty.map((q, i) => (q ? pikseleNadStopa(q.x, klatki[i]?.stopy) : null));
+  return {
+    x, y, wzgledem, piksele,
+    xGladkie: gladz(x), yGladkie: gladz(y), wzgledemGladkie: gladz(wzgledem), pikseleGladkie: gladz(piksele),
+  };
 }

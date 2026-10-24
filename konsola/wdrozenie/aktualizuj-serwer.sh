@@ -91,6 +91,9 @@ else
 fi
 powiedz "kod pobrany"
 
+# Skrót commita do obrazu (w obrazie nie ma gita) — analiza ruchu zapisuje
+# go w każdym pliku jako wersję narzędzia (24.10.2026, badanie trenera).
+git -C "$KATALOG" rev-parse --short=7 HEAD > "$KATALOG/konsola/wersja-commit.txt"
 "${COMPOSE[@]}" up -d --build >> "$LOG" 2>&1
 powiedz "konsola przebudowana i uruchomiona"
 

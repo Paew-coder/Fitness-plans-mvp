@@ -175,6 +175,69 @@ function sztucznyPrzysiadZBoku(): string {
   return doJSON(sesja);
 }
 
+/**
+ * Sztuczny przysiad z boku ze sztangą (24.10.2026): ten sam ruch, a w każdej
+ * klatce punkt końca gryfu — przy high bar tuż nad barkiem, przy low bar
+ * niżej na plecach (za barkiem). Punkty jak ze śledzenia, pewne.
+ */
+function sztucznyPrzysiadZeSztanga(gryf: "high" | "low"): string {
+  const sesja = zJSON(sztucznyPrzysiadZBoku());
+  const W = sesja.wideo.szerokosc, H = sesja.wideo.wysokosc;
+  // Sztuczna sylwetka stoi barkiem tuż pod górą kadru — gryf nie może wyjść ponad obraz.
+  const [dx, dy] = gryf === "high" ? [-6, 4] : [-34, 40];
+  sesja.wideo.nazwa = `przysiad-${gryf}-bar.webm`;
+  sesja.sztanga = { tryb: "naklejka", prog: 0.5, parametry: {} };
+  sesja.klatki.forEach((k: any, i: number) => {
+    const bark = k.p[INDEKS.left_shoulder!];
+    k.sztanga = { x: Math.round((bark[0] + dx / W) * 1e5) / 1e5, y: Math.round((bark[1] + dy / H) * 1e5) / 1e5,
+      pewnosc: 0.97, zrodlo: i === 0 ? "korekta" : "sledzenie" };
+  });
+  return doJSON(sesja);
+}
+
+/**
+ * Film ze „sztangą” (ffmpeg): nieruchome, ziarniste tło i znacznik jak koniec
+ * gryfu z naklejką — różowy środek, czarny pierścień, jasny brzeg — który
+ * jedzie w dół i w górę. Środek znacznika w chwili t (piksele filmu):
+ * x = 300 + 20·sin(2t), y = 70 + 150·sin(πt/4), zaokrąglone jak w ffmpeg.
+ */
+const SZTANGA_FILM = { szerokosc: 640, wysokosc: 360, sekund: 4 };
+const torSztangi = (t: number) => ({
+  x: Math.floor(300 + 20 * Math.sin(2 * t) - 14) + 14.5,
+  y: Math.floor(70 + 150 * Math.sin((Math.PI * t) / 4) - 14) + 14.5,
+});
+function filmZeSztanga(plik: string): boolean {
+  const kolo = (srodek: number) => `if(lt(hypot(X-14,Y-14),6),${srodek},if(lt(hypot(X-14,Y-14),10),20,210))`;
+  try {
+    execFileSync("ffmpeg", ["-v", "error", "-y",
+      "-f", "lavfi", "-i", `color=c=0x5a6068:s=${SZTANGA_FILM.szerokosc}x${SZTANGA_FILM.wysokosc}:r=30:d=${SZTANGA_FILM.sekund}`,
+      "-f", "lavfi", "-i", `color=c=black:s=29x29:r=30:d=${SZTANGA_FILM.sekund}`,
+      "-filter_complex",
+      `[0]noise=alls=30:allf=u,format=yuv420p[tlo];`
+        + `[1]format=rgba,geq=r='${kolo(235)}':g='${kolo(40)}':b='${kolo(200)}'`
+        + `:a='if(lt(hypot(X-14,Y-14),14.5),255,0)'[znak];`
+        + `[tlo][znak]overlay=x='300+20*sin(2*t)-14':y='70+150*sin(PI*t/4)-14':eval=frame,format=yuv420p`,
+      "-c:v", "libvpx", "-b:v", "2M", "-g", "30", plik]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Piksele nakładki w kolorze sztangi (#ff4d5e) i środka ciężkości układu (#b4f03a). */
+const pikseleSztangi = (s: any) => s.evaluate(() => {
+  const c = document.querySelector("#nakladka") as HTMLCanvasElement;
+  const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+  let sztanga = 0, uklad = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3]! < 200) continue;
+    const [r, g, b] = [d[i]!, d[i + 1]!, d[i + 2]!];
+    if (r > 225 && g > 55 && g < 105 && b > 70 && b < 120) sztanga++;
+    if (r > 150 && r < 210 && g > 215 && b < 100) uklad++;
+  }
+  return { sztanga, uklad };
+});
+
 /** Piksele nakładki w kolorze środka ciężkości (#33d6ff): droga, pion, obwódka symbolu. */
 const pikseleSrodka = (s: any) => s.evaluate(() => {
   const c = document.querySelector("#nakladka") as HTMLCanvasElement;
@@ -489,8 +552,9 @@ await zSerwerem(4231, async ({ adres }) => {
       `y ${k2.y.toFixed(0)} → ${k3.y.toFixed(0)} px`);
     await s.uncheck("#wygladzanie-srodka");
     await s.waitForTimeout(150);
-    sprawdz("bez wygładzania — jedna linia na wykresie",
-      await s.locator("#wykres-srodka path.wykres-linia").count() === 1);
+    // Z obciążeniem dwa wyniki (24.10.2026): ciało i układ — po jednej linii każdy.
+    sprawdz("bez wygładzania — jedna linia na wynik (ciało i układ ciało + obciążenie)",
+      await s.locator("#wykres-srodka path.wykres-linia").count() === 2);
     await s.check("#wygladzanie-srodka");
     await s.uncheck("#pokaz-srodek");
     sprawdz("przełącznik „środek ciężkości” chowa symbol z obrazu", await pikseleSrodka(s) === 0);
@@ -503,8 +567,11 @@ await zSerwerem(4231, async ({ adres }) => {
     const [pobranieTabeli] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-csv")]);
     const csvZSrodkiem = join(robocze, "z-srodkiem.csv");
     await pobranieTabeli.saveAs(csvZSrodkiem);
-    sprawdz("CSV: kolumny środka ciężkości na końcu",
-      readFileSync(csvZSrodkiem, "utf-8").split("\r\n")[0]!.endsWith("srodek_wzgledem_stop_proc;srodek_wzgledem_stop_proc_wygladzony"));
+    // Od 24.10.2026 dalej, na końcu: trzy wyniki osobno i parametry z wersją narzędzia.
+    const naglowekCsv = readFileSync(csvZSrodkiem, "utf-8").split("\r\n")[0]!;
+    sprawdz("CSV: kolumny środka ciężkości za kątami, dalej wyniki osobno i wersja narzędzia",
+      naglowekCsv.includes("srodek_wzgledem_stop_proc;srodek_wzgledem_stop_proc_wygladzony;cialo_x_px")
+        && /;wersja_narzedzia;kod_osoby;warunek;model_segmentow;/.test(naglowekCsv));
     await s.reload();
     await s.setInputFiles("#plik-analizy", plikZSrodkiem);
     await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
@@ -556,6 +623,284 @@ await zSerwerem(4231, async ({ adres }) => {
     sprawdz("z przodu: obie strony osobno, położenie między stopami",
       przod?.konczyny === "obie" && (await s.textContent("#odczyt-srodka"))!.includes("między stopami"),
       (await s.textContent("#odczyt-srodka"))!.trim());
+
+    // ── sztanga (24.10.2026) — badanie trenera: high bar / low bar ─
+    // Trener: „rozbuduj moduł o punkt sztangi, który zastąpi obecne liczenie
+    // obciążenia w punkcie barku… narzędzie musi odróżnić high bar od low bar”.
+    console.log("\n  Sztanga — trzy wyniki, miary w powtórzeniach");
+    const plikHigh = join(robocze, "przysiad-high.json");
+    const plikLow = join(robocze, "przysiad-low.json");
+    writeFileSync(plikHigh, sztucznyPrzysiadZeSztanga("high"));
+    writeFileSync(plikLow, sztucznyPrzysiadZeSztanga("low"));
+    await s.goto(`${adres}/ruch/`);
+    // Moduł strony gotowy (listy wypełnione) — dopiero wtedy wybór pliku ma kto odebrać.
+    await s.waitForFunction(() => (document.querySelector("#model") as HTMLSelectElement).options.length > 0);
+    await s.setInputFiles("#plik-analizy", plikHigh);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.waitForTimeout(300);
+    sprawdz("zapis ze sztangą: obciążenie domyślnie „sztanga — punkt na obrazie”, pasek „Sztanga: pewna w 40 z 40 klatek”",
+      await s.inputValue("#miejsce-obciazenia") === "sztanga"
+        && (await s.textContent("#opis-sztangi")) === "Sztanga: pewna w 40 z 40 klatek",
+      `${await s.inputValue("#miejsce-obciazenia")} · ${await s.textContent("#opis-sztangi")}`);
+    await s.selectOption("#model-srodka", "deleva-m");
+    await s.click("#obciazenie-srodka summary");
+    await s.fill("#obciazenie-kg", "100");
+    await s.fill("#masa-ciala", "80");
+    await s.waitForTimeout(200);
+    sprawdz("…w nagłówku obciążenia: „100 kg na sztandze (koniec gryfu) · masa ciała 80 kg”",
+      await s.textContent("#opis-obciazenia") === "100 kg na sztandze (koniec gryfu) · masa ciała 80 kg",
+      (await s.textContent("#opis-obciazenia")) ?? "");
+    for (let i = 0; i < 19; i++) await s.click("#klatka-dalej");
+    const stHigh = await stanEkranu(s);
+    const wynikiHigh = stHigh.srodek?.wyniki ?? {};
+    sprawdz("trzy wyniki osobno: ciało, sztanga, układ — każdy w % stopy",
+      ["cialo", "sztanga", "uklad"].every((id) => typeof wynikiHigh[id]?.wzgledem === "number"),
+      Object.entries(wynikiHigh).map(([id, w]: [string, any]) => `${id} ${w.wzgledem?.toFixed(1)}%`).join(" · "));
+    const legenda = await s.locator("#wyniki-srodka .wynik-srodka").allTextContents();
+    sprawdz("legenda przy wykresie: ciało, sztanga, układ z wartością w tej klatce i pas śródstopia",
+      legenda.length === 3 && /^ciało/.test(legenda[0]!.trim()) && /^sztanga/.test(legenda[1]!.trim()) && /^układ/.test(legenda[2]!.trim())
+        && (await s.textContent("#wyniki-srodka"))!.includes("śródstopie 40–60%"),
+      legenda.map((t) => t.trim()).join(" | "));
+    const kolory = await pikseleSztangi(s);
+    sprawdz("na obrazie: pierścień i droga sztangi (czerwone) i środek układu z pionem (zielony)",
+      kolory.sztanga > 40 && kolory.uklad > 40, `sztanga ${kolory.sztanga} px, układ ${kolory.uklad} px`);
+    sprawdz("wykres: trzy wyniki, każdy wygładzony i blady bez wygładzania; pas śródstopia w tle",
+      await s.locator("#wykres-srodka path.wykres-linia").count() === 6
+        && await s.locator("#wykres-srodka rect.wykres-pasmo").count() === 1
+        && (await s.locator("#wykres-srodka text.wykres-opis-pasma").textContent()) === "śródstopie");
+    const naglowkiMiar = (await s.locator("#tabela-miar-srodka tr:first-child th").allTextContents()).map((t) => t.replace(/i$/, "").trim());
+    sprawdz("tabela „Środek ciężkości i sztanga w powtórzeniach”: start, najdalej w stronę palców, dół, zakresy, czas w śródstopiu",
+      JSON.stringify(naglowkiMiar) === JSON.stringify(["", "na początku", "najdalej w stronę palców (w dół)", "w najgłębszym punkcie",
+        "zakres przód–tył", "zakres w dół", "zakres w górę", "czas w śródstopiu"]), naglowkiMiar.join(" | "));
+    const wierszeMiar = await s.locator("#tabela-miar-srodka tr.wiersz-wyniku").evaluateAll((w) => w.map((r) => [...r.children].map((c) => c.textContent!.trim())));
+    sprawdz("…w powtórzeniu trzy wiersze: ciało, sztanga, układ, z liczbami w % i czasem w śródstopiu",
+      wierszeMiar.length === 3 && wierszeMiar.map((w) => w[0]!.replace(/i$/, "")).join(",") === "ciało,sztanga,układ"
+        && wierszeMiar.every((w) => /%$/.test(w[1]!) && /^[+]?[\d,]+% · kl\. \d+$/.test(w[2]!) && /%$/.test(w[7]!)),
+      wierszeMiar.map((w) => w.join(" ")).join(" / "));
+    // Dymek: dotknięcie „i” w nagłówku pokazuje objaśnienie i nie przenosi do klatki.
+    const klatkaPrzed = (await stanEkranu(s)).biezaca;
+    await s.locator("#tabela-miar-srodka tr.wiersz-wyniku").first().locator("button.info").click();
+    const dymekTekst = await s.locator(".dymek:not(.ukryty)").textContent().catch(() => null);
+    sprawdz("„i” przy wierszu: dymek z objaśnieniem, bez przeskoku do innej klatki",
+      !!dymekTekst?.includes("Środek ciężkości samego ciała") && (await stanEkranu(s)).biezaca === klatkaPrzed, dymekTekst ?? "brak dymka");
+    await s.locator("#tabela-miar-srodka tr:first-child th").nth(7).locator("button.info").click();
+    sprawdz("…dymek przy „czas w śródstopiu” mówi, jak to czytać",
+      (await s.locator(".dymek:not(.ukryty)").textContent())!.includes("pasie śródstopia"));
+    await s.mouse.click(5, 5);
+    sprawdz("…kliknięcie obok zamyka dymek", await s.locator(".dymek.ukryty").count() === 1);
+    const infoNaWykresie = await s.locator("#wyniki-srodka button.info").count();
+    sprawdz("przy każdym wyniku i pasie na wykresie jest „i” z objaśnieniem", infoNaWykresie === 4, `${infoNaWykresie}`);
+    await zrzut(s, "ruch-sztanga-panel", "#panel-srodka");
+    await zrzut(s, "ruch-sztanga-miary", "#panel-miar-srodka");
+    await zrzut(s, "ruch-sztanga-obraz", "#scena");
+    // High bar vs low bar: ten sam ruch, gryf w innym miejscu → inny środek układu.
+    const ukladHigh = wynikiHigh.uklad.wzgledem as number;
+    const cialoHigh = wynikiHigh.cialo.wzgledem as number;
+    await s.fill("#kod-osoby", "P01");
+    await s.selectOption("#warunek", "HB-bez-wskazowki");
+    sprawdz("kod osoby i warunek → nazwa pliku „P01_HB-bez-wskazowki_<data>_analiza.json”",
+      /P01_HB-bez-wskazowki_\d{4}-\d{2}-\d{2}_analiza\.json/.test((await s.textContent("#nazwa-pliku"))!),
+      (await s.textContent("#nazwa-pliku"))!.trim());
+    await s.fill("#kod-osoby", "Testowy");
+    sprawdz("…kod wyglądający jak imię — ostrzeżenie „wpisz kod, nie imię”",
+      (await s.textContent("#nazwa-pliku"))!.includes("wygląda jak imię"));
+    await s.fill("#kod-osoby", "P01");
+    sprawdz("wersja narzędzia na ekranie: „0.2.0+…”", /Wersja narzędzia: 0\.2\.0\+\w+/.test((await s.textContent("#wersja-narzedzia"))!),
+      (await s.textContent("#wersja-narzedzia"))!.trim());
+    const [pobranieMiar] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-csv-powtorzen")]);
+    const csvMiar = join(robocze, pobranieMiar.suggestedFilename());
+    await pobranieMiar.saveAs(csvMiar);
+    const [naglowekMiar, ...wierszeCsv] = readFileSync(csvMiar, "utf-8").replace(/^﻿/, "").trim().split("\r\n");
+    sprawdz("CSV powtórzeń: plik „…_powtorzenia.csv”, wiersz = powtórzenie × wynik × seria (surowa, wygładzona)",
+      /^P01_HB-bez-wskazowki_.*_powtorzenia\.csv$/.test(pobranieMiar.suggestedFilename()) && wierszeCsv.length === 6
+        && naglowekMiar!.startsWith("plik_filmu;powtorzenie;wynik;seria;") && naglowekMiar!.includes(";czas_w_srodstopiu_proc;")
+        && wierszeCsv.every((w) => w.includes(";P01;HB-bez-wskazowki;deleva-m;")),
+      `${pobranieMiar.suggestedFilename()}, ${wierszeCsv.length} wierszy`);
+    const [pobranieJsonSztangi] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-json")]);
+    const plikJsonSztangi = join(robocze, "sztanga-zapis.json");
+    await pobranieJsonSztangi.saveAs(plikJsonSztangi);
+    const zapisSztangi = JSON.parse(readFileSync(plikJsonSztangi, "utf-8"));
+    sprawdz("JSON: wersja 2, punkt sztangi w każdej klatce, badanie, wersja narzędzia i parametry",
+      zapisSztangi.wersja === 2 && zapisSztangi.klatki.every((k: any) => typeof k.sztanga?.x === "number")
+        && zapisSztangi.badanie?.kodOsoby === "P01" && /^0\.2\.0\+/.test(zapisSztangi.narzedzie?.wersja)
+        && zapisSztangi.narzedzie.parametry.odciecieHz === 6 && JSON.stringify(zapisSztangi.narzedzie.parametry.pasmoSrodstopia) === "[40,60]",
+      `${zapisSztangi.narzedzie?.wersja} · ${JSON.stringify(zapisSztangi.narzedzie?.parametry?.pasmoSrodstopia)}`);
+    await s.setInputFiles("#plik-analizy", plikLow);
+    await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+    await s.waitForTimeout(300);
+    sprawdz("…nowy plik — kod osoby i warunek wyczyszczone (nie przechodzą na następną osobę)",
+      await s.inputValue("#kod-osoby") === "" && await s.inputValue("#warunek") === "");
+    // Plik bez zapisanych ustawień środka ciężkości — te same wpisane jeszcze raz.
+    await s.selectOption("#model-srodka", "deleva-m");
+    await s.fill("#obciazenie-kg", "100");
+    await s.fill("#masa-ciala", "80");
+    await s.waitForTimeout(200);
+    for (let i = 0; i < 19; i++) await s.click("#klatka-dalej");
+    const wynikiLow = (await stanEkranu(s)).srodek?.wyniki ?? {};
+    sprawdz("high bar i low bar — ten sam ruch, inny środek ciężkości układu (ciało bez zmian)",
+      Math.abs(wynikiLow.uklad.wzgledem - ukladHigh) > 3 && Math.abs(wynikiLow.cialo.wzgledem - cialoHigh) < 1e-6,
+      `układ: high ${ukladHigh.toFixed(1)}%, low ${wynikiLow.uklad.wzgledem.toFixed(1)}% · ciało ${cialoHigh.toFixed(1)}%`);
+    for (const [nazwa, w, h] of [["telefon", 390, 844], ["ipad-pion", 820, 1180]] as const) {
+      await s.setViewportSize({ width: w, height: h });
+      await s.waitForTimeout(300);
+      sprawdz(`${nazwa}: sztanga, trzy wyniki i tabela miar bez przewijania w bok`,
+        await s.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+      await zrzut(s, `ruch-sztanga-${nazwa}`, "#panel-srodka");
+      await zrzut(s, `ruch-sztanga-miary-${nazwa}`, "#panel-miar-srodka");
+    }
+    await s.setViewportSize({ width: 1366, height: 900 });
+
+    // ── sztanga na filmie: zaznaczenie przed analizą, śledzenie, poprawka ──
+    console.log("\n  Sztanga — zaznaczenie i śledzenie na filmie");
+    const filmSztangi = join(robocze, "sztanga.webm");
+    if (!filmZeSztanga(filmSztangi)) console.log("  — pominięte (brak ffmpeg)");
+    else {
+      const bladToru = (ses: any) => {
+        let naj = 0;
+        for (const k of ses.klatki) {
+          if (!k.sztanga) return Infinity;
+          const o = torSztangi(k.t / 1000);
+          naj = Math.max(naj, Math.hypot(k.sztanga.x * SZTANGA_FILM.szerokosc - o.x, k.sztanga.y * SZTANGA_FILM.wysokosc - o.y));
+        }
+        return naj;
+      };
+      await s.goto(`${adres}/ruch/`);
+      await s.waitForFunction(() => (document.querySelector("#model") as HTMLSelectElement).options.length > 0);
+      await s.selectOption("#model", "lite");
+      await s.check("#ze-sztanga");
+      await s.setInputFiles("#plik-wideo", filmSztangi);
+      await s.waitForSelector("#panel-zaznaczania:not(.ukryty)", { timeout: 15_000 });
+      await s.waitForTimeout(300);
+      sprawdz("„Przysiad ze sztangą”: po wgraniu filmu najpierw klatka 1 do zaznaczenia gryfu, „Analizuj” nieaktywne",
+        await s.locator("#panel-postepu.ukryty").count() === 1 && await s.locator("#analizuj-ze-sztanga:disabled").count() === 1);
+      for (const [nazwa, w, h] of [["telefon", 390, 844], ["ipad-pion", 820, 1180]] as const) {
+        await s.setViewportSize({ width: w, height: h });
+        await s.waitForTimeout(300);
+        sprawdz(`${nazwa}: zaznaczanie gryfu bez przewijania w bok`,
+          await s.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+        await zrzut(s, `ruch-sztanga-zaznaczanie-${nazwa}`);
+      }
+      await s.setViewportSize({ width: 1366, height: 900 });
+      await s.waitForTimeout(300);
+      // Dotknięcie 3 px obok środka znacznika — w trybie wzoru obrazu punkt zostaje tam, gdzie palec.
+      const start = torSztangi(0);
+      const ramkaStartu = await s.locator("#klatka-startowa").boundingBox();
+      const naEkranie = (q: { x: number; y: number }) => ({
+        x: ramkaStartu.x + (q.x / SZTANGA_FILM.szerokosc) * ramkaStartu.width,
+        y: ramkaStartu.y + (q.y / SZTANGA_FILM.wysokosc) * ramkaStartu.height,
+      });
+      const cel = naEkranie(start);
+      await s.mouse.move(cel.x + 30, cel.y + 30);
+      await s.mouse.down();
+      await s.mouse.move(cel.x, cel.y, { steps: 5 });
+      const lupa = await s.evaluate(() => {
+        const c = document.querySelector("#klatka-startowa") as HTMLCanvasElement;
+        // Lupa w rogu: biała obwódka koła o promieniu ~70 px (× gęstość pikseli).
+        const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+        let biale = 0;
+        for (let i = 0; i < d.length; i += 4) if (d[i]! > 250 && d[i + 1]! > 250 && d[i + 2]! > 250) biale++;
+        return biale;
+      });
+      await s.mouse.up();
+      await s.waitForTimeout(200);
+      const zazn = (await stanEkranu(s)).sztanga.zaznaczanie;
+      sprawdz("dotknięcie i przeciągnięcie stawia punkt, przy przeciąganiu widać lupę",
+        Math.hypot(zazn.x * SZTANGA_FILM.szerokosc - start.x, zazn.y * SZTANGA_FILM.wysokosc - start.y) < 2.5 && lupa > 300
+          && await s.locator("#analizuj-ze-sztanga:enabled").count() === 1,
+        `punkt ${(zazn.x * SZTANGA_FILM.szerokosc).toFixed(1)}, ${(zazn.y * SZTANGA_FILM.wysokosc).toFixed(1)} (znacznik ${start.x}, ${start.y}) · lupa ${lupa} px`);
+      await zrzut(s, "ruch-sztanga-zaznaczanie", "#panel-zaznaczania");
+      await s.click("#analizuj-ze-sztanga");
+      const poAnalizie = await czekajNaAnalize(s, 180_000);
+      let ses = await sesjaEkranu(s);
+      const blad1 = bladToru(ses);
+      sprawdz("analiza ze sztangą: punkt w każdej klatce, śledzony z błędem ≤ 2 px (wzór obrazu)",
+        poAnalizie && ses.klatki.length > 100 && blad1 <= 2 && ses.klatki[0].sztanga.zrodlo === "korekta"
+          && ses.klatki.slice(1).every((k: any) => k.sztanga.zrodlo === "sledzenie" && k.sztanga.pewnosc >= 0.6),
+        `${ses.klatki.length} klatek, największy błąd ${blad1.toFixed(2)} px, tryb ${ses.sztanga?.tryb}`);
+      sprawdz("…pasek „Sztanga: pewna w N z N klatek”, bez „?”",
+        (await s.textContent("#opis-sztangi")) === `Sztanga: pewna w ${ses.klatki.length} z ${ses.klatki.length} klatek`,
+        (await s.textContent("#opis-sztangi")) ?? "");
+      // Poprawka na klatce 61: śledzenie „uciekło” o 20 px w bok od tej klatki (jak przy zasłoniętym
+      // gryfie) — przeciągnięcie pierścienia z powrotem na znacznik robi z niej punkt kontrolny,
+      // a śledzenie liczy się od niej do końca i wraca na tor.
+      for (let i = 0; i < 60; i++) await s.keyboard.press("ArrowRight");
+      await s.evaluate((dx: number) => {
+        const ses = (window as any).__analizaRuchu.sesja();
+        ses.klatki.forEach((k: any, i: number) => { if (i >= 60) k.sztanga.x += dx; });
+      }, 20 / SZTANGA_FILM.szerokosc);
+      await s.keyboard.press("ArrowLeft");
+      await s.keyboard.press("ArrowRight");
+      await s.waitForTimeout(300);
+      const przedPoprawka = (await sesjaEkranu(s)).klatki.map((k: any) => k.sztanga);
+      sprawdz("kontrola: od klatki 61 punkt 20 px obok znacznika", bladToru(await sesjaEkranu(s)) > 19);
+      await s.click("#zaznacz-sztange");
+      sprawdz("„Popraw sztangę” włącza poprawianie (przycisk „Gotowe”, instrukcja)",
+        (await s.textContent("#zaznacz-sztange")) === "Gotowe" && await s.locator("#instrukcja-sztangi:not(.ukryty)").count() === 1);
+      const k60 = (await sesjaEkranu(s)).klatki[60].sztanga;
+      const scena = await s.locator("#nakladka").boundingBox();
+      const doEkranu = (x: number, y: number) => ({ x: scena.x + x * scena.width, y: scena.y + y * scena.height });
+      const z = doEkranu(k60.x, k60.y);
+      const prawda = torSztangi((await sesjaEkranu(s)).klatki[60].t / 1000);
+      const naZnaczniku = doEkranu(prawda.x / SZTANGA_FILM.szerokosc, prawda.y / SZTANGA_FILM.wysokosc);
+      await s.mouse.move(z.x, z.y);
+      await s.mouse.down();
+      await s.mouse.move(naZnaczniku.x, naZnaczniku.y, { steps: 4 });
+      await s.mouse.up();
+      await s.waitForFunction(() => !(window as any).__analizaRuchu.stan().sztanga.sledzenie, null, { timeout: 60_000 });
+      await s.waitForTimeout(300);
+      ses = await sesjaEkranu(s);
+      const bledyPo = ses.klatki.map((k: any) => {
+        const o = torSztangi(k.t / 1000);
+        return Math.hypot(k.sztanga.x * SZTANGA_FILM.szerokosc - o.x, k.sztanga.y * SZTANGA_FILM.wysokosc - o.y);
+      });
+      sprawdz("poprawka: klatka 61 punktem kontrolnym, śledzenie od niej do końca wraca na znacznik (≤ 2 px)",
+        ses.klatki[60].sztanga.zrodlo === "korekta" && ses.klatki.slice(61).every((k: any) => k.sztanga?.zrodlo === "sledzenie")
+          && Math.max(...bledyPo.slice(60)) <= 2,
+        `największy błąd od klatki 61: ${Math.max(...bledyPo.slice(60)).toFixed(2)} px, stan: klatka ${(await stanEkranu(s)).biezaca + 1}`);
+      sprawdz("…klatki przed poprawką bez zmian",
+        ses.klatki.slice(0, 60).every((k: any, i: number) => k.sztanga.x === przedPoprawka[i].x && k.sztanga.y === przedPoprawka[i].y));
+      sprawdz("…„cofnij poprawkę w tej klatce” widoczne", await s.locator("#cofnij-korekte:not(.ukryty)").count() === 1);
+      await s.click("#cofnij-korekte");
+      await s.waitForFunction(() => !(window as any).__analizaRuchu.stan().sztanga.sledzenie, null, { timeout: 60_000 });
+      await s.waitForTimeout(300);
+      ses = await sesjaEkranu(s);
+      const blad2 = bladToru(ses);
+      sprawdz("cofnięcie poprawki — klatka znów ze śledzenia, tor wraca na znacznik (≤ 2 px)",
+        ses.klatki[60].sztanga.zrodlo === "sledzenie" && blad2 <= 2, `największy błąd ${blad2.toFixed(2)} px`);
+      await s.click("#zaznacz-sztange");
+      // Naklejka: zmiana sposobu śledzenia liczy całe nagranie od nowa — punkt na środku naklejki.
+      await s.click("#ustawienia-sledzenia summary");
+      await s.selectOption("#tryb-sledzenia-analizy", "naklejka");
+      await s.waitForTimeout(500);
+      await s.waitForFunction(() => !(window as any).__analizaRuchu.stan().sztanga.sledzenie, null, { timeout: 60_000 });
+      await s.waitForTimeout(300);
+      ses = await sesjaEkranu(s);
+      const blad3 = bladToru(ses);
+      // Kolor w filmie jest zapisany w połowie rozdzielczości (4:2:0) — brzeg naklejki rozmyty o piksel.
+      sprawdz("naklejka (kolor): całe nagranie od nowa, błąd ≤ 2 px",
+        ses.sztanga.tryb === "naklejka" && blad3 <= 2 && ses.klatki.every((k: any) => k.sztanga),
+        `największy błąd ${blad3.toFixed(2)} px`);
+      const czerwone = (await pikseleSztangi(s)).sztanga;
+      sprawdz("na filmie czerwony pierścień sztangi i jej droga", czerwone > 40, `${czerwone} px`);
+      await zrzut(s, "ruch-sztanga-film", "#scena");
+      const [pobranie] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-json")]);
+      const plikFilmu = join(robocze, "sztanga-film.json");
+      await pobranie.saveAs(plikFilmu);
+      // Bez filmu: sztanga i wyliczenia z samego pliku.
+      await s.goto(`${adres}/ruch/`);
+      await s.waitForFunction(() => (document.querySelector("#model") as HTMLSelectElement).options.length > 0);
+      await s.setInputFiles("#plik-analizy", plikFilmu);
+      await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
+      await s.waitForTimeout(300);
+      for (let i = 0; i < 30; i++) await s.click("#klatka-dalej");
+      const bezFilmu = await stanEkranu(s);
+      sprawdz("analiza z pliku, bez filmu: punkt sztangi i jej droga na obrazie, pasek śledzenia",
+        !bezFilmu.maWideo && bezFilmu.sztanga.punkt?.zrodlo === "sledzenie" && (await pikseleSztangi(s)).sztanga > 40
+          && (await s.textContent("#opis-sztangi"))!.startsWith("Sztanga: pewna w"),
+        `${(await pikseleSztangi(s)).sztanga} px · ${await s.textContent("#opis-sztangi")}`);
+    }
+    await s.uncheck("#ze-sztanga").catch(() => null);
+    await s.evaluate(() => localStorage.removeItem("craftmyplan-ruch-ze-sztanga"));
 
     // ── początek filmu (23.10.2026) ───────────────────────────────
     // Trener: „aplikacja ucina mi początek filmu, gdzie osoba stoi prosto przed

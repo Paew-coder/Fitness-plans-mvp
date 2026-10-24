@@ -17,6 +17,10 @@ export const KOLORY = {
   sugestia: "#ffd84d",
   // Środek ciężkości (23.10.2026) — kolor, którego nie ma szkielet ani trajektorie.
   srodekCiezkosci: "#33d6ff",
+  // Punkt sztangi i środek ciężkości układu ciało + sztanga (24.10.2026) —
+  // czerwień i limonka: nie myli się z żadnym kolorem wyżej ani z trajektoriami.
+  sztanga: "#ff4d5e",
+  uklad: "#b4f03a",
 };
 
 /** Kolory kolejnych trajektorii (stała kolejność, nie zależy od liczby). */
@@ -44,14 +48,25 @@ const KATY_NA_OBRAZIE = [
  * `sugestie` — `[{punkt, x, y}]` w 0–1, z bieżącą pozycją punktu z klatki.
  * `srodek` — środek ciężkości: `{x, y, pewny, podloga, droga: [{x,y}|null], biezacy}`
  * w 0–1 (symbol, pion do podłoża i droga w całym nagraniu).
+ * Od 24.10.2026 (badanie z punktem sztangi), wszystko w 0–1:
+ * `uklad` — środek ciężkości ciała ze sztangą, jak `srodek` (pion rysuje ten,
+ * który ma `podloga`); `sztanga` — koniec gryfu `{x, y, pewny, zrodlo, droga,
+ * biezacy}` (niepewny — przerywany, ze znakiem „?”); `pasmo` — śródstopie
+ * `{od, do, podloga}` (pas od linii stóp do góry obrazu); `lupa` — powiększenie
+ * przy zaznaczaniu `{zrodlo, szerokosc, wysokosc, x, y}` (`zrodlo` — film);
+ * `tlo` — obraz pod wszystkim (klatka filmu przy zaznaczaniu przed analizą).
  */
 export function rysujKlatke(ctx, opcje) {
   const { width: w, height: h } = ctx.canvas;
   const dpr = opcje.dpr ?? 1;
   ctx.clearRect(0, 0, w, h);
+  // Tło — klatka filmu pod nakładką (zaznaczanie gryfu przed analizą, bez <video> pod spodem).
+  if (opcje.tlo) ctx.drawImage(opcje.tlo, 0, 0, w, h);
 
   const ukryte = opcje.ukryte ?? new Set();
   const widac = (id) => punktWidoczny(id, ukryte);
+
+  if (opcje.pasmo) rysujPasmo(ctx, opcje.pasmo, w, h, dpr);
 
   // Droga tylko przy punkcie, który widać (trener, 23.10.2026: „wyświetlają
   // się tylko te, które mają swój punkt oznaczony”).
@@ -59,9 +74,19 @@ export function rysujKlatke(ctx, opcje) {
   if (opcje.srodek?.droga) {
     rysujTrajektorie(ctx, { kolor: KOLORY.srodekCiezkosci, punkty: opcje.srodek.droga, biezacy: opcje.srodek.biezacy }, w, h, dpr);
   }
+  if (opcje.uklad?.droga) {
+    rysujTrajektorie(ctx, { kolor: KOLORY.uklad, punkty: opcje.uklad.droga, biezacy: opcje.uklad.biezacy }, w, h, dpr);
+  }
+  if (opcje.sztanga?.droga) {
+    rysujTrajektorie(ctx, { kolor: KOLORY.sztanga, punkty: opcje.sztanga.droga, biezacy: opcje.sztanga.biezacy }, w, h, dpr);
+  }
 
   const k = opcje.klatka;
-  if (!k?.p) return;
+  if (!k?.p) {
+    // Bez sylwetki w tej klatce sztanga dalej jest na obrazie (śledzi się osobno).
+    rysujNaSzkielecie(ctx, opcje, w, h, dpr);
+    return;
+  }
   const punkty = k.p.map(([x, y, , v]) => ({ x: x * w, y: y * h, z: 0, v }));
   const p = rozwiazywacz(punkty);
 
@@ -104,8 +129,129 @@ export function rysujKlatke(ctx, opcje) {
   }
 
   if (opcje.srodek && opcje.srodek.x !== null && opcje.srodek.x !== undefined) rysujSrodek(ctx, opcje.srodek, w, h, dpr);
+  rysujNaSzkielecie(ctx, opcje, w, h, dpr);
 
   for (const s of opcje.sugestie ?? []) rysujSugestie(ctx, p(s.punkt), { x: s.x * w, y: s.y * h }, dpr);
+  if (opcje.lupa) rysujLupe(ctx, opcje.lupa, w, h, dpr);
+}
+
+/** Sztanga i środek układu — nad szkieletem, także w klatce bez sylwetki. */
+function rysujNaSzkielecie(ctx, opcje, w, h, dpr) {
+  if (opcje.uklad && opcje.uklad.x !== null && opcje.uklad.x !== undefined) {
+    rysujSrodek(ctx, opcje.uklad, w, h, dpr, { kolor: KOLORY.uklad, promien: 10 });
+  }
+  if (opcje.sztanga && opcje.sztanga.x !== null && opcje.sztanga.x !== undefined) rysujSztange(ctx, opcje.sztanga, w, h, dpr);
+  if (!opcje.klatka?.p && opcje.lupa) rysujLupe(ctx, opcje.lupa, w, h, dpr);
+}
+
+/**
+ * Koniec gryfu: pierścień z kropką w środku (jak talerz na gryfie), czerwony.
+ * Niepewny — przerywany, blady, ze znakiem „?”; punkt postawiony przez
+ * trenera (korekta) — z białą obwódką.
+ */
+function rysujSztange(ctx, s, w, h, dpr) {
+  const x = s.x * w;
+  const y = s.y * h;
+  const r = 9 * dpr;
+  ctx.save();
+  ctx.globalAlpha = s.pewny ? 1 : 0.6;
+  if (!s.pewny) ctx.setLineDash([3 * dpr, 3 * dpr]);
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.lineWidth = 5.5 * dpr;
+  ctx.strokeStyle = "rgba(0,0,0,.55)";
+  ctx.stroke();
+  ctx.lineWidth = 3 * dpr;
+  ctx.strokeStyle = KOLORY.sztanga;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (s.zrodlo === "korekta") {
+    ctx.beginPath();
+    ctx.arc(x, y, r + 3.5 * dpr, 0, Math.PI * 2);
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, 2.5 * dpr, 0, Math.PI * 2);
+  ctx.fillStyle = KOLORY.sztanga;
+  ctx.fill();
+  ctx.lineWidth = 1 * dpr;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  ctx.restore();
+  if (!s.pewny) etykieta(ctx, { x: x + 2 * dpr, y: y + 4 * dpr }, "?", dpr);
+}
+
+/** Pas śródstopia: od linii stóp do góry obrazu, między `od` a `do` (0–1). */
+function rysujPasmo(ctx, pasmo, w, h, dpr) {
+  if (![pasmo.od, pasmo.do, pasmo.podloga].every(Number.isFinite)) return;
+  const xa = Math.min(pasmo.od, pasmo.do) * w;
+  const xb = Math.max(pasmo.od, pasmo.do) * w;
+  const dol = pasmo.podloga * h;
+  ctx.save();
+  ctx.fillStyle = "rgba(180, 240, 58, .13)";
+  ctx.fillRect(xa, 0, xb - xa, dol);
+  for (const x of [xa, xb]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, dol);
+    ctx.lineWidth = 3 * dpr;
+    ctx.strokeStyle = "rgba(0,0,0,.35)";
+    ctx.stroke();
+    ctx.setLineDash([6 * dpr, 5 * dpr]);
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeStyle = "rgba(220, 255, 160, .9)";
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+/**
+ * Lupa przy zaznaczaniu gryfu palcem — palec zasłania punkt, a koniec gryfu
+ * na telefonie ma kilka pikseli. Powiększenie ×3 w rogu dalej od palca,
+ * z krzyżykiem w miejscu punktu.
+ */
+export function rysujLupe(ctx, lupa, w, h, dpr) {
+  const { zrodlo, szerokosc, wysokosc, x, y } = lupa;
+  if (!zrodlo || !(szerokosc > 0) || !(wysokosc > 0)) return;
+  const r = Math.min(70 * dpr, w / 4, h / 3);
+  const powiekszenie = 3;
+  const cx = x < 0.5 ? w - r - 8 * dpr : r + 8 * dpr;
+  const cy = r + 8 * dpr;
+  // Wycinek filmu: promień lupy / powiększenie, w pikselach filmu.
+  const skala = szerokosc / w;
+  const pol = (r / powiekszenie) * skala;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#000";
+  ctx.fill();
+  ctx.clip();
+  try {
+    ctx.drawImage(zrodlo, x * szerokosc - pol, y * wysokosc - pol, 2 * pol, 2 * pol, cx - r, cy - r, 2 * r, 2 * r);
+  } catch { /* film jeszcze bez klatki */ }
+  ctx.strokeStyle = KOLORY.sztanga;
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.beginPath();
+  ctx.moveTo(cx - r, cy);
+  ctx.lineTo(cx - 5 * dpr, cy);
+  ctx.moveTo(cx + 5 * dpr, cy);
+  ctx.lineTo(cx + r, cy);
+  ctx.moveTo(cx, cy - r);
+  ctx.lineTo(cx, cy - 5 * dpr);
+  ctx.moveTo(cx, cy + 5 * dpr);
+  ctx.lineTo(cx, cy + r);
+  ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.lineWidth = 3 * dpr;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**
@@ -113,7 +259,7 @@ export function rysujKlatke(ctx, opcje) {
  * do linii stóp — widać, nad którą częścią stopy leży. Niepewny — blado,
  * z przerywaną obwódką.
  */
-function rysujSrodek(ctx, s, w, h, dpr) {
+function rysujSrodek(ctx, s, w, h, dpr, { kolor = KOLORY.srodekCiezkosci, promien = 8 } = {}) {
   const x = s.x * w;
   const y = s.y * h;
   ctx.save();
@@ -126,12 +272,12 @@ function rysujSrodek(ctx, s, w, h, dpr) {
     ctx.moveTo(x, y);
     ctx.lineTo(x, s.podloga * h);
     ctx.stroke();
-    ctx.strokeStyle = KOLORY.srodekCiezkosci;
+    ctx.strokeStyle = kolor;
     ctx.lineWidth = 2 * dpr;
     ctx.stroke();
     ctx.setLineDash([]);
   }
-  const r = 8 * dpr;
+  const r = promien * dpr;
   for (let c = 0; c < 4; c++) {
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -144,7 +290,7 @@ function rysujSrodek(ctx, s, w, h, dpr) {
   ctx.arc(x, y, r + 1.5 * dpr, 0, Math.PI * 2);
   ctx.lineWidth = 2.5 * dpr;
   if (!s.pewny) ctx.setLineDash([3 * dpr, 3 * dpr]);
-  ctx.strokeStyle = KOLORY.srodekCiezkosci;
+  ctx.strokeStyle = kolor;
   ctx.stroke();
   ctx.restore();
 }
