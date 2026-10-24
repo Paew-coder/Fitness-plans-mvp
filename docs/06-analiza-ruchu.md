@@ -77,7 +77,11 @@ i obciążonym procesorze (przegląd ruchu, „Początek filmu”).
 llvmpipe — np. komputer bez sterowników), MediaPipe liczy na niej ~600 ms na
 klatkę. Wtedy od razu procesor.
 
-## 3. Dane — format `craftmyplan/analiza-ruchu`, wersja 1
+## 3. Dane — format `craftmyplan/analiza-ruchu`, wersja 2
+
+Wersja 2 (24.10.2026) dokłada punkt sztangi, badanie i wersję narzędzia —
+wszystko opcjonalne, więc pliki wersji 1 otwierają się bez zmian (szczegóły
+w 5c). Poniżej pola wspólne.
 
 ```jsonc
 {
@@ -240,14 +244,198 @@ i w tył — bez przesunięcia w czasie; odcięcie poprawione o 0,802 na dwa
 przejścia (Winter). Luki do 5 klatek wypełniane liniowo, dłuższe dzielą serię.
 Na wykresie blada linia — bez wygładzania.
 
-**Obciążenie:** kg i miejsce (barki — środek barków; dłonie — środek rąk)
-plus masa ciała: środek wspólny = średnia ważona masą ciała i obciążenia.
-Bez masy ciała obciążenie nie jest doliczane (komunikat w odczycie).
+**Obciążenie:** kg i miejsce (barki — środek barków; dłonie — środek rąk;
+od 24.10.2026 także **sztanga — punkt końca gryfu na obrazie**, domyślne, gdy
+analiza ma ten punkt, patrz 5c) plus masa ciała: środek wspólny = średnia
+ważona masą ciała i obciążenia. Bez masy ciała obciążenie nie jest doliczane
+(komunikat w odczycie).
 
 **Ograniczenia:** 2D z obrazu (płaszczyzna kamery), wynik w pikselach i % stopy,
 nie w centymetrach; przesunięcie punktów bioder o 3 cm przesuwa środek
 ciężkości o ok. 1 cm. Porównania tej samej osoby przy tym samym ustawieniu
 kamery są pewniejsze niż wartości bezwzględne.
+
+## 5c. Punkt sztangi — badanie high bar / low bar (24.10.2026)
+
+Trener przygotowuje badanie do doktoratu: przysiad high bar bez wskazówki,
+high bar ze wskazówką i low bar, kamera z boku. „Narzędzie musi odróżnić high
+bar od low bar” — a obciążenie w punkcie barku tego nie widzi: sztanga leży
+wyżej albo niżej na plecach, bark jest ten sam. Dlatego obciążenie liczy się
+teraz w punkcie końca gryfu na obrazie. Instrukcja dla trenera (bez języka
+programisty): `docs/instrukcja-badania-sztanga.md`.
+
+Kod: `public/ruch/sztanga.js` (śledzenie), `srodek.js` (trzy wyniki),
+`miary-srodka.js` (miary w powtórzeniu), `sesja.js` (zapis) — czyste moduły
+bez DOM; testy w `testy/analiza-ruchu.test.ts`; ekran w `app.js`.
+
+### Zaznaczenie
+
+- **Przed analizą** (zalecane): pole „Przysiad ze sztangą” w panelu źródła
+  (zapamiętane na urządzeniu). Po wgraniu filmu analiza nie rusza od razu —
+  pierwsza klatka filmu z prośbą „Zaznacz koniec gryfu”: dotknięcie stawia
+  punkt, przeciągnięcie przesuwa, w rogu lupa ×3 (palec zasłania punkt).
+  Wybór sposobu śledzenia, potem „Analizuj” — sylwetka i sztanga liczą się
+  w jednym przejściu, na tym samym płótnie (dłuższy bok 960 px).
+- **Po analizie**: „Zaznacz koniec gryfu” w panelu „Środek ciężkości” —
+  przenosi na klatkę 1, dotknięcie stawia punkt, a program przechodzi film
+  drugi raz, tylko dla sztangi (bez MediaPipe, szybciej).
+
+### Śledzenie (bez bibliotek)
+
+| | wzór obrazu (`wzorzec`) | kolorowa naklejka (`naklejka`) |
+|---|---|---|
+| Co | wycinek 25 × 25 px wokół punktu szukany w następnej klatce | piksele w kolorze naklejki, plama najbliżej przewidywanego miejsca |
+| Jak | znormalizowana korelacja wzajemna (NCC) jasności, okno ±40 px wokół pozycji przewidzianej z prędkości, najpierw co 2 px, potem co 1 px, parabola — część piksela | odcień ±20°, nasycenie i jasność z miejsca zaznaczenia; punkt = środek plamy |
+| Pewność | wartość NCC (0–1), próg 0,6 | zgodność wielkości plamy z tą z punktu kontrolnego (0–1), próg 0,5 |
+| Odporność | wzorzec odświeżany przy NCC ≥ 0,8, pozycja poprawiana porównaniem z wzorcem z punktu kontrolnego (±3 px) — bez narastania błędu (Matthews, Ishikawa, Baker 2004) | kolor nie zmienia się, gdy talerze się obracają albo zmienia się tło; zaznaczenie przeskakuje na środek naklejki |
+
+Klatka poniżej progu = zgubiona, „?”: nie wchodzi do wyników (ani sztanga, ani
+środek układu), na filmie przerywany pierścień ze znakiem „?”, na wykresie
+czerwona kreska pod osią. Następna klatka szuka w oknie szerszym o 50% (do ×3).
+Parametry i próg zapisują się w analizie (`sztanga.parametry`, `sztanga.prog`) —
+zmiana w kodzie nie zmienia starych plików.
+
+Sprawdzone na sztucznym znaczniku (testy) i na sztucznym filmie z ffmpeg
+(przegląd ruchu, kodek VP8): największy błąd ok. 1,4 px (wzór obrazu) i ok. 1,5 px (naklejka) przy
+znaczniku ~29 px; zasłonięcie na 3 klatki → dokładnie te 3 klatki „?”, potem
+punkt wraca.
+
+### Poprawki — punkty kontrolne
+
+„Popraw sztangę” → dotknięcie albo przeciągnięcie pierścienia na bieżącej
+klatce (z lupą). Ta klatka staje się **punktem kontrolnym** (źródło `korekta`,
+pewność 1, biała obwódka), a śledzenie liczy się od niej od nowa **do następnego
+punktu kontrolnego** (tamten też postawił trener, więc go nie nadpisuje).
+Klatki w tym odcinku, których przejście nie trafiło, zostają bez punktu, nie ze
+starym. „cofnij poprawkę w tej klatce” — klatka wraca do śledzenia, odcinek
+liczy się od poprzedniego punktu kontrolnego. „następna klatka „?”” — do
+sprawdzenia po kolei. Zmiana sposobu śledzenia albo „Śledź od nowa” — cały film
+od każdego punktu kontrolnego po kolei. Bez filmu (sam JSON) poprawka zmienia
+tylko tę klatkę; ponowne śledzenie wymaga dołączenia filmu.
+
+### Trzy wyniki
+
+W każdej klatce, osobno (`srodekSesji(...).wyniki`):
+
+- **ciało** — środek ciężkości samego ciała (metoda segmentowa z 5b, bez
+  obciążenia),
+- **sztanga** — punkt końca gryfu (tor sztangi),
+- **układ** — ciało + sztanga: `(M·ciało + m·gryf) / (M + m)`, M — masa
+  ciała, m — kilogramy na gryfie (gryf + talerze); tylko z masą ciała.
+
+Każdy w pikselach filmu (x, y), w % stopy (pięta 0%, palce 100% — jak w 5b)
+i w pikselach od pięty (dodatnie w stronę palców), surowo i po tym samym
+filtrze Butterwortha (6 Hz, w przód i w tył). Niepewna klatka ciała — bez
+ciała i układu; niepewny punkt sztangi — bez sztangi i układu. Kolumny
+„srodek_ciezkosci_…” w CSV znaczą to samo co wcześniej (z obciążeniem).
+
+Test ręczny: 80 kg ciała, 100 kg na gryfie → układ = (80·C + 100·G)/180
+dokładnie. High bar vs low bar (gryf 22 px dalej w tył) → układ w tył
+o 22·100/180 px, ciało bez zmian; to samo z obciążeniem „na barkach” — zero
+różnicy (dlatego punkt sztangi).
+
+### Śródstopie
+
+Pas stały, domyślnie **40–60% długości stopy od pięty**, do zmiany pod
+wykresem (zapisuje się w analizie: `srodekCiezkosci.pasmo`). Na filmie
+zielonkawy pas od linii stóp do góry obrazu (pięta i palce z tej klatki), na
+wykresie — tło 40–60%. Tylko z boku (z przodu skala jest między stopami).
+
+### Miary w powtórzeniu (`miary-srodka.js`)
+
+Dla każdego z trzech wyników, w każdym powtórzeniu (początek i koniec —
+z wykrytych powtórzeń, najgłębszy punkt — `najglebszaKlatka`, biodro
+najniżej; zejście = początek → najgłębszy punkt, wstawanie = najgłębszy
+punkt → koniec):
+
+| Miara | Definicja |
+|---|---|
+| na początku | położenie w pierwszej klatce zejścia z wynikiem |
+| najdalej w stronę palców (w dół) | max(położenie) − położenie na początku, w zejściu; z klatką i samym położeniem |
+| w najgłębszym punkcie | położenie w klatce najgłębszego punktu |
+| zakres przód–tył | max − min w całym powtórzeniu; osobno w zejściu i we wstawaniu |
+| czas w śródstopiu | % klatek powtórzenia z wynikiem, w których położenie jest w paśmie (klatki „?” się nie liczą; ile ich było — w CSV) |
+
+Na ekranie — tabela „Środek ciężkości i sztanga w powtórzeniach” (z serii
+wygładzonych, gdy wygładzanie jest włączone; % stopy, piksele w dymku;
+klatka „najdalej” klikalna); w CSV powtórzeń — surowe i wygładzone, % i px.
+
+### Na ekranie
+
+Ciało — symbol w ćwiartki z niebieską obwódką (jak dotąd), sztanga —
+czerwony pierścień z kropką (jak talerz na gryfie), układ — symbol
+w ćwiartki z zieloną (limonkową) obwódką i pionem do linii stóp. Każdy
+z drogą w całym nagraniu; legenda z polami „pokaż” i wartością w bieżącej
+klatce; na wykresie trzy linie (+ blade bez wygładzania), pas śródstopia
+i kreski klatek „?”. Każda nowa miara ma „i” z dymkiem (najechanie albo
+dotknięcie): co znaczy i jak to czytać. W panelu — zwijane „Jak nagrać
+i zaznaczyć sztangę” (7 kroków).
+
+### Zapis
+
+- **JSON, wersja 2**: `klatki[].sztanga = { x, y, pewnosc, zrodlo }` (x, y 0–1,
+  źródło `sledzenie` / `korekta`), `sztanga = { tryb, prog, parametry, narzedzie }`,
+  `srodekCiezkosci.pasmo`, `badanie = { kodOsoby, warunek }`, `narzedzie`
+  (niżej), `analiza.narzedzie` — wersja, która liczyła sylwetkę. Plik wersji 1
+  otwiera się jak dotąd, a zapisany — jest już wersją 2. Analiza z pliku bez
+  filmu pokazuje sztangę i wszystkie wyliczenia.
+- **CSV (klatki)** — nowe kolumny na końcu: punkt sztangi (`sztanga_punkt_x_px`,
+  `…_y_px`, `sztanga_pewnosc`, `sztanga_pewna`, `sztanga_zrodlo`), trzy wyniki
+  (`cialo_` / `sztanga_` / `uklad_` + `x_px`, `y_px`, wygładzone,
+  `wzgledem_stop_proc`, `od_piety_px`) i parametry w każdym wierszu
+  (`wersja_narzedzia`, `kod_osoby`, `warunek`, `model_segmentow`,
+  `strona_konczyn`, `filtr`, `odciecie_hz`, `pasmo_srodstopia_od/do_proc`,
+  `tryb_sledzenia_sztangi`, `prog_pewnosci_sztangi`, `obciazenie_kg`,
+  `masa_ciala_kg`, `miejsce_obciazenia`).
+- **CSV (powtórzenia)** — układ „długi”: wiersz = powtórzenie × wynik × seria
+  (surowa, wygładzona); wszystkie miary w % i px, klatki i czasy, te same
+  kolumny parametrów.
+- **Nazwy plików**: z kodem osoby i warunkiem — `P01_HB-bez-wskazowki_2026-11-03_analiza.json`,
+  `…_klatki.csv`, `…_powtorzenia.csv` (data analizy); bez nich — jak dotąd.
+  Kod osoby i warunek czyszczą się przy nowym filmie (nie przechodzą na
+  następną osobę); kod wyglądający jak imię — ostrzeżenie.
+
+### Wersja narzędzia (do artykułu)
+
+Numer z `konsola/package.json` (od tej zmiany 0.2.0) + skrót commita, np.
+`0.2.0+a1b2c3d` (`konsola/wersja-narzedzia.ts`, `GET /api/wersja`). Commit:
+zmienna `CRAFTMYPLAN_COMMIT` → plik `konsola/wersja-commit.txt` (zapisuje go
+skrypt wdrożenia przed zbudowaniem obrazu — w obrazie nie ma gita) → katalog
+`.git` → „lokalna”. W JSON `narzedzie = { nazwa, wersja, parametry }`
+(MediaPipe i model, model segmentów, strona, filtr, odcięcie w Hz, poprawka
+0,802, kl./s, pasmo, obciążenie, śledzenie z parametrami) — z chwili zapisu.
+
+**Zamrożenie na badanie** (decyzja trenera, „jak powiem, to zamrozimy”):
+znacznik w repozytorium na commicie z badania (np. `badanie-sztanga-1`),
+a od tej chwili zmiany w obliczeniach `/ruch/` tylko za zgodą trenera. Serwer
+aktualizuje się sam, więc każdy plik niesie swoją wersję — w CSV kolumna
+`wersja_narzedzia` musi być ta sama we wszystkich plikach badania.
+
+### Ograniczenia
+
+- **Perspektywa.** Koniec gryfu jest bliżej kamery niż środek ciała —
+  o pół gryfu, ok. 1,1 m przy gryfie 2,2 m. Z bliższego punktu kamera widzi
+  wszystko powiększone: odległość od środka kadru rośnie o D / (D − 1,1)
+  (D — odległość kamery od środka ciała): ×1,46 przy 3,5 m, ×1,38 przy 4 m,
+  ×1,12 przy 10 m. Środek masy sztangi leży w połowie gryfu (w płaszczyźnie
+  ciała), a obraz pokazuje jego koniec — więc położenie sztangi przód–tył jest
+  dokładne tylko blisko środka kadru. Dlatego: **kamera z boku, prostopadle do
+  płaszczyzny ruchu, czyli patrzy wzdłuż gryfu** (oba końce na sobie), **3–4 m
+  od osoby, na wysokości bioder, poziomo**, a **śródstopie na środku kadru
+  w poziomie**. Wtedy gryf przez cały ruch jest blisko środka kadru w poziomie:
+  przy 10 cm od środka kadru błąd przód–tył to ok. 4 cm przy 4 m (wysokość
+  gryfu jest powiększona bardziej — ona nie wchodzi do wyników w % stopy).
+  Kamera obrócona względem gryfu — gryf widać jako kreskę, a koniec przesuwa
+  się względem środka gryfu. Bliższa stopa i kończyny (strona liczona
+  podwójnie) też są bliżej kamery, ale o ok. 15–20 cm — wpływ mały. To samo
+  ustawienie we wszystkich trzech warunkach: porównania tej samej osoby są
+  pewniejsze niż wartości bezwzględne. Możliwe rozszerzenie: poprawka
+  perspektywy z odległości kamery wpisanej przez trenera.
+- 2D z obrazu: piksele i % stopy, nie centymetry (jak w 5b).
+- Wzór obrazu gubi się, gdy koniec gryfu jest jednolity (bez naklejki),
+  rozmazany przy szybkim ruchu albo zasłonięty ręką — wtedy naklejka; kolor
+  naklejki nie może występować na ubraniu ani w tle obok gryfu.
+- % stopy zależy od pięty i palców z MediaPipe w tej klatce (jak w 5b).
 
 ## 6. Sugerowana pozycja
 
@@ -283,6 +471,8 @@ Filmy w WebM — Chromium z Playwrighta nie odtwarza H.264. Safari na iPadzie
 odtwarza wszystko, co nagra iPhone (także HEVC).
 
 ## 8. Ograniczenia pierwszego etapu
+
+Punkt sztangi i perspektywa — w 5c („Ograniczenia”).
 
 - Jedna osoba w kadrze (`numPoses: 1`).
 - Kąty 2D zależą od ustawienia kamery — dlatego wskazówka ujęcia, rozpoznanie

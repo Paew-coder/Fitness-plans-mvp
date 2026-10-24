@@ -242,6 +242,11 @@ serwerze ma tylko odzwierciedlać gałąź. Wyjątek: ktoś zmienił pliki na
 serwerze ręcznie — wtedy nic nie rusza i zostawia w logu wpis „UWAGA”. Dane
 klientów są na woluminie Dockera, poza gitem.
 
+Przed przebudową skrypt zapisuje skrót commita do `konsola/wersja-commit.txt`
+(poza gitem). Z niego bierze się wersja narzędzia w zapisach analizy ruchu,
+np. `0.2.0+a1b2c3d` (24.10.2026, badanie trenera) — w obrazie Dockera gita nie
+ma. Bez tego pliku wersja kończy się na „+lokalna”.
+
 Każda aktualizacja dopisuje się do `~/Fitness-plans-mvp/aktualizacja.log`
 razem z powodem, dla którego się skończyła; przebieg „bez zmian” (co minutę)
 tylko nadpisuje jedną linijkę w `aktualizacja-ostatnio.txt` — widać, że
