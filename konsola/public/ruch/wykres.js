@@ -25,6 +25,9 @@ const liczba = (n) => String(Math.round(n));
  * Ten sam wykres pokazuje środek ciężkości w procentach (23.10.2026):
  * `jednostka` ("°" — domyślnie, albo "%"), `krokSiatki` (30), `zakres`
  * (zawsze widoczny przedział osi, domyślnie [0, 30]), `opis` (dla czytnika ekranu).
+ * Od 24.10.2026 (badanie z punktem sztangi): `pasy` — `[{od, do, opis, klasa}]`
+ * pasy wartości w tle (śródstopie 40–60%), `znaczniki` — `[{indeksy, klasa, opis}]`
+ * kreski pod osią przy wskazanych klatkach (klatki ze zgubioną sztangą).
  */
 export function wykresKatow(kontener, dane) {
   let stan = dane;
@@ -77,6 +80,18 @@ export function wykresKatow(kontener, dane) {
       opis.textContent = `#${n + 1}`;
     });
 
+    // Pasy wartości w tle (śródstopie) — pod siatką i liniami.
+    for (const p of stan.pasy ?? []) {
+      const ya = skalaY(Math.min(p.do, yMax));
+      const yb = skalaY(Math.max(p.od, yMin));
+      if (!(yb > ya)) continue;
+      el("rect", { x: x0, y: ya, width: x1 - x0, height: yb - ya, class: p.klasa ?? "wykres-pasmo" }, svg);
+      if (p.opis) {
+        const opis = el("text", { x: x0 + 4, y: ya + 11, class: "wykres-opis wykres-opis-pasma" }, svg);
+        opis.textContent = p.opis;
+      }
+    }
+
     // Siatka co 30° (albo co `krokSiatki`) i oś czasu co sekundę (albo rzadziej przy długich filmach).
     for (let v = yMin; v <= yMax; v += krokSiatki) {
       el("line", { x1: x0, x2: x1, y1: skalaY(v), y2: skalaY(v), class: v === 0 ? "wykres-zero" : "wykres-siatka" }, svg);
@@ -109,6 +124,16 @@ export function wykresKatow(kontener, dane) {
     for (const { s, y } of konce) {
       const opis = el("text", { x: x1 + 6, y: y + 4, class: "wykres-podpis" }, svg);
       opis.textContent = s.krotko ?? s.nazwa;
+    }
+
+    // Kreski pod osią przy wskazanych klatkach (np. zgubiona sztanga — „?”).
+    for (const z of stan.znaczniki ?? []) {
+      const grupa = el("g", { class: z.klasa ?? "wykres-znacznik" }, svg);
+      if (z.opis) el("title", {}, grupa).textContent = z.opis;
+      for (const i of z.indeksy) {
+        const x = skalaX(czasy[i]);
+        el("line", { x1: x, x2: x, y1: y0 - 7, y2: y0, class: "wykres-znacznik-kreska" }, grupa);
+      }
     }
 
     celownik = el("line", { y1: y1, y2: y0, class: "wykres-celownik ukryty" }, svg);
