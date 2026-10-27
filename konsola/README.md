@@ -420,6 +420,26 @@ inne ustawienia pod tą samą nazwą — odmowa (nazwa znaczy jedno ćwiczenie,
 import arkusza szuka po nazwie). W danych: własne ćwiczenie z `jednorazowe`
 i `planId`.
 
+## Baza ćwiczeń (od 27.10.2026)
+
+Na ekranie głównym przycisk **„Baza ćwiczeń”** — cała baza w jednym miejscu,
+bez otwierania planu: ćwiczenia z arkusza, Twoje własne i biblioteki filmów
+(Theory of Motion, Catalyst Athletics), razem ok. 3600. Szukanie po słowach
+w dowolnej kolejności, ze skrótami i po polsku (jak w wyszukiwarce przy
+planie), filtr kategorii i źródła (także „Poprawione przez Ciebie”, „Do
+weryfikacji”, „Tylko do planów”), po 100 na raz. Bez wpisanych słów —
+najpierw Twoja baza i własne, potem biblioteki, po alfabecie. ▶ — filmy.
+
+**Każde ćwiczenie da się poprawić** — dotknięcie albo ✎ otwiera okienko
+z polami: nazwa, kategoria, wzorzec ruchu, coeff, progresja, skok,
+jednostronne, film. Okienko mówi, w ilu planach ćwiczenie stoi (także
+wysłanych klientom) — zmiana obejmie każdy z nich. Ćwiczenie z arkusza albo
+biblioteki: poprawka zapisuje się w konsoli (tabela `cwiczenie_poprawka`,
+tylko zmienione pola; pliki bazy zostają), znaczek „poprawione”, w okienku —
+co było w plikach i **„Przywróć oryginał”**. Ćwiczenie „do weryfikacji”:
+pole „Sprawdzone” zdejmuje dopisek. Własne ćwiczenia poprawia się jak dotąd.
+„＋ Własne ćwiczenie” dodaje ćwiczenie do bazy bez otwierania planu.
+
 ## Instrukcja dla klienta (od 18.10.2026)
 
 Strona `/instrukcja` — do wysłania klientowi przed pierwszym planem. Otwiera
@@ -1220,6 +1240,7 @@ npm run kopia
 | `public/wybor-cwiczenia.js` | wyszukiwarka ćwiczeń (BAZA + biblioteki filmów) z podglądem karty |
 | `public/wlasne-cwiczenie.js` | okienko własnego ćwiczenia (nazwa, kategoria, part, coeff, progresja, skok, jednostronne, film) |
 | `cwiczenia-wlasne.ts` | własne ćwiczenia trenera: zapis w bazie, sprawdzenie pól, wpięcie do katalogu silnika |
+| `poprawki-cwiczen.ts` | poprawki trenera do ćwiczeń z BAZY i bibliotek (ekran „Baza ćwiczeń”): tylko zmienione pola, wpięcie do katalogu, przywrócenie oryginału, w ilu planach stoi ćwiczenie |
 | `public/klient/karta-cwiczenia.css` | wygląd karty ćwiczenia — wspólny dla klienta i podglądu w konsoli |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

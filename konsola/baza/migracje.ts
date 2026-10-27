@@ -499,6 +499,21 @@ function doWersji12(d: DatabaseSync): void {
   }
 }
 
+/**
+ * Wersja 13 — poprawki trenera do ćwiczeń z BAZY i bibliotek (27.10.2026,
+ * ekran „Baza ćwiczeń”). Nowa tabela, nic się nie przenosi.
+ */
+function doWersji13(d: DatabaseSync): void {
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS cwiczenie_poprawka (
+      id        TEXT    PRIMARY KEY,
+      trener_id INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
+      dane_json TEXT    NOT NULL,
+      zmienione TEXT    NOT NULL
+    );
+  `);
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -511,4 +526,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 10, opis: "bojem tylko przysiady, martwe ciągi i bench — reszta bez liczb boju", wykonaj: doWersji10 },
   { doWersji: 11, opis: "własne ćwiczenia trenera", wykonaj: doWersji11 },
   { doWersji: 12, opis: "S/l clean z progresją dwuboju — bez liczb akcesorium", wykonaj: doWersji12 },
+  { doWersji: 13, opis: "poprawki trenera do ćwiczeń z bazy", wykonaj: doWersji13 },
 ];

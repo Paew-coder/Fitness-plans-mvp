@@ -736,33 +736,33 @@ body.wyszukiwarka-otwarta { overflow: hidden; }
 .wyszukiwarka-gora { display: flex; align-items: center; justify-content: space-between; }
 .wyszukiwarka-gora h3 { margin: 0; font-size: 1rem; }
 .wyszukiwarka-x { border: none; background: var(--panel); color: var(--tekst); width: 2.2rem; height: 2.2rem; border-radius: 50%; cursor: pointer; }
-.wyszukiwarka-pole {
+.wyszukiwarka-pole, .baza-szukaj {
   font: inherit; font-size: 1rem; margin-top: .7rem; padding: .6rem .75rem; border-radius: 7px;
   border: 1px solid var(--linia-mocna); background: var(--tlo); color: var(--tekst); width: 100%;
 }
-.wyszukiwarka-filtry { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .55rem; font-size: .85rem; }
-.wyszukiwarka-filtry select { font: inherit; font-size: .85rem; }
+.wyszukiwarka-filtry, .baza-filtry { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .55rem; font-size: .85rem; }
+.wyszukiwarka-filtry select, .baza-filtry select { font: inherit; font-size: .85rem; }
 .wyszukiwarka-bez { display: inline-flex; align-items: center; gap: .3rem; color: var(--tekst-slaby); }
-.wyszukiwarka-licznik { margin: .55rem 0 .3rem; font-size: .8rem; color: var(--tekst-blady); }
-.wyszukiwarka-lista { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 8rem; border-top: 1px solid var(--linia); }
-.wyszukiwarka-wynik {
+.wyszukiwarka-licznik, .baza-licznik-wynikow { margin: .55rem 0 .3rem; font-size: .8rem; color: var(--tekst-blady); }
+.wyszukiwarka-lista, .baza-lista { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 8rem; border-top: 1px solid var(--linia); }
+.wyszukiwarka-wynik, .pozycja-bazy {
   display: flex; align-items: center; gap: .6rem; padding: .5rem .4rem; cursor: pointer;
   border-bottom: 1px solid var(--linia);
 }
-.wyszukiwarka-wynik:hover, .wyszukiwarka-wynik[aria-selected="true"] { background: var(--akcent-tlo); }
+.wyszukiwarka-wynik:hover, .wyszukiwarka-wynik[aria-selected="true"], .pozycja-bazy:hover { background: var(--akcent-tlo); }
 .wyszukiwarka-wynik.obecne .wyszukiwarka-nazwa { color: var(--akcent); }
-.wyszukiwarka-opis { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.wyszukiwarka-nazwa { font-weight: 600; font-size: .92rem; }
-.wyszukiwarka-meta { font-size: .76rem; color: var(--tekst-blady); }
+.wyszukiwarka-opis, .baza-opis-cw { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wyszukiwarka-nazwa, .baza-nazwa { font-weight: 600; font-size: .92rem; }
+.wyszukiwarka-meta, .baza-meta { font-size: .76rem; color: var(--tekst-blady); }
 .wyszukiwarka-weryfikacja {
   align-self: flex-start; margin-top: .2rem; padding: 0 .3rem; border-radius: 3px;
   background: var(--uwaga-tlo); color: var(--uwaga); font-size: .7rem;
 }
-.wyszukiwarka-film {
+.wyszukiwarka-film, .baza-film {
   flex: none; border: 1px solid var(--linia); background: var(--plaszczyzna); color: var(--akcent);
   border-radius: 6px; padding: .3rem .55rem; font: inherit; font-size: .82rem; cursor: pointer; min-height: 2.1rem;
 }
-.wyszukiwarka-wiecej { margin-top: .5rem; align-self: center; font: inherit; font-size: .85rem; }
+.wyszukiwarka-wiecej, .baza-wiecej { margin-top: .5rem; align-self: center; font: inherit; font-size: .85rem; }
 .wyszukiwarka-wlasne { margin-top: .5rem; align-self: flex-start; font: inherit; font-size: .85rem; }
 
 /* ── własne ćwiczenie (17.10.2026) ──────────────────────────────────── */
@@ -849,3 +849,16 @@ label.pole-resetu {
   font-family: var(--sans); font-size: .92rem; letter-spacing: normal; text-transform: none;
   color: var(--tekst); cursor: pointer;
 }
+
+/* ── baza ćwiczeń (27.10.2026) ──────────────────────────────────────── */
+/* Trener: „dostęp do całej bazy ćwiczeń tak po prostu … i edytowanie każdego ćwiczenia”. */
+.baza-szukaj { margin-top: 0; }
+.baza-lista { overflow: visible; }
+.pozycja-bazy { min-width: 0; }
+.baza-nazwa, .baza-meta { overflow-wrap: anywhere; }
+.baza-znaczki { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .2rem; }
+.znaczek-bazy.weryfikacja { background: var(--uwaga-tlo); color: var(--uwaga); }
+.znaczek-bazy { padding: 0 .3rem; border-radius: 3px; font-size: .7rem; background: var(--akcent-tlo); color: var(--akcent); }
+.formularz-info { display: grid; gap: .35rem; padding: .55rem .7rem; border-radius: 6px; background: var(--panel); }
+.formularz-info p { margin: 0; }
+.formularz-przywroc { margin-right: auto; }

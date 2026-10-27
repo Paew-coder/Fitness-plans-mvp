@@ -45,6 +45,7 @@ import { filmyCwiczenia, idZLinkuYoutube, kartaDlaKlienta, kartaPodgladu, kartaR
 import { BOJE, bojGlownySlotu, DWUBOJ, PAUZOWANE } from "../silnik/src/szablon-boju.ts";
 import { skalibruj } from "./kalibracja.ts";
 import { dodajWlasne, wczytajWlasne, zarejestrujWlasne, zmienWlasne } from "./cwiczenia-wlasne.ts";
+import { poprawCwiczenie, przywrocCwiczenie, uzycieCwiczenia, zarejestrujPoprawki } from "./poprawki-cwiczen.ts";
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
@@ -102,6 +103,8 @@ const TRENER = pierwszeOtwarcieBazy();
 // Własne ćwiczenia trenera (17.10.2026) wchodzą do katalogu silnika, zanim
 // przyjdzie pierwsze zapytanie — plan z nimi liczy się od pierwszej chwili.
 zarejestrujWlasne();
+// Poprawki trenera do ćwiczeń z BAZY i bibliotek (27.10.2026, ekran „Baza ćwiczeń”) — tak samo.
+zarejestrujPoprawki();
 
 /** Czy odpowiedzi mogą oznaczać ciasteczko jako `Secure`. */
 const ZA_HTTPS = process.env.ZA_HTTPS === "1";
@@ -201,7 +204,17 @@ function cwiczenieDoListy(c: Cwiczenie) {
     // Ćwiczenie BAZY bez wpisu w filmach, ale z linkiem YouTube w arkuszu —
     // konsola i tak pokaże go w podglądzie (`kartaPodgladu`).
     ...(filmow === 0 && idZLinkuYoutube(c.film) ? { filmZArkusza: true } : {}),
+    // Poprawione przez trenera (27.10.2026) — okienko pokazuje, co było w BAZIE.
+    ...(c.poprawione ? { oryginal: oryginalDoListy(c.id) } : {}),
   };
+}
+
+function oryginalDoListy(id: string) {
+  const o = katalog.oryginal(id);
+  return o ? {
+    nazwa: o.nazwa, kategoria: o.kategoria, part: o.part, coeff: o.coeff, progresja: o.progresja,
+    skokKg: o.skokKg, jednostronne: o.jednostronne === true, film: o.film ?? "", uwagi: o.uwagi ?? null,
+  } : null;
 }
 function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
   if (!listaCwiczen) {
@@ -1425,6 +1438,27 @@ const serwer = createServer(async (req, res) => {
       const wynik = zmienWlasne(trenerId, wlasneId, dane);
       if (wynik === null) return blad(res, "Nie ma takiego własnego ćwiczenia.", 404);
       if ("blad" in wynik) return blad(res, wynik.blad);
+      return json(res, cwiczenieDoListy(wynik));
+    }
+
+    // Baza ćwiczeń (27.10.2026): poprawka ćwiczenia z BAZY albo biblioteki,
+    // przywrócenie oryginału i to, w ilu planach ćwiczenie stoi.
+    const bazaId = sciezka.match(/^\/api\/cwiczenia\/((?:EX|WL)-\d+)(\/poprawka|\/uzycie)?$/);
+    if (bazaId?.[2] === "/uzycie" && req.method === "GET") {
+      if (!katalog.poId(bazaId[1]!)) return blad(res, "Nie ma takiego ćwiczenia.", 404);
+      return json(res, uzycieCwiczenia(magazyn.lista(trenerId), bazaId[1]!));
+    }
+    if (bazaId && !bazaId[2] && req.method === "PUT") {
+      const wynik = poprawCwiczenie(trenerId, bazaId[1]!, await cialo(req));
+      if (wynik === null) return blad(res, "To ćwiczenie poprawia się jak własne.", 404);
+      if ("blad" in wynik) return blad(res, wynik.blad);
+      listaCwiczen = null;
+      return json(res, cwiczenieDoListy(wynik));
+    }
+    if (bazaId?.[2] === "/poprawka" && req.method === "DELETE") {
+      const wynik = przywrocCwiczenie(bazaId[1]!);
+      if (wynik === null) return blad(res, "Nie ma takiego ćwiczenia w bazie.", 404);
+      listaCwiczen = null;
       return json(res, cwiczenieDoListy(wynik));
     }
 

@@ -2209,6 +2209,121 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       `${poResecie.zapisany.wykonania.length} wykonań, start ${poResecie.zapisany.dataStartu}`);
   }
 
+  // ── 19d. baza ćwiczeń (27.10.2026) ────────────────────────────────
+  // Trener: „zrób tak, żebym miał dostęp do całej bazy ćwiczeń tak po prostu,
+  // a nie tylko podczas wybierania ćwiczenia do planu, i żebym mógł edytować
+  // każde ćwiczenie z bazy”.
+  await s.goto(ADRES, { waitUntil: "networkidle" });
+  await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
+  sprawdz("na ekranie głównym przycisk „Baza ćwiczeń”", await s.locator("#otworz-baze").isVisible()
+    && (await s.locator("#otworz-baze").innerText()) === "Baza ćwiczeń");
+  await s.click("#otworz-baze");
+  await s.waitForSelector("#ekran-baza:not(.ukryty)", { timeout: 5000 });
+  const wspolneBazy = await (await fetch(`${ADRES}/api/cwiczenia`)).json();
+  const wlasneBazy = await (await fetch(`${ADRES}/api/cwiczenia-wlasne`)).json();
+  const wBazie = wspolneBazy.length + wlasneBazy.filter((c: any) => !c.jednorazowe).length;
+  const pozycjeBazy = () => s.locator("#baza-lista li.pozycja-bazy");
+  sprawdz("ekran bazy: wszystkie ćwiczenia (arkusz, własne, biblioteki), po 100 na raz, „Pokaż więcej”",
+    (await s.locator("#baza-licznik").textContent()) === `${wBazie} ćwiczeń` && await pozycjeBazy().count() === 100
+      && await s.locator("#baza-wiecej:not(.ukryty)").count() === 1,
+    `${await s.locator("#baza-licznik").textContent()} (oczekiwane ${wBazie}) · na liście ${await pozycjeBazy().count()}`);
+  sprawdz("bez wpisanych słów najpierw Twoja baza (arkusz), po alfabecie",
+    (await pozycjeBazy().first().innerText()).includes("Twoja baza") && !(await pozycjeBazy().first().innerText()).includes("Theory of Motion"),
+    (await pozycjeBazy().first().innerText()).replace(/\n/g, " | "));
+  await s.click("#baza-wiecej");
+  sprawdz("…„Pokaż więcej” dokłada kolejne 100", await pozycjeBazy().count() === 200);
+  await s.selectOption("#baza-zrodlo", "baza");
+  const zArkusza = wspolneBazy.filter((c: any) => !c.biblioteka).length;
+  sprawdz("filtr „Twoja baza (arkusz)” — tyle, ile ćwiczeń z arkusza",
+    (await s.locator("#baza-wynikow").innerText()).startsWith(`${zArkusza} `), await s.locator("#baza-wynikow").innerText());
+  await s.selectOption("#baza-zrodlo", "jednorazowe");
+  sprawdz("ćwiczenia tylko do planów — osobnym filtrem, nie na ogólnej liście",
+    (await pozycjeBazy().allInnerTexts()).some((t) => t.includes("Spacer farmera przegląd")));
+  await s.selectOption("#baza-zrodlo", "");
+  await s.fill("#baza-szukaj", "back squat barbell");
+  await s.waitForTimeout(300);
+  const pierwsza = pozycjeBazy().first();
+  sprawdz("szukanie po słowach w dowolnej kolejności", (await pierwsza.innerText()).startsWith("Barbell back squat"),
+    (await pierwsza.innerText()).split("\n")[0] ?? "");
+  // Poprawka ćwiczenia z arkusza: coeff 1 → 0,75.
+  await pierwsza.click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  const okienkoBazy = s.locator(".formularz-cwiczenia");
+  await s.waitForFunction(() => /planie|planach|żadnym planie/.test(document.querySelector(".formularz-uzycie")?.textContent ?? ""),
+    null, { timeout: 5000 });
+  sprawdz("okienko „Popraw ćwiczenie z bazy” z polami ćwiczenia, skąd jest i w ilu planach stoi",
+    (await okienkoBazy.locator("h3").innerText()) === "Popraw ćwiczenie z bazy"
+      && await okienkoBazy.locator('input[name="nazwa"]').inputValue() === "Barbell back squat"
+      && await okienkoBazy.locator('select[name="coeff"]').inputValue() === "1"
+      && (await okienkoBazy.locator(".formularz-info").innerText()).includes("EX-0010")
+      && !(await okienkoBazy.locator('input[name="jednorazowe"]').isVisible()),
+    await okienkoBazy.locator(".formularz-uzycie").innerText());
+  await okienkoBazy.locator('select[name="coeff"]').selectOption("0.75");
+  await okienkoBazy.locator('button[type="submit"]').click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  const poPoprawceBazy = (await (await fetch(`${ADRES}/api/cwiczenia`)).json()).find((c: any) => c.id === "EX-0010");
+  sprawdz("zapis: poprawka na serwerze, na liście znaczek „poprawione” i coeff 0,75",
+    poPoprawceBazy.coeff === 0.75 && poPoprawceBazy.poprawione === true
+      && /poprawione/.test(await pozycjeBazy().first().innerText()) && /coeff 0,75/.test(await pozycjeBazy().first().innerText()),
+    (await pozycjeBazy().first().innerText()).replace(/\n/g, " | "));
+  await pozycjeBazy().first().locator("button.baza-edytuj").click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  sprawdz("ponowne otwarcie: co było w plikach bazy i „Przywróć oryginał”",
+    (await okienkoBazy.locator(".formularz-oryginal").innerText()).includes("coeff 1")
+      && await okienkoBazy.locator(".formularz-przywroc").isVisible());
+  await okienkoBazy.locator(".formularz-przywroc").click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  const poPrzywroceniu = (await (await fetch(`${ADRES}/api/cwiczenia`)).json()).find((c: any) => c.id === "EX-0010");
+  sprawdz("„Przywróć oryginał” — coeff 1, bez znaczka", poPrzywroceniu.coeff === 1 && !poPrzywroceniu.poprawione
+    && !/poprawione/.test(await pozycjeBazy().first().innerText()));
+  // Ćwiczenie stojące w planie — okienko mówi, ile planów zmieni poprawka.
+  const wPlanie = (await zBazy()).zapisany.plan.sloty.find((x: any) => x.cwiczenieId?.startsWith("EX-"))?.cwiczenieId;
+  const nazwaWPlanie = wspolneBazy.find((c: any) => c.id === wPlanie)?.nazwa ?? "";
+  await s.fill("#baza-szukaj", nazwaWPlanie);
+  await s.waitForTimeout(300);
+  await s.locator(`#baza-lista li[data-id="${wPlanie}"]`).click();
+  await s.waitForFunction(() => /planie|planach/.test(document.querySelector(".formularz-uzycie")?.textContent ?? ""),
+    null, { timeout: 5000 });
+  sprawdz("ćwiczenie z planu: „Jest w … — zmiana obejmie każdy z nich”",
+    /^Jest w \d+ plan/.test(await okienkoBazy.locator(".formularz-uzycie").innerText()),
+    `${nazwaWPlanie}: ${await okienkoBazy.locator(".formularz-uzycie").innerText()}`);
+  await s.keyboard.press("Escape");
+  // Biblioteka: „Sprawdzone” zdejmuje „do weryfikacji”.
+  await s.fill("#baza-szukaj", "");
+  await s.selectOption("#baza-zrodlo", "weryfikacja");
+  await s.waitForTimeout(200);
+  const ileDoWeryfikacji = Number((await s.locator("#baza-wynikow").innerText()).split(" ")[0]);
+  const doSprawdzenia = await pozycjeBazy().first().getAttribute("data-id");
+  await pozycjeBazy().first().click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  await okienkoBazy.locator('input[name="zweryfikowane"]').check();
+  await okienkoBazy.locator('button[type="submit"]').click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  sprawdz("„Sprawdzone” — ćwiczenie schodzi z listy „Do weryfikacji”",
+    Number((await s.locator("#baza-wynikow").innerText()).split(" ")[0]) === ileDoWeryfikacji - 1
+      && await s.locator(`#baza-lista li[data-id="${doSprawdzenia}"]`).count() === 0,
+    `${ileDoWeryfikacji} → ${await s.locator("#baza-wynikow").innerText()}`);
+  await s.selectOption("#baza-zrodlo", "poprawione");
+  await s.locator(`#baza-lista li[data-id="${doSprawdzenia}"]`).click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  await okienkoBazy.locator(".formularz-przywroc").click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  sprawdz("…„Przywróć oryginał” wraca je do weryfikacji, lista poprawionych pusta",
+    await pozycjeBazy().count() === 0 && (await s.locator("#baza-wynikow").innerText()).startsWith("Nic nie pasuje"));
+  await s.selectOption("#baza-zrodlo", "");
+  for (const [nazwa, w, h] of [["telefon", 390, 844], ["iPad w pionie", 820, 1180]] as const) {
+    await s.setViewportSize({ width: w, height: h });
+    await s.waitForTimeout(300);
+    const wystaje = await s.evaluate(() => [...document.querySelectorAll("#ekran-baza *")]
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > document.documentElement.clientWidth + 1; })
+      .map((e) => `${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]}`).slice(0, 3));
+    sprawdz(`baza ćwiczeń — ${nazwa}: nic nie wystaje poza ekran`, wystaje.length === 0, wystaje.join(", ") || "czysto");
+  }
+  await s.setViewportSize({ width: 1500, height: 1000 });
+  await s.click("#wroc-z-bazy");
+  await s.waitForSelector("#ekran-lista:not(.ukryty)", { timeout: 5000 });
+  sprawdz("„← klienci” wraca do ekranu głównego", await s.locator("#ekran-baza.ukryty").count() === 1);
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon

@@ -15,6 +15,13 @@
  * który tworzę, ale nie dodaje się ono do bazy ćwiczeń”) — to samo okienko,
  * ćwiczenie liczy się w planie jak każde inne, ale nie trafia na listę wyboru
  * w innych planach. Odznaczenie przy poprawce przenosi je do bazy.
+ *
+ * Ćwiczenie z BAZY albo z biblioteki (27.10.2026, ekran „Baza ćwiczeń”;
+ * trener: „żebym mógł edytować każde ćwiczenie z bazy”) — to samo okienko.
+ * Zapis idzie jako poprawka (`PUT /api/cwiczenia/…`), pliki BAZY zostają;
+ * „Przywróć oryginał” ją zdejmuje. Przy ćwiczeniu „do weryfikacji” —
+ * „Sprawdzone”. Przy każdym istniejącym: w ilu planach stoi (zmiana obejmie
+ * je wszystkie, także wysłane klientom).
  */
 const el = (tag, klasa, tekst) => {
   const e = document.createElement(tag);
@@ -54,7 +61,8 @@ export function otworzFormularzCwiczenia({
   const okno = el("form", "wyszukiwarka formularz-cwiczenia");
   okno.setAttribute("role", "dialog");
   okno.setAttribute("aria-modal", "true");
-  okno.setAttribute("aria-label", cwiczenie ? "Popraw własne ćwiczenie" : "Własne ćwiczenie");
+  // Ćwiczenie z plików (BAZA, biblioteki) — poprawka zamiast własnego.
+  const zBazy = !!cwiczenie && !cwiczenie.wlasne;
   okno.noValidate = true;
 
   const gora = el("div", "wyszukiwarka-gora");
@@ -92,9 +100,42 @@ export function otworzFormularzCwiczenia({
   doPlanu.append(pDoPlanu, el("span", "", "Tylko w tym planie — nie dodawaj do bazy ćwiczeń"));
   const opisDoPlanu = el("span", "formularz-podpowiedz");
   doPlanu.append(opisDoPlanu);
+  // Bez planu (ekran „Baza ćwiczeń”) i przy ćwiczeniu z plików pola nie ma — nie ma do czego go przypiąć.
+  if (zBazy || pDoPlanu.disabled) doPlanu.classList.add("ukryty");
   pola.append(doPlanu);
+
+  // Skąd ćwiczenie, co było w plikach, „do weryfikacji” (ćwiczenia z BAZY i bibliotek).
+  const ZRODLA = { tom: "biblioteki Theory of Motion", catalyst: "biblioteki Catalyst Athletics" };
+  const doWeryfikacji = zBazy && /^(DO WERYFIKACJI|UZUPEŁNIĆ)/.test(cwiczenie.oryginal?.uwagi ?? cwiczenie.uwagi ?? "");
+  let pSprawdzone = null;
+  if (zBazy) {
+    const info = el("div", "formularz-info");
+    info.append(el("p", "formularz-podpowiedz",
+      `Z ${ZRODLA[cwiczenie.biblioteka] ?? "Twojej bazy (arkusz)"} · ${cwiczenie.id}. Zmiana zapisuje się w konsoli — pliki bazy zostają, `
+      + "a „Przywróć oryginał” ją cofa."));
+    if (cwiczenie.poprawione && cwiczenie.oryginal) {
+      const o = cwiczenie.oryginal;
+      info.append(el("p", "formularz-podpowiedz formularz-oryginal",
+        `W plikach bazy: ${o.nazwa} · ${o.kategoria} · part ${o.part} · coeff ${String(o.coeff).replace(".", ",")} · ${o.progresja}`
+        + `${NA_KILOGRAMY.includes(o.progresja) ? ` (skok ${String(o.skokKg).replace(".", ",")} kg)` : ""}${o.jednostronne ? " · jednostronne" : ""}`));
+    }
+    if (doWeryfikacji) {
+      const uwagi = cwiczenie.oryginal?.uwagi ?? cwiczenie.uwagi;
+      info.append(el("p", "formularz-podpowiedz", `Uwagi: ${uwagi}`));
+      const sprawdzone = el("label", "formularz-wiersz formularz-ptaszek");
+      pSprawdzone = el("input");
+      pSprawdzone.type = "checkbox";
+      pSprawdzone.name = "zweryfikowane";
+      pSprawdzone.checked = !/^(DO WERYFIKACJI|UZUPEŁNIĆ)/.test(cwiczenie.uwagi ?? "");
+      sprawdzone.append(pSprawdzone, el("span", "", "Sprawdzone — zdejmij „do weryfikacji”"));
+      info.append(sprawdzone);
+    }
+    pola.append(info);
+  }
   const opiszDoPlanu = () => {
-    tytul.textContent = cwiczenie
+    tytul.textContent = zBazy
+      ? `Popraw ćwiczenie z ${cwiczenie.biblioteka ? "biblioteki" : "bazy"}`
+      : cwiczenie
       ? (pDoPlanu.checked ? "Popraw ćwiczenie tylko do tego planu" : "Popraw własne ćwiczenie")
       : (pDoPlanu.checked ? "Ćwiczenie tylko do tego planu" : "Własne ćwiczenie do bazy");
     opisDoPlanu.textContent = pDoPlanu.checked
@@ -155,7 +196,9 @@ export function otworzFormularzCwiczenia({
   pFilm.type = "url";
   pFilm.placeholder = "https://youtu.be/…";
   pFilm.value = cwiczenie?.film ?? "";
-  wiersz("Film (opcjonalnie)", pFilm, "Link z YouTube gra w aplikacji klienta.");
+  wiersz("Film (opcjonalnie)", pFilm, cwiczenie?.filmow > 0
+    ? "Ma filmy z biblioteki — w aplikacji grają one; link przyda się, gdy filmów z biblioteki nie ma."
+    : "Link z YouTube gra w aplikacji klienta.");
 
   const komunikat = el("p", "formularz-blad");
   komunikat.setAttribute("role", "alert");
@@ -163,12 +206,36 @@ export function otworzFormularzCwiczenia({
   const anuluj = el("button", "", "Anuluj");
   anuluj.type = "button";
   anuluj.onclick = () => zamknijFormularz();
-  const zapisz = el("button", "glowny", cwiczenie ? "Zapisz zmiany" : "Dodaj do planu");
+  const zapisz = el("button", "glowny", cwiczenie ? "Zapisz zmiany" : planId ? "Dodaj do planu" : "Dodaj do bazy");
   zapisz.type = "submit";
   dol.append(anuluj, zapisz);
+  if (zBazy && cwiczenie.poprawione) {
+    // „Przywróć oryginał” — poprawka znika, ćwiczenie znów takie, jak w plikach bazy.
+    const przywroc = el("button", "link formularz-przywroc", "Przywróć oryginał");
+    przywroc.type = "button";
+    przywroc.onclick = async () => {
+      przywroc.disabled = true;
+      try {
+        const c = await api(`/api/cwiczenia/${encodeURIComponent(cwiczenie.id)}/poprawka`, { method: "DELETE" });
+        zamknijFormularz();
+        naZapis(c);
+      } catch (blad) {
+        komunikat.textContent = blad.message;
+        przywroc.disabled = false;
+      }
+    };
+    dol.prepend(przywroc);
+  }
   if (cwiczenie) {
-    dol.prepend(el("span", "formularz-podpowiedz",
-      "Zmiana obejmie każdy plan z tym ćwiczeniem."));
+    // W ilu planach stoi — zanim trener zapisze zmianę coeff czy progresji.
+    const uzycie = el("span", "formularz-podpowiedz formularz-uzycie", "Zmiana obejmie każdy plan z tym ćwiczeniem.");
+    dol.prepend(uzycie);
+    api(`/api/cwiczenia/${encodeURIComponent(cwiczenie.id)}/uzycie`).then((u) => {
+      uzycie.textContent = u.planow === 0 ? "Nie ma go w żadnym planie."
+        : `Jest w ${u.planow} ${u.planow === 1 ? "planie" : "planach"}`
+          + `${u.wyslanych ? ` (${u.wyslanych} ${u.wyslanych === 1 ? "wysłany" : "wysłanych"} klientom)` : ""}`
+          + " — zmiana obejmie każdy z nich.";
+    }).catch(() => { /* zostaje ogólne zdanie */ });
   }
 
   opiszDoPlanu();
@@ -210,7 +277,10 @@ export function otworzFormularzCwiczenia({
     };
     zapisz.disabled = true;
     try {
-      const c = cwiczenie
+      const c = zBazy
+        ? await api(`/api/cwiczenia/${encodeURIComponent(cwiczenie.id)}`, { method: "PUT",
+          body: { ...dane, jednorazowe: false, zweryfikowane: pSprawdzone?.checked === true } })
+        : cwiczenie
         ? await api(`/api/cwiczenia-wlasne/${encodeURIComponent(cwiczenie.id)}`, { method: "PUT", body: dane })
         : await api("/api/cwiczenia-wlasne", { method: "POST", body: dane });
       zamknijFormularz();

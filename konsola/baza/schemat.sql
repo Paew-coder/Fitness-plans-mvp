@@ -145,3 +145,13 @@ CREATE TABLE IF NOT EXISTS cwiczenie_wlasne (
   utworzone TEXT    NOT NULL,
   zmienione TEXT    NOT NULL
 );
+
+-- Poprawki trenera do ćwiczeń z BAZY i bibliotek (27.10.2026, ekran „Baza
+-- ćwiczeń”) — tylko zmienione pola, jako JSON. Pliki BAZY zostają bez zmian;
+-- usunięcie wiersza = „Przywróć oryginał” (`poprawki-cwiczen.ts`).
+CREATE TABLE IF NOT EXISTS cwiczenie_poprawka (
+  id        TEXT    PRIMARY KEY,
+  trener_id INTEGER NOT NULL REFERENCES trener(id) ON DELETE CASCADE,
+  dane_json TEXT    NOT NULL,
+  zmienione TEXT    NOT NULL
+);

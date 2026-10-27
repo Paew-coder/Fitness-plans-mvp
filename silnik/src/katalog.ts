@@ -1,25 +1,55 @@
 import type { Cwiczenie, Kategoria } from "./typy.ts";
 import { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
 
+/**
+ * Poprawka trenera do ćwiczenia z BAZY albo biblioteki (27.10.2026): tylko
+ * pola, które zmienił. `jednostronne: false` i `film: ""` zdejmują wartość
+ * z oryginału, `zweryfikowane` — dopisek „DO WERYFIKACJI” / „UZUPEŁNIĆ” z uwag.
+ */
+export type PoprawkaCwiczenia = Partial<Pick<Cwiczenie,
+  "nazwa" | "kategoria" | "part" | "coeff" | "skokKg" | "progresja" | "jednostronne" | "film">> & { zweryfikowane?: true };
+
+const DOPISEK_WERYFIKACJI = /^(DO WERYFIKACJI|UZUPEŁNIĆ)\s*[–—-]?\s*/u;
+
+export function zastosujPoprawke(c: Cwiczenie, p: PoprawkaCwiczenia): Cwiczenie {
+  const { zweryfikowane, ...pola } = p;
+  const n: Cwiczenie = { ...c, ...pola, poprawione: true };
+  if (pola.jednostronne === false) delete n.jednostronne;
+  if (pola.film === "") delete n.film;
+  if (zweryfikowane && n.uwagi) {
+    const uwagi = n.uwagi.replace(DOPISEK_WERYFIKACJI, "").trim();
+    if (uwagi) n.uwagi = uwagi;
+    else delete n.uwagi;
+  }
+  return n;
+}
+
 /** Katalog ćwiczeń — odpowiednik zakładki BAZA, ale z wyszukiwaniem po ID. */
 export class Katalog {
   #stale: readonly Cwiczenie[];
+  #staleId: ReadonlyMap<string, Cwiczenie>;
+  #poprawki = new Map<string, PoprawkaCwiczenia>();
+  #wlasne: readonly Cwiczenie[] = [];
   #wszystkie: readonly Cwiczenie[];
+  #bazaTrenera: readonly Cwiczenie[];
   #poId = new Map<string, Cwiczenie>();
   #poNazwie = new Map<string, Cwiczenie>();
+
+  constructor(cwiczenia: readonly Cwiczenie[] = BAZA_CWICZEN) {
+    this.#stale = cwiczenia;
+    this.#staleId = new Map(cwiczenia.map((c) => [c.id, c]));
+    this.#wszystkie = cwiczenia;
+    this.#bazaTrenera = cwiczenia.filter((c) => !c.biblioteka && !c.wlasne);
+    this.#indeksuj();
+  }
 
   /**
    * BAZA trenera — arkusz 5.17 i jego dopiski, bez ćwiczeń z bibliotek filmów
    * (import 09.10.2026) i bez własnych z konsoli. Na niej stoją kontrole
-   * zgodne z arkuszem i generator.
+   * zgodne z arkuszem i generator. Z poprawkami trenera (27.10.2026).
    */
-  readonly bazaTrenera: readonly Cwiczenie[];
-
-  constructor(cwiczenia: readonly Cwiczenie[] = BAZA_CWICZEN) {
-    this.#stale = cwiczenia;
-    this.#wszystkie = cwiczenia;
-    this.bazaTrenera = cwiczenia.filter((c) => !c.biblioteka && !c.wlasne);
-    this.#indeksuj();
+  get bazaTrenera(): readonly Cwiczenie[] {
+    return this.#bazaTrenera;
   }
 
   get wszystkie(): readonly Cwiczenie[] {
@@ -33,7 +63,31 @@ export class Katalog {
    * widzą je tak samo jak każde inne ćwiczenie.
    */
   ustawWlasne(wlasne: readonly Cwiczenie[]): void {
-    this.#wszystkie = [...this.#stale, ...wlasne.map((c) => ({ ...c, wlasne: true as const }))];
+    this.#wlasne = wlasne.map((c) => ({ ...c, wlasne: true as const }));
+    this.#przebuduj();
+  }
+
+  /**
+   * Poprawki trenera do ćwiczeń z BAZY i bibliotek (27.10.2026, ekran „Baza
+   * ćwiczeń”): id → zmienione pola. Każde wywołanie zastępuje poprzednie.
+   * Plan, telefon, eksport i import widzą ćwiczenie już poprawione.
+   */
+  ustawPoprawki(poprawki: Readonly<Record<string, PoprawkaCwiczenia>>): void {
+    this.#poprawki = new Map(Object.entries(poprawki).filter(([id]) => this.#staleId.has(id)));
+    this.#przebuduj();
+  }
+
+  /** Ćwiczenie z BAZY albo biblioteki takie, jak w plikach — bez poprawki trenera. */
+  oryginal(id: string): Cwiczenie | undefined {
+    return this.#staleId.get(id);
+  }
+
+  #przebuduj(): void {
+    const stale = this.#poprawki.size
+      ? this.#stale.map((c) => (this.#poprawki.has(c.id) ? zastosujPoprawke(c, this.#poprawki.get(c.id)!) : c))
+      : this.#stale;
+    this.#wszystkie = [...stale, ...this.#wlasne];
+    this.#bazaTrenera = stale.filter((c) => !c.biblioteka && !c.wlasne);
     this.#indeksuj();
   }
 

@@ -87,6 +87,12 @@ export type Cwiczenie = {
   jednorazowe?: true;
   planId?: string;
   /**
+   * Ćwiczenie z BAZY albo z biblioteki poprawione przez trenera w konsoli
+   * (27.10.2026, ekran „Baza ćwiczeń”). Poprawka leży w bazie danych konsoli,
+   * pliki BAZY zostają bez zmian — „Przywróć oryginał” ją zdejmuje.
+   */
+  poprawione?: true;
+  /**
    * Trener usunął ćwiczenie z wyboru (arkusz weryfikacji bibliotek). Zostaje
    * w danych, bo mogło już trafić do planu — plan dalej się otwiera i eksportuje,
    * tylko wyszukiwarka go nie podsuwa.

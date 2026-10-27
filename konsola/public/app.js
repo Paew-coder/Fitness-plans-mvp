@@ -5,7 +5,7 @@
  * i zbieranie zmian: po każdej edycji plan leci do zapisu, wraca przeliczony
  * i odrysowujemy analizę. Dokładnie tak, jak arkusz przelicza się sam.
  */
-import { opisFilmow, otworzWyszukiwarke, podgladFilmow } from "./wybor-cwiczenia.js";
+import { opisFilmow, otworzWyszukiwarke, podgladFilmow, szukajCwiczen } from "./wybor-cwiczenia.js";
 import { otworzFormularzCwiczenia } from "./wlasne-cwiczenie.js";
 
 const KATEGORIE = [
@@ -142,6 +142,7 @@ async function pokazListe() {
 
   $("#ekran-plan").classList.add("ukryty");
   $("#ekran-klient").classList.add("ukryty");
+  $("#ekran-baza").classList.add("ukryty");
   $("#ekran-lista").classList.remove("ukryty");
 
   rysujUwage(uwaga);
@@ -297,6 +298,7 @@ async function otworzKlienta(id) {
 function rysujKartoteke() {
   $("#ekran-lista").classList.add("ukryty");
   $("#ekran-plan").classList.add("ukryty");
+  $("#ekran-baza").classList.add("ukryty");
   $("#ekran-klient").classList.remove("ukryty");
 
   const { klient, historia, plany } = kartoteka;
@@ -840,6 +842,7 @@ $("#wroc").onclick = () => {
 function rysujPlan() {
   $("#ekran-lista").classList.add("ukryty");
   $("#ekran-klient").classList.add("ukryty");
+  $("#ekran-baza").classList.add("ukryty");
   $("#ekran-plan").classList.remove("ukryty");
 
   const z = obraz.zapisany;
@@ -3621,6 +3624,142 @@ $("#dobierz-puste").onclick = () => dobierzCwiczenia(false);
 $("#dobierz-od-nowa").onclick = () => dobierzCwiczenia(true);
 
 $("#modal-zamknij").onclick = () => $("#modal").classList.add("ukryty");
+
+// ── baza ćwiczeń (27.10.2026) ──────────────────────────────────────
+// Trener: „zrób tak, żebym miał dostęp do całej bazy ćwiczeń tak po prostu,
+// a nie tylko podczas wybierania ćwiczenia do planu, i żebym mógł edytować
+// każde ćwiczenie z bazy”. Szukanie jak w wyszukiwarce przy planie (te same
+// słowa i skróty), a dotknięcie ćwiczenia otwiera okienko poprawki.
+const ZRODLA_BAZY = [
+  ["", "Wszystkie źródła"], ["baza", "Twoja baza (arkusz)"], ["wlasne", "Twoje własne"],
+  ["tom", "Theory of Motion"], ["catalyst", "Catalyst Athletics"], ["poprawione", "Poprawione przez Ciebie"],
+  ["weryfikacja", "Do weryfikacji"], ["jednorazowe", "Tylko do planów"],
+];
+const FILTR_ZRODLA = {
+  // Ćwiczenia tylko do planów nie są w bazie (trener, 27.10.2026) — osobnym filtrem.
+  "": (c) => !c.jednorazowe,
+  baza: (c) => !c.biblioteka && !c.wlasne,
+  wlasne: (c) => c.wlasne && !c.jednorazowe,
+  tom: (c) => c.biblioteka === "tom",
+  catalyst: (c) => c.biblioteka === "catalyst",
+  poprawione: (c) => !!c.poprawione,
+  weryfikacja: (c) => /^(DO WERYFIKACJI|UZUPEŁNIĆ)/.test(c.uwagi ?? ""),
+  jednorazowe: (c) => !!c.jednorazowe,
+};
+const ILE_W_BAZIE = 100;
+let pokazaneWBazie = ILE_W_BAZIE;
+
+function pokazBaze() {
+  $("#ekran-lista").classList.add("ukryty");
+  $("#ekran-klient").classList.add("ukryty");
+  $("#ekran-plan").classList.add("ukryty");
+  $("#ekran-baza").classList.remove("ukryty");
+  if (!$("#baza-kategoria").options.length) {
+    for (const [v, t] of [["", "Wszystkie kategorie"], ...KATEGORIE.map((k) => [k, k])]) {
+      const o = el("option", "", t);
+      o.value = v;
+      $("#baza-kategoria").append(o);
+    }
+    for (const [v, t] of ZRODLA_BAZY) {
+      const o = el("option", "", t);
+      o.value = v;
+      $("#baza-zrodlo").append(o);
+    }
+  }
+  pokazaneWBazie = ILE_W_BAZIE;
+  rysujBaze();
+  window.scrollTo(0, 0);
+}
+
+function wynikiBazy() {
+  const zapytanie = $("#baza-szukaj").value;
+  const lista = cwiczenia.filter(FILTR_ZRODLA[$("#baza-zrodlo").value] ?? FILTR_ZRODLA[""]);
+  const wyniki = szukajCwiczen(lista, { zapytanie, kategoria: $("#baza-kategoria").value });
+  // Bez słów — przeglądanie: najpierw Twoja baza i własne, potem biblioteki, każde po alfabecie.
+  // Ze słowami — najlepsze trafienia wyżej (jak w wyszukiwarce przy planie).
+  return zapytanie.trim() ? wyniki
+    : wyniki.sort((a, b) => Number(!!a.biblioteka) - Number(!!b.biblioteka) || a.nazwa.localeCompare(b.nazwa, "pl"));
+}
+
+function rysujBaze() {
+  const wBazie = cwiczenia.filter((c) => !c.jednorazowe);
+  const ile = (f) => wBazie.filter(f).length;
+  $("#baza-licznik").textContent = `${wBazie.length} ćwiczeń`;
+  $("#baza-licznik").title = `${ile(FILTR_ZRODLA.baza)} z arkusza · ${ile(FILTR_ZRODLA.wlasne)} własnych · `
+    + `${ile(FILTR_ZRODLA.tom)} Theory of Motion · ${ile(FILTR_ZRODLA.catalyst)} Catalyst · ${ile(FILTR_ZRODLA.poprawione)} poprawionych`;
+  const wyniki = wynikiBazy();
+  const n = wyniki.length;
+  $("#baza-wynikow").textContent = n === 0 ? "Nic nie pasuje — zmień słowa albo filtry."
+    : `${n} ${odmiana(n, ["ćwiczenie", "ćwiczenia", "ćwiczeń"])}${n > pokazaneWBazie ? ` · pokazuję ${pokazaneWBazie}` : ""}`;
+  $("#baza-lista").replaceChildren(...wyniki.slice(0, pokazaneWBazie).map(wierszBazy));
+  $("#baza-wiecej").classList.toggle("ukryty", n <= pokazaneWBazie);
+}
+
+const ZRODLO_CWICZENIA = (c) => (c.biblioteka === "tom" ? "Theory of Motion" : c.biblioteka === "catalyst" ? "Catalyst Athletics"
+  : c.jednorazowe ? "tylko do planu" : c.wlasne ? "Twoje własne" : "Twoja baza");
+const NA_KG = ["kg", "dodatkowy ciężar"];
+
+function wierszBazy(c) {
+  const li = el("li", "pozycja-bazy");
+  li.dataset.id = c.id;
+  const opis = el("div", "baza-opis-cw");
+  opis.append(el("span", "baza-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : "")));
+  opis.append(el("span", "baza-meta", [
+    c.kategoria, `part ${c.part}`, `coeff ${String(c.coeff).replace(".", ",")}`,
+    c.progresja + (NA_KG.includes(c.progresja) ? `, skok ${String(c.skokKg).replace(".", ",")} kg` : ""), ZRODLO_CWICZENIA(c),
+  ].join(" · ")));
+  const znaczki = el("span", "baza-znaczki");
+  if (c.poprawione) znaczki.append(el("span", "znaczek-bazy poprawione", "poprawione"));
+  if (/^(DO WERYFIKACJI|UZUPEŁNIĆ)/.test(c.uwagi ?? "")) {
+    const z = el("span", "znaczek-bazy weryfikacja", "do weryfikacji");
+    z.title = c.uwagi;
+    znaczki.append(z);
+  }
+  if (znaczki.childElementCount) opis.append(znaczki);
+  li.append(opis);
+  const filmy = opisFilmow(c);
+  if (filmy) {
+    const p = el("button", "baza-film", filmy.etykieta);
+    p.type = "button";
+    p.title = filmy.tytul;
+    p.setAttribute("aria-label", `${filmy.tytul}: ${c.nazwa}`);
+    p.onclick = (e) => { e.stopPropagation(); podgladFilmow(c.id, p, api); };
+    li.append(p);
+  }
+  const edytuj = el("button", "baza-film baza-edytuj", "✎");
+  edytuj.type = "button";
+  edytuj.title = "Popraw ćwiczenie";
+  edytuj.setAttribute("aria-label", `Popraw ćwiczenie: ${c.nazwa}`);
+  edytuj.onclick = (e) => { e.stopPropagation(); edytujZBazy(c); };
+  li.append(edytuj);
+  li.onclick = () => edytujZBazy(c);
+  return li;
+}
+
+function edytujZBazy(c) {
+  otworzFormularzCwiczenia({
+    api, cwiczenia, kategorie: KATEGORIE, cwiczenie: cwiczenie(c.id) ?? c,
+    naZapis: (nowe) => { dolaczCwiczenie(nowe); rysujBaze(); },
+  });
+}
+
+$("#otworz-baze").onclick = pokazBaze;
+$("#wroc-z-bazy").onclick = () => pokazListe();
+$("#baza-dodaj").onclick = () => otworzFormularzCwiczenia({
+  api, cwiczenia, kategorie: KATEGORIE, kategoria: $("#baza-kategoria").value,
+  naZapis: (nowe) => { dolaczCwiczenie(nowe); rysujBaze(); },
+});
+{
+  let zwloka = null;
+  $("#baza-szukaj").addEventListener("input", () => {
+    clearTimeout(zwloka);
+    zwloka = setTimeout(() => { pokazaneWBazie = ILE_W_BAZIE; rysujBaze(); }, 120);
+  });
+}
+for (const f of ["#baza-kategoria", "#baza-zrodlo"]) {
+  $(f).addEventListener("change", () => { pokazaneWBazie = ILE_W_BAZIE; rysujBaze(); });
+}
+$("#baza-wiecej").onclick = () => { pokazaneWBazie += ILE_W_BAZIE; rysujBaze(); };
 
 // ── start ──────────────────────────────────────────────────────────
 (async () => {

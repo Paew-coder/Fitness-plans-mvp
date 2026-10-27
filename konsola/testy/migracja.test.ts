@@ -160,7 +160,14 @@ describe("migracja v1 → v2", () => {
     // 8: znacznik resetu planu — telefon zaczyna trening od nowa (10.10.2026).
     // 11: własne ćwiczenia trenera (17.10.2026).
     // 12: S/l clean z progresją dwuboju (17.10.2026).
-    assert.equal(w, 12);
+    // 13: poprawki trenera do ćwiczeń z bazy — ekran „Baza ćwiczeń” (27.10.2026).
+    assert.equal(w, 13);
+  });
+
+  test("v13: tabela poprawek ćwiczeń jest i jest pusta — baza ćwiczeń jak w plikach", () => {
+    const kolumny = (polaczenie.baza().prepare("PRAGMA table_info(cwiczenie_poprawka)").all() as { name: string }[]).map((k) => k.name);
+    assert.deepEqual(kolumny, ["id", "trener_id", "dane_json", "zmienione"]);
+    assert.equal((polaczenie.baza().prepare("SELECT COUNT(*) AS n FROM cwiczenie_poprawka").get() as { n: number }).n, 0);
   });
 
   test("plan ma miejsce na wersję klienta — puste, czyli nic nie czeka na zatwierdzenie", () => {

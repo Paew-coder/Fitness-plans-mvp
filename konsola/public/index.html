@@ -16,6 +16,7 @@
       <h1>Konsola trenera</h1>
       <p class="podtytul">Plany powstają tutaj, klient ćwiczy z nich w aplikacji na telefonie.</p>
     </div>
+    <button type="button" class="link link-naglowka" id="otworz-baze">Baza ćwiczeń</button>
     <a class="link-naglowka" href="/ruch/">Analiza ruchu</a>
     <button id="wyloguj" class="link ukryty">Wyloguj</button>
   </header>
@@ -107,6 +108,36 @@
       </section>
     </aside>
   </div>
+</div>
+
+<div id="ekran-baza" class="ekran ukryty">
+  <header class="naglowek-planu">
+    <button class="link" id="wroc-z-bazy">← klienci</button>
+    <div class="tytul-planu">
+      <h1>Baza ćwiczeń</h1>
+      <span id="baza-licznik" class="odznaka"></span>
+    </div>
+    <div class="akcje">
+      <button id="baza-dodaj" type="button" class="glowny">＋ Własne ćwiczenie</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <input id="baza-szukaj" class="baza-szukaj" type="search" autocomplete="off" spellcheck="false"
+      placeholder="Szukaj: np. goblet squat, wiosłowanie hantlem, KB swing…" aria-label="Szukaj ćwiczenia">
+    <div class="baza-filtry">
+      <select id="baza-kategoria" aria-label="Kategoria"></select>
+      <select id="baza-zrodlo" aria-label="Źródło"></select>
+    </div>
+    <p class="wskazowka" id="baza-opis">
+      Cała baza: ćwiczenia z Twojego arkusza, Twoje własne i biblioteki filmów. Dotknij ćwiczenia (albo ✎), żeby je
+      poprawić — zmiana obejmie każdy plan z tym ćwiczeniem, także wysłane klientom. Poprawka ćwiczenia z bazy
+      zapisuje się w konsoli, pliki bazy zostają; „Przywróć oryginał” ją cofa.
+    </p>
+    <p class="baza-licznik-wynikow" id="baza-wynikow"></p>
+    <ul id="baza-lista" class="baza-lista"></ul>
+    <button id="baza-wiecej" type="button" class="baza-wiecej ukryty">Pokaż więcej</button>
+  </section>
 </div>
 
 <div id="ekran-plan" class="ekran ukryty">
