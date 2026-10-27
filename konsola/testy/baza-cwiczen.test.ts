@@ -122,6 +122,24 @@ describe("baza ćwiczeń — poprawki trenera", () => {
     assert.ok(dane.oryginal.uwagi.startsWith("DO WERYFIKACJI"), "oryginał z dopiskiem zostaje do wglądu");
   });
 
+  test("guma przy ćwiczeniu z pliku (27.10.2026): dopisana i zdjęta; bez zmiany — bez poprawki", async () => {
+    // EX-1056 „Band Bicep Curls” — guma ze sprzętu; EX-0011 — bez gumy.
+    const zGuma = await zListy("EX-1056");
+    assert.equal(zGuma.guma, true);
+    assert.equal((await api("/api/cwiczenia/EX-1056", "PUT", { ...pola(zGuma), guma: true })).dane.poprawione, undefined);
+    const zdjeta = await api("/api/cwiczenia/EX-1056", "PUT", { ...pola(zGuma), guma: false });
+    assert.equal(zdjeta.kod, 200, JSON.stringify(zdjeta.dane));
+    assert.deepEqual([zdjeta.dane.guma, zdjeta.dane.poprawione, zdjeta.dane.oryginal.guma], [false, true, true]);
+    await api("/api/cwiczenia/EX-1056/poprawka", "DELETE");
+
+    const bez = (await api("/api/cwiczenia")).dane.find((c: any) => !c.guma && c.progresja === "masa ciała" && !c.biblioteka);
+    const dopisana = await api(`/api/cwiczenia/${bez.id}`, "PUT", { ...pola(bez), guma: true });
+    assert.deepEqual([dopisana.dane.guma, dopisana.dane.poprawione], [true, true]);
+    const naKg = await api(`/api/cwiczenia/${bez.id}`, "PUT", { ...pola(bez), progresja: "kg", skokKg: 2.5, guma: true });
+    assert.equal(naKg.dane.guma, false, "przy kilogramach guma nie liczy się w ciężarze");
+    await api(`/api/cwiczenia/${bez.id}/poprawka`, "DELETE");
+  });
+
   test("odmowy: nazwa innego ćwiczenia, zły coeff; własne ćwiczenie tą drogą — nie", async () => {
     const c = await zListy("EX-0011");
     const zajeta = await api("/api/cwiczenia/EX-0011", "PUT", { ...pola(c), nazwa: "Przysiad ze sztangą (high bar)" });

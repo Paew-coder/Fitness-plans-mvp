@@ -420,6 +420,18 @@ inne ustawienia pod tą samą nazwą — odmowa (nazwa znaczy jedno ćwiczenie,
 import arkusza szuka po nazwie). W danych: własne ćwiczenie z `jednorazowe`
 i `planId`.
 
+**Progresja w grupach i guma** (od 27.10.2026). Lista progresji w okienku ma
+trzy grupy: **Kilogramy** (kg z 1RM, dodatkowy ciężar, ręczne), **Guma —
+opór dobiera klient** (rosną powtórzenia, guma jako pomoc — np. podciąganie,
+guma na czas, powtórzenia ustalasz sam) i **Bez obciążenia** (masa ciała,
+asysta, czas, dystans). Pod listą jedno zdanie, co dana progresja robi
+w planie i na telefonie. Guma to progresja bez kilogramów z dopiskiem
+„guma”: w kolumnie ciężaru stoi „guma”, klient sam dobiera opór. Dotąd guma
+wychodziła tylko z nazwy („band”) albo ze sprzętu — teraz da się ją wskazać
+(i zdjąć) przy każdym ćwiczeniu, także z bazy. W danych: pole `guma`
+(zapisane tylko wtedy, gdy mówi co innego niż nazwa i sprzęt); przy
+kilogramach guma nie zmienia ciężaru.
+
 ## Baza ćwiczeń (od 27.10.2026)
 
 Na ekranie głównym przycisk **„Baza ćwiczeń”** — cała baza w jednym miejscu,

@@ -114,6 +114,13 @@ export type Cwiczenie = {
    * Dziś pusta: wszystkie rozstrzygnięte. Zostaje dla ćwiczeń dokładanych w przyszłości.
    */
   jednostronneDoPotwierdzenia?: boolean;
+  /**
+   * Guma wskazana wprost przez trenera (27.10.2026, okienko ćwiczenia: „nie mam
+   * opcji do wybrania przy ćwiczeniu, które chcę zrobić z gumą”). `true` —
+   * ćwiczenie z gumą, choć nazwa i sprzęt tego nie mówią; `false` — bez gumy,
+   * choć „band” stoi w nazwie. Brak — jak dotąd, z nazwy i sprzętu (`zGuma`).
+   */
+  guma?: boolean;
 };
 
 /**
@@ -162,11 +169,14 @@ export type WynikCiezaru = number | KomunikatCiezaru | Progresja | "guma";
  * ręczne ustawienie, asysta, masa ciała, dystans). Guma razem ze sztangą czy
  * hantlami zostaje przy kilogramach — także gdy progresja jest ręczna
  * („Band on DB 90/90 Ext. Rot”: kilogramy hantli wpisuje trener).
+ * Wybór trenera w okienku ćwiczenia (`guma`, 27.10.2026) idzie przed nazwą
+ * i sprzętem — ale nie przed kilogramami.
  */
 const OBCIAZENIE = ["sztanga", "hantle", "kettlebell", "talerz", "landmine", "wyciąg",
   "maszyna", "trap bar", "gryf łamany", "piłka lekarska", "sanie", "kamizelka"];
-export function zGuma(c: { nazwa: string; progresja: Progresja; sprzet?: readonly string[] }): boolean {
+export function zGuma(c: { nazwa: string; progresja: Progresja; sprzet?: readonly string[]; guma?: boolean }): boolean {
   if (c.progresja === "kg" || c.progresja === "dodatkowy ciężar") return false;
+  if (c.guma !== undefined) return c.guma;
   const sprzet = c.sprzet ?? [];
   if (sprzet.some((s) => OBCIAZENIE.includes(s))) return false;
   return sprzet.includes("guma") || /\bband(s|ed)?\b/i.test(c.nazwa);

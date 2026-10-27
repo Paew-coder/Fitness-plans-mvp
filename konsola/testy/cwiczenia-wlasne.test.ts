@@ -107,6 +107,40 @@ describe("własne ćwiczenia trenera", () => {
     assert.equal(dane.skokKg, 0);
   });
 
+  test("guma wybrana w okienku (27.10.2026): zapisuje się, gdy nazwa jej nie mówi; przy kilogramach jej nie ma", async () => {
+    const zGuma = await api("/api/cwiczenia-wlasne", "POST",
+      { ...PALLOF, nazwa: "Odwodzenie w leżeniu z mini-gumą", progresja: "masa ciała", guma: true });
+    assert.equal(zGuma.kod, 201, JSON.stringify(zGuma.dane));
+    assert.deepEqual([zGuma.dane.progresja, zGuma.dane.guma], ["masa ciała", true]);
+    // „band” w nazwie: guma bez wpisu; odznaczona przy „band” — bez gumy.
+    const zNazwy = await api("/api/cwiczenia-wlasne", "POST",
+      { ...PALLOF, nazwa: "Band pull-apart z pauzą", progresja: "masa ciała", guma: true });
+    const bezGumy = await api("/api/cwiczenia-wlasne", "POST",
+      { ...PALLOF, nazwa: "Band walk bez gumy (test)", progresja: "czas", guma: false });
+    const kg = await api("/api/cwiczenia-wlasne", "POST",
+      { ...PALLOF, nazwa: "Wiosło z hantlą i gumą", progresja: "kg", skokKg: 1, guma: true });
+    assert.deepEqual([zNazwy.dane.guma, bezGumy.dane.guma, kg.dane.guma], [true, false, false],
+      "przy kilogramach guma nie zmienia ciężaru");
+    const lista = (await api("/api/cwiczenia-wlasne")).dane;
+    const flaga = (id: string) => lista.find((c: any) => c.id === id).guma;
+    assert.deepEqual([zGuma.dane.id, zNazwy.dane.id, bezGumy.dane.id, kg.dane.id].map(flaga), [true, true, false, false]);
+  });
+
+  test("guma w planie i na telefonie: w kolumnie ciężaru „guma”, bez serii do zmierzenia", async () => {
+    const id = (await api("/api/cwiczenia-wlasne")).dane.find((c: any) => c.nazwa === "Odwodzenie w leżeniu z mini-gumą").id;
+    await api("/api/plany", "POST", { klient: "Guma Test", wersja: 1 });
+    const planId = (await api("/api/plany")).dane.find((p: any) => p.klient === "Guma Test").id;
+    const plan = (await api(`/api/plany/${planId}`)).dane.zapisany.plan;
+    plan.sloty[1].cwiczenieId = id;
+    const zapis = await api(`/api/plany/${planId}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    assert.equal(zapis.kod, 200, JSON.stringify(zapis.dane));
+    assert.equal(zapis.dane.wynik.tygodnie[0].sloty[1].ciezar, "guma");
+    const token = (await api(`/api/plany/${planId}/link`, "POST")).dane.token;
+    const widok = (await api(`/api/klient/${token}`)).dane;
+    const c = widok.tygodnie[0].dni[0].cwiczenia.find((x: any) => x.positionId === "D1-S02");
+    assert.deepEqual([c.ciezar, c.progresja], ["guma", "masa ciała"]);
+  });
+
   test("w planie liczy się jak każde inne: ciężar z 1RM, ↔ na stronę, telefon", async () => {
     await api("/api/plany", "POST", { klient: "Własne Test", wersja: 1 });
     const planId = (await api("/api/plany")).dane.find((p: any) => p.klient === "Własne Test").id;

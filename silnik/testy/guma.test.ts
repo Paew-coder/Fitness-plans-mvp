@@ -8,7 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { katalog } from "../src/katalog.ts";
+import { Katalog, katalog } from "../src/katalog.ts";
 import { przeliczPlan, tydzienWyliczony, type Plan } from "../src/plan.ts";
 import { zGuma } from "../src/typy.ts";
 
@@ -47,4 +47,15 @@ test("wszystkie złapane to gumy bez kilogramów", () => {
     assert.ok(!["kg", "dodatkowy ciężar"].includes(c.progresja), c.nazwa);
     assert.ok((c.sprzet ?? []).includes("guma") || /band/i.test(c.nazwa), c.nazwa);
   }
+});
+
+test("guma wybrana przez trenera (27.10.2026) idzie przed nazwą i sprzętem, ale nie przed kilogramami", () => {
+  const plank = { nazwa: "Deska bokiem", progresja: "czas" as const };
+  assert.equal(zGuma(plank), false);
+  assert.equal(zGuma({ ...plank, guma: true }), true, "guma, choć nazwa jej nie mówi");
+  assert.equal(zGuma({ nazwa: "Band pull-apart", progresja: "masa ciała", guma: false }), false, "trener zdjął gumę");
+  assert.equal(zGuma({ nazwa: "Wiosło", progresja: "kg", guma: true }), false, "kilogramy wygrywają");
+  const k = new Katalog();
+  k.ustawPoprawki({ [BAND_ON_DB]: { guma: true } });
+  assert.equal(zGuma(k.poId(BAND_ON_DB)!), true, "poprawka trenera przy ćwiczeniu z hantlą i gumą");
 });

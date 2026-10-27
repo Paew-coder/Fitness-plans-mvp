@@ -1325,6 +1325,14 @@ Trener: „zrób tak, żebym miał możliwość dostępu do całej bazy ćwicze�
 * Zaplecze: `PUT /api/cwiczenia/{id}`, `DELETE /api/cwiczenia/{id}/poprawka`, `GET /api/cwiczenia/{id}/uzycie`; lista ćwiczeń przeliczana po poprawce. Katalog silnika: `ustawPoprawki`, `oryginal`, `bazaTrenera` z poprawkami (generator widzi poprawioną kategorię).
 * Testy: `baza-cwiczen.test.ts` (8: poprawka nazwy i coeff z oryginałem na liście, w planie i na telefonie, ile planów, tylko różnice, biblioteka i „sprawdzone”, odmowy, restart, przywrócenie; katalog z poprawkami), migracja (v13). Przegląd ekranów (+17, razem 241): przycisk, licznik i „pokaż więcej”, kolejność, filtry, szukanie, okienko z liczbą planów, poprawka i znaczek, oryginał i przywrócenie, „sprawdzone”, telefon i iPad bez wystawania, powrót.
 
+**118. Progresja w grupach i guma do wyboru przy każdym ćwiczeniu — 27.10.2026.**
+
+Trener (ze zrzutem listy progresji w okienku „Własne ćwiczenie do bazy”): „uporządkuj jakoś te metody progresji — przykładowo nie mam opcji do wybrania przy tym ćwiczeniu, które chcę zrobić z gumą”.
+
+* **Lista progresji w trzech grupach:** Kilogramy (kg z 1RM, dodatkowy ciężar, ręczne), Guma — opór dobiera klient (rosną powtórzenia; guma jako pomoc, np. podciąganie; guma na czas; powtórzenia ustalasz sam), Bez obciążenia (masa ciała, asysta, czas, dystans). Pod listą zdanie, co wybrana progresja robi w planie i na telefonie; skok tylko przy kilogramach.
+* **Guma wskazana wprost:** dotąd wychodziła wyłącznie z nazwy („band”) albo sprzętu. Teraz pole `guma` w ćwiczeniu — przy własnych i jako poprawka ćwiczeń z bazy (dopisanie albo zdjęcie). Zapisuje się tylko wtedy, gdy mówi co innego niż nazwa i sprzęt; `zGuma` bierze je przed nazwą, ale nie przed kilogramami. Na liście bazy i w wyszukiwarce „guma (masa ciała)”.
+* Testy: silnik `guma.test.ts` (+1), `cwiczenia-wlasne.test.ts` (+2: zapis z nazwą i bez, kilogramy; w planie i na telefonie „guma”), `baza-cwiczen.test.ts` (+1: guma przy ćwiczeniu z pliku dopisana i zdjęta). Przegląd ekranów (+4, razem 245): trzy grupy, zdanie pod listą i brak skoku, zapis i wiersz bazy, ponowne otwarcie.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

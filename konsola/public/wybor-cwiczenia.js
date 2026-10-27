@@ -232,7 +232,7 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
       const opis = el("div", "wyszukiwarka-opis");
       const nazwa = el("span", "wyszukiwarka-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : ""));
       const meta = el("span", "wyszukiwarka-meta",
-        [c.kategoria, `coeff ${String(c.coeff).replace(".", ",")}`, c.progresja,
+        [c.kategoria, `coeff ${String(c.coeff).replace(".", ",")}`, c.guma ? `guma (${c.progresja})` : c.progresja,
           c.biblioteka ? ZRODLA[c.biblioteka] : c.jednorazowe ? "Tylko w tym planie" : c.wlasne ? "Twoje własne" : "Twoja baza"].join(" · "));
       opis.append(nazwa, meta);
       if (c.uwagi?.startsWith("DO WERYFIKACJI")) {

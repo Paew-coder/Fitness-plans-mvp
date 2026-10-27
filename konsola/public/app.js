@@ -6,7 +6,7 @@
  * i odrysowujemy analizę. Dokładnie tak, jak arkusz przelicza się sam.
  */
 import { opisFilmow, otworzWyszukiwarke, podgladFilmow, szukajCwiczen } from "./wybor-cwiczenia.js";
-import { otworzFormularzCwiczenia } from "./wlasne-cwiczenie.js";
+import { opisProgresji, otworzFormularzCwiczenia } from "./wlasne-cwiczenie.js";
 
 const KATEGORIE = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
@@ -3706,7 +3706,7 @@ function wierszBazy(c) {
   opis.append(el("span", "baza-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : "")));
   opis.append(el("span", "baza-meta", [
     c.kategoria, `part ${c.part}`, `coeff ${String(c.coeff).replace(".", ",")}`,
-    c.progresja + (NA_KG.includes(c.progresja) ? `, skok ${String(c.skokKg).replace(".", ",")} kg` : ""), ZRODLO_CWICZENIA(c),
+    opisProgresji(c) + (NA_KG.includes(c.progresja) ? `, skok ${String(c.skokKg).replace(".", ",")} kg` : ""), ZRODLO_CWICZENIA(c),
   ].join(" · ")));
   const znaczki = el("span", "baza-znaczki");
   if (c.poprawione) znaczki.append(el("span", "znaczek-bazy poprawione", "poprawione"));

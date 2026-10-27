@@ -18,8 +18,8 @@
  * `cwiczenia-wlasne.ts`; tu tylko ćwiczenia z plików.
  */
 import { baza } from "./baza/polaczenie.ts";
-import { katalog, type PoprawkaCwiczenia } from "../silnik/src/katalog.ts";
-import type { Cwiczenie } from "../silnik/src/typy.ts";
+import { katalog, zastosujPoprawke, type PoprawkaCwiczenia } from "../silnik/src/katalog.ts";
+import { zGuma, type Cwiczenie } from "../silnik/src/typy.ts";
 import { sprawdzCwiczenie } from "./cwiczenia-wlasne.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 
@@ -61,6 +61,13 @@ export function poprawCwiczenie(trenerId: number, id: string, dane: unknown): Cw
     const stare = oryginal[pole] ?? null;
     if (nowe === stare || (pole === "jednostronne" && !nowe && !stare)) continue;
     poprawka[pole] = nowe ?? (pole === "jednostronne" ? false : pole === "film" ? "" : null);
+  }
+  // Guma (27.10.2026): przy ćwiczeniu z plików decyduje też sprzęt, więc
+  // porównanie idzie po wyniku — poprawka dostaje „guma” tylko wtedy, gdy bez
+  // niej ćwiczenie wyszłoby inaczej, niż trener wybrał.
+  if (typeof d.guma === "boolean") {
+    const chce = d.guma && !NA_KILOGRAMY.includes(sprawdzone.progresja);
+    if (zGuma(zastosujPoprawke(oryginal, poprawka as PoprawkaCwiczenia)) !== chce) poprawka.guma = chce;
   }
   if (d.zweryfikowane === true && DO_WERYFIKACJI.test(oryginal.uwagi ?? "")) poprawka.zweryfikowane = true;
   if (Object.keys(poprawka).length === 0) {

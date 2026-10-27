@@ -38,13 +38,48 @@ const COEFFY = [
   [1, "1 — główny złożony"], [0.75, "0,75 — pomocniczy złożony"],
   [0.5, "0,5 — semi-izolacja"], [0.25, "0,25 — izolacja"],
 ];
-const PROGRESJE = [
-  ["kg", "kg — ciężar z 1RM"], ["dodatkowy ciężar", "dodatkowy ciężar (np. podciąganie z obciążeniem)"],
-  ["ręczne ustawienie", "ręczne ustawienie — kilogramy wpisujesz sam"],
-  ["masa ciała", "masa ciała — rosną powtórzenia"], ["asysta", "asysta"],
-  ["czas", "czas"], ["dystans", "dystans"],
+/**
+ * Progresje w trzech grupach (27.10.2026, trener: „uporządkuj metody
+ * progresji — nie mam opcji do wybrania przy ćwiczeniu, które chcę zrobić
+ * z gumą”). Guma to nie osobna progresja silnika, tylko progresja bez
+ * kilogramów z „guma” — dlatego wartość „guma|masa ciała”: przed kreską guma,
+ * po kresce to, co silnik liczy. Przy każdej pozycji zdanie, co się dzieje
+ * w planie i na telefonie klienta.
+ */
+const GRUPY_PROGRESJI = [
+  ["Kilogramy", [
+    ["kg", "kg — ciężar liczony z 1RM",
+      "Ciężar z 1RM klienta i RPE, rośnie z tygodnia na tydzień o skok."],
+    ["dodatkowy ciężar", "dodatkowy ciężar — np. podciąganie z obciążeniem",
+      "Kilogramy dokładane do masy ciała (pas, kamizelka) — liczone z 1RM jak przy kg."],
+    ["ręczne ustawienie", "ręczne — kilogramy wpisujesz sam",
+      "Silnik nie liczy ciężaru — wpisujesz go przy ćwiczeniu w planie."],
+  ]],
+  ["Guma — opór dobiera klient", [
+    ["guma|masa ciała", "guma — rosną powtórzenia",
+      "W kolumnie ciężaru „guma”: klient sam dobiera gumę, a po ocenie zmieniają się powtórzenia."],
+    ["guma|asysta", "guma jako pomoc — np. podciąganie z gumą",
+      "Guma pomaga w ruchu — klient dobiera ją sam, z czasem coraz słabszą."],
+    ["guma|czas", "guma na czas — np. izometria z gumą",
+      "Klient dobiera gumę, a liczy się czas utrzymania pozycji."],
+    ["guma|ręczne ustawienie", "guma — powtórzenia ustalasz sam",
+      "Klient dobiera gumę; powtórzenia zostają takie, jakie ustawisz w planie."],
+  ]],
+  ["Bez obciążenia", [
+    ["masa ciała", "masa ciała — rosną powtórzenia",
+      "Bez kilogramów — po ocenie klienta zmieniają się powtórzenia."],
+    ["asysta", "asysta — np. maszyna do podciągania",
+      "Kilogramy pomocy maszyny — liczone z 1RM jak ciężar."],
+    ["czas", "czas — np. deska", "Liczy się czas utrzymania pozycji, nie kilogramy."],
+    ["dystans", "dystans — np. sanie, marsz", "Liczy się odległość, nie kilogramy."],
+  ]],
 ];
 const NA_KILOGRAMY = ["kg", "dodatkowy ciężar"];
+const GUMA = "guma|";
+/** Wartość listy z ćwiczenia: guma przed progresją, jeśli ćwiczenie jest z gumą. */
+const wartoscProgresji = (c) => c ? `${c.guma ? GUMA : ""}${c.progresja}` : "kg";
+/** Opis progresji z ćwiczenia — „guma (masa ciała)” albo sama nazwa. */
+export const opisProgresji = (c) => c.guma ? `guma (${c.progresja})` : c.progresja;
 
 let otwarte = null;
 
@@ -116,7 +151,7 @@ export function otworzFormularzCwiczenia({
     if (cwiczenie.poprawione && cwiczenie.oryginal) {
       const o = cwiczenie.oryginal;
       info.append(el("p", "formularz-podpowiedz formularz-oryginal",
-        `W plikach bazy: ${o.nazwa} · ${o.kategoria} · part ${o.part} · coeff ${String(o.coeff).replace(".", ",")} · ${o.progresja}`
+        `W plikach bazy: ${o.nazwa} · ${o.kategoria} · part ${o.part} · coeff ${String(o.coeff).replace(".", ",")} · ${opisProgresji(o)}`
         + `${NA_KILOGRAMY.includes(o.progresja) ? ` (skok ${String(o.skokKg).replace(".", ",")} kg)` : ""}${o.jednostronne ? " · jednostronne" : ""}`));
     }
     if (doWeryfikacji) {
@@ -167,9 +202,26 @@ export function otworzFormularzCwiczenia({
   pCoeff.name = "coeff";
   wiersz("Coeff", pCoeff, "Ile stresu liczy się z jednej serii.");
 
-  const pProgresja = wybor(PROGRESJE, cwiczenie?.progresja ?? "kg");
+  const pProgresja = el("select");
   pProgresja.name = "progresja";
-  wiersz("Progresja", pProgresja);
+  for (const [nazwaGrupy, opcje] of GRUPY_PROGRESJI) {
+    const grupa = el("optgroup");
+    grupa.label = nazwaGrupy;
+    for (const [v, t] of opcje) { const o = el("option", "", t); o.value = v; grupa.append(o); }
+    pProgresja.append(grupa);
+  }
+  const wybrana = wartoscProgresji(cwiczenie);
+  if (![...pProgresja.options].some((o) => o.value === wybrana)) {
+    // Guma przy progresji, której lista nie ma (np. na dystans) — zostaje, jak była.
+    const o = el("option", "", wybrana.replace(GUMA, "guma — "));
+    o.value = wybrana;
+    pProgresja.querySelector("optgroup:nth-of-type(2)").append(o);
+  }
+  pProgresja.value = wybrana;
+  const wierszProgresji = wiersz("Progresja", pProgresja, " ");
+  const opisWybranej = wierszProgresji.querySelector(".formularz-podpowiedz");
+  const progresja = () => pProgresja.value.replace(GUMA, "");
+  const zGuma = () => pProgresja.value.startsWith(GUMA);
 
   const pSkok = el("input");
   pSkok.name = "skokKg";
@@ -179,7 +231,11 @@ export function otworzFormularzCwiczenia({
   pSkok.max = "20";
   pSkok.value = cwiczenie && NA_KILOGRAMY.includes(cwiczenie.progresja) ? String(cwiczenie.skokKg) : "2.5";
   const wierszSkoku = wiersz("Skok (kg)", pSkok, "Najmniejszy przyrost ciężaru: 2,5 przy sztandze, 1 przy hantlach…");
-  const pokazSkok = () => wierszSkoku.classList.toggle("ukryty", !NA_KILOGRAMY.includes(pProgresja.value));
+  const opisy = new Map(GRUPY_PROGRESJI.flatMap(([, opcje]) => opcje.map(([v, , opis]) => [v, opis])));
+  const pokazSkok = () => {
+    wierszSkoku.classList.toggle("ukryty", !NA_KILOGRAMY.includes(progresja()));
+    opisWybranej.textContent = opisy.get(pProgresja.value) ?? "Klient dobiera gumę.";
+  };
   pProgresja.addEventListener("change", pokazSkok);
   pokazSkok();
 
@@ -267,8 +323,9 @@ export function otworzFormularzCwiczenia({
       kategoria: pKategoria.value,
       part: pPart.value,
       coeff: pCoeff.value === "" ? null : Number(pCoeff.value),
-      progresja: pProgresja.value,
-      skokKg: NA_KILOGRAMY.includes(pProgresja.value) ? Number(pSkok.value) : 0,
+      progresja: progresja(),
+      skokKg: NA_KILOGRAMY.includes(progresja()) ? Number(pSkok.value) : 0,
+      guma: zGuma(),
       jednostronne: pJedn.checked,
       film: pFilm.value.trim(),
       jednorazowe: pDoPlanu.checked,

@@ -2311,6 +2311,37 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("…„Przywróć oryginał” wraca je do weryfikacji, lista poprawionych pusta",
     await pozycjeBazy().count() === 0 && (await s.locator("#baza-wynikow").innerText()).startsWith("Nic nie pasuje"));
   await s.selectOption("#baza-zrodlo", "");
+  // Progresje w grupach i guma (27.10.2026). Trener: „uporządkuj metody
+  // progresji — nie mam opcji do wybrania przy ćwiczeniu, które chcę zrobić z gumą”.
+  await s.fill("#baza-szukaj", "Back extension");
+  await s.waitForTimeout(300);
+  await s.locator('#baza-lista li[data-id="EX-0007"]').click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  const grupyProgresji = await okienkoBazy.locator('select[name="progresja"] optgroup').evaluateAll(
+    (g: HTMLOptGroupElement[]) => g.map((x) => `${x.label}: ${[...x.children].map((o) => (o as HTMLOptionElement).value).join(", ")}`));
+  sprawdz("progresje w trzech grupach: kilogramy, guma, bez obciążenia",
+    grupyProgresji.length === 3 && grupyProgresji[1].startsWith("Guma") && grupyProgresji[1].includes("guma|masa ciała")
+      && await okienkoBazy.locator('select[name="progresja"]').inputValue() === "masa ciała",
+    grupyProgresji.join(" / "));
+  const opisProgresji = () => okienkoBazy.locator('select[name="progresja"] + .formularz-podpowiedz').innerText();
+  await okienkoBazy.locator('select[name="progresja"]').selectOption("guma|masa ciała");
+  sprawdz("…wybrana guma: pod listą, co się dzieje u klienta; bez pola skoku",
+    /dobiera gumę/.test(await opisProgresji()) && !(await okienkoBazy.locator('input[name="skokKg"]').isVisible()),
+    await opisProgresji());
+  await okienkoBazy.locator('button[type="submit"]').click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  const zGumaZSerwera = (await (await fetch(`${ADRES}/api/cwiczenia`)).json()).find((c: any) => c.id === "EX-0007");
+  const wierszGumy = await s.locator('#baza-lista li[data-id="EX-0007"]').innerText();
+  sprawdz("zapis gumy: na serwerze guma przy masie ciała, w wierszu „guma (masa ciała)”",
+    zGumaZSerwera.guma === true && zGumaZSerwera.progresja === "masa ciała" && wierszGumy.includes("guma (masa ciała)"),
+    wierszGumy.replace(/\n/g, " | "));
+  await s.locator('#baza-lista li[data-id="EX-0007"]').click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  sprawdz("…ponowne otwarcie: wybrana guma",
+    await okienkoBazy.locator('select[name="progresja"]').inputValue() === "guma|masa ciała");
+  await okienkoBazy.locator(".formularz-przywroc").click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  await s.fill("#baza-szukaj", "");
   for (const [nazwa, w, h] of [["telefon", 390, 844], ["iPad w pionie", 820, 1180]] as const) {
     await s.setViewportSize({ width: w, height: h });
     await s.waitForTimeout(300);

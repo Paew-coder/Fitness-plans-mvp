@@ -23,7 +23,7 @@
  */
 import { baza } from "./baza/polaczenie.ts";
 import { katalog } from "../silnik/src/katalog.ts";
-import type { Coeff, Cwiczenie, Kategoria, Part, Progresja } from "../silnik/src/typy.ts";
+import { zGuma, type Coeff, type Cwiczenie, type Kategoria, type Part, type Progresja } from "../silnik/src/typy.ts";
 
 export const KATEGORIE: readonly Kategoria[] = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
@@ -88,6 +88,10 @@ export function sprawdzCwiczenie(
   const jednorazowe = d.jednorazowe === true;
   const planId = typeof d.planId === "string" ? d.planId.trim() : "";
   if (jednorazowe && (!planId || planId.length > 200)) return { blad: "Ćwiczenie tylko do planu — brakuje planu." };
+  // Guma (27.10.2026) zapisuje się tylko wtedy, gdy mówi co innego niż nazwa
+  // („band”) — przy kilogramach guma nie zmienia ciężaru, więc jej nie ma.
+  // Bez pola (stare wywołania) — jak dotąd, z nazwy.
+  const guma = typeof d.guma === "boolean" && !naKg && d.guma !== zGuma({ nazwa, progresja }) ? d.guma : undefined;
   return {
     nazwa,
     kategoria: d.kategoria as Kategoria,
@@ -96,13 +100,14 @@ export function sprawdzCwiczenie(
     skokKg: naKg ? skokKg : 0,
     progresja,
     ...(d.jednostronne === true ? { jednostronne: true } : {}),
+    ...(guma !== undefined ? { guma } : {}),
     ...(film ? { film } : {}),
     ...(jednorazowe ? { jednorazowe: true as const, planId } : {}),
   };
 }
 
 /** Pola, które decydują o ćwiczeniu — do porównania dwóch ćwiczeń tylko do planu. */
-const POLA = ["nazwa", "kategoria", "part", "coeff", "skokKg", "progresja", "jednostronne", "film"] as const;
+const POLA = ["nazwa", "kategoria", "part", "coeff", "skokKg", "progresja", "jednostronne", "guma", "film"] as const;
 
 /**
  * Ćwiczenie tylko do planu o tej samej nazwie i tych samych ustawieniach już

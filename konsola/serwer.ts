@@ -214,6 +214,7 @@ function oryginalDoListy(id: string) {
   return o ? {
     nazwa: o.nazwa, kategoria: o.kategoria, part: o.part, coeff: o.coeff, progresja: o.progresja,
     skokKg: o.skokKg, jednostronne: o.jednostronne === true, film: o.film ?? "", uwagi: o.uwagi ?? null,
+    guma: zGuma(o),
   } : null;
 }
 function wyslijListeCwiczen(req: IncomingMessage, res: ServerResponse): void {
