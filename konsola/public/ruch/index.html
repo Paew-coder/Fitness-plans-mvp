@@ -235,6 +235,23 @@
             <p class="wskazowka">„Śledź od nowa” liczy sztangę w całym filmie jeszcze raz, od każdego punktu kontrolnego
               (pierwsze zaznaczenie i Twoje poprawki zostają). Potrzebny film.</p>
           </details>
+          <details class="obciazenie-srodka ukryty" id="ustawienia-perspektywy">
+            <summary>Perspektywa: <span id="opis-perspektywy">bez poprawki</span></summary>
+            <label class="przelacznik-srodka"><input type="checkbox" id="perspektywa-wlaczona"> poprawka perspektywy końca gryfu</label>
+            <div class="rzad-zrodla ustawienia-srodka">
+              <label>Odległość kamery (m)
+                <input id="odleglosc-kamery" type="number" min="1.5" max="20" step="0.05" inputmode="decimal" placeholder="np. 3,5">
+              </label>
+              <label>Długość gryfu (m)
+                <input id="dlugosc-gryfu" type="number" min="1" max="2.6" step="0.01" value="2.2" inputmode="decimal">
+              </label>
+            </div>
+            <p class="wskazowka">Koniec gryfu jest o pół gryfu bliżej kamery niż ciało, więc na obrazie wychodzi dalej
+              od środka kadru. Poprawka przesuwa punkt na środek gryfu — tam, gdzie ruch ciała. Odległość: od obiektywu
+              do środka między stopami osoby (zmierz miarką). Gryf: 2,20 m (męski, 20 kg) albo 2,01 m (damski, 15 kg).
+              Czerwony pierścień na filmie zostaje na końcu gryfu (do sprawdzania śledzenia); mała kropka z kreską —
+              środek gryfu po poprawce, z niego liczą się wyniki.</p>
+          </details>
           <div class="postep-sztangi ukryty" id="postep-sztangi">
             <span id="opis-postepu-sztangi">Śledzę sztangę…</span>
             <progress id="pasek-postepu-sztangi" max="1" value="0"></progress>

@@ -408,6 +408,18 @@ jest. Generator „do pustych” ich nie losuje. Numery `WL-0001…` — osobne 
 BAZY i bibliotek. Dane w bazie konsoli (tabela `cwiczenie_wlasne`), nie
 w repozytorium.
 
+**Ćwiczenie tylko do tego planu** (od 27.10.2026) — w liście przy pozycji
+„**＋ Ćwiczenie tylko do tego planu…**”: to samo okienko z zaznaczonym
+„Tylko w tym planie — nie dodawaj do bazy ćwiczeń”. Liczy się w planie jak
+każde inne (ciężar, telefon klienta, eksport), ale nie trafia na listę wyboru
+ani do wyszukiwarki w innych planach (wyjątek: plan, w którym już stoi — np.
+następny cykl), a asystent AI go nie podsuwa. Na liście ma dopisek „· tylko
+w tym planie”. Odznaczenie pola przy poprawce (✎) przenosi je do bazy.
+Ta sama nazwa i te same ustawienia w planie innej osoby — to samo ćwiczenie;
+inne ustawienia pod tą samą nazwą — odmowa (nazwa znaczy jedno ćwiczenie,
+import arkusza szuka po nazwie). W danych: własne ćwiczenie z `jednorazowe`
+i `planId`.
+
 ## Instrukcja dla klienta (od 18.10.2026)
 
 Strona `/instrukcja` — do wysłania klientowi przed pierwszym planem. Otwiera

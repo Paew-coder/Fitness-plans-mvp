@@ -960,7 +960,8 @@ describe("zapis wersja 2 — sztanga, badanie, wersja narzędzia (24.10.2026)", 
     const kolumny = naglowek!.split(";");
     assert.ok(kolumny.indexOf("sztanga_punkt_x_px") > kolumny.indexOf("srodek_wzgledem_stop_proc_wygladzony"), "nowe kolumny na końcu");
     for (const k of ["cialo", "sztanga", "uklad"]) assert.ok(kolumny.includes(`${k}_wzgledem_stop_proc_wygladzony`) && kolumny.includes(`${k}_od_piety_px`));
-    assert.deepEqual(kolumny.slice(-14, -10), ["wersja_narzedzia", "kod_osoby", "warunek", "model_segmentow"]);
+    assert.deepEqual(kolumny.slice(-17, -13), ["wersja_narzedzia", "kod_osoby", "warunek", "model_segmentow"]);
+    assert.deepEqual(kolumny.slice(-3), ["poprawka_perspektywy", "odleglosc_kamery_m", "dlugosc_gryfu_m"]);
     const w7 = wiersze[7]!.split(";");
     assert.equal(w7[kolumny.indexOf("sztanga_pewna")], "0");
     assert.equal(w7[kolumny.indexOf("sztanga_x_px")], "", "niepewna klatka — bez wyniku");
@@ -1000,5 +1001,67 @@ describe("wersja narzędzia do zapisu (24.10.2026)", async () => {
     writeFileSync(join(konsola, "wersja-commit.txt"), "c9a4bd9\n");
     assert.equal(wersjaNarzedzia({ katalog: konsola, srodowisko: {} }), "0.2.0+c9a4bd9");
     assert.equal(wersjaNarzedzia({ katalog: konsola, srodowisko: { CRAFTMYPLAN_COMMIT: "FEDCBA987" } }), "0.2.0+fedcba9");
+  });
+});
+
+describe("poprawka perspektywy końca gryfu (27.10.2026)", async () => {
+  // Trener: „dodaj poprawkę perspektywy” — koniec gryfu jest o pół gryfu bliżej
+  // kamery niż ciało, więc na obrazie wychodzi dalej od środka kadru.
+  const { poprawPerspektywe, perspektywaZUstawien, srodekSesji, DLUGOSC_GRYFU_M } = await import("../public/ruch/srodek.js");
+  const { doCSV, opisNarzedzia } = await import("../public/ruch/sesja.js");
+
+  test("wzór kamery otworkowej: środek kadru bez zmian, reszta bliżej środka o (D − L/2) / D", () => {
+    const p = { odlegloscKameryM: 4, dlugoscGryfuM: 2.2 };
+    assert.deepEqual(poprawPerspektywe({ x: 640, y: 360 }, WYMIARY, p), { x: 640, y: 360 });
+    // 100 px w prawo i 200 px w górę od środka: × 2,9 / 4 = 0,725.
+    const q = poprawPerspektywe({ x: 740, y: 160 }, WYMIARY, p);
+    okolo(q.x, 640 + 72.5, 1e-9);
+    okolo(q.y, 360 - 145, 1e-9);
+    // Kamera dalej — poprawka mniejsza.
+    okolo(poprawPerspektywe({ x: 740, y: 360 }, WYMIARY, { odlegloscKameryM: 10, dlugoscGryfuM: 2.2 }).x, 640 + 89, 1e-9);
+  });
+
+  test("ustawienia: wyłączona albo bez sensu → brak poprawki; gryf domyślnie 2,2 m", () => {
+    assert.equal(DLUGOSC_GRYFU_M, 2.2);
+    assert.equal(perspektywaZUstawien(null), null);
+    assert.equal(perspektywaZUstawien({ odlegloscKameryM: 1 }), null, "za blisko");
+    assert.equal(perspektywaZUstawien({ odlegloscKameryM: 1.6, dlugoscGryfuM: 2.2 }), null, "koniec gryfu prawie przy obiektywie");
+    assert.equal(perspektywaZUstawien({ odlegloscKameryM: 4, dlugoscGryfuM: 5 }), null);
+    assert.deepEqual(perspektywaZUstawien({ odlegloscKameryM: "3.5" }), { odlegloscKameryM: 3.5, dlugoscGryfuM: 2.2 });
+  });
+
+  test("w wynikach: sztanga i układ po poprawce, ciało bez zmian, zapis klatek taki jak na obrazie; CSV i JSON z parametrami", () => {
+    const sesja = sesjaPrzysiadow();
+    sesja.sztanga = { tryb: "naklejka", prog: 0.5 };
+    for (const k of sesja.klatki) {
+      const bark = k.p![INDEKS.left_shoulder];
+      k.sztanga = { x: bark[0] - 8 / W, y: bark[1] + 6 / H, pewnosc: 0.95, zrodlo: "sledzenie" };
+    }
+    const u = { model: "deleva-m", konczyny: "L", wygladzanie: false, fps: 30, obciazenie: { kg: 100, masaCiala: 80, miejsce: "sztanga" } };
+    const bez = srodekSesji(sesja, u);
+    const p = { odlegloscKameryM: 3.5, dlugoscGryfuM: 2.2 };
+    const z = srodekSesji(sesja, { ...u, perspektywa: p });
+    const i = 60;
+    const surowy = { x: sesja.klatki[i]!.sztanga.x * W, y: sesja.klatki[i]!.sztanga.y * H };
+    const oczekiwany = poprawPerspektywe(surowy, WYMIARY, p);
+    okolo(z.wyniki.sztanga.x[i], oczekiwany.x, 1e-9);
+    okolo(z.wyniki.sztanga.y[i], oczekiwany.y, 1e-9);
+    okolo(z.wyniki.uklad.x[i], (80 * z.wyniki.cialo.x[i] + 100 * oczekiwany.x) / 180, 1e-9);
+    assert.deepEqual(z.wyniki.cialo.x, bez.wyniki.cialo.x);
+    assert.notEqual(z.wyniki.sztanga.x[i], bez.wyniki.sztanga.x[i]);
+    assert.equal(sesja.klatki[i]!.sztanga.x * W, surowy.x, "punkt w klatce bez zmian");
+
+    sesja.srodekCiezkosci = { model: "deleva-m", konczyny: "L", wygladzanie: false, obciazenieKg: 100, miejsce: "sztanga",
+      masaCiala: 80, perspektywa: p };
+    sesja.narzedzie = opisNarzedzia(sesja, "0.2.0+abc1234");
+    assert.equal(sesja.narzedzie.parametry.perspektywa.odlegloscKameryM, 3.5);
+    const [naglowek, ...wiersze] = doCSV(sesja).trim().split("\r\n");
+    const kolumny = naglowek!.split(";");
+    const w = wiersze[i]!.split(";");
+    assert.deepEqual([w[kolumny.indexOf("poprawka_perspektywy")], w[kolumny.indexOf("odleglosc_kamery_m")], w[kolumny.indexOf("dlugosc_gryfu_m")]],
+      ["1", "3,5", "2,2"]);
+    // Punkt jak na obrazie w „sztanga_punkt_…”, wynik po poprawce w „sztanga_x_px”.
+    assert.equal(w[kolumny.indexOf("sztanga_punkt_x_px")], String(Math.round(surowy.x * 10) / 10).replace(".", ","));
+    assert.equal(w[kolumny.indexOf("sztanga_x_px")], String(Math.round(oczekiwany.x * 10) / 10).replace(".", ","));
   });
 });

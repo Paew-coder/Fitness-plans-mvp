@@ -437,6 +437,8 @@ await zSerwerem(4231, async ({ adres }) => {
     await s.click("#punkty-obrazu summary");
     sprawdz("da się zwinąć — w nagłówku „rozwiń”", await s.locator("#punkty-obrazu:not([open])").count() === 1
       && await s.evaluate(() => getComputedStyle(document.querySelector("#punkty-obrazu summary")!, "::after").content) === '"rozwiń"');
+    // Zdarzenie „toggle” przychodzi chwilę po kliknięciu — przeładowanie przed nim gubiło zapis (niestabilny przegląd).
+    await s.waitForFunction(() => localStorage.getItem("craftmyplan-ruch-punkty-zwiniete") === "1", null, { timeout: 5000 });
     await s.reload();
     await s.setInputFiles("#plik-analizy", plikSztuczny);
     await s.waitForSelector("#widok-analizy:not(.ukryty)", { timeout: 10_000 });
@@ -690,6 +692,42 @@ await zSerwerem(4231, async ({ adres }) => {
     sprawdz("…kliknięcie obok zamyka dymek", await s.locator(".dymek.ukryty").count() === 1);
     const infoNaWykresie = await s.locator("#wyniki-srodka button.info").count();
     sprawdz("przy każdym wyniku i pasie na wykresie jest „i” z objaśnieniem", infoNaWykresie === 4, `${infoNaWykresie}`);
+    // Poprawka perspektywy (27.10.2026): koniec gryfu jest o pół gryfu bliżej kamery niż ciało.
+    sprawdz("bez poprawki perspektywy — przypomnienie przed zapisem",
+      (await s.textContent("#nazwa-pliku"))!.includes("włącz poprawkę perspektywy"));
+    const sztangaPrzed = (await stanEkranu(s)).srodek.wyniki.sztanga;
+    await s.click("#ustawienia-perspektywy summary");
+    await s.check("#perspektywa-wlaczona");
+    sprawdz("…włączona bez odległości — prośba o odległość, wyniki bez zmian",
+      (await s.textContent("#opis-perspektywy"))!.startsWith("wpisz odległość kamery")
+        && (await stanEkranu(s)).srodek.wyniki.sztanga.x === sztangaPrzed.x);
+    // Czerwone piksele w promieniu 6 px wokół miejsca, gdzie po poprawce ma być środek gryfu.
+    const wMiejscuKropki = () => s.evaluate((k: number) => {
+      const a = (window as any).__analizaRuchu;
+      const q = a.sesja().klatki[a.stan().biezaca].sztanga;
+      const c = document.querySelector("#nakladka") as HTMLCanvasElement;
+      const [x, y] = [(0.5 + (q.x - 0.5) * k) * c.width, (0.5 + (q.y - 0.5) * k) * c.height];
+      const r = 6 * (window.devicePixelRatio || 1);
+      const d = c.getContext("2d")!.getImageData(Math.round(x - r), Math.round(y - r), Math.round(2 * r), Math.round(2 * r)).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3]! > 200 && d[i]! > 225 && d[i + 1]! > 55 && d[i + 1]! < 105) n++;
+      return n;
+    }, (3.5 - 1.1) / 3.5);
+    const czerwoneBez = await wMiejscuKropki();
+    await s.fill("#odleglosc-kamery", "3.5");
+    await s.waitForTimeout(200);
+    const sztangaPo = (await stanEkranu(s)).srodek.wyniki.sztanga;
+    // Środek gryfu bliżej środka kadru (640, 360) o (3,5 − 1,1) / 3,5.
+    const k = (3.5 - 1.1) / 3.5;
+    sprawdz("poprawka perspektywy: kamera 3,5 m, gryf 2,2 m — punkt sztangi w wynikach bliżej środka kadru o (D − L/2) / D",
+      (await s.textContent("#opis-perspektywy")) === "kamera 3,5 m · gryf 2,2 m"
+        && Math.abs((sztangaPo.x - 640) - (sztangaPrzed.x - 640) * k) < 3 && Math.abs((sztangaPo.y - 360) - (sztangaPrzed.y - 360) * k) < 3,
+      `x ${sztangaPrzed.x.toFixed(1)} → ${sztangaPo.x.toFixed(1)} px, y ${sztangaPrzed.y.toFixed(1)} → ${sztangaPo.y.toFixed(1)} px`);
+    const czerwonePo = await wMiejscuKropki();
+    sprawdz("…na filmie kropka środka gryfu (tam, gdzie wynika ze wzoru), przypomnienie znika",
+      // Przed poprawką obok przechodzi tylko droga sztangi — po niej dochodzi kropka.
+      czerwonePo > czerwoneBez + 15 && !(await s.textContent("#nazwa-pliku"))!.includes("perspektywy"),
+      `czerwone w miejscu kropki: ${czerwoneBez} → ${czerwonePo} px`);
     await zrzut(s, "ruch-sztanga-panel", "#panel-srodka");
     await zrzut(s, "ruch-sztanga-miary", "#panel-miar-srodka");
     await zrzut(s, "ruch-sztanga-obraz", "#scena");
@@ -720,8 +758,10 @@ await zSerwerem(4231, async ({ adres }) => {
     const plikJsonSztangi = join(robocze, "sztanga-zapis.json");
     await pobranieJsonSztangi.saveAs(plikJsonSztangi);
     const zapisSztangi = JSON.parse(readFileSync(plikJsonSztangi, "utf-8"));
-    sprawdz("JSON: wersja 2, punkt sztangi w każdej klatce, badanie, wersja narzędzia i parametry",
+    sprawdz("JSON: wersja 2, punkt sztangi w każdej klatce, badanie, wersja narzędzia i parametry (z perspektywą)",
       zapisSztangi.wersja === 2 && zapisSztangi.klatki.every((k: any) => typeof k.sztanga?.x === "number")
+        && zapisSztangi.srodekCiezkosci?.perspektywa?.odlegloscKameryM === 3.5
+        && zapisSztangi.narzedzie?.parametry?.perspektywa?.dlugoscGryfuM === 2.2
         && zapisSztangi.badanie?.kodOsoby === "P01" && /^0\.2\.0\+/.test(zapisSztangi.narzedzie?.wersja)
         && zapisSztangi.narzedzie.parametry.odciecieHz === 6 && JSON.stringify(zapisSztangi.narzedzie.parametry.pasmoSrodstopia) === "[40,60]",
       `${zapisSztangi.narzedzie?.wersja} · ${JSON.stringify(zapisSztangi.narzedzie?.parametry?.pasmoSrodstopia)}`);

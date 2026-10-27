@@ -13,6 +13,13 @@
  *
  * Numery `WL-0001…` — osobne od BAZY i bibliotek (`EX-…`), więc kolejny
  * import bibliotek ani dopisek do BAZY nigdy się z nimi nie zderzy.
+ *
+ * Ćwiczenie tylko do tego planu (27.10.2026, trener: „wpisuję ćwiczenie do
+ * planu, który tworzę, ale nie dodaje się ono do bazy ćwiczeń”) to to samo
+ * własne ćwiczenie z `jednorazowe` i `planId`. W katalogu jest jak każde inne
+ * — plan, telefon, eksport i import arkusza działają bez zmian — tylko konsola
+ * nie podsuwa go na liście wyboru w innych planach. Odznaczenie „tylko w tym
+ * planie” przenosi je do bazy trenera.
  */
 import { baza } from "./baza/polaczenie.ts";
 import { katalog } from "../silnik/src/katalog.ts";
@@ -60,7 +67,9 @@ export function sprawdzCwiczenie(
   // różne ćwiczenia, których nie da się rozróżnić.
   const zajeta = katalog.poNazwie(nazwa);
   if (zajeta && zajeta.id !== id) {
-    return { blad: `Ćwiczenie „${zajeta.nazwa}” już jest w bazie — wybierz je z listy albo zmień nazwę.` };
+    return { blad: zajeta.jednorazowe
+      ? `„${zajeta.nazwa}” jest już ćwiczeniem tylko do innego planu, z innymi ustawieniami — zmień nazwę (np. dopisz „2”).`
+      : `Ćwiczenie „${zajeta.nazwa}” już jest w bazie — wybierz je z listy albo zmień nazwę.` };
   }
   if (!KATEGORIE.includes(d.kategoria as Kategoria)) return { blad: "Wybierz kategorię." };
   if (!PARTY.includes(d.part as Part)) return { blad: "Wybierz wzorzec ruchu (part)." };
@@ -76,6 +85,9 @@ export function sprawdzCwiczenie(
   if (film && (!/^https?:\/\/\S+$/i.test(film) || film.length > 300)) {
     return { blad: "Film: pełny link, np. https://youtu.be/…" };
   }
+  const jednorazowe = d.jednorazowe === true;
+  const planId = typeof d.planId === "string" ? d.planId.trim() : "";
+  if (jednorazowe && (!planId || planId.length > 200)) return { blad: "Ćwiczenie tylko do planu — brakuje planu." };
   return {
     nazwa,
     kategoria: d.kategoria as Kategoria,
@@ -85,7 +97,27 @@ export function sprawdzCwiczenie(
     progresja,
     ...(d.jednostronne === true ? { jednostronne: true } : {}),
     ...(film ? { film } : {}),
+    ...(jednorazowe ? { jednorazowe: true as const, planId } : {}),
   };
+}
+
+/** Pola, które decydują o ćwiczeniu — do porównania dwóch ćwiczeń tylko do planu. */
+const POLA = ["nazwa", "kategoria", "part", "coeff", "skokKg", "progresja", "jednostronne", "film"] as const;
+
+/**
+ * Ćwiczenie tylko do planu o tej samej nazwie i tych samych ustawieniach już
+ * jest (np. to samo w planie następnej osoby) — wtedy to samo ćwiczenie, nie
+ * odmowa „nazwa zajęta”. Inne ustawienia — odmowa, żeby nazwa dalej znaczyła
+ * jedno ćwiczenie (import arkusza szuka po nazwie).
+ */
+function takieSamoJednorazowe(trenerId: number, dane: unknown): Cwiczenie | null {
+  const d = dane as Record<string, unknown> | null;
+  if (d?.jednorazowe !== true || typeof d.nazwa !== "string") return null;
+  const jest = katalog.poNazwie(d.nazwa.trim().replace(/\s+/g, " "));
+  if (!jest?.jednorazowe || !wczytajWlasne(trenerId).some((c) => c.id === jest.id)) return null;
+  const nowe = sprawdzCwiczenie(dane, jest.id);
+  if ("blad" in nowe) return null;
+  return POLA.every((p) => (nowe[p] ?? null) === (jest[p] ?? null)) ? jest : null;
 }
 
 function nastepneId(): string {
@@ -96,6 +128,8 @@ function nastepneId(): string {
 }
 
 export function dodajWlasne(trenerId: number, dane: unknown): Cwiczenie | { blad: string } {
+  const takieSamo = takieSamoJednorazowe(trenerId, dane);
+  if (takieSamo) return takieSamo;
   const sprawdzone = sprawdzCwiczenie(dane);
   if ("blad" in sprawdzone) return sprawdzone;
   const id = nastepneId();
@@ -109,10 +143,13 @@ export function dodajWlasne(trenerId: number, dane: unknown): Cwiczenie | { blad
 
 /** Poprawka własnego ćwiczenia. `null` — nie ma takiego (albo jest innego trenera). */
 export function zmienWlasne(trenerId: number, id: string, dane: unknown): Cwiczenie | { blad: string } | null {
-  const jest = baza().prepare("SELECT id FROM cwiczenie_wlasne WHERE id = ? AND trener_id = ?")
-    .get(id, trenerId);
+  const jest = baza().prepare("SELECT id, dane_json FROM cwiczenie_wlasne WHERE id = ? AND trener_id = ?")
+    .get(id, trenerId) as { id: string; dane_json: string } | undefined;
   if (!jest) return null;
-  const sprawdzone = sprawdzCwiczenie(dane, id);
+  // Poprawka ćwiczenia tylko do planu bez podanego planu — zostaje przy swoim.
+  const d = dane && typeof dane === "object" ? dane as Record<string, unknown> : {};
+  const poprzedniPlan = (JSON.parse(jest.dane_json) as Cwiczenie).planId;
+  const sprawdzone = sprawdzCwiczenie(d.jednorazowe === true && !d.planId ? { ...d, planId: poprzedniPlan } : dane, id);
   if ("blad" in sprawdzone) return sprawdzone;
   baza().prepare("UPDATE cwiczenie_wlasne SET dane_json = ?, zmienione = ? WHERE id = ? AND trener_id = ?")
     .run(JSON.stringify(sprawdzone), new Date().toISOString(), id, trenerId);

@@ -277,6 +277,45 @@ function filtrujWObieStrony(x, fps, fc) {
   return zPowrotem.slice(pad, pad + n);
 }
 
+/* ── perspektywa końca gryfu (27.10.2026) ──────────────────────── */
+
+/**
+ * Koniec gryfu jest bliżej kamery niż ciało — o pół długości gryfu (1,1 m przy
+ * gryfie 2,2 m) — więc na obrazie wychodzi dalej od środka kadru, niż leży
+ * środek gryfu (a ten jest w płaszczyźnie ruchu ciała, tam, gdzie liczy się
+ * środek ciężkości). Trener, 24.10.2026, po opisie ograniczeń: „dodaj
+ * poprawkę perspektywy”.
+ *
+ * Kamera otworkowa, gryf równoległy do osi obiektywu (kamera patrzy wzdłuż
+ * gryfu): punkt w głębokości D − L/2 i ten sam punkt w głębokości D leżą na
+ * obrazie na jednym promieniu od środka kadru, w odległościach w stosunku
+ * D / (D − L/2). Środek gryfu na obrazie:
+ *
+ *   x' = cx + (x − cx) · (D − L/2) / D,   tak samo y,
+ *
+ * D — odległość kamery od płaszczyzny ruchu (środek między stopami),
+ * L — długość gryfu, c — środek kadru (przybliżenie punktu głównego obiektywu).
+ */
+export const DLUGOSC_GRYFU_M = 2.2;
+
+/** Ustawienia poprawki albo `null` (wyłączona albo liczby bez sensu). */
+export function perspektywaZUstawien(p) {
+  const D = Number(p?.odlegloscKameryM);
+  const L = Number(p?.dlugoscGryfuM ?? DLUGOSC_GRYFU_M);
+  // Koniec gryfu bliżej niż metr od obiektywu — ustawienie, którego nie da się poprawić wzorem.
+  if (!(D >= 1.5 && D <= 20) || !(L >= 1 && L <= 2.6) || D - L / 2 < 1) return null;
+  return { odlegloscKameryM: D, dlugoscGryfuM: L };
+}
+
+/** Punkt końca gryfu (piksele filmu) → środek gryfu w płaszczyźnie ruchu ciała. */
+export function poprawPerspektywe(q, wymiary, perspektywa) {
+  const { odlegloscKameryM: D, dlugoscGryfuM: L } = perspektywa;
+  const k = (D - L / 2) / D;
+  const cx = wymiary.szerokosc / 2;
+  const cy = wymiary.wysokosc / 2;
+  return { x: cx + (q.x - cx) * k, y: cy + (q.y - cy) * k };
+}
+
 /* ── całe nagranie ──────────────────────────────────────────────── */
 
 /** Klatki na sekundę z samych klatek (mediana odstępów). */
@@ -300,10 +339,15 @@ export function fpsZKlatek(klatki) {
  * (gdy jest w analizie), `uklad` — ciało + obciążenie (gdy są kg i masa ciała).
  * Każda: `x, y` (piksele filmu), `wzgledem` (% stopy), `piksele` (od pięty,
  * w stronę palców) — surowe i `…Gladkie` tym samym filtrem.
+ * `perspektywa` (27.10.2026) — `{ odlegloscKameryM, dlugoscGryfuM }`: punkt
+ * sztangi przesunięty z końca gryfu na jego środek (`poprawPerspektywe`) —
+ * w wynikach sztangi i układu; zapis w klatkach zostaje taki, jak na obrazie.
  */
-export function srodekSesji(sesja, { model, konczyny = "obie", obciazenie = null, wygladzanie = true, fps = fpsZKlatek(sesja.klatki) }) {
+export function srodekSesji(sesja, { model, konczyny = "obie", obciazenie = null, wygladzanie = true, fps = fpsZKlatek(sesja.klatki),
+  perspektywa = null }) {
   const wymiary = { szerokosc: sesja.wideo.szerokosc, wysokosc: sesja.wideo.wysokosc };
-  const sztanga = punktySztangi(sesja);
+  const p = perspektywaZUstawien(perspektywa);
+  const sztanga = punktySztangi(sesja).map((q) => (q && p ? { ...q, ...poprawPerspektywe(q, wymiary, p) } : q));
   const klatki = sesja.klatki.map((k, i) => srodekKlatki(k, wymiary, { model, konczyny,
     obciazenie: obciazenie && { ...obciazenie, punkt: obciazenie.miejsce === "sztanga" ? sztanga[i] : undefined } }));
   const gladz = (seria) => (wygladzanie ? wygladzTrajektorie(seria, fps) : seria);

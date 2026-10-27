@@ -411,6 +411,49 @@ a od tej chwili zmiany w obliczeniach `/ruch/` tylko za zgodą trenera. Serwer
 aktualizuje się sam, więc każdy plik niesie swoją wersję — w CSV kolumna
 `wersja_narzedzia` musi być ta sama we wszystkich plikach badania.
 
+### Poprawka perspektywy (27.10.2026)
+
+Trener po opisie ograniczeń: „dodaj poprawkę perspektywy”. W panelu
+„Środek ciężkości” → „Perspektywa”: pole „poprawka perspektywy końca gryfu”,
+odległość kamery D (od obiektywu do środka między stopami osoby, w metrach)
+i długość gryfu L (domyślnie 2,20 m; damski 2,01 m). Kamera otworkowa, gryf
+równoległy do osi obiektywu — koniec gryfu (głębokość D − L/2) i środek gryfu
+(głębokość D, płaszczyzna ruchu ciała) leżą na jednym promieniu od środka
+kadru c, więc środek gryfu na obrazie:
+
+    x' = cx + (x − cx) · (D − L/2) / D,   y' = cy + (y − cy) · (D − L/2) / D
+
+(`poprawPerspektywe` w `srodek.js`; przy 3,5 m i 2,2 m: × 0,686). Z poprawionego
+punktu liczą się wyniki sztangi i układu (px, % stopy, miary w powtórzeniu);
+punkt w klatkach zostaje taki, jak na obrazie (do sprawdzania śledzenia) —
+na filmie czerwony pierścień na końcu gryfu i mała kropka z kreską w środku
+gryfu. Liczby bez sensu (kamera bliżej niż metr od końca gryfu, gryf spoza
+1–2,6 m) — poprawka nie działa, nagłówek prosi o odległość. Zapis: JSON
+`srodekCiezkosci.perspektywa`, `narzedzie.parametry.perspektywa` (z wzorem),
+CSV — na końcu `poprawka_perspektywy`, `odleglosc_kamery_m`, `dlugosc_gryfu_m`;
+w CSV klatek `sztanga_punkt_…` — jak na obrazie, `sztanga_x_px` — po poprawce.
+Bez poprawki przy sztandze — przypomnienie przed zapisem.
+
+Czego poprawka nie robi: punkt główny obiektywu to środek kadru (telefon ze
+stabilizacją albo przycięty film może go przesuwać), gryf ma być równoległy do
+osi obiektywu (kamera obrócona — gryf widać jako kreskę i wzór nie pasuje),
+bliższa stopa i kończyny (ok. 15–20 cm bliżej kamery) zostają bez poprawki —
+pięta i palce tej samej stopy mają ten sam błąd, więc % stopy prawie się nie
+zmienia.
+
+### Czas klatki z obrazu (27.10.2026)
+
+Przy przejściu przez film przeglądarka zgłasza klatkę t, ale zanim pauza
+zadziała, potrafi pokazać już następną — na płótno szedł obraz klatki t + 1
+z czasem t (złapane na sztucznym filmie: punkt sztangi w klatce 22 dokładnie
+tam, gdzie znacznik w klatce 23; zdarzało się w ok. co trzecim przebiegu
+przeglądu). Sylwetki dotyczyło to samo. `currentTime` tego nie pokazuje
+(zostaje w tyle), `VideoFrame` z filmu — tak: niesie czas klatki, która jest
+w filmie. Gdy jest późniejszy, obraz dostaje ten czas, a przeskoczoną klatkę
+przejście dopełnia jak każdą zgubioną (`czasObrazu` w `detektor.js`; bez
+`VideoFrame` — jak dotąd). Po zmianie: 8 przebiegów przeglądu bez ani jednej
+przesuniętej klatki.
+
 ### Ograniczenia
 
 - **Perspektywa.** Koniec gryfu jest bliżej kamery niż środek ciała —
@@ -429,8 +472,10 @@ aktualizuje się sam, więc każdy plik niesie swoją wersję — w CSV kolumna
   się względem środka gryfu. Bliższa stopa i kończyny (strona liczona
   podwójnie) też są bliżej kamery, ale o ok. 15–20 cm — wpływ mały. To samo
   ustawienie we wszystkich trzech warunkach: porównania tej samej osoby są
-  pewniejsze niż wartości bezwzględne. Możliwe rozszerzenie: poprawka
-  perspektywy z odległości kamery wpisanej przez trenera.
+  pewniejsze niż wartości bezwzględne. Od 27.10.2026 jest **poprawka
+  perspektywy** (niżej) — ustawienie kamery dalej ma znaczenie: poprawka
+  zakłada, że kamera patrzy wzdłuż gryfu, a środek obrazu to środek
+  obiektywu.
 - 2D z obrazu: piksele i % stopy, nie centymetry (jak w 5b).
 - Wzór obrazu gubi się, gdy koniec gryfu jest jednolity (bez naklejki),
   rozmazany przy szybkim ruchu albo zasłonięty ręką — wtedy naklejka; kolor

@@ -33,7 +33,9 @@
 import { KATY, katyKlatki, punktyKlatki } from "./geometria.js";
 import { GLOWNE_PUNKTY, LANDMARKI, LICZBA_LANDMARKOW, nazwaPunktu } from "./szkielet.js";
 import { miarySrodkaPowtorzen, pasmoZUstawien, WYNIKI } from "./miary-srodka.js";
-import { fpsZKlatek, MODELE_SRODKA, odciecieDlaFps, POPRAWKA_DWOCH_PRZEJSC, srodekSesji, wzgledemStop } from "./srodek.js";
+import {
+  fpsZKlatek, MODELE_SRODKA, odciecieDlaFps, perspektywaZUstawien, POPRAWKA_DWOCH_PRZEJSC, srodekSesji, wzgledemStop,
+} from "./srodek.js";
 import { PARAMETRY_SLEDZENIA, progSesji, punktySztangi, TRYBY_SLEDZENIA, ZRODLA_PUNKTU } from "./sztanga.js";
 
 export const FORMAT = "craftmyplan/analiza-ruchu";
@@ -139,6 +141,7 @@ export function ustawieniaObliczen(sesja) {
     wygladzanie: u.wygladzanie !== false,
     obciazenie: u.obciazenieKg > 0 ? { kg: u.obciazenieKg, masaCiala: u.masaCiala, miejsce: u.miejsce ?? "barki" } : null,
     pasmo: pasmoZUstawien(u.pasmo),
+    perspektywa: perspektywaZUstawien(u.perspektywa),
   };
 }
 
@@ -171,6 +174,10 @@ export function opisNarzedzia(sesja, wersja) {
       klatekNaSekunde: zaokr(fps, 2),
       pasmoSrodstopia: u?.pasmo ?? null,
       obciazenie: u?.obciazenie ? { ...u.obciazenie } : null,
+      perspektywa: u?.perspektywa ? {
+        ...u.perspektywa,
+        wzor: "środek gryfu = środek kadru + (koniec gryfu − środek kadru) · (D − L/2) / D",
+      } : null,
       sledzenieSztangi: tryb ? {
         tryb, nazwa: TRYBY_SLEDZENIA[tryb]?.nazwa ?? tryb, prog: progSesji(sesja),
         parametry: { ...PARAMETRY_SLEDZENIA, ...(sesja.sztanga?.parametry ?? {}) },
@@ -198,6 +205,10 @@ function kolumnyParametrow(sesja) {
     ["obciazenie_kg", liczbaCSV(p.obciazenie?.kg, 1)],
     ["masa_ciala_kg", liczbaCSV(p.obciazenie?.masaCiala, 1)],
     ["miejsce_obciazenia", tekstCSV(p.obciazenie?.miejsce)],
+    // Poprawka perspektywy końca gryfu (27.10.2026) — dopisana na końcu.
+    ["poprawka_perspektywy", p.perspektywa ? "1" : "0"],
+    ["odleglosc_kamery_m", liczbaCSV(p.perspektywa?.odlegloscKameryM, 2)],
+    ["dlugosc_gryfu_m", liczbaCSV(p.perspektywa?.dlugoscGryfuM, 2)],
   ];
 }
 

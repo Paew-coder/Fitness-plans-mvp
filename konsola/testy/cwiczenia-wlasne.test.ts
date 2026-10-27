@@ -146,3 +146,73 @@ describe("własne ćwiczenia trenera", () => {
     assert.equal(typeof slot.ciezar, "number");
   });
 });
+
+describe("ćwiczenie tylko do tego planu (27.10.2026)", () => {
+  // Trener: „wpisuję ćwiczenie do planu, który tworzę, ale nie dodaje się ono
+  // do bazy ćwiczeń”.
+  const SPACER = {
+    nazwa: "Spacer farmera z pauzą", kategoria: "Core", part: "c", coeff: 0.5,
+    progresja: "kg", skokKg: 2, jednostronne: false, film: "",
+  };
+  let planId = "";
+  let id = "";
+
+  test("dodane z planem: numer WL-…, oznaczone „tylko w tym planie”, na liście ogólnej go nie ma", async () => {
+    await api("/api/plany", "POST", { klient: "Jednorazowe Test", wersja: 1 });
+    planId = (await api("/api/plany")).dane.find((p: any) => p.klient === "Jednorazowe Test").id;
+    const { kod, dane } = await api("/api/cwiczenia-wlasne", "POST", { ...SPACER, jednorazowe: true, planId });
+    assert.equal(kod, 201, JSON.stringify(dane));
+    id = dane.id;
+    assert.match(id, /^WL-\d{4}$/);
+    assert.deepEqual([dane.jednorazowe, dane.planId, dane.wlasne], [true, planId, true]);
+    assert.ok(!(await api("/api/cwiczenia")).dane.some((c: any) => c.id === id), "nie w bazie ćwiczeń");
+    const wlasne = (await api("/api/cwiczenia-wlasne")).dane;
+    assert.equal(wlasne.find((c: any) => c.id === id)?.jednorazowe, true, "konsola dostaje je z oznaczeniem");
+  });
+
+  test("w planie liczy się jak każde inne: ciężar z 1RM, telefon klienta", async () => {
+    const plan = (await api(`/api/plany/${planId}`)).dane.zapisany.plan;
+    plan.sloty[2].cwiczenieId = id;
+    plan.serieMaksymalne = [{ cwiczenieId: id, ciezar: 40, powtorzenia: 8 }];
+    const zapis = await api(`/api/plany/${planId}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
+    assert.equal(zapis.kod, 200, JSON.stringify(zapis.dane));
+    const slot = zapis.dane.wynik.tygodnie[0].sloty[2];
+    assert.deepEqual([slot.cwiczenie.nazwa, typeof slot.ciezar], ["Spacer farmera z pauzą", "number"]);
+    const token = (await api(`/api/plany/${planId}/link`, "POST")).dane.token;
+    const c = (await api(`/api/klient/${token}`)).dane.tygodnie[0].dni[0].cwiczenia
+      .find((x: any) => x.positionId === "D1-S03");
+    assert.deepEqual([c.nazwa, typeof c.ciezar], ["Spacer farmera z pauzą", "number"]);
+  });
+
+  test("ta sama nazwa i te same ustawienia w planie następnej osoby — to samo ćwiczenie; inne ustawienia — odmowa", async () => {
+    await api("/api/plany", "POST", { klient: "Jednorazowe Drugi", wersja: 1 });
+    const drugi = (await api("/api/plany")).dane.find((p: any) => p.klient === "Jednorazowe Drugi").id;
+    const takieSamo = await api("/api/cwiczenia-wlasne", "POST", { ...SPACER, jednorazowe: true, planId: drugi });
+    assert.equal(takieSamo.dane.id, id, JSON.stringify(takieSamo.dane));
+    const inne = await api("/api/cwiczenia-wlasne", "POST", { ...SPACER, coeff: 0.25, jednorazowe: true, planId: drugi });
+    assert.equal(inne.kod, 400);
+    assert.match(inne.dane.blad, /tylko do innego planu/);
+    // Do bazy pod tą samą nazwą — też odmowa (nazwa znaczy jedno ćwiczenie).
+    assert.equal((await api("/api/cwiczenia-wlasne", "POST", SPACER)).kod, 400);
+  });
+
+  test("plan, którego nie ma, i ćwiczenie tylko do planu bez planu — odmowa", async () => {
+    const bezPlanu = await api("/api/cwiczenia-wlasne", "POST", { ...SPACER, nazwa: "Inne jednorazowe", jednorazowe: true });
+    assert.equal(bezPlanu.kod, 400);
+    assert.match(bezPlanu.dane.blad, /brakuje planu/);
+    const obcy = await api("/api/cwiczenia-wlasne", "POST", { ...SPACER, nazwa: "Inne jednorazowe", jednorazowe: true, planId: "nie-ma-takiego" });
+    assert.equal(obcy.kod, 404);
+  });
+
+  test("poprawka bez planu zostaje przy swoim planie; odznaczenie „tylko w tym planie” przenosi do bazy", async () => {
+    const poprawka = await api(`/api/cwiczenia-wlasne/${id}`, "PUT", { ...SPACER, skokKg: 1, jednorazowe: true });
+    assert.equal(poprawka.kod, 200, JSON.stringify(poprawka.dane));
+    assert.deepEqual([poprawka.dane.skokKg, poprawka.dane.jednorazowe, poprawka.dane.planId], [1, true, planId]);
+    const doBazy = await api(`/api/cwiczenia-wlasne/${id}`, "PUT", { ...SPACER, skokKg: 1, jednorazowe: false });
+    assert.equal(doBazy.kod, 200);
+    assert.equal(doBazy.dane.jednorazowe, undefined);
+    assert.equal(doBazy.dane.planId, undefined);
+    const slot = (await api(`/api/plany/${planId}`)).dane.wynik.tygodnie[0].sloty[2];
+    assert.equal(slot.cwiczenie?.nazwa, "Spacer farmera z pauzą", "plan bez zmian");
+  });
+});

@@ -1406,14 +1406,23 @@ const serwer = createServer(async (req, res) => {
     if (sciezka === "/api/cwiczenia-wlasne" && req.method === "GET") {
       return json(res, wczytajWlasne(trenerId).map(cwiczenieDoListy));
     }
+    // Ćwiczenie tylko do planu (27.10.2026) — plan musi być tego trenera.
+    const obcyPlan = (dane: unknown) => {
+      const d = dane as { jednorazowe?: unknown; planId?: unknown } | null;
+      return d?.jednorazowe === true && typeof d.planId === "string" && !magazyn.wczytaj(trenerId, d.planId);
+    };
     if (sciezka === "/api/cwiczenia-wlasne" && req.method === "POST") {
-      const wynik = dodajWlasne(trenerId, await cialo(req));
+      const dane = await cialo(req);
+      if (obcyPlan(dane)) return blad(res, "Nie ma takiego planu.", 404);
+      const wynik = dodajWlasne(trenerId, dane);
       if ("blad" in wynik) return blad(res, wynik.blad);
       return json(res, cwiczenieDoListy(wynik), 201);
     }
     const wlasneId = sciezka.match(/^\/api\/cwiczenia-wlasne\/(WL-\d+)$/)?.[1];
     if (wlasneId && req.method === "PUT") {
-      const wynik = zmienWlasne(trenerId, wlasneId, await cialo(req));
+      const dane = await cialo(req);
+      if (obcyPlan(dane)) return blad(res, "Nie ma takiego planu.", 404);
+      const wynik = zmienWlasne(trenerId, wlasneId, dane);
       if (wynik === null) return blad(res, "Nie ma takiego własnego ćwiczenia.", 404);
       if ("blad" in wynik) return blad(res, wynik.blad);
       return json(res, cwiczenieDoListy(wynik));

@@ -181,6 +181,20 @@ describe("AI — co wychodzi z aplikacji", () => {
     const wiersz = katalogDoPromptu().split("\n").find((l) => l.startsWith("EX-0010"))!;
     assert.equal(wiersz, "EX-0010|Barbell back squat|Lower push|s|1|kg");
   });
+
+  test("ćwiczenie tylko do jednego planu nie trafia do katalogu asystenta; własne do bazy — tak (27.10.2026)", async () => {
+    const { Katalog } = await import("../../silnik/src/katalog.ts");
+    const k = new Katalog();
+    const wzor = { kategoria: "Core", part: "c", coeff: 0.5, skokKg: 0, progresja: "czas" } as const;
+    k.ustawWlasne([
+      { ...wzor, id: "WL-0001", nazwa: "Własne do bazy" },
+      { ...wzor, id: "WL-0002", nazwa: "Tylko do planu", jednorazowe: true, planId: "plan-1" },
+    ] as any);
+    const prompt = katalogDoPromptu(k);
+    assert.ok(prompt.includes("WL-0001|Własne do bazy"));
+    assert.ok(!prompt.includes("WL-0002"));
+    assert.ok(k.poId("WL-0002"), "w katalogu silnika jest — plan z nim się liczy");
+  });
 });
 
 describe("AI — weryfikacja propozycji katalogiem", () => {

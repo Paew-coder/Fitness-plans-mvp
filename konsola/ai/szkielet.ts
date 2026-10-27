@@ -136,9 +136,15 @@ export const SCHEMAT_SZKIELETU = {
   },
 } as const;
 
+/**
+ * Ćwiczenia, które asystent może podsuwać — bez ćwiczeń tylko do jednego
+ * planu (27.10.2026): trener nie chciał ich w bazie, więc i asystent ich nie zna.
+ */
+export const doPodpowiedzi = (katalog: Katalog = katalogDomyslny) => katalog.wszystkie.filter((c) => !c.jednorazowe);
+
 /** Katalog ćwiczeń w formie, którą model czyta bez zgadywania. */
 export function katalogDoPromptu(katalog: Katalog = katalogDomyslny): string {
-  const linie = katalog.wszystkie.map((c) => {
+  const linie = doPodpowiedzi(katalog).map((c) => {
     const cechy = [
       c.jednostronne ? "jednostronne" : null,
       c.uwagi?.startsWith("DO WERYFIKACJI") || c.uwagi?.startsWith("UZUPEŁNIĆ") ? "do weryfikacji" : null,
@@ -198,7 +204,7 @@ export function promptSystemowy(katalog: Katalog = katalogDomyslny): BlokSystemo
     { type: "text", text: ZASADY },
     {
       type: "text",
-      text: `KATALOG ĆWICZEŃ (${katalog.wszystkie.length} pozycji)\n${katalogDoPromptu(katalog)}`,
+      text: `KATALOG ĆWICZEŃ (${doPodpowiedzi(katalog).length} pozycji)\n${katalogDoPromptu(katalog)}`,
       // Katalog nie zmienia się między zapytaniami — po pierwszym razie
       // czyta się z cache za dziesiątą część ceny.
       cache_control: { type: "ephemeral" },

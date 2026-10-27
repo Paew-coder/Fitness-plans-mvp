@@ -22,6 +22,15 @@ let cwiczenia = [];
  */
 let cwiczeniaPoId = new Map();
 const cwiczenie = (id) => (id ? cwiczeniaPoId.get(id) : undefined);
+/**
+ * Ćwiczenie tylko do innego planu (27.10.2026) — nie na liście wyboru. Trener:
+ * „wpisuję ćwiczenie do planu, który tworzę, ale nie dodaje się ono do bazy
+ * ćwiczeń”. W planie, dla którego powstało, i w tym, w którym już stoi
+ * (np. następny cykl), lista je pokazuje.
+ */
+const zInnegoPlanu = (c) => !!c.jednorazowe && c.planId !== obraz?.zapisany.id
+  && !obraz?.zapisany.plan.sloty.some((s) => s.cwiczenieId === c.id);
+const dopisekWlasnego = (c) => (c.jednorazowe ? "  · tylko w tym planie" : c.wlasne ? "  · własne" : "");
 /** Nowe albo poprawione własne ćwiczenie trenera (17.10.2026) — do listy na miejscu starego. */
 function dolaczCwiczenie(c) {
   cwiczenia = [...cwiczenia.filter((x) => x.id !== c.id), c]
@@ -2316,10 +2325,10 @@ function rysujSlot(slot, pusty) {
   const pustaOpcja = el("option", "", "— wybierz —");
   pustaOpcja.value = "";
   wybor.append(pustaOpcja);
-  const dostepne = cwiczenia.filter((c) => !c.biblioteka
+  const dostepne = cwiczenia.filter((c) => !c.biblioteka && !zInnegoPlanu(c)
     && (!slot.kategoriaSzkieletu || c.kategoria === slot.kategoriaSzkieletu));
   for (const c of dostepne) {
-    const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : "") + (c.wlasne ? "  · własne" : ""));
+    const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : "") + dopisekWlasnego(c));
     o.value = c.id;
     wybor.append(o);
   }
@@ -2341,11 +2350,15 @@ function rysujSlot(slot, pusty) {
   opcjaSzukaj.value = SZUKAJ;
   wybor.append(opcjaSzukaj);
   // Własne ćwiczenie (trener, 17.10.2026: „możliwość wpisywania własnej nazwy
-  // ćwiczenia podczas tworzenia planu — razem z coeff, part, kategorią”).
+  // ćwiczenia podczas tworzenia planu — razem z coeff, part, kategorią”) —
+  // od 27.10.2026 także tylko do tego planu, bez dopisywania do bazy.
+  const JEDNORAZOWE = "__jednorazowe__";
+  const opcjaJednorazowe = el("option", "", "＋ Ćwiczenie tylko do tego planu…");
+  opcjaJednorazowe.value = JEDNORAZOWE;
   const WLASNE = "__wlasne__";
-  const opcjaWlasne = el("option", "", "＋ Własne ćwiczenie…");
+  const opcjaWlasne = el("option", "", "＋ Własne ćwiczenie do bazy…");
   opcjaWlasne.value = WLASNE;
-  wybor.append(opcjaWlasne);
+  wybor.append(opcjaJednorazowe, opcjaWlasne);
   wybor.value = slot.cwiczenieId ?? "";
   const ustaw = (id) => {
     const poprzednie = slot.cwiczenieId;
@@ -2367,12 +2380,13 @@ function rysujSlot(slot, pusty) {
      */
     rysujDni();
   };
-  const wlasne = (nazwa = "") => otworzFormularzCwiczenia({
+  const wlasne = (nazwa = "", jednorazowe = false) => otworzFormularzCwiczenia({
     api, cwiczenia, kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "", nazwa,
+    jednorazowe, planId: obraz.zapisany.id,
     naZapis: (c) => { dolaczCwiczenie(c); ustaw(c.id); },
   });
   const szukaj = () => otworzWyszukiwarke({
-    cwiczenia, kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "",
+    cwiczenia: cwiczenia.filter((c) => !zInnegoPlanu(c)), kategorie: KATEGORIE, kategoria: slot.kategoriaSzkieletu ?? "",
     wybraneId: slot.cwiczenieId, api, naWybor: ustaw, naWlasne: wlasne,
   });
   czyscKlawiszem(wybor, slot.positionId, "td.cwiczenie select", () => ustaw(""));
@@ -2382,9 +2396,10 @@ function rysujSlot(slot, pusty) {
       szukaj();
       return;
     }
-    if (wybor.value === WLASNE) {
+    if (wybor.value === WLASNE || wybor.value === JEDNORAZOWE) {
+      const jednorazowe = wybor.value === JEDNORAZOWE;
       wybor.value = slot.cwiczenieId ?? "";
-      wlasne();
+      wlasne("", jednorazowe);
       return;
     }
     ustaw(wybor.value);
@@ -2433,10 +2448,12 @@ function rysujSlot(slot, pusty) {
   if (wybrane?.wlasne) {
     const edytuj = el("button", "edytuj-wlasne", "✎");
     edytuj.type = "button";
-    edytuj.title = "Popraw własne ćwiczenie (nazwa, kategoria, coeff, progresja…)";
+    edytuj.title = wybrane.jednorazowe
+      ? "Popraw ćwiczenie tylko do tego planu (nazwa, kategoria, coeff, progresja… albo przenieś do bazy)"
+      : "Popraw własne ćwiczenie (nazwa, kategoria, coeff, progresja…)";
     edytuj.setAttribute("aria-label", `Popraw własne ćwiczenie: ${wybrane.nazwa}`);
     edytuj.onclick = () => otworzFormularzCwiczenia({
-      api, cwiczenia, kategorie: KATEGORIE, cwiczenie: wybrane,
+      api, cwiczenia, kategorie: KATEGORIE, cwiczenie: wybrane, planId: obraz.zapisany.id,
       naZapis: (c) => {
         dolaczCwiczenie(c);
         rysujDni();

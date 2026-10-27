@@ -51,7 +51,8 @@ const KATY_NA_OBRAZIE = [
  * Od 24.10.2026 (badanie z punktem sztangi), wszystko w 0–1:
  * `uklad` — środek ciężkości ciała ze sztangą, jak `srodek` (pion rysuje ten,
  * który ma `podloga`); `sztanga` — koniec gryfu `{x, y, pewny, zrodlo, droga,
- * biezacy}` (niepewny — przerywany, ze znakiem „?”); `pasmo` — śródstopie
+ * biezacy, poprawiony}` (niepewny — przerywany, ze znakiem „?”; `poprawiony` —
+ * środek gryfu po poprawce perspektywy, mała kropka); `pasmo` — śródstopie
  * `{od, do, podloga}` (pas od linii stóp do góry obrazu); `lupa` — powiększenie
  * przy zaznaczaniu `{zrodlo, szerokosc, wysokosc, x, y}` (`zrodlo` — film);
  * `tlo` — obraz pod wszystkim (klatka filmu przy zaznaczaniu przed analizą).
@@ -180,6 +181,29 @@ function rysujSztange(ctx, s, w, h, dpr) {
   ctx.strokeStyle = "#ffffff";
   ctx.stroke();
   ctx.restore();
+  // Środek gryfu po poprawce perspektywy (27.10.2026): mała kropka i kreska od końca gryfu.
+  if (s.poprawiony && Number.isFinite(s.poprawiony.x)) {
+    const px = s.poprawiony.x * w;
+    const py = s.poprawiony.y * h;
+    ctx.save();
+    ctx.globalAlpha = s.pewny ? 1 : 0.6;
+    ctx.setLineDash([3 * dpr, 3 * dpr]);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(px, py);
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeStyle = KOLORY.sztanga;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(px, py, 4 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = KOLORY.sztanga;
+    ctx.fill();
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+    ctx.restore();
+  }
   if (!s.pewny) etykieta(ctx, { x: x + 2 * dpr, y: y + 4 * dpr }, "?", dpr);
 }
 

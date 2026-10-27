@@ -78,6 +78,15 @@ export type Cwiczenie = {
    */
   wlasne?: true;
   /**
+   * Własne ćwiczenie tylko do jednego planu (27.10.2026). Trener: „wpisuję
+   * ćwiczenie do planu, który tworzę, ale nie dodaje się ono do bazy ćwiczeń”.
+   * Liczy się w planie, na telefonie i w eksporcie jak każde inne, ale nie ma
+   * go na liście wyboru — poza planem, dla którego powstało (`planId`), i tym,
+   * w którym już stoi.
+   */
+  jednorazowe?: true;
+  planId?: string;
+  /**
    * Trener usunął ćwiczenie z wyboru (arkusz weryfikacji bibliotek). Zostaje
    * w danych, bo mogło już trafić do planu — plan dalej się otwiera i eksportuje,
    * tylko wyszukiwarka go nie podsuwa.

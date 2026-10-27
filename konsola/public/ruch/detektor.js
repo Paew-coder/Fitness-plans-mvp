@@ -232,6 +232,30 @@ async function zmierzKrok(wideo, od = 0) {
   return odstepy.length ? Math.min(...odstepy) : Infinity;
 }
 
+/**
+ * Czas klatki, która naprawdę jest teraz w filmie (i trafi na płótno).
+ *
+ * Przeglądarka zgłasza klatkę t, ale zanim pauza zadziała, film potrafi pójść
+ * o klatkę dalej — na płótno trafiał wtedy obraz następnej klatki z czasem tej.
+ * Złapane 27.10.2026 na punkcie sztangi (przegląd ruchu: w klatce 22 punkt
+ * dokładnie tam, gdzie znacznik w klatce 23); sylwetki dotyczyło to samo.
+ * `currentTime` tego nie pokazuje (zostaje w tyle), a `VideoFrame` z filmu —
+ * tak: niesie czas klatki, która jest w filmie. Gdy jest późniejszy, obraz
+ * dostaje ten czas, a przeskoczoną klatkę przejście dopełnia jak każdą
+ * zgubioną. Bez `VideoFrame` (starsze przeglądarki) — czas ze zgłoszenia.
+ */
+function czasObrazu(wideo, t) {
+  if (typeof VideoFrame !== "function") return t;
+  try {
+    const klatka = new VideoFrame(wideo);
+    const tObrazu = klatka.timestamp / 1e6;
+    klatka.close();
+    return Number.isFinite(tObrazu) && tObrazu > t + 1e-3 ? tObrazu : t;
+  } catch {
+    return t;
+  }
+}
+
 async function przezOdtwarzanie(wideo, czas, { maksFps, od = null, doSekundy = Infinity, policz, postep, przerwano }) {
   const tempo = wideo.playbackRate;
   wideo.playbackRate = 1;
@@ -290,7 +314,7 @@ async function przezOdtwarzanie(wideo, czas, { maksFps, od = null, doSekundy = I
       wideo.pause();
       clearTimeout(straznik);
       if (przerwano?.()) { przerwane = true; return zakoncz(); }
-      const t = meta.mediaTime;
+      const t = czasObrazu(wideo, meta.mediaTime);
       // Do zadanej klatki (ponowne śledzenie do następnego punktu kontrolnego).
       if (t > doSekundy + 1e-4) return zakoncz();
       if (!taSama(t) && t - ostatnia >= minOdstep) {

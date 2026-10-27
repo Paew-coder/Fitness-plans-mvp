@@ -19,7 +19,7 @@ import {
   sugestieKlatki, ustawSugestie, usunSugestie, zJSON,
 } from "./sesja.js";
 import { GLOWNE_PUNKTY, lustro, nazwaPunktu, punktWidoczny, stronaPunktu, ukryteBezStrony } from "./szkielet.js";
-import { MODELE_SRODKA, srodekSesji, wzgledemStop } from "./srodek.js";
+import { DLUGOSC_GRYFU_M, MODELE_SRODKA, perspektywaZUstawien, poprawPerspektywe, srodekSesji, wzgledemStop } from "./srodek.js";
 import {
   maSztange, nastepnyPunktKontrolny, PARAMETRY_SLEDZENIA, pewnySztangi, podsumowanieSledzenia, progSesji, punktDoZapisu,
   TRYBY_SLEDZENIA, utworzSledzenie, ZRODLA_PUNKTU,
@@ -1161,6 +1161,10 @@ function ustawieniaSrodka() {
     masaCiala: liczbaPola("#masa-ciala"),
     wygladzanie: $("#wygladzanie-srodka").checked,
     pasmo: pasmoZUstawien([pasmoPola("#pasmo-od"), pasmoPola("#pasmo-do")]),
+    // Poprawka perspektywy końca gryfu (27.10.2026) — liczby jak wpisane; sens sprawdza `perspektywaZUstawien`.
+    perspektywa: $("#perspektywa-wlaczona").checked
+      ? { odlegloscKameryM: liczbaPola("#odleglosc-kamery"), dlugoscGryfuM: liczbaPola("#dlugosc-gryfu") ?? DLUGOSC_GRYFU_M }
+      : null,
   };
 }
 
@@ -1178,6 +1182,10 @@ function wpiszUstawieniaSrodka(u) {
   const [od, doP] = pasmoZUstawien(u?.pasmo);
   $("#pasmo-od").value = String(od);
   $("#pasmo-do").value = String(doP);
+  $("#perspektywa-wlaczona").checked = !!u?.perspektywa;
+  $("#odleglosc-kamery").value = u?.perspektywa?.odlegloscKameryM ? String(u.perspektywa.odlegloscKameryM) : "";
+  $("#dlugosc-gryfu").value = String(u?.perspektywa?.dlugoscGryfuM ?? DLUGOSC_GRYFU_M);
+  if (u?.perspektywa) $("#ustawienia-perspektywy").open = true;
   // Analiza z obciążeniem — pola od razu widać.
   if (u?.obciazenieKg > 0) $("#obciazenie-srodka").open = true;
   rysujOpisObciazenia();
@@ -1216,7 +1224,7 @@ function przeliczSrodek() {
   stan.drogi = null;
   if (u.model) {
     stan.srodek = srodekSesji(s, {
-      model: u.model, konczyny, wygladzanie: u.wygladzanie, fps: fpsSesji(s),
+      model: u.model, konczyny, wygladzanie: u.wygladzanie, fps: fpsSesji(s), perspektywa: u.perspektywa,
       obciazenie: u.obciazenieKg > 0 ? { kg: u.obciazenieKg, masaCiala: u.masaCiala, miejsce: u.miejsce } : null,
     });
     const { wyniki } = stan.srodek;
@@ -1232,7 +1240,19 @@ function przeliczSrodek() {
   rysujWyborModeluSrodka();
   rysujOpisObciazenia();
   rysujPasekSztangi();
+  rysujOpisPerspektywy();
   rysujZapis();
+}
+
+/** Nagłówek „Perspektywa: …” — czy poprawka działa i z jakimi liczbami. */
+function rysujOpisPerspektywy() {
+  const u = ustawieniaSrodka();
+  const p = perspektywaZUstawien(u.perspektywa);
+  $("#ustawienia-perspektywy").classList.toggle("ukryty", !stan.sesja || !maSztange(stan.sesja));
+  $("#opis-perspektywy").textContent = !u.perspektywa ? "bez poprawki"
+    : p ? `kamera ${liczba(p.odlegloscKameryM, 2).replace(/,?0+$/, "")} m · gryf ${liczba(p.dlugoscGryfuM, 2).replace(/,?0+$/, "")} m`
+      : "wpisz odległość kamery (co najmniej metr dalej niż pół gryfu)";
+  $("#opis-perspektywy").classList.toggle("niepewny", !!u.perspektywa && !p);
 }
 
 // Przy przełączniku „środek ciężkości” widać, czy model jest wybrany.
@@ -1298,7 +1318,12 @@ function opcjeSztangi() {
   const q = s?.klatki[stan.biezaca]?.sztanga;
   const droga = stan.drogi?.sztanga ?? null;
   if (!q) return droga ? { x: null, droga, biezacy: stan.biezaca } : null;
-  return { x: q.x, y: q.y, pewny: pewnySztangi(q, progSesji(s)), zrodlo: q.zrodlo, droga, biezacy: stan.biezaca };
+  // Po poprawce perspektywy — także środek gryfu, z którego liczą się wyniki.
+  const p = perspektywaZUstawien(ustawieniaSrodka().perspektywa);
+  const { szerokosc, wysokosc } = s.wideo;
+  const srodekGryfu = p ? poprawPerspektywe({ x: q.x * szerokosc, y: q.y * wysokosc }, { szerokosc, wysokosc }, p) : null;
+  return { x: q.x, y: q.y, pewny: pewnySztangi(q, progSesji(s)), zrodlo: q.zrodlo, droga, biezacy: stan.biezaca,
+    poprawiony: srodekGryfu ? { x: srodekGryfu.x / szerokosc, y: srodekGryfu.y / wysokosc } : null };
 }
 
 /** Pas śródstopia nad stopą tej klatki — tylko z boku (z przodu skala jest między stopami). */
@@ -1435,6 +1460,12 @@ function rysujOpisSrodka() {
     if (maSztange(stan.sesja)) {
       czesci.push("Sztanga: koniec gryfu śledzony na obrazie od punktu, który zaznaczyłeś; w % stopy tak samo jak środek ciężkości."
         + " Na filmie i na wykresie: ciało — niebieski, sztanga — czerwony, układ — zielony.");
+      const p = perspektywaZUstawien(u.perspektywa);
+      czesci.push(p
+        ? `Poprawka perspektywy: punkt sztangi przesunięty z końca gryfu na jego środek — kamera ${liczba(p.odlegloscKameryM, 2)} m,`
+          + ` gryf ${liczba(p.dlugoscGryfuM, 2)} m (odległość od środka kadru × (D − L/2) / D).`
+        : "Bez poprawki perspektywy: koniec gryfu jest bliżej kamery niż ciało, więc daleko od środka kadru wychodzi przesunięty"
+          + " (poprawka w „Perspektywa”).");
     }
     czesci.push("„?” — klatka niepewna: słabo widoczne punkty części ciała o łącznej masie ponad 10% ciała (albo, dla sztangi i układu,"
       + " niepewny punkt sztangi).");
@@ -1472,7 +1503,8 @@ function rysujWykresSrodka() {
 }
 
 for (const [pole, zdarzenie] of [["#model-srodka", "change"], ["#obciazenie-kg", "input"], ["#miejsce-obciazenia", "change"],
-  ["#masa-ciala", "input"], ["#wygladzanie-srodka", "change"], ["#pasmo-od", "input"], ["#pasmo-do", "input"]]) {
+  ["#masa-ciala", "input"], ["#wygladzanie-srodka", "change"], ["#pasmo-od", "input"], ["#pasmo-do", "input"],
+  ["#perspektywa-wlaczona", "change"], ["#odleglosc-kamery", "input"], ["#dlugosc-gryfu", "input"]]) {
   $(pole).addEventListener(zdarzenie, () => {
     if (!stan.sesja) return;
     przeliczSrodek();
@@ -1946,6 +1978,7 @@ function rysujZapis() {
   if (maSztange(s)) {
     const p = podsumowanieSledzenia(s);
     if (p.zgubione.length) doSprawdzenia.push(`sprawdź ${p.zgubione.length} ${p.zgubione.length === 1 ? "klatkę" : "klatek"} „?” sztangi`);
+    if (!perspektywaZUstawien(u.perspektywa)) doSprawdzenia.push("włącz poprawkę perspektywy (odległość kamery)");
   }
   const kod = s.badanie?.kodOsoby ?? "";
   if (!kod || !s.badanie?.warunek) doSprawdzenia.push("wpisz kod osoby i warunek");

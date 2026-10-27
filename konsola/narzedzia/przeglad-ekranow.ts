@@ -1233,6 +1233,51 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await s.keyboard.press("Escape");
   await s.waitForTimeout(200);
 
+  // ── ćwiczenie tylko do tego planu (27.10.2026) ──────────────────────
+  // Trener: „wpisuję ćwiczenie do planu, który tworzę, ale nie dodaje się ono
+  // do bazy ćwiczeń”. Osobna pozycja na liście, to samo okienko z zaznaczonym
+  // „Tylko w tym planie”; na liście innych planów go nie ma (sprawdzane przy
+  // nowym cyklu). Na koniec wiersz wraca do pustego — dalej liczą się wiersze z ✎.
+  const pustyDlaJednorazowego = await s.locator("#dni tr td.cwiczenie select").evaluateAll(
+    (lista: HTMLSelectElement[]) => lista.findIndex((x) => x.value === ""));
+  const opcjeListy = await wiersz(pustyDlaJednorazowego).locator("td.cwiczenie select option").allTextContents();
+  sprawdz("na liście w wierszu: „＋ Ćwiczenie tylko do tego planu…” i „＋ Własne ćwiczenie do bazy…”",
+    opcjeListy.includes("＋ Ćwiczenie tylko do tego planu…") && opcjeListy.includes("＋ Własne ćwiczenie do bazy…"));
+  await wiersz(pustyDlaJednorazowego).locator("td.cwiczenie select").selectOption("__jednorazowe__");
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  sprawdz("okienko „Ćwiczenie tylko do tego planu” z zaznaczonym „Tylko w tym planie”",
+    (await formularz.locator("h3").textContent()) === "Ćwiczenie tylko do tego planu"
+      && await formularz.locator('input[name="jednorazowe"]').isChecked());
+  await formularz.locator('input[name="jednorazowe"]').uncheck();
+  sprawdz("…odznaczone — tytuł „Własne ćwiczenie do bazy”",
+    (await formularz.locator("h3").textContent()) === "Własne ćwiczenie do bazy");
+  await formularz.locator('input[name="jednorazowe"]').check();
+  await formularz.locator('input[name="nazwa"]').fill("Spacer farmera przegląd");
+  await formularz.locator('select[name="kategoria"]').selectOption("Core");
+  await formularz.locator('select[name="part"]').selectOption("c");
+  await formularz.locator('select[name="coeff"]').selectOption("0.5");
+  await formularz.locator('button[type="submit"]').click();
+  await formularz.waitFor({ state: "detached", timeout: 5000 });
+  await zapisano();
+  const jednorazoweZSerwera = (await (await fetch(`${ADRES}/api/cwiczenia-wlasne`)).json())
+    .find((c: any) => c.nazwa === "Spacer farmera przegląd");
+  const wPlanieJednorazowe = (await zBazy()).zapisany.plan.sloty.some((x: any) => x.cwiczenieId === jednorazoweZSerwera?.id);
+  const wBazieCwiczen = (await (await fetch(`${ADRES}/api/cwiczenia`)).json()).some((c: any) => c.nazwa === "Spacer farmera przegląd");
+  sprawdz("ćwiczenie tylko do planu: w planie, oznaczone tym planem, nie w bazie ćwiczeń",
+    wPlanieJednorazowe && jednorazoweZSerwera?.jednorazowe === true && jednorazoweZSerwera?.planId === PLAN && !wBazieCwiczen,
+    JSON.stringify(jednorazoweZSerwera ?? null));
+  // Wiersz po wybranym ćwiczeniu (nazwa jest w liście każdego wiersza tego planu).
+  const nrJednorazowego = await s.locator("#dni tr td.cwiczenie select").evaluateAll(
+    (lista: HTMLSelectElement[], id: string) => lista.findIndex((x) => x.value === id), jednorazoweZSerwera?.id ?? "");
+  const wierszJednorazowego = wiersz(nrJednorazowego);
+  const opisJednorazowego = await wierszJednorazowego.locator("td.cwiczenie select").evaluate(
+    (x: HTMLSelectElement) => x.selectedOptions[0]?.textContent ?? "");
+  sprawdz("w wierszu „· tylko w tym planie” i ✎", /Spacer farmera przegląd.*tylko w tym planie/.test(opisJednorazowego)
+    && await wierszJednorazowego.locator("button.edytuj-wlasne").count() === 1, opisJednorazowego);
+  await wierszJednorazowego.locator("td.cwiczenie select").selectOption("");
+  await zapisano();
+  await s.waitForTimeout(200);
+
   // ── 🗑 usunięcie ćwiczenia z pozycji (17.10.2026) ──────────────────
   // Trener: „możliwość usuwania wybranych ćwiczeń … przycisk x albo kosz,
   // może być z pytaniem o potwierdzenie”. Przy okazji wiersz z własnym
@@ -1621,6 +1666,20 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     drugi.zapisany?.wersja === 2 && drugi.zapisany.status === "szkic"
     && drugi.zapisany.plan.sloty[0].cwiczenieId === "EX-0016",
     `wersja ${drugi.zapisany?.wersja} · ${drugi.zapisany?.status}`);
+  // Ćwiczenie tylko do pierwszego planu (27.10.2026) — w nowym cyklu nie stoi
+  // w żadnym wierszu, więc nie ma go ani na liście, ani w wyszukiwarce.
+  const listyNowegoCyklu = await s.locator("#dni td.cwiczenie select").evaluateAll((lista: HTMLSelectElement[]) =>
+    lista.flatMap((x) => [...x.options].map((o) => o.textContent ?? "")));
+  await s.locator("#dni button.szukaj-cwiczenia").first().click();
+  await s.waitForSelector(".wyszukiwarka", { timeout: 5000 });
+  await s.locator(".wyszukiwarka-filtry select").first().selectOption("");
+  await s.fill(".wyszukiwarka-pole", "Spacer farmera przegląd");
+  await s.waitForTimeout(300);
+  const wWyszukiwarce = await s.locator(".wyszukiwarka-nazwa", { hasText: "Spacer farmera przegląd" }).count();
+  await s.keyboard.press("Escape");
+  sprawdz("ćwiczenie tylko do poprzedniego planu: nie ma go na listach ani w wyszukiwarce nowego cyklu",
+    listyNowegoCyklu.length > 0 && !listyNowegoCyklu.some((t) => t.includes("Spacer farmera przegląd")) && wWyszukiwarce === 0,
+    `${listyNowegoCyklu.length} pozycji list, w wyszukiwarce ${wWyszukiwarce}`);
   await s.click("#wroc");
   await s.waitForSelector("#ekran-klient:not(.ukryty)");
 

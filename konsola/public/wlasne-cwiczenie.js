@@ -10,6 +10,11 @@
  * na serwer — ćwiczenie zostaje w bazie trenera na kolejne plany.
  * Brak pola i zajętą nazwę okienko mówi od razu, bez pytania serwera; serwer
  * sprawdza wszystko jeszcze raz i jego odmowa też trafia pod przycisk.
+ *
+ * „Tylko w tym planie” (27.10.2026, trener: „wpisuję ćwiczenie do planu,
+ * który tworzę, ale nie dodaje się ono do bazy ćwiczeń”) — to samo okienko,
+ * ćwiczenie liczy się w planie jak każde inne, ale nie trafia na listę wyboru
+ * w innych planach. Odznaczenie przy poprawce przenosi je do bazy.
  */
 const el = (tag, klasa, tekst) => {
   const e = document.createElement(tag);
@@ -42,6 +47,7 @@ let otwarte = null;
  */
 export function otworzFormularzCwiczenia({
   api, cwiczenia = [], kategorie, kategoria = "", nazwa = "", cwiczenie = null, naZapis,
+  jednorazowe = false, planId = null,
 }) {
   zamknijFormularz();
   const tlo = el("div", "wyszukiwarka-tlo");
@@ -52,7 +58,8 @@ export function otworzFormularzCwiczenia({
   okno.noValidate = true;
 
   const gora = el("div", "wyszukiwarka-gora");
-  gora.append(el("h3", "", cwiczenie ? "Popraw własne ćwiczenie" : "Własne ćwiczenie"));
+  const tytul = el("h3", "");
+  gora.append(tytul);
   const x = el("button", "wyszukiwarka-x", "✕");
   x.type = "button";
   x.setAttribute("aria-label", "Zamknij");
@@ -74,6 +81,30 @@ export function otworzFormularzCwiczenia({
     s.value = wartosc == null ? "" : String(wartosc);
     return s;
   };
+
+  // Tylko do tego planu — na górze, bo od tego zależy, gdzie ćwiczenie zostanie.
+  const doPlanu = el("label", "formularz-wiersz formularz-ptaszek formularz-tylko-plan");
+  const pDoPlanu = el("input");
+  pDoPlanu.type = "checkbox";
+  pDoPlanu.name = "jednorazowe";
+  pDoPlanu.checked = cwiczenie ? cwiczenie.jednorazowe === true : jednorazowe;
+  pDoPlanu.disabled = !planId && !cwiczenie?.planId;
+  doPlanu.append(pDoPlanu, el("span", "", "Tylko w tym planie — nie dodawaj do bazy ćwiczeń"));
+  const opisDoPlanu = el("span", "formularz-podpowiedz");
+  doPlanu.append(opisDoPlanu);
+  pola.append(doPlanu);
+  const opiszDoPlanu = () => {
+    tytul.textContent = cwiczenie
+      ? (pDoPlanu.checked ? "Popraw ćwiczenie tylko do tego planu" : "Popraw własne ćwiczenie")
+      : (pDoPlanu.checked ? "Ćwiczenie tylko do tego planu" : "Własne ćwiczenie do bazy");
+    opisDoPlanu.textContent = pDoPlanu.checked
+      ? "Liczy się w tym planie jak każde inne (ciężar, telefon klienta, eksport), ale nie pojawi się na liście wyboru w innych planach."
+      : cwiczenie?.jednorazowe
+        ? "Odznaczone — ćwiczenie przejdzie do Twojej bazy i będzie na liście w każdym planie."
+        : "Zostaje w Twojej bazie ćwiczeń — na liście wyboru w każdym planie.";
+    okno.setAttribute("aria-label", tytul.textContent);
+  };
+  pDoPlanu.addEventListener("change", opiszDoPlanu);
 
   const pNazwa = el("input");
   pNazwa.name = "nazwa";
@@ -140,6 +171,7 @@ export function otworzFormularzCwiczenia({
       "Zmiana obejmie każdy plan z tym ćwiczeniem."));
   }
 
+  opiszDoPlanu();
   okno.append(gora, pola, komunikat, dol);
   tlo.append(okno);
   document.body.append(tlo);
@@ -149,7 +181,10 @@ export function otworzFormularzCwiczenia({
     e.preventDefault();
     komunikat.textContent = "";
     const male = (t) => t.trim().replace(/\s+/g, " ").toLocaleLowerCase("pl");
-    const zajeta = cwiczenia.find((c) => c.id !== cwiczenie?.id && male(c.nazwa) === male(pNazwa.value));
+    // Ta sama nazwa co ćwiczenie tylko do innego planu — o tym decyduje serwer
+    // (te same ustawienia = to samo ćwiczenie; inne — odmowa z powodem).
+    const zajeta = cwiczenia.find((c) => c.id !== cwiczenie?.id && male(c.nazwa) === male(pNazwa.value)
+      && !(c.jednorazowe && pDoPlanu.checked));
     const brak = male(pNazwa.value).length < 2 ? "Wpisz nazwę."
       : zajeta ? `Ćwiczenie „${zajeta.nazwa}” już jest w bazie — wybierz je z listy albo zmień nazwę.`
       : !pKategoria.value ? "Wybierz kategorię."
@@ -169,6 +204,9 @@ export function otworzFormularzCwiczenia({
       skokKg: NA_KILOGRAMY.includes(pProgresja.value) ? Number(pSkok.value) : 0,
       jednostronne: pJedn.checked,
       film: pFilm.value.trim(),
+      jednorazowe: pDoPlanu.checked,
+      // Poprawka ćwiczenia tylko do planu zostaje przy jego planie; nowe — przy tym, który się tworzy.
+      ...(pDoPlanu.checked ? { planId: cwiczenie?.jednorazowe ? cwiczenie.planId : planId } : {}),
     };
     zapisz.disabled = true;
     try {

@@ -171,7 +171,7 @@ Numeracja `EX-` sięga `EX-0203` przy 164 wypełnionych wierszach — ID nie są
 Rekomendacja: przenieść **najnowszą wersję każdego aktywnego klienta** plus jedną wstecz (żeby walidator powtórek miał na czym pracować). Reszta zostaje na Dysku jako archiwum.
 
 Aktywni wg `STAN-PROJEKTU.md`: Marek Nowak (3.0), Kamil Lis, Ewa Mazur (1.0), Plan-trenera-3tyg.
-Widoczne na Dysku i warte sprawdzenia, czy nadal aktywne: Zofia K (3.0), Jan Wrona (1.0), Tomek (3.0), Igor (2.0), Ola Zielińska (2.0), Piotr Sowa, Adam, Michał T..
+Widoczne na Dysku i warte sprawdzenia, czy nadal aktywne: Zofia K (3.0), Jan Wrona (1.0), Tomek (3.0), Igor (2.0), Ola Zielińska (2.0), Piotr Sowa, Adam, Michał T.
 
 Mapowanie: sloty po `position_id`, ćwiczenia po nazwie z ręcznym rozstrzyganiem. Plany 4.0, warianty 3-dniowe i Rehab mają inny układ kolumn — **importer ich nie obsługuje i nie powinien próbować**. Osobna ścieżka albo świadome pominięcie.
 
@@ -1305,6 +1305,16 @@ Trener (badanie do doktoratu: przysiad high bar bez wskazówki, high bar ze wska
 * Tabela „Środek ciężkości i sztanga w powtórzeniach”: na początku, najdalej w stronę palców w zejściu (z klatką), w najgłębszym punkcie, zakres przód–tył (cały, w dół, w górę), czas w śródstopiu; „i” z dymkiem przy każdej nowej mierze.
 * Zapis: JSON wersja 2 (punkt sztangi w każdej klatce, ustawienia śledzenia i pasma, kod osoby, warunek; wersja 1 otwiera się jak dotąd), CSV klatek — nowe kolumny na końcu, nowy CSV powtórzeń (powtórzenie × wynik × seria). Nazwy plików z kodu osoby i warunku. Wersja narzędzia (`0.2.0+commit`, `GET /api/wersja`; commit zapisywany przy wdrożeniu) i parametry analizy w każdym pliku — do zamrożenia na badanie, gdy trener powie.
 * Testy: `analiza-ruchu.test.ts` (+17: śledzenie znacznika w obu trybach, zasłonięcie, punkty kontrolne, środek układu ręcznie, high vs low bar, miary i % w śródstopiu, stary plik wersji 1, zapis i CSV, wersja narzędzia). Przegląd ruchu (+36): sztuczny film z ffmpeg (znacznik na znanym torze) — zaznaczenie przed analizą z lupą, śledzenie ≤ 2 px, poprawka i jej cofnięcie, naklejka, analiza z pliku bez filmu; trzy wyniki, legenda, wykres z pasmem, tabela miar, dymki, CSV powtórzeń, JSON z wersją; telefon i iPad bez przewijania w bok.
+
+**116. Ćwiczenie tylko do tego planu, poprawka perspektywy gryfu, bez imion klientów w repozytorium — 27.10.2026.**
+
+Trener: „dodaj poprawkę perspektywy i usuń imiona klientów. Poza tym chciałbym możliwość wpisywania ćwiczeń do planu treningowego jednorazowo — wpisuję dane ćwiczenie do tego planu, który tworzę, ale nie dodaje się ono do bazy ćwiczeń”.
+
+* **Ćwiczenie tylko do tego planu:** w liście przy pozycji „＋ Ćwiczenie tylko do tego planu…” (obok „＋ Własne ćwiczenie do bazy…”); to samo okienko z polem „Tylko w tym planie — nie dodawaj do bazy ćwiczeń”. Zaplecze: własne ćwiczenie z `jednorazowe` i `planId` — w katalogu silnika jak każde (ciężar, telefon, eksport, import), ale konsola nie podsuwa go na liście ani w wyszukiwarce innych planów (poza tym, w którym już stoi — np. następny cykl), asystent AI go nie zna. Ta sama nazwa i ustawienia w planie innej osoby — to samo ćwiczenie; inne ustawienia — odmowa z powodem. Odznaczenie przy poprawce przenosi je do bazy. Plan musi być tego trenera.
+* **Poprawka perspektywy** w analizie ruchu: odległość kamery i długość gryfu → punkt sztangi przesunięty z końca gryfu na jego środek, `x' = c + (x − c)·(D − L/2)/D`; wyniki sztangi i układu po poprawce, punkt w klatkach jak na obrazie; kropka środka gryfu na filmie; parametry w JSON i na końcu CSV; przypomnienie przed zapisem. `docs/06-analiza-ruchu.md` 5c, instrukcja badania — krok z pomiarem i wpisaniem odległości.
+* **Czas klatki z obrazu:** przejście przez film czasem dostawało obraz następnej klatki z czasem poprzedniej (punkt sztangi i sylwetka o klatkę za późno, ok. co trzeci przegląd). Czas bierze się teraz z `VideoFrame`, przeskoczona klatka dopełnia się jak zgubiona. Przy okazji niestabilne sprawdzenie zwinięcia „Punktów na obrazie” w przeglądzie (przeładowanie przed zapisem w pamięci przeglądarki).
+* **Imiona klientów** z dokumentacji, komentarzy, testów i narzędzi zamienione na zmyślone (np. „Zofia K”, „Marek Nowak”), imię trenera — na „trener”. Testy sprawdzają to samo (polskie znaki, literówka w imieniu, kolejność). W starych wersjach w historii repozytorium imiona dalej są — do decyzji trenera.
+* Testy: `cwiczenia-wlasne.test.ts` (+5), `ai.test.ts` (+1), `analiza-ruchu.test.ts` (+3). Przegląd ekranów (+6): dwie pozycje na liście, okienko z polem, zapis z planem, dopisek i ✎, nowy cykl bez tego ćwiczenia na listach i w wyszukiwarce. Przegląd ruchu (+4, razem 110): przypomnienie, prośba o odległość, poprawka według wzoru, kropka w miejscu ze wzoru. Przegląd ekranów — razem 224.
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 

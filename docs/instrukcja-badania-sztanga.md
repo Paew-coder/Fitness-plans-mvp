@@ -32,7 +32,8 @@ się nie zmieniają. Numer widać w panelu „Zapis” pod przyciskami i w każd
 
 1. **Z boku**, tak żeby kamera patrzyła **wzdłuż gryfu** — na sam jego koniec. Na ekranie
    oba końce gryfu nakładają się na siebie i gryf wygląda jak kółko, a nie jak kreska.
-2. **3–4 m od osoby** (zmierz miarką i zapisz).
+2. **3–4 m od osoby.** Zmierz miarką **od obiektywu do środka między stopami osoby** i zapisz —
+   ta liczba idzie potem do poprawki perspektywy (punkt 5).
 3. **Na wysokości bioder**, obiektyw poziomo (bez pochylenia w górę ani w dół).
 4. **Środek stopy osoby na środku kadru w poziomie.** To ważne: koniec gryfu jest bliżej
    kamery niż ciało, więc im dalej od środka kadru, tym bardziej jest „przesunięty” na
@@ -81,8 +82,14 @@ Po analizie, w panelu **„Środek ciężkości”** (obok filmu):
 7. **Model segmentów (płeć osoby)**: de Leva — kobieta albo mężczyzna.
 8. Rozwiń **Obciążenie**: kilogramy na gryfie (gryf + talerze), **Gdzie: sztanga —
    punkt na obrazie (koniec gryfu)**, **Masa ciała**.
-9. **Strona ciała** (nad filmem): „bliżej kamery” — zostaw.
-10. **Śródstopie 40–60%** pod wykresem — nie zmieniaj w trakcie badania.
+9. Rozwiń **Perspektywa**: zaznacz **„poprawka perspektywy końca gryfu”**, wpisz **odległość
+   kamery** (zmierzoną: od obiektywu do środka między stopami, np. 3,5) i **długość gryfu**
+   (2,20 m — gryf męski 20 kg; 2,01 m — damski 15 kg). Koniec gryfu jest bliżej kamery niż
+   ciało, więc na obrazie wychodzi przesunięty — poprawka przenosi punkt na środek gryfu.
+   Na filmie pojawi się mała czerwona kropka z kreską: z niej liczą się wyniki; pierścień
+   zostaje na końcu gryfu (po nim sprawdzasz śledzenie).
+10. **Strona ciała** (nad filmem): „bliżej kamery” — zostaw.
+11. **Śródstopie 40–60%** pod wykresem — nie zmieniaj w trakcie badania.
 
 ---
 
@@ -102,7 +109,7 @@ Po analizie, w panelu **„Środek ciężkości”** (obok filmu):
    Pomyłka — **„cofnij poprawkę w tej klatce”**.
 4. **Powtórzenia**: w tabeli „Powtórzenia” tyle powtórzeń, ile było na filmie.
 5. **Pod przyciskami zapisu nie ma napisu „Przed zapisem: …”** — jeśli jest, zrób to,
-   o co prosi (płeć, masa ciała, klatki „?”, kod i warunek).
+   o co prosi (płeć, masa ciała, klatki „?”, poprawka perspektywy, kod i warunek).
 6. **Wersja narzędzia** pod przyciskami zapisu — ta sama co zamrożona.
 
 ## 7. Zapis plików
