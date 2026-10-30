@@ -1,0 +1,65 @@
+# Konsola za HTTPS, pod własną domeną.
+#
+# Caddy załatwia certyfikat sam — nie trzeba niczego odnawiać ręcznie.
+# Wymaga jednego: domena musi wskazywać na adres IP tego serwera.
+#
+#   1. wpisz swoją domenę i e-mail w pliku .env obok
+#   2. docker compose up -d
+#   3. docker compose exec konsola npm run haslo
+#
+# Punkt 3 nie jest opcjonalny: bez hasła konsola odmawia połączeń z zewnątrz.
+
+services:
+  konsola:
+    build:
+      context: ..
+      dockerfile: konsola/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 4173
+      ZA_HTTPS: "1"
+      # Asystent AI. Bez tego klucza konsola działa normalnie, tylko dwa
+      # przyciski są nieaktywne — dlatego nie ma tu `:?` i braku nie traktujemy
+      # jak błędu. Klucz wpisuje się w pliku .env obok.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      # Plany klientów. Jedyna rzecz, której nie da się odtworzyć z repozytorium.
+      - dane:/app/konsola/dane
+    expose:
+      - "4173"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMENA: ${DOMENA:?ustaw DOMENA w pliku .env}
+      EMAIL: ${EMAIL:?ustaw EMAIL w pliku .env — tam pójdą powiadomienia o certyfikacie}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-dane:/data
+      - caddy-config:/config
+    depends_on:
+      - konsola
+
+  # Kopia zapasowa raz na dobę. Trzyma 30 ostatnich.
+  kopie:
+    build:
+      context: ..
+      dockerfile: konsola/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - dane:/app/konsola/dane
+    entrypoint: ["sh", "-c"]
+    command: >
+      'while true; do
+         node --no-warnings narzedzia/kopia.ts;
+         sleep 86400;
+       done'
+
+volumes:
+  dane:
+  caddy-dane:
+  caddy-config:

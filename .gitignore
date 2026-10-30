@@ -137,3 +137,16 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# silnik
+node_modules/
+
+# konsola — dane lokalne trenera
+konsola/dane/
+# Skrót commita zapisywany przy wdrożeniu (wersja narzędzia w analizie ruchu).
+konsola/wersja-commit.txt
+
+# Automat aktualizacji na serwerze (aktualizuj-serwer.sh): stan ostatniego
+# sprawdzenia i blokada przebiegu.
+aktualizacja-ostatnio.txt
+.aktualizacja.lock

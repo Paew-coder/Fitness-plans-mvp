@@ -1,0 +1,505 @@
+{
+ "opis": "ODDECH i BIEG przeliczone przez LibreOffice na MasterTemplate 5.18.",
+ "przypadki": [
+  {
+   "wejscie": {
+    "wiek": 35,
+    "dystansTestowy": 5,
+    "czasTestowy": 25,
+    "jednostekWTygodniu": 3,
+    "twot": 22
+   },
+   "hrMax": 184,
+   "tempoTestowe": "05:00",
+   "strefy": [
+    "110–129",
+    "129–147",
+    "147–160",
+    "160–171",
+    "171–184"
+   ],
+   "tempa": [
+    "06:15",
+    "05:40",
+    "05:15",
+    "04:49"
+   ],
+   "jednostki": [
+    {
+     "tydzien": 1,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 1,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 1,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 2,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 2,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 2,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 3,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 3,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 3,
+     "nr": 3,
+     "opis": "Bieg ciągły — 25 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 45,
+     "dystansKm": 7.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 4,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 25,
+     "dystansKm": 4.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 4,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 25,
+     "dystansKm": 4.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 4,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 5,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 5,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 5,
+     "nr": 3,
+     "opis": "Bieg ciągły — 25 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 45,
+     "dystansKm": 7.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 6,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 6,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 6,
+     "nr": 3,
+     "opis": "Bieg ciągły — 25 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 45,
+     "dystansKm": 7.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    }
+   ],
+   "oddech": {
+    "poziom": "Średni",
+    "czestotliwosc": "4×/tydz · 14 min",
+    "blokA": "5 min Breathe Light, głód powietrza 3/10",
+    "blokB": "10 × bezdech 50% TWOT (≈ 11 s) w marszu, przerwa 60 s",
+    "blokC": "5 min kadencja 4–6 nosem",
+    "brama": "Bezdechy tylko marszowe, do 50% TWOT. Maksymalne zatrzymania odblokowują się dopiero od TWOT ≥ 25 s."
+   }
+  },
+  {
+   "wejscie": {
+    "wiek": 35,
+    "dystansTestowy": 5,
+    "czasTestowy": 25,
+    "jednostekWTygodniu": 5,
+    "twot": 8
+   },
+   "hrMax": 184,
+   "tempoTestowe": "05:00",
+   "strefy": [
+    "110–129",
+    "129–147",
+    "147–160",
+    "160–171",
+    "171–184"
+   ],
+   "tempa": [
+    "06:15",
+    "05:40",
+    "05:15",
+    "04:49"
+   ],
+   "jednostki": [
+    {
+     "tydzien": 1,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 25,
+     "dystansKm": 4.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 1,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 25,
+     "dystansKm": 4.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 1,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 1,
+     "nr": 4,
+     "opis": "Długie wybieganie — ciągły",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 1,
+     "nr": 5,
+     "opis": "Interwał progowy — 4 × 4 min, przerwa 2 min truchtu",
+     "minutRazem": 43,
+     "dystansKm": 7.5,
+     "tempo": "05:15",
+     "tetno": "147–160"
+    },
+    {
+     "tydzien": 2,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 2,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 2,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 2,
+     "nr": 4,
+     "opis": "Długie wybieganie — ciągły",
+     "minutRazem": 45,
+     "dystansKm": 7.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 2,
+     "nr": 5,
+     "opis": "Interwał progowy — 4 × 4 min, przerwa 2 min truchtu",
+     "minutRazem": 43,
+     "dystansKm": 7.5,
+     "tempo": "05:15",
+     "tetno": "147–160"
+    },
+    {
+     "tydzien": 3,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 3,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 3,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 3,
+     "nr": 4,
+     "opis": "Długie wybieganie — ciągły",
+     "minutRazem": 50,
+     "dystansKm": 8.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 3,
+     "nr": 5,
+     "opis": "Interwał progowy — 4 × 4 min, przerwa 2 min truchtu",
+     "minutRazem": 43,
+     "dystansKm": 7.5,
+     "tempo": "05:15",
+     "tetno": "147–160"
+    },
+    {
+     "tydzien": 4,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 25,
+     "dystansKm": 4.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 4,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 25,
+     "dystansKm": 4.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 4,
+     "nr": 3,
+     "opis": "Bieg ciągły — 15 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 35,
+     "dystansKm": 6.0,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 4,
+     "nr": 4,
+     "opis": "Długie wybieganie — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 4,
+     "nr": 5,
+     "opis": "Interwał progowy — 4 × 4 min, przerwa 2 min truchtu",
+     "minutRazem": 43,
+     "dystansKm": 7.5,
+     "tempo": "05:15",
+     "tetno": "147–160"
+    },
+    {
+     "tydzien": 5,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 5,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 30,
+     "dystansKm": 5.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 5,
+     "nr": 3,
+     "opis": "Bieg ciągły — 20 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 40,
+     "dystansKm": 6.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 5,
+     "nr": 4,
+     "opis": "Długie wybieganie — ciągły",
+     "minutRazem": 50,
+     "dystansKm": 8.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 5,
+     "nr": 5,
+     "opis": "Interwał progowy — 4 × 4 min, przerwa 2 min truchtu",
+     "minutRazem": 43,
+     "dystansKm": 7.5,
+     "tempo": "05:15",
+     "tetno": "147–160"
+    },
+    {
+     "tydzien": 6,
+     "nr": 1,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 6,
+     "nr": 2,
+     "opis": "Bieg spokojny — ciągły",
+     "minutRazem": 35,
+     "dystansKm": 5.5,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 6,
+     "nr": 3,
+     "opis": "Bieg ciągły — 25 min w tempie ciągłym + 20 min rozgrzewki i schłodzenia",
+     "minutRazem": 45,
+     "dystansKm": 7.5,
+     "tempo": "05:40",
+     "tetno": "129–147"
+    },
+    {
+     "tydzien": 6,
+     "nr": 4,
+     "opis": "Długie wybieganie — ciągły",
+     "minutRazem": 55,
+     "dystansKm": 9.0,
+     "tempo": "06:15",
+     "tetno": "110–129"
+    },
+    {
+     "tydzien": 6,
+     "nr": 5,
+     "opis": "Interwał progowy — 5 × 4 min, przerwa 2 min truchtu",
+     "minutRazem": 50,
+     "dystansKm": 8.5,
+     "tempo": "05:15",
+     "tetno": "147–160"
+    }
+   ],
+   "oddech": {
+    "poziom": "Bardzo niski",
+    "czestotliwosc": "3×/tydz · 8 min",
+    "blokA": "4 min Breathe Light, głód powietrza 2/10",
+    "blokB": "bez bezdechów",
+    "blokC": "4 min oddech swobodny nosem, kadencja 4–6",
+    "brama": "Wynik poniżej 10 s. Zacznij od samego oddechu nosowego w spoczynku; bezdechy dopiero po wzroście TWOT."
+   }
+  }
+ ]
+}
