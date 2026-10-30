@@ -11,7 +11,7 @@
  * cyklu dostaje znacznik. Dopiero tak sprawdzona propozycja trafia na ekran,
  * a do planu — dopiero po kliknięciu trenera.
  */
-import type { Kategoria } from "../../silnik/src/typy.ts";
+import { KATEGORIE_SILOWE, type Kategoria } from "../../silnik/src/typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "../../silnik/src/katalog.ts";
 import { NORMY, NAZWY_WZORCOW } from "../../silnik/src/stres.ts";
 import type { Plan } from "../../silnik/src/plan.ts";
@@ -19,10 +19,8 @@ import { LP_SLOTU } from "../uklad-planu.ts";
 import { jako, zapytaj, type BlokSystemowy, type Uzycie } from "./klient.ts";
 import { INSTRUKCJA_ZDROWOTNA, sygnalZdrowotny, type SygnalZdrowotny } from "./sygnaly.ts";
 
-const KATEGORIE: readonly Kategoria[] = [
-  "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
-  "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep",
-];
+/** Szkielet planu siłowego — kategorie z BAZY 5.17; mobilność stawów (27.10.2026) trener dokłada sam. */
+const KATEGORIE: readonly Kategoria[] = KATEGORIE_SILOWE;
 
 /** Ile pozycji da się nazwać w dniu — tyle, ile ma szablon Lp. (A1…E2). */
 export const MAX_CWICZEN_W_DNIU = LP_SLOTU.filter((lp) => lp !== "").length;

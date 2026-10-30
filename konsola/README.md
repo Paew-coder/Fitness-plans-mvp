@@ -432,6 +432,24 @@ wychodziła tylko z nazwy („band”) albo ze sprzętu — teraz da się ją ws
 (zapisane tylko wtedy, gdy mówi co innego niż nazwa i sprzęt); przy
 kilogramach guma nie zmienia ciężaru.
 
+## Mobilność stawów (od 27.10.2026)
+
+Siedem nowych kategorii obok dziewięciu z arkusza: **Spine, Shoulder, Elbow,
+Wrist, Hip, Knee, Ankle mobility**. Są wszędzie tam, gdzie kategorie: kategoria
+wiersza w planie (szkielet), lista ćwiczeń w wierszu, wyszukiwarka, filtr na
+ekranie „Baza ćwiczeń”, okienko ćwiczenia (lista w dwóch grupach: „Siła”
+i „Mobilność stawów”).
+
+Ćwiczenie może stać w kilku kategoriach: ma **kategorię główną** (z niej
+ciężar, arkusz, eksport) i pola **„Także w kategoriach”** — np. Front foot
+elevated split squat: Lower push i Ankle mobility, Dumbbell fly: Upper push
+horizontal i Shoulder mobility. Pokazuje się wtedy na listach obu, a kontrola
+„kategoria ćwiczenia nie zgadza się ze szkieletem” liczy obie. Ok. 370 ćwiczeń
+przypisanych regułami (mobilizacje z bibliotek dostały staw jako kategorię
+główną, ćwiczenia siłowe z dużym zakresem ruchu — mobilność jako „także w”);
+reguły i to, czego celowo nie przypisano, w `docs/dane/zasady-klasyfikacji.md`.
+Wszystko do przejrzenia: filtr kategorii na ekranie bazy i ✎ przy ćwiczeniu.
+
 ## Baza ćwiczeń (od 27.10.2026)
 
 Na ekranie głównym przycisk **„Baza ćwiczeń”** — cała baza w jednym miejscu,

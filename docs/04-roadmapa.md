@@ -1350,6 +1350,15 @@ Trener: „tak, zrób instrukcję po angielsku”.
 * **Gdzie trafia klient:** aplikacja przy planie po angielsku prowadzi „How to use the app” (karta na górze i „More”) do `/instrukcja/en`; okno „Link dla klienta” po zaznaczeniu „Plan po angielsku” podaje adres angielskiej instrukcji, po odznaczeniu — polskiej.
 * Testy: `plan-po-angielsku.test.ts` (+1: strona po angielsku bez polskich napisów, wszystkie zrzuty, film i PDF z folderu `en`, polska pod starym adresem). Przegląd klienta (+1, razem 272), przegląd ekranów (+1, razem 251).
 
+**121. Mobilność stawów — siedem nowych kategorii, ćwiczenie w kilku kategoriach — 27.10.2026.**
+
+Trener: „czy możemy dodać nowe kategorie dla ćwiczeń mobility? Każdy staw żeby miał swoją kategorię i do niej przypasowane ćwiczenia — Spine, Shoulder, Elbow, Wrist, Hip, Knee, Ankle mobility. Jeżeli jakieś ćwiczenie spełnia warunki dla obu kategorii, może pokazywać się w obu — Front foot elevated split squat będzie Lower push i Ankle mobility, Dumbbell flys — Upper push horizontal i Shoulder mobility”.
+
+* **Silnik:** `KATEGORIE` = 9 z BAZY + 7 mobilności (`KATEGORIE_MOBILNOSCI`); `kategorieDodatkowe` w ćwiczeniu („także w”); `wKategorii` — lista w slocie, generator „do pustych” i kontrola szkieletu liczą też dodatkowe. Ciężar, stres, arkusz i eksport — z kategorii głównej. Szkielet AI zostaje przy kategoriach siłowych.
+* **Dane:** `silnik/narzedzia/mobilnosc.py` — reguły na nazwach, powtarzalne. 288 mobilizacji i rozciągań z bibliotek: staw jako kategoria główna (dotąd kategoria umowna, „do weryfikacji”; dawna zostaje w `kategoria_umowna`), kolejne stawy jako „także w”. Ok. 85 ćwiczeń siłowych z dużym zakresem ruchu (rozpiętki, pullover, deficit push-up, FFE split squat, cossack, ATG, sissy, reverse nordic, pistol, overhead squat, Jefferson curl…) — mobilność jako „także w”, kategoria z arkusza bez zmian. Celowo bez RDL, good morning i wykroków bocznych. Zasady: `docs/dane/zasady-klasyfikacji.md`.
+* **Konsola:** kategorie mobilności w szkielecie wiersza, liście, wyszukiwarce i filtrze bazy (z kategoriami dodatkowymi; w wierszu „Lower push + Ankle mobility”); okienko ćwiczenia — kategorie w grupach „Siła” i „Mobilność stawów” i pola „Także w kategoriach” (własne i poprawki ćwiczeń z bazy; bez pola w zapisie — zostają, jakie były).
+* Testy: silnik `mobilnosc.test.ts` (5: lista kategorii, przykłady trenera, każda kategoria ma ćwiczenia, spójność danych i BAZA z kategoriami z arkusza, kontrola szkieletu i poprawka), `cwiczenia-wlasne.test.ts` (+1), `baza-cwiczen.test.ts` (+1). Przegląd ekranów (+5, razem 256).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

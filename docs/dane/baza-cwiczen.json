@@ -110,6 +110,9 @@
    "id": "EX-0008",
    "nazwa": "Banded pistol squat",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Ankle mobility"
+   ],
    "part": "s",
    "coeff": 0.5,
    "skok_kg": 5.0,
@@ -423,6 +426,9 @@
    "id": "EX-0040",
    "nazwa": "Cable fly",
    "kategoria": "Upper push horizontal",
+   "kategorie_dodatkowe": [
+    "Shoulder mobility"
+   ],
    "part": "b",
    "coeff": 0.5,
    "skok_kg": 1.0,
@@ -488,6 +494,9 @@
    "id": "EX-0045",
    "nazwa": "Chest fly machine",
    "kategoria": "Upper push horizontal",
+   "kategorie_dodatkowe": [
+    "Shoulder mobility"
+   ],
    "part": "b",
    "coeff": 0.5,
    "skok_kg": 2.5,
@@ -618,6 +627,9 @@
    "id": "EX-0054",
    "nazwa": "Deficit push up",
    "kategoria": "Upper push horizontal",
+   "kategorie_dodatkowe": [
+    "Shoulder mobility"
+   ],
    "part": "b",
    "coeff": 0.5,
    "skok_kg": 0.0,
@@ -735,6 +747,9 @@
    "id": "EX-0064",
    "nazwa": "Dumbbell fly",
    "kategoria": "Upper push horizontal",
+   "kategorie_dodatkowe": [
+    "Shoulder mobility"
+   ],
    "part": "b",
    "coeff": 0.5,
    "skok_kg": 1.0,
@@ -956,6 +971,9 @@
    "id": "EX-0088",
    "nazwa": "Front foot elevated split squat",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Ankle mobility"
+   ],
    "part": "s",
    "coeff": 0.75,
    "skok_kg": 2.5,
@@ -1203,6 +1221,9 @@
    "id": "EX-0110",
    "nazwa": "Incline dumbbell fly",
    "kategoria": "Upper push horizontal",
+   "kategorie_dodatkowe": [
+    "Shoulder mobility"
+   ],
    "part": "b",
    "coeff": 0.5,
    "skok_kg": 1.0,
@@ -1255,6 +1276,9 @@
    "id": "EX-0114",
    "nazwa": "Jefferson cable",
    "kategoria": "Lower pull",
+   "kategorie_dodatkowe": [
+    "Spine mobility"
+   ],
    "part": "d",
    "coeff": 0.25,
    "skok_kg": 1.0,
@@ -1593,6 +1617,9 @@
    "id": "EX-0149",
    "nazwa": "Pistol squat eccentric",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Ankle mobility"
+   ],
    "part": "s",
    "coeff": 0.5,
    "skok_kg": 0.0,
@@ -1671,6 +1698,10 @@
    "id": "EX-0156",
    "nazwa": "Pronation/Supination",
    "kategoria": "Bicep",
+   "kategorie_dodatkowe": [
+    "Elbow mobility",
+    "Wrist mobility"
+   ],
    "part": "r",
    "coeff": 0.25,
    "skok_kg": 1.0,
@@ -1801,6 +1832,9 @@
    "id": "EX-0169",
    "nazwa": "Reverse Nordic",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Knee mobility"
+   ],
    "part": "s",
    "coeff": 0.5,
    "skok_kg": 0.0,

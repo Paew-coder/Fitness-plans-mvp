@@ -65,7 +65,7 @@ function warianty(slowo) {
 function tekstDoSzukania(c) {
   const t = oczysc(c.nazwa);
   const dopiski = WZORCE.filter((w) => w.re.test(t)).flatMap((w) => w.grupa);
-  return `${t}${dopiski.join(" ")} ${male(c.kategoria)} `;
+  return `${t}${dopiski.join(" ")} ${male([c.kategoria, ...(c.kategorieDodatkowe ?? [])].join(" "))} `;
 }
 
 /** Krótkie zapisy (do 3 znaków: „sa”, „db”, „row”) tylko od początku słowa — inaczej „sa” łapie „russian”. */
@@ -96,7 +96,8 @@ export function szukajCwiczen(cwiczenia, { zapytanie = "", kategoria = "", zrodl
   const wyniki = [];
   for (const c of cwiczenia) {
     if (c.ukryte && c.id !== wybraneId) continue;   // usunięte przez trenera — chyba że już stoi w slocie
-    if (kategoria && c.kategoria !== kategoria) continue;
+    // Kategoria główna albo dodatkowa (mobilność stawów, 27.10.2026).
+    if (kategoria && c.kategoria !== kategoria && !(c.kategorieDodatkowe ?? []).includes(kategoria)) continue;
     if (zrodlo === "baza" && c.biblioteka) continue;
     if (zrodlo && zrodlo !== "baza" && c.biblioteka !== zrodlo) continue;
     if (bezWeryfikacji && c.uwagi?.startsWith("DO WERYFIKACJI")) continue;
@@ -232,7 +233,8 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
       const opis = el("div", "wyszukiwarka-opis");
       const nazwa = el("span", "wyszukiwarka-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : ""));
       const meta = el("span", "wyszukiwarka-meta",
-        [c.kategoria, `coeff ${String(c.coeff).replace(".", ",")}`, c.guma ? `guma (${c.progresja})` : c.progresja,
+        [c.kategoria + (c.kategorieDodatkowe?.length ? ` + ${c.kategorieDodatkowe.join(", ")}` : ""),
+          `coeff ${String(c.coeff).replace(".", ",")}`, c.guma ? `guma (${c.progresja})` : c.progresja,
           c.biblioteka ? ZRODLA[c.biblioteka] : c.jednorazowe ? "Tylko w tym planie" : c.wlasne ? "Twoje własne" : "Twoja baza"].join(" · "));
       opis.append(nazwa, meta);
       if (c.uwagi?.startsWith("DO WERYFIKACJI")) {

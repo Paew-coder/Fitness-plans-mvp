@@ -140,6 +140,21 @@ describe("baza ćwiczeń — poprawki trenera", () => {
     await api(`/api/cwiczenia/${bez.id}/poprawka`, "DELETE");
   });
 
+  test("mobilność (27.10.2026): „także w” ćwiczenia z pliku — zdjęte i dodane jako poprawka; bez pola zostaje", async () => {
+    const fly = await zListy("EX-0064");   // Dumbbell fly: Upper push horizontal + Shoulder mobility
+    assert.deepEqual(fly.kategorieDodatkowe, ["Shoulder mobility"]);
+    assert.equal((await api("/api/cwiczenia/EX-0064", "PUT", pola(fly))).dane.poprawione, undefined, "bez pola — bez poprawki");
+    const bez = await api("/api/cwiczenia/EX-0064", "PUT", { ...pola(fly), kategorieDodatkowe: [] });
+    assert.deepEqual([bez.dane.kategorieDodatkowe, bez.dane.poprawione, bez.dane.oryginal.kategorieDodatkowe],
+      [undefined, true, ["Shoulder mobility"]]);
+    assert.ok(!(await api("/api/cwiczenia")).dane.some((c: any) => c.id === "EX-0064" && c.kategorieDodatkowe?.length));
+    await api("/api/cwiczenia/EX-0064/poprawka", "DELETE");
+    const squat = await zListy("EX-0016");
+    const z = await api("/api/cwiczenia/EX-0016", "PUT", { ...pola(squat), kategorieDodatkowe: ["Hip mobility", "Ankle mobility"] });
+    assert.deepEqual(z.dane.kategorieDodatkowe, ["Hip mobility", "Ankle mobility"]);
+    await api("/api/cwiczenia/EX-0016/poprawka", "DELETE");
+  });
+
   test("odmowy: nazwa innego ćwiczenia, zły coeff; własne ćwiczenie tą drogą — nie", async () => {
     const c = await zListy("EX-0011");
     const zajeta = await api("/api/cwiczenia/EX-0011", "PUT", { ...pola(c), nazwa: "Przysiad ze sztangą (high bar)" });

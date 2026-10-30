@@ -4,16 +4,30 @@ export type Part = "s" | "d" | "b" | "r" | "c";
 /** 1 = główny złożony · 0,75 = pomocniczy złożony · 0,5 = semi-izolacja · 0,25 = izolacja. */
 export type Coeff = 1 | 0.75 | 0.5 | 0.25;
 
-export type Kategoria =
-  | "Lower push"
-  | "Lower pull"
-  | "Upper push horizontal"
-  | "Upper push vertical"
-  | "Upper pull horizontal"
-  | "Upper pull vertical"
-  | "Core"
-  | "Bicep"
-  | "Tricep";
+/** Kategorie siłowe — wzorce ruchu z BAZY 5.17 (arkusz trenera). */
+export const KATEGORIE_SILOWE = [
+  "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
+  "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep",
+] as const;
+
+/**
+ * Mobilność stawów — każdy staw osobną kategorią (trener, 27.10.2026: „każdy
+ * staw żeby miał swoją kategorię i do niej przypasowane ćwiczenia”).
+ * Ćwiczenie mobilizacyjne ma ją jako główną; ćwiczenie siłowe z dużym
+ * zakresem ruchu — jako dodatkową (`kategorieDodatkowe`), np. Front foot
+ * elevated split squat: Lower push i Ankle mobility.
+ */
+export const KATEGORIE_MOBILNOSCI = [
+  "Spine mobility", "Shoulder mobility", "Elbow mobility", "Wrist mobility",
+  "Hip mobility", "Knee mobility", "Ankle mobility",
+] as const;
+
+export const KATEGORIE = [...KATEGORIE_SILOWE, ...KATEGORIE_MOBILNOSCI] as const;
+export type Kategoria = (typeof KATEGORIE)[number];
+
+/** Ćwiczenie w kategorii — głównej albo jednej z dodatkowych. */
+export const wKategorii = (c: { kategoria: Kategoria; kategorieDodatkowe?: readonly Kategoria[] }, k: Kategoria): boolean =>
+  c.kategoria === k || (c.kategorieDodatkowe?.includes(k) ?? false);
 
 export type Progresja =
   | "kg"
@@ -44,6 +58,14 @@ export type Cwiczenie = {
   id: string;
   nazwa: string;
   kategoria: Kategoria;
+  /**
+   * Kategorie, w których ćwiczenie też się pokazuje (27.10.2026) — dziś
+   * mobilność stawów przy ćwiczeniach siłowych z dużym zakresem ruchu
+   * (Dumbbell fly: Upper push horizontal i Shoulder mobility). Lista w slocie,
+   * filtr bazy i kontrola szkieletu biorą je pod uwagę; ciężar, stres
+   * i arkusz liczą się z głównej `kategoria`.
+   */
+  kategorieDodatkowe?: readonly Kategoria[];
   part: Part;
   coeff: Coeff;
   /** Najmniejszy sensowny przyrost obciążenia. */

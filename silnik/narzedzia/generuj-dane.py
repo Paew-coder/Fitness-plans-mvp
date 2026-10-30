@@ -55,6 +55,8 @@ for e in b["cwiczenia"] + bib["cwiczenia"]:
     p = [f'id: {json.dumps(e["id"], ensure_ascii=False)}',
          f'nazwa: {json.dumps(e["nazwa"], ensure_ascii=False)}',
          f'kategoria: {json.dumps(e["kategoria"], ensure_ascii=False)}',
+         *([f'kategorieDodatkowe: {json.dumps(e["kategorie_dodatkowe"], ensure_ascii=False)}']
+           if e.get("kategorie_dodatkowe") else []),
          f'part: {json.dumps(e["part"], ensure_ascii=False)}',
          f'coeff: {e["coeff"]}',
          f'skokKg: {e["skok_kg"]}',

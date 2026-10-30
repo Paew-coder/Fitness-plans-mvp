@@ -1,4 +1,4 @@
-import { PROGRESJE_Z_TABELI, type Uwaga } from "./typy.ts";
+import { PROGRESJE_Z_TABELI, wKategorii, type Uwaga } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { numerLp, pozycjaBoju } from "./szablon-boju.ts";
 import { konfliktSeriiMaksymalnych } from "./rpe.ts";
@@ -119,7 +119,9 @@ export function sprawdzPlan(
     plan.sloty
       .filter((s) => {
         if (!s.cwiczenieId || !s.kategoriaSzkieletu) return false;
-        return katalog.poId(s.cwiczenieId)?.kategoria !== s.kategoriaSzkieletu;
+        const c = katalog.poId(s.cwiczenieId);
+        // Kategoria dodatkowa też się liczy (FFE split squat w slocie „Ankle mobility”).
+        return !c || !wKategorii(c, s.kategoriaSzkieletu);
       })
       .map((s) => s.positionId),
   );

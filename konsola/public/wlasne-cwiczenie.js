@@ -151,7 +151,7 @@ export function otworzFormularzCwiczenia({
     if (cwiczenie.poprawione && cwiczenie.oryginal) {
       const o = cwiczenie.oryginal;
       info.append(el("p", "formularz-podpowiedz formularz-oryginal",
-        `W plikach bazy: ${o.nazwa} · ${o.kategoria} · part ${o.part} · coeff ${String(o.coeff).replace(".", ",")} · ${opisProgresji(o)}`
+        `W plikach bazy: ${o.nazwa} · ${o.kategoria}${o.kategorieDodatkowe?.length ? ` + ${o.kategorieDodatkowe.join(", ")}` : ""} · part ${o.part} · coeff ${String(o.coeff).replace(".", ",")} · ${opisProgresji(o)}`
         + `${NA_KILOGRAMY.includes(o.progresja) ? ` (skok ${String(o.skokKg).replace(".", ",")} kg)` : ""}${o.jednostronne ? " · jednostronne" : ""}`));
     }
     if (doWeryfikacji) {
@@ -190,9 +190,51 @@ export function otworzFormularzCwiczenia({
   pNazwa.value = cwiczenie?.nazwa ?? nazwa;
   wiersz("Nazwa", pNazwa);
 
-  const pKategoria = wybor(kategorie.map((k) => [k, k]), cwiczenie?.kategoria ?? kategoria, "— wybierz —");
+  const pKategoria = wybor([], cwiczenie?.kategoria ?? kategoria, "— wybierz —");
   pKategoria.name = "kategoria";
+  // Dwie grupy (27.10.2026): siła z BAZY i mobilność stawów.
+  for (const [etykieta, lista] of [["Siła", kategorie.filter((k) => !k.endsWith(" mobility"))],
+    ["Mobilność stawów", kategorie.filter((k) => k.endsWith(" mobility"))]]) {
+    if (lista.length === 0) continue;
+    const grupa = el("optgroup");
+    grupa.label = etykieta;
+    for (const k of lista) { const o = el("option", "", k); o.value = k; grupa.append(o); }
+    pKategoria.append(grupa);
+  }
+  pKategoria.value = cwiczenie?.kategoria ?? kategoria ?? "";
   wiersz("Kategoria", pKategoria, "Do szkieletu planu i listy w wierszu.");
+
+  /*
+   * Także w kategoriach (27.10.2026). Trener: „jeżeli ćwiczenie spełnia
+   * warunki dla obu kategorii, może pokazywać się w obu — Front foot elevated
+   * split squat to Lower push i Ankle mobility”. Ćwiczenie stoi w kategorii
+   * głównej, a te zaznaczone dokłada do list; ciężar i arkusz liczą się
+   * z głównej. Główna nie ma pola — jest wybrana wyżej.
+   */
+  const takze = el("div", "formularz-wiersz formularz-takze");
+  takze.append(el("span", "formularz-etykieta", "Także w kategoriach"));
+  const polaTakze = el("div", "formularz-takze-pola");
+  const dodatkowe = new Set(cwiczenie?.kategorieDodatkowe ?? []);
+  for (const k of kategorie.filter((x) => x.endsWith(" mobility"))) {
+    const l = el("label", "formularz-ptaszek");
+    const p = el("input");
+    p.type = "checkbox";
+    p.name = "kategorieDodatkowe";
+    p.value = k;
+    p.checked = dodatkowe.has(k);
+    l.append(p, el("span", "", k.replace(" mobility", "")));
+    polaTakze.append(l);
+  }
+  takze.append(polaTakze, el("span", "formularz-podpowiedz",
+    "Mobilność stawów: ćwiczenie pokaże się też na tych listach (np. rozpiętki — Shoulder)."));
+  pola.append(takze);
+  const pokazTakze = () => {
+    for (const p of polaTakze.querySelectorAll("input")) {
+      p.closest("label").classList.toggle("ukryty", p.value === pKategoria.value);
+    }
+  };
+  pKategoria.addEventListener("change", pokazTakze);
+  pokazTakze();
 
   const pPart = wybor(PARTY, cwiczenie?.part ?? "", "— wybierz —");
   pPart.name = "part";
@@ -323,6 +365,8 @@ export function otworzFormularzCwiczenia({
       kategoria: pKategoria.value,
       part: pPart.value,
       coeff: pCoeff.value === "" ? null : Number(pCoeff.value),
+      kategorieDodatkowe: [...polaTakze.querySelectorAll("input:checked")].map((p) => p.value)
+        .filter((k) => k !== pKategoria.value),
       progresja: progresja(),
       skokKg: NA_KILOGRAMY.includes(progresja()) ? Number(pSkok.value) : 0,
       guma: zGuma(),

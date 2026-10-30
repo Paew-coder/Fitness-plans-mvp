@@ -23,12 +23,11 @@
  */
 import { baza } from "./baza/polaczenie.ts";
 import { katalog } from "../silnik/src/katalog.ts";
-import { zGuma, type Coeff, type Cwiczenie, type Kategoria, type Part, type Progresja } from "../silnik/src/typy.ts";
+import { KATEGORIE as WSZYSTKIE_KATEGORIE, zGuma, type Coeff, type Cwiczenie, type Kategoria, type Part, type Progresja }
+  from "../silnik/src/typy.ts";
 
-export const KATEGORIE: readonly Kategoria[] = [
-  "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
-  "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep",
-];
+/** Kategorie siłowe z BAZY i mobilność stawów (27.10.2026). */
+export const KATEGORIE: readonly Kategoria[] = WSZYSTKIE_KATEGORIE;
 export const PARTY: readonly Part[] = ["s", "d", "b", "r", "c"];
 export const COEFFY: readonly Coeff[] = [1, 0.75, 0.5, 0.25];
 export const PROGRESJE: readonly Progresja[] = [
@@ -72,6 +71,12 @@ export function sprawdzCwiczenie(
       : `Ćwiczenie „${zajeta.nazwa}” już jest w bazie — wybierz je z listy albo zmień nazwę.` };
   }
   if (!KATEGORIE.includes(d.kategoria as Kategoria)) return { blad: "Wybierz kategorię." };
+  // Także w kategoriach (27.10.2026, mobilność stawów): bez głównej, bez powtórek, w kolejności listy.
+  const dodatkowe = d.kategorieDodatkowe ?? [];
+  if (!Array.isArray(dodatkowe) || !dodatkowe.every((k) => KATEGORIE.includes(k as Kategoria))) {
+    return { blad: "Nieznana kategoria dodatkowa." };
+  }
+  const kategorieDodatkowe = KATEGORIE.filter((k) => k !== d.kategoria && dodatkowe.includes(k));
   if (!PARTY.includes(d.part as Part)) return { blad: "Wybierz wzorzec ruchu (part)." };
   const coeff = Number(d.coeff);
   if (!COEFFY.includes(coeff as Coeff)) return { blad: "Coeff: 1, 0,75, 0,5 albo 0,25." };
@@ -95,6 +100,7 @@ export function sprawdzCwiczenie(
   return {
     nazwa,
     kategoria: d.kategoria as Kategoria,
+    ...(kategorieDodatkowe.length ? { kategorieDodatkowe } : {}),
     part: d.part as Part,
     coeff: coeff as Coeff,
     skokKg: naKg ? skokKg : 0,
@@ -107,7 +113,7 @@ export function sprawdzCwiczenie(
 }
 
 /** Pola, które decydują o ćwiczeniu — do porównania dwóch ćwiczeń tylko do planu. */
-const POLA = ["nazwa", "kategoria", "part", "coeff", "skokKg", "progresja", "jednostronne", "guma", "film"] as const;
+const POLA = ["nazwa", "kategoria", "kategorieDodatkowe", "part", "coeff", "skokKg", "progresja", "jednostronne", "guma", "film"] as const;
 
 /**
  * Ćwiczenie tylko do planu o tej samej nazwie i tych samych ustawieniach już
@@ -122,7 +128,7 @@ function takieSamoJednorazowe(trenerId: number, dane: unknown): Cwiczenie | null
   if (!jest?.jednorazowe || !wczytajWlasne(trenerId).some((c) => c.id === jest.id)) return null;
   const nowe = sprawdzCwiczenie(dane, jest.id);
   if ("blad" in nowe) return null;
-  return POLA.every((p) => (nowe[p] ?? null) === (jest[p] ?? null)) ? jest : null;
+  return POLA.every((p) => JSON.stringify(nowe[p] ?? null) === JSON.stringify(jest[p] ?? null)) ? jest : null;
 }
 
 function nastepneId(): string {
@@ -153,8 +159,11 @@ export function zmienWlasne(trenerId: number, id: string, dane: unknown): Cwicze
   if (!jest) return null;
   // Poprawka ćwiczenia tylko do planu bez podanego planu — zostaje przy swoim.
   const d = dane && typeof dane === "object" ? dane as Record<string, unknown> : {};
-  const poprzedniPlan = (JSON.parse(jest.dane_json) as Cwiczenie).planId;
-  const sprawdzone = sprawdzCwiczenie(d.jednorazowe === true && !d.planId ? { ...d, planId: poprzedniPlan } : dane, id);
+  const poprzednie = JSON.parse(jest.dane_json) as Cwiczenie;
+  // Bez pola „także w kategoriach” (np. zapis z innego miejsca niż okienko) — zostają, jakie były.
+  const zKategoriami = "kategorieDodatkowe" in d ? d : { ...d, kategorieDodatkowe: poprzednie.kategorieDodatkowe };
+  const sprawdzone = sprawdzCwiczenie(d.jednorazowe === true && !d.planId
+    ? { ...zKategoriami, planId: poprzednie.planId } : zKategoriami, id);
   if ("blad" in sprawdzone) return sprawdzone;
   baza().prepare("UPDATE cwiczenie_wlasne SET dane_json = ?, zmienione = ? WHERE id = ? AND trener_id = ?")
     .run(JSON.stringify(sprawdzone), new Date().toISOString(), id, trenerId);

@@ -1,4 +1,4 @@
-import type { Cwiczenie, Kategoria } from "./typy.ts";
+import { wKategorii, type Cwiczenie, type Kategoria } from "./typy.ts";
 import { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
 
 /**
@@ -7,7 +7,7 @@ import { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
  * z oryginału, `zweryfikowane` — dopisek „DO WERYFIKACJI” / „UZUPEŁNIĆ” z uwag.
  */
 export type PoprawkaCwiczenia = Partial<Pick<Cwiczenie,
-  "nazwa" | "kategoria" | "part" | "coeff" | "skokKg" | "progresja" | "jednostronne" | "film" | "guma">> & { zweryfikowane?: true };
+  "nazwa" | "kategoria" | "kategorieDodatkowe" | "part" | "coeff" | "skokKg" | "progresja" | "jednostronne" | "film" | "guma">> & { zweryfikowane?: true };
 
 const DOPISEK_WERYFIKACJI = /^(DO WERYFIKACJI|UZUPEŁNIĆ)\s*[–—-]?\s*/u;
 
@@ -16,6 +16,7 @@ export function zastosujPoprawke(c: Cwiczenie, p: PoprawkaCwiczenia): Cwiczenie 
   const n: Cwiczenie = { ...c, ...pola, poprawione: true };
   if (pola.jednostronne === false) delete n.jednostronne;
   if (pola.film === "") delete n.film;
+  if (pola.kategorieDodatkowe?.length === 0) delete n.kategorieDodatkowe;
   if (zweryfikowane && n.uwagi) {
     const uwagi = n.uwagi.replace(DOPISEK_WERYFIKACJI, "").trim();
     if (uwagi) n.uwagi = uwagi;
@@ -109,10 +110,14 @@ export class Katalog {
     return this.#poNazwie.get(nazwa.trim().toLocaleLowerCase("pl"));
   }
 
-  /** Lista do wyboru w slocie. Pusta kategoria = pełna baza (jak w arkuszu). */
+  /**
+   * Lista do wyboru w slocie. Pusta kategoria = pełna baza (jak w arkuszu).
+   * Z kategoriami dodatkowymi (27.10.2026): Dumbbell fly jest i w „Upper push
+   * horizontal”, i w „Shoulder mobility”.
+   */
   wKategorii(kategoria: Kategoria | null | undefined): readonly Cwiczenie[] {
     if (!kategoria) return this.wszystkie;
-    return this.wszystkie.filter((c) => c.kategoria === kategoria);
+    return this.wszystkie.filter((c) => wKategorii(c, kategoria));
   }
 
   /**

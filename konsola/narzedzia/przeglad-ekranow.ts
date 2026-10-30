@@ -2383,6 +2383,49 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await okienkoBazy.locator(".formularz-przywroc").click();
   await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
   await s.fill("#baza-szukaj", "");
+  // Mobilność stawów (27.10.2026). Trener: „każdy staw żeby miał swoją
+  // kategorię … Front foot elevated split squat będzie ćwiczeniem Lower push
+  // i Ankle mobility, Dumbbell flys — Upper push horizontal i Shoulder mobility”.
+  const kategorieBazy = await s.locator("#baza-kategoria option").allTextContents();
+  sprawdz("filtr kategorii: siedem kategorii mobilności obok dziewięciu z arkusza",
+    ["Spine mobility", "Shoulder mobility", "Elbow mobility", "Wrist mobility", "Hip mobility", "Knee mobility", "Ankle mobility"]
+      .every((k) => kategorieBazy.includes(k)) && kategorieBazy.includes("Lower push"), kategorieBazy.join(", "));
+  await s.selectOption("#baza-kategoria", "Ankle mobility");
+  await s.fill("#baza-szukaj", "front foot elevated split squat");
+  await s.waitForTimeout(300);
+  const ffe = s.locator('#baza-lista li[data-id="EX-0088"]');
+  sprawdz("Ankle mobility: Front foot elevated split squat, w wierszu „Lower push + Ankle mobility”",
+    await ffe.count() === 1 && (await ffe.innerText()).includes("Lower push + Ankle mobility"),
+    (await pozycjeBazy().first().innerText().catch(() => "brak")).replace(/\n/g, " | "));
+  await s.fill("#baza-szukaj", "");
+  await s.waitForTimeout(300);
+  const wAnkle = await pozycjeBazy().allInnerTexts();
+  sprawdz("Ankle mobility bez słów: same ćwiczenia z tą kategorią (główną albo „także w”)",
+    wAnkle.length > 20 && wAnkle.every((t) => /Ankle mobility/.test(t)),
+    (await s.locator("#baza-wynikow").innerText()));
+  await s.selectOption("#baza-kategoria", "Shoulder mobility");
+  await s.fill("#baza-szukaj", "dumbbell fly");
+  await s.waitForTimeout(300);
+  await s.locator('#baza-lista li[data-id="EX-0064"]').click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  const takze = async () => await okienkoBazy.locator('input[name="kategorieDodatkowe"]:checked').evaluateAll(
+    (l: HTMLInputElement[]) => l.map((x) => x.value));
+  sprawdz("okienko Dumbbell fly: „Także w kategoriach” — zaznaczone Shoulder, główna Upper push horizontal",
+    JSON.stringify(await takze()) === JSON.stringify(["Shoulder mobility"])
+      && await okienkoBazy.locator('select[name="kategoria"]').inputValue() === "Upper push horizontal"
+      && await okienkoBazy.locator('select[name="kategoria"] optgroup[label="Mobilność stawów"] option').count() === 7,
+    JSON.stringify(await takze()));
+  await okienkoBazy.locator('input[name="kategorieDodatkowe"][value="Elbow mobility"]').check();
+  await okienkoBazy.locator('button[type="submit"]').click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
+  const flyPo = (await (await fetch(`${ADRES}/api/cwiczenia`)).json()).find((c: any) => c.id === "EX-0064");
+  sprawdz("zapis „także w”: Shoulder i Elbow mobility, poprawka z oryginałem",
+    JSON.stringify(flyPo.kategorieDodatkowe) === JSON.stringify(["Shoulder mobility", "Elbow mobility"]) && flyPo.poprawione === true,
+    JSON.stringify(flyPo.kategorieDodatkowe));
+  await api("/api/cwiczenia/EX-0064/poprawka", "DELETE");
+  await s.selectOption("#baza-kategoria", "");
+  await s.fill("#baza-szukaj", "");
+  await s.waitForTimeout(300);
   for (const [nazwa, w, h] of [["telefon", 390, 844], ["iPad w pionie", 820, 1180]] as const) {
     await s.setViewportSize({ width: w, height: h });
     await s.waitForTimeout(300);

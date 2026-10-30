@@ -788,6 +788,9 @@ body.wyszukiwarka-otwarta { overflow: hidden; }
 /* Etykiety jak w całej konsoli (label: mono, wersaliki); podpowiedzi i ptaszek zwykłym tekstem. */
 .formularz-cwiczenia h3 { font-family: var(--sans); text-transform: none; letter-spacing: normal;
   color: var(--tekst); font-size: 1.05rem; }
+/* Także w kategoriach (mobilność stawów, 27.10.2026) — siedem pól w rzędach. */
+.formularz-takze-pola { display: flex; flex-wrap: wrap; gap: .3rem .9rem; }
+.formularz-takze-pola .formularz-ptaszek { margin: 0; }
 .formularz-podpowiedz { font-family: var(--sans); text-transform: none; letter-spacing: normal;
   font-size: .78rem; color: var(--tekst-blady); }
 .formularz-cwiczenia .formularz-ptaszek { display: flex; flex-direction: row; align-items: center; gap: .55rem;

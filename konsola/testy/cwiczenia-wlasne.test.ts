@@ -126,6 +126,22 @@ describe("własne ćwiczenia trenera", () => {
     assert.deepEqual([zGuma.dane.id, zNazwy.dane.id, bezGumy.dane.id, kg.dane.id].map(flaga), [true, true, false, false]);
   });
 
+  test("mobilność stawów (27.10.2026): kategoria główna i „także w” — bez głównej, w kolejności listy; zła — odmowa", async () => {
+    const mob = await api("/api/cwiczenia-wlasne", "POST", { ...PALLOF, nazwa: "Rozciąganie łydki przy ścianie",
+      kategoria: "Ankle mobility", part: "s", progresja: "czas", kategorieDodatkowe: ["Knee mobility", "Ankle mobility", "Hip mobility"] });
+    assert.equal(mob.kod, 201, JSON.stringify(mob.dane));
+    assert.deepEqual([mob.dane.kategoria, mob.dane.kategorieDodatkowe], ["Ankle mobility", ["Hip mobility", "Knee mobility"]]);
+    const zla = await api("/api/cwiczenia-wlasne", "POST", { ...PALLOF, nazwa: "Coś nowego", kategorieDodatkowe: ["Neck mobility"] });
+    assert.equal(zla.kod, 400);
+    // Poprawka bez pola „także w” — zostają; z pustą listą — znikają.
+    const bezPola = await api(`/api/cwiczenia-wlasne/${mob.dane.id}`, "PUT",
+      { ...PALLOF, nazwa: "Rozciąganie łydki przy ścianie", kategoria: "Ankle mobility", part: "s", progresja: "czas" });
+    assert.deepEqual(bezPola.dane.kategorieDodatkowe, ["Hip mobility", "Knee mobility"]);
+    const pusta = await api(`/api/cwiczenia-wlasne/${mob.dane.id}`, "PUT", { ...PALLOF, nazwa: "Rozciąganie łydki przy ścianie",
+      kategoria: "Ankle mobility", part: "s", progresja: "czas", kategorieDodatkowe: [] });
+    assert.equal(pusta.dane.kategorieDodatkowe, undefined);
+  });
+
   test("guma w planie i na telefonie: w kolumnie ciężaru „guma”, bez serii do zmierzenia", async () => {
     const id = (await api("/api/cwiczenia-wlasne")).dane.find((c: any) => c.nazwa === "Odwodzenie w leżeniu z mini-gumą").id;
     await api("/api/plany", "POST", { klient: "Guma Test", wersja: 1 });

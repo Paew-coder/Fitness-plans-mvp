@@ -8,10 +8,20 @@
 import { opisFilmow, otworzWyszukiwarke, podgladFilmow, szukajCwiczen } from "./wybor-cwiczenia.js";
 import { opisProgresji, otworzFormularzCwiczenia } from "./wlasne-cwiczenie.js";
 
+/**
+ * Kategorie siłowe z BAZY i mobilność stawów (27.10.2026) — te same co
+ * `KATEGORIE` w `silnik/src/typy.ts`. Ćwiczenie stoi w kategorii głównej
+ * i w dodatkowych (`kategorieDodatkowe`): Front foot elevated split squat
+ * jest w „Lower push” i w „Ankle mobility”.
+ */
 const KATEGORIE = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
   "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep",
+  "Spine mobility", "Shoulder mobility", "Elbow mobility", "Wrist mobility",
+  "Hip mobility", "Knee mobility", "Ankle mobility",
 ];
+/** Ćwiczenie w kategorii — głównej albo dodatkowej. */
+const wKategorii = (c, k) => c.kategoria === k || (c.kategorieDodatkowe ?? []).includes(k);
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
 
 let cwiczenia = [];
@@ -2329,7 +2339,7 @@ function rysujSlot(slot, pusty) {
   pustaOpcja.value = "";
   wybor.append(pustaOpcja);
   const dostepne = cwiczenia.filter((c) => !c.biblioteka && !zInnegoPlanu(c)
-    && (!slot.kategoriaSzkieletu || c.kategoria === slot.kategoriaSzkieletu));
+    && (!slot.kategoriaSzkieletu || wKategorii(c, slot.kategoriaSzkieletu)));
   for (const c of dostepne) {
     const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : "") + dopisekWlasnego(c));
     o.value = c.id;
@@ -2342,7 +2352,7 @@ function rysujSlot(slot, pusty) {
   if (slot.cwiczenieId && !dostepne.some((c) => c.id === slot.cwiczenieId)) {
     const c = cwiczenie(slot.cwiczenieId);
     if (c) {
-      const spoza = slot.kategoriaSzkieletu && c.kategoria !== slot.kategoriaSzkieletu;
+      const spoza = slot.kategoriaSzkieletu && !wKategorii(c, slot.kategoriaSzkieletu);
       const o = el("option", "", `${c.nazwa}${c.jednostronne ? "  ↔" : ""}${spoza ? " (spoza szkieletu)" : ""}`);
       o.value = c.id;
       wybor.append(o);
@@ -3818,7 +3828,8 @@ function wierszBazy(c) {
   const opis = el("div", "baza-opis-cw");
   opis.append(el("span", "baza-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : "")));
   opis.append(el("span", "baza-meta", [
-    c.kategoria, `part ${c.part}`, `coeff ${String(c.coeff).replace(".", ",")}`,
+    c.kategoria + (c.kategorieDodatkowe?.length ? ` + ${c.kategorieDodatkowe.join(", ")}` : ""),
+    `part ${c.part}`, `coeff ${String(c.coeff).replace(".", ",")}`,
     opisProgresji(c) + (NA_KG.includes(c.progresja) ? `, skok ${String(c.skokKg).replace(".", ",")} kg` : ""), ZRODLO_CWICZENIA(c),
   ].join(" · ")));
   const znaczki = el("span", "baza-znaczki");

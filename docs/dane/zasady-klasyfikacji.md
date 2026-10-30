@@ -96,3 +96,27 @@ deficit, eccentric) to nie kompleks.
 Pozycji „DO WERYFIKACJI” generator ćwiczeń nie losuje; ręcznie da się je
 wybrać jak każde inne. Ćwiczeń z bibliotek generator nie losuje w ogóle
 (tylko ręczny wybór), dopóki trener ich nie dopuści.
+
+## Mobilność stawów (27.10.2026)
+
+Trener: „każdy staw żeby miał swoją kategorię i do niej przypasowane
+ćwiczenia — Spine, Shoulder, Elbow, Wrist, Hip, Knee, Ankle mobility. Jeżeli
+ćwiczenie spełnia warunki dla obu kategorii, może pokazywać się w obu”.
+
+Siedem kategorii obok dziewięciu z BAZY. Ćwiczenie ma **kategorię główną**
+(ciężar, arkusz, eksport) i może mieć **„także w”** (`kategorie_dodatkowe`) —
+pokazuje się wtedy na listach obu. Przypisuje `silnik/narzedzia/mobilnosc.py`
+(reguły na nazwach, ponowne uruchomienie daje ten sam wynik; dawna kategoria
+mobilizacji zostaje w polu `kategoria_umowna`):
+
+| Co | Kategoria główna | Także w |
+|---|---|---|
+| Mobilizacje i rozciąganie z bibliotek (rodzaj „mobilność”, „rozciąganie” albo „mob / mobility / stretch / CARs” w nazwie) | staw nazwany wprost (hip, T-spine, neck, ankle, calf, toe, shoulder, wrist, knee, quad…); bez nazwy stawu — wzorzec ruchu (90/90, pigeon, spiderman, cat/cow, wall slide…); bez niczego — z dawnej kategorii: Core → Spine, Lower → Hip, Upper i Tricep → Shoulder, Bicep → Wrist | pozostałe stawy z nazwy |
+| Ćwiczenia siłowe z dużym zakresem ruchu pod obciążeniem | bez zmian (z arkusza albo biblioteki) | rozpiętki (bez odwrotnych) i pompki z deficytu → Shoulder; pullover, zwis, ruchy „stretch” w barku → Shoulder; przysiad nad głową → Shoulder i Ankle; FFE split squat, knees over toes, pistol → Ankle; ATG → Knee i Ankle; sissy squat, reverse nordic → Knee; cossack → Hip i Ankle; głęboki przysiad → Hip i Ankle; Jefferson curl → Spine; hip airplane, 90/90 z gumą → Hip; pronacja/supinacja, rotacje nadgarstka → Elbow i Wrist; odchylenia nadgarstka → Wrist; ruch w pełnym zgięciu łokcia → Elbow |
+
+Celowo **bez**: RDL, good morning i wykroki boczne (zalałyby Hip mobility),
+kompleksy, plyometria, dwubój i kondycja. Wszystko do przejrzenia przez
+trenera — na ekranie „Baza ćwiczeń” (filtr kategorii) i w okienku ćwiczenia
+(„Także w kategoriach”). Elbow mobility nie ma dziś ćwiczenia z kategorią
+główną — tylko „także w”.
+
