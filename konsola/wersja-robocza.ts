@@ -180,10 +180,16 @@ export function podsumujZmiany(
         ? `${czesci.slice(0, -1).join(", ")} i ${czesci.at(-1)}` : czesci[0]}`);
     }
   }
+  // TOP SET wskazuje ćwiczenie pozycją i od 30.10.2026 idzie z nim przy ▲▼ —
+  // porównujemy go na pozycjach klienta, inaczej samo przestawienie byłoby
+  // jeszcze zmianą „TOP SETÓW”.
+  const planTrenera = trenera.topSety
+    ? { ...trenera, topSety: trenera.topSety.map((t) => ({ ...t, slotPositionId: naKlienta(mapa, t.slotPositionId) })) }
+    : trenera;
   const klucze = new Set([...Object.keys(klienta), ...Object.keys(trenera)].filter((k) => k !== "sloty"));
   const inne: string[] = [];
   for (const klucz of klucze) {
-    if (kanonicznie((klienta as any)[klucz]) === kanonicznie((trenera as any)[klucz])) continue;
+    if (kanonicznie((klienta as any)[klucz]) === kanonicznie((planTrenera as any)[klucz])) continue;
     inne.push(ETYKIETY_PLANU[klucz] ?? klucz);
   }
   if (inne.length) zmiany.push(`Plan: ${[...new Set(inne)].join(", ")}`);

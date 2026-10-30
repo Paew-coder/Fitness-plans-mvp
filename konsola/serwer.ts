@@ -1878,6 +1878,19 @@ const serwer = createServer(async (req, res) => {
         Object.assign(slot, trescB);
         Object.assign(cel, trescA);
 
+        // Pozycja treści po zamianie — dla wszystkiego, co wskazuje ćwiczenie
+        // pozycją w tabeli, a nie leży w samym slocie.
+        const poZamianie = (p: string) => p === slot.positionId ? cel.positionId
+          : p === cel.positionId ? slot.positionId : p;
+
+        // TOP SET (30.10.2026) też należy do ćwiczenia: stoi przed nim, z niego
+        // bierze 1RM, a „T” włącza go przy tym ćwiczeniu, przy którym trener go
+        // chce. Zostawiony na miejscu stawał przed ćwiczeniem, które weszło,
+        // i liczył się z jego 1RM. Idą wszystkie wpisy, także wyłączone:
+        // ponowne „T” przywraca RPE tygodni zapisane przy ćwiczeniu. Dzień
+        // się nie zmienia.
+        for (const top of plan.topSety ?? []) top.slotPositionId = poZamianie(top.slotPositionId);
+
         /**
          * Razem z ćwiczeniem przenosi się to, co klient przy nim zapisał.
          *
@@ -1888,10 +1901,7 @@ const serwer = createServer(async (req, res) => {
          * odczucie bez ciężaru. Parametry tygodni przenosimy wyżej z dokładnie
          * tego samego powodu; wykonania po prostu o tym zapomniano.
          */
-        const wykonania = (zapisany.wykonania ?? []).map((w) =>
-          w.positionId === slot.positionId ? { ...w, positionId: cel.positionId }
-            : w.positionId === cel.positionId ? { ...w, positionId: slot.positionId }
-              : w);
+        const wykonania = (zapisany.wykonania ?? []).map((w) => ({ ...w, positionId: poZamianie(w.positionId) }));
 
         return json(res, obrazPlanu(magazyn.zapisz({ ...zapisany, plan, wykonania },
           { przestawienie: [slot.positionId, cel.positionId] })));

@@ -121,6 +121,19 @@ describe("lista zmian do zatwierdzenia", () => {
       ["Dzień 1 B1: Przysiad przestawione (było A1)", "Dzień 1 B1: Przysiad — ustawienia"]);
   });
 
+  test("▲▼ z TOP SETEM — TOP SET poszedł z ćwiczeniem, to nie zmiana „TOP SETÓW”", () => {
+    const klienta = { ...plan([["A1.", "EX-0010"], ["B1.", "EX-0016"]]),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S01", rpeTygodni: { 2: 8 } }] };
+    const trenera = { ...plan([["A1.", "EX-0016"], ["B1.", "EX-0010"]]),
+      topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S02", rpeTygodni: { 2: 8 } }] };
+    const mapa = przestaw({}, "D1-S01", "D1-S02");
+    assert.deepEqual(podsumujZmiany(klienta, trenera, mapa, nazwa),
+      ["Dzień 1 A1: Wiosło przestawione (było B1)", "Dzień 1 B1: Przysiad przestawione (było A1)"]);
+    // TOP SET, który został na miejscu, stoi teraz przy innym ćwiczeniu — to już zmiana.
+    trenera.topSety[0]!.slotPositionId = "D1-S01";
+    assert.deepEqual(podsumujZmiany(klienta, trenera, mapa, nazwa).at(-1), "Plan: TOP SETY");
+  });
+
   test("oceny klienta to nie zmiana trenera", () => {
     const klienta = plan([["A1.", "EX-0010", { 1: { feedback: "OK" } }]]);
     const trenera = plan([["A1.", "EX-0010", { 1: {} }]]);
