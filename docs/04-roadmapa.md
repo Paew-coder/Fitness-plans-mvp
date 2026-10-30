@@ -1386,6 +1386,14 @@ Trener: „dodajmy jeszcze kolejną kategorię ćwiczeń i pasujące do niej ćw
 * **Konsola:** Plyometria w szkielecie wiersza, liście, wyszukiwarce i filtrze bazy; okienko ćwiczenia — grupa „Plyometria” w kategoriach i pole w „Także w kategoriach”; wyszukiwarka zna „plyo / plyometr / pliometr”.
 * Testy: silnik `plyometria.test.ts` (4: miejsce na liście, BAZA trenera, biblioteki i wyjątki, kontrola szkieletu), `mobilnosc.test.ts` (17 kategorii). Przegląd ekranów (+3, razem 265: filtr — 233 ćwiczenia, Box jump „Lower push + Plyometria”, okienko).
 
+**125. ✎ przy każdym ćwiczeniu w wierszu; SL Glute Bridge ISO Band Hip Flexion na powtórzenia — 30.10.2026.**
+
+Trener (zrzut wiersza z „10 s”): „to ćwiczenie akurat powinno być na powtórzenia, a nie na czas — popraw i dodaj mi możliwość edytowania wszystkich ćwiczeń tak, jak mogę edytować te swoje, poprzez kliknięcie ikony długopisu przy nich w konsoli trenera”.
+
+* **Dane:** EX-2579 SL Glute Bridge ISO Band Hip Flexion — progresja „czas” → „masa ciała” (z gumą; ocena klienta zmienia liczbę powtórzeń). Testy `guma.test.ts` i `api-klienta.test.ts` (guma na telefonie) poprawione.
+* **Konsola:** ✎ w wierszu przy każdym ćwiczeniu, nie tylko własnym — to samo okienko co na ekranie „Baza ćwiczeń”; ćwiczenie z arkusza albo biblioteki dostaje poprawkę (obejmuje każdy plan z nim, „Przywróć” wraca do oryginału). Na iPadzie przyciski przy ćwiczeniu schodzą linijkę niżej, zamiast wypychać tabelę.
+* Testy: przegląd ekranów (+1, razem 266).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

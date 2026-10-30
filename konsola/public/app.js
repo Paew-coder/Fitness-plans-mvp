@@ -2527,21 +2527,25 @@ function rysujSlot(slot, pusty) {
   }
   const rzad = el("div", "wybor-cwiczenia");
   rzad.append(wybor, lupa, film, uwaga, usun);
-  // ✎ przy własnym ćwiczeniu — poprawka pól (zmiana idzie do każdego planu z nim).
-  if (wybrane?.wlasne) {
-    const edytuj = el("button", "edytuj-wlasne", "✎");
+  // ✎ przy każdym ćwiczeniu — poprawka pól (zmiana idzie do każdego planu
+  // z nim). Do 30.10.2026 tylko przy własnych; trener: „dodaj mi możliwość
+  // edytowania wszystkich ćwiczeń tak, jak mogę edytować te swoje”. Ćwiczenie
+  // z arkusza albo biblioteki dostaje poprawkę jak z ekranu „Baza ćwiczeń”.
+  if (wybrane) {
+    const edytuj = el("button", `edytuj-wlasne ${wybrane.wlasne ? "wlasne" : ""}`, "✎");
     edytuj.type = "button";
     edytuj.title = wybrane.jednorazowe
       ? "Popraw ćwiczenie tylko do tego planu (nazwa, kategoria, coeff, progresja… albo przenieś do bazy)"
-      : "Popraw własne ćwiczenie (nazwa, kategoria, coeff, progresja…)";
-    edytuj.setAttribute("aria-label", `Popraw własne ćwiczenie: ${wybrane.nazwa}`);
+      : wybrane.wlasne ? "Popraw własne ćwiczenie (nazwa, kategoria, coeff, progresja…)"
+      : "Popraw ćwiczenie (kategoria, coeff, progresja…) — zmiana obejmie każdy plan z nim";
+    edytuj.setAttribute("aria-label", `Popraw ćwiczenie: ${wybrane.nazwa}`);
     edytuj.onclick = () => otworzFormularzCwiczenia({
-      api, cwiczenia, kategorie: KATEGORIE, cwiczenie: wybrane, planId: obraz.zapisany.id,
+      api, cwiczenia, kategorie: KATEGORIE, cwiczenie: wybrane, planId: wybrane.wlasne ? obraz.zapisany.id : null,
       naZapis: (c) => {
         dolaczCwiczenie(c);
         rysujDni();
         // Coeff, progresja czy skok zmieniają ciężary i stres — przeliczy je serwer.
-        zapiszPozniej(`własne ćwiczenie · ${c.nazwa}`);
+        zapiszPozniej(`${c.wlasne ? "własne " : ""}ćwiczenie · ${c.nazwa}`);
       },
     });
     rzad.append(edytuj);

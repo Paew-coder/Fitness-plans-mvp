@@ -12,7 +12,7 @@ import { Katalog, katalog } from "../src/katalog.ts";
 import { przeliczPlan, tydzienWyliczony, type Plan } from "../src/plan.ts";
 import { zGuma } from "../src/typy.ts";
 
-const GLUTE_BRIDGE_BAND = "EX-2579"; // czas
+const GLUTE_BRIDGE_BAND = "EX-2579"; // od 30.10.2026 masa ciała (trener: „na powtórzenia, a nie na czas”)
 const BANDED_PULL_UPS = "EX-0009";   // asysta, BAZA trenera
 const BAND_ON_DB = "EX-1066";        // ręczne ustawienie, guma + hantle
 const KB_PULLOVER_BAND = "EX-0415";  // kg, guma + kettlebell

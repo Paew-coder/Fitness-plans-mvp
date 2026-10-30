@@ -1204,7 +1204,7 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       && wlasneZSerwera[0]?.nazwa === "Pallof press przegląd" && wlasneZSerwera[0]?.kategoria === "Core"
       && wlasneZSerwera[0]?.coeff === 0.5 && wlasneZSerwera[0]?.jednostronne === true,
     JSON.stringify(wlasneZSerwera[0] ?? null));
-  const wierszWlasnego = s.locator("#dni tr").filter({ has: s.locator("button.edytuj-wlasne") });
+  const wierszWlasnego = s.locator("#dni tr").filter({ has: s.locator("button.edytuj-wlasne.wlasne") });
   const opisWlasnego = await wierszWlasnego.locator("td.cwiczenie select").evaluate(
     (x: HTMLSelectElement) => x.selectedOptions[0]?.textContent ?? "");
   sprawdz("w wierszu „· własne” i ✎ do poprawki",
@@ -1316,12 +1316,31 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await zapisano();
   await s.waitForTimeout(200);
 
+  // ✎ przy każdym ćwiczeniu (30.10.2026): trener „dodaj mi możliwość
+  // edytowania wszystkich ćwiczeń tak, jak mogę edytować te swoje”.
+  {
+    const wierszBazy = wiersz(0);
+    const nazwaBazy = await wierszBazy.locator("td.cwiczenie select").evaluate(
+      (x: HTMLSelectElement) => x.selectedOptions[0]?.textContent ?? "");
+    const pioro = wierszBazy.locator("button.edytuj-wlasne");
+    const tytulPiora = await pioro.getAttribute("title").catch(() => null);
+    await pioro.click();
+    await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+    sprawdz("✎ także przy ćwiczeniu z bazy: okienko z jego polami, „Zapisz zmiany”",
+      /każdy plan/.test(tytulPiora ?? "")
+        && nazwaBazy.startsWith(await formularz.locator('input[name="nazwa"]').inputValue())
+        && await formularz.getByRole("button", { name: "Zapisz zmiany" }).count() === 1,
+      `${nazwaBazy} · ${tytulPiora}`);
+    await formularz.getByRole("button", { name: "Anuluj" }).click();
+    await formularz.waitFor({ state: "detached", timeout: 5000 });
+  }
+
   // ── 🗑 usunięcie ćwiczenia z pozycji (17.10.2026) ──────────────────
   // Trener: „możliwość usuwania wybranych ćwiczeń … przycisk x albo kosz,
   // może być z pytaniem o potwierdzenie”. Przy okazji wiersz z własnym
   // ćwiczeniem wraca do pustego — dalsze sekcje liczą wiersze.
   const maWlasne = async () => (await zBazy()).zapisany.plan.sloty.some((x: any) => x.cwiczenieId?.startsWith("WL-"));
-  const kosz = () => s.locator("#dni tr").filter({ has: s.locator("button.edytuj-wlasne") })
+  const kosz = () => s.locator("#dni tr").filter({ has: s.locator("button.edytuj-wlasne.wlasne") })
     .locator("button.usun-cwiczenie");
   const pytanPrzedKoszem = pytania.length;
   odrzucaj = true;

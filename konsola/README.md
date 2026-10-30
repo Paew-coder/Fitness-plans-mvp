@@ -483,6 +483,14 @@ między listą a panelem. W wysłanym planie nowa albo zmieniona uwaga czeka na
 po angielsku linie uwagi są w okienku „Link dla klienta” do przetłumaczenia,
 tak jak rozgrzewka, a nagłówek to „Coach's note”.
 
+## ✎ przy każdym ćwiczeniu w planie (od 30.10.2026)
+
+Długopis ✎ w wierszu planu stoi przy każdym ćwiczeniu, nie tylko przy
+własnych. Otwiera to samo okienko co ekran „Baza ćwiczeń”: kategoria, coeff,
+progresja (np. czas → masa ciała), skok, jednostronne. Poprawka ćwiczenia
+z arkusza albo biblioteki obejmuje każdy plan, w którym ono jest; „Przywróć”
+w okienku wraca do oryginału.
+
 ## Plyometria (od 30.10.2026)
 
 Kategoria **Plyometria**: skoki, podskoki, pogo, depth jump, rzuty i slamy

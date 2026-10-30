@@ -1413,17 +1413,17 @@ describe("guma na telefonie", () => {
     await api("/api/plany", "POST", { klient: "Guma Test", wersja: 1 });
     const id = (await api("/api/plany")).dane.find((p: any) => p.klient === "Guma Test").id;
     const plan = (await api(`/api/plany/${id}`)).dane.zapisany.plan;
-    plan.sloty[1].cwiczenieId = "EX-2579";   // SL Glute Bridge ISO Band Hip Flexion — czas
+    plan.sloty[1].cwiczenieId = "EX-2579";   // SL Glute Bridge ISO Band Hip Flexion — od 30.10.2026 na powtórzenia
     plan.sloty[2].cwiczenieId = "EX-3170";   // Banded Wall Slide — ręczne ustawienie
     assert.equal((await api(`/api/plany/${id}`, "PUT", { plan, dataStartu: null, status: "wysłany" })).kod, 200);
     t = (await api(`/api/plany/${id}/link`, "POST")).dane.token;
   });
 
-  test("w kolumnie ciężaru „guma”, a progresja mówi, że na czas", async () => {
+  test("w kolumnie ciężaru „guma”, a progresja mówi, że na powtórzenia (masa ciała)", async () => {
     const cw = (await api(`/api/klient/${t}`)).dane.tygodnie[0].dni[0].cwiczenia;
     const most = cw.find((c: any) => c.cwiczenieId === "EX-2579");
     assert.deepEqual([most.ciezar, most.progresja, most.dobierzCiezar, most.ciezarWybieraKlient],
-      ["guma", "czas", false, false]);
+      ["guma", "masa ciała", false, false]);
   });
 
   test("ręczna guma nie prosi klienta o kilogramy", async () => {

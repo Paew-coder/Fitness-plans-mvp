@@ -715,6 +715,9 @@ td.ciezar .zrobione {
   /* `flex: none` nie jest ozdobą: kratka TOP SETU stoi w pasku ustawionym
      na flex i bez tego ściskała się z powrotem do 16 px szerokości. */
   input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; }
+  /* ✎ przy każdym ćwiczeniu (30.10.2026): na iPadzie przyciski schodzą
+     linijkę niżej, zamiast ściskać kolumnę Lp. i wypychać tabelę. */
+  td.cwiczenie .wybor-cwiczenia { flex-wrap: wrap; }
 }
 
 /* iPad w pionie: dwie kolumny analityczne ustępują miejsca liczbom — tak jak
