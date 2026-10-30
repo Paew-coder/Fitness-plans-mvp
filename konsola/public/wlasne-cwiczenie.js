@@ -74,6 +74,8 @@ const GRUPY_PROGRESJI = [
     ["dystans", "dystans — np. sanie, marsz", "Liczy się odległość, nie kilogramy."],
   ]],
 ];
+/** Kategoria plyometrii (30.10.2026) — `KATEGORIA_PLYOMETRII` w `silnik/src/typy.ts`. */
+const PLYOMETRIA = "Plyometria";
 const NA_KILOGRAMY = ["kg", "dodatkowy ciężar"];
 const GUMA = "guma|";
 /** Wartość listy z ćwiczenia: guma przed progresją, jeśli ćwiczenie jest z gumą. */
@@ -192,9 +194,11 @@ export function otworzFormularzCwiczenia({
 
   const pKategoria = wybor([], cwiczenie?.kategoria ?? kategoria, "— wybierz —");
   pKategoria.name = "kategoria";
-  // Dwie grupy (27.10.2026): siła z BAZY i mobilność stawów.
-  for (const [etykieta, lista] of [["Siła", kategorie.filter((k) => !k.endsWith(" mobility"))],
-    ["Mobilność stawów", kategorie.filter((k) => k.endsWith(" mobility"))]]) {
+  // Grupy: siła z BAZY, plyometria (30.10.2026) i mobilność stawów (27.10.2026).
+  const mobilnosc = (k) => k.endsWith(" mobility");
+  for (const [etykieta, lista] of [["Siła", kategorie.filter((k) => !mobilnosc(k) && k !== PLYOMETRIA)],
+    ["Plyometria", kategorie.filter((k) => k === PLYOMETRIA)],
+    ["Mobilność stawów", kategorie.filter(mobilnosc)]]) {
     if (lista.length === 0) continue;
     const grupa = el("optgroup");
     grupa.label = etykieta;
@@ -215,7 +219,7 @@ export function otworzFormularzCwiczenia({
   takze.append(el("span", "formularz-etykieta", "Także w kategoriach"));
   const polaTakze = el("div", "formularz-takze-pola");
   const dodatkowe = new Set(cwiczenie?.kategorieDodatkowe ?? []);
-  for (const k of kategorie.filter((x) => x.endsWith(" mobility"))) {
+  for (const k of kategorie.filter((x) => x === PLYOMETRIA || mobilnosc(x))) {
     const l = el("label", "formularz-ptaszek");
     const p = el("input");
     p.type = "checkbox";
@@ -226,7 +230,7 @@ export function otworzFormularzCwiczenia({
     polaTakze.append(l);
   }
   takze.append(polaTakze, el("span", "formularz-podpowiedz",
-    "Mobilność stawów: ćwiczenie pokaże się też na tych listach (np. rozpiętki — Shoulder)."));
+    "Ćwiczenie pokaże się też na tych listach (np. box jump — Plyometria, rozpiętki — Shoulder)."));
   pola.append(takze);
   const pokazTakze = () => {
     for (const p of polaTakze.querySelectorAll("input")) {

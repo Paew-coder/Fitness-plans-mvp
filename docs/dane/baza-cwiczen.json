@@ -374,6 +374,9 @@
    "id": "EX-0036",
    "nazwa": "Box jump",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "s",
    "coeff": 0.5,
    "skok_kg": 0.0,
@@ -387,6 +390,9 @@
    "id": "EX-0037",
    "nazwa": "Bulgarian clean plyo",
    "kategoria": "Lower pull",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "d",
    "coeff": 0.5,
    "skok_kg": 2.5,
@@ -893,6 +899,9 @@
    "id": "EX-0082",
    "nazwa": "Dumbbells jumps",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "s",
    "coeff": 0.75,
    "skok_kg": 2.5,
@@ -932,6 +941,9 @@
    "id": "EX-0085",
    "nazwa": "Extensive plyo jumps s/l",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "s",
    "coeff": 0.25,
    "skok_kg": 0.0,
@@ -1143,6 +1155,9 @@
    "id": "EX-0104",
    "nazwa": "Horizontal jump",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "s",
    "coeff": 0.5,
    "skok_kg": 0.0,
@@ -1578,6 +1593,9 @@
    "id": "EX-0146",
    "nazwa": "Med ball slam",
    "kategoria": "Upper push horizontal",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "b",
    "coeff": 0.25,
    "skok_kg": 2.5,
@@ -1939,6 +1957,9 @@
    "id": "EX-0176",
    "nazwa": "Seated broad jump",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "s",
    "coeff": 0.25,
    "skok_kg": 0.0,
@@ -2238,6 +2259,9 @@
    "id": "EX-0203",
    "nazwa": "Zercher jumps",
    "kategoria": "Lower push",
+   "kategorie_dodatkowe": [
+    "Plyometria"
+   ],
    "part": "s",
    "coeff": 0.5,
    "skok_kg": 2.5,

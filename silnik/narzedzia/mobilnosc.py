@@ -16,6 +16,13 @@ Dwa rodzaje przypisań, z regułami w `docs/dane/zasady-klasyfikacji.md`:
 2. Ćwiczenia siłowe z dużym zakresem ruchu pod obciążeniem (rozpiętki,
    pullover, pompki z deficytu, FFE split squat, Cossack, ATG, sissy squat…) —
    kategoria główna zostaje, mobilność staje się **dodatkową**.
+3. Plyometria (30.10.2026, trener: „kategoria Plyometria, gdzie będą wszystkie
+   ćwiczenia plyometryczne typu np. skoki”) — zawsze **dodatkowa**: oznaczone
+   w bibliotece jako plyometria, skoki i rzuty piłką z BAZY trenera, kompleksy
+   ze skokiem. Kategoria główna zostaje (z niej arkusz i szkielet asystenta).
+
+Wszystkie kategorie dodatkowe liczy ten jeden skrypt — każde uruchomienie
+układa je od nowa, więc osobny skrypt dla jednej z nich kasowałby drugą.
 
 Uruchom ponownie po zmianie reguł — wynik zależy tylko od nazw i rodzaju:
 
@@ -34,7 +41,8 @@ SILOWE = ["Lower push", "Lower pull", "Upper push horizontal", "Upper push verti
           "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep"]
 MOBILNOSC = ["Spine mobility", "Shoulder mobility", "Elbow mobility", "Wrist mobility",
              "Hip mobility", "Knee mobility", "Ankle mobility"]
-KOLEJNOSC = {k: i for i, k in enumerate(SILOWE + MOBILNOSC)}
+PLYOMETRIA = "Plyometria"
+KOLEJNOSC = {k: i for i, k in enumerate(SILOWE + [PLYOMETRIA] + MOBILNOSC)}
 
 # ── 1. Staw z nazwy ćwiczenia mobilizacyjnego ───────────────────────────
 #
@@ -168,6 +176,28 @@ def przypisz_silowe(c):
     return kategorie, "; ".join(powody) or None
 
 
+# ── 3. Plyometria ───────────────────────────────────────────────────────
+#
+# Biblioteki mają rodzaj „plyometria” (skoki, podskoki, pogo, rzuty piłką,
+# pompki z klaśnięciem). BAZA trenera rodzaju nie ma — tam po nazwie: skok,
+# podskok, plyo, rzut i slam piłką. Kompleks ze skokiem też (RDL to squat jump,
+# forward hop to box jump). Kondycja (burpees, pajacyki, skipy, slamy liną)
+# i dwubój („no jump”, jump to split) — nie: to nie trening plyometryczny.
+SKOK = re.compile(r"jump|\bhops?\b|hopping|\bbounds?\b|bounding|pogo|plyo|depth drop|\bclap"
+                  r"|(med(icine)? ?ball|\bMB\b).*\b(slam|throw|toss)", re.I)
+BEZ_SKOKU = re.compile(r"no jump|jumping jack", re.I)
+SKOK_W_RODZAJU = {None, "trening siłowy", "kompleks"}
+
+
+def plyometryczne(c):
+    """Powód przypisania do Plyometrii albo None."""
+    if c.get("rodzaj") == "plyometria":
+        return "w bibliotece oznaczone jako plyometria"
+    if c.get("rodzaj") in SKOK_W_RODZAJU and SKOK.search(c["nazwa"]) and not BEZ_SKOKU.search(c["nazwa"]):
+        return "kompleks ze skokiem" if c.get("rodzaj") == "kompleks" else "skok albo rzut w nazwie"
+    return None
+
+
 def ulozone(lista):
     return sorted(set(lista), key=KOLEJNOSC.__getitem__)
 
@@ -187,19 +217,23 @@ def z_kategoriami(c, kategoria, dodatkowe):
 def przetworz(c, lista):
     if c.get("ukryte"):
         return c
+    plyo = plyometryczne(c)
     if c.get("biblioteka") and mobilizacyjne(c):
         dawna = dawna_kategoria(c)
         glowna, dodatkowe, powod = przypisz_mobilizacyjne(c)
-        nowe = z_kategoriami(c, glowna, ulozone(dodatkowe))
+        dodatkowe = ulozone(dodatkowe + ([PLYOMETRIA] if plyo else []))
+        nowe = z_kategoriami(c, glowna, dodatkowe)
         if dawna in SILOWE:
             nowe["kategoria_umowna"] = dawna
-        lista.append((c, glowna, ulozone(dodatkowe), dawna, f"mobilizacja — {powod}"))
+        lista.append((c, glowna, dodatkowe, dawna, f"mobilizacja — {powod}" + (f"; plyometria — {plyo}" if plyo else "")))
         return nowe
     dodatkowe, powod = przypisz_silowe(c)
+    powody = ([f"duży zakres ruchu — {powod}"] if dodatkowe else []) + ([f"plyometria — {plyo}"] if plyo else [])
+    dodatkowe = ulozone(dodatkowe + ([PLYOMETRIA] if plyo else []))
     if not dodatkowe:
         return z_kategoriami(c, c["kategoria"], [])
-    lista.append((c, c["kategoria"], ulozone(dodatkowe), c["kategoria"], f"duży zakres ruchu — {powod}"))
-    return z_kategoriami(c, c["kategoria"], ulozone(dodatkowe))
+    lista.append((c, c["kategoria"], dodatkowe, c["kategoria"], "; ".join(powody)))
+    return z_kategoriami(c, c["kategoria"], dodatkowe)
 
 
 def baza_trenera(lista):
@@ -231,7 +265,7 @@ def zapisz_liste(lista, sciezka):
     from openpyxl.styles import Font
     wb = Workbook()
     ws = wb.active
-    ws.title = "Mobilność"
+    ws.title = "Kategorie dodatkowe"
     ws.append(["ID", "Ćwiczenie", "Źródło", "Kategoria", "Także w", "Dawna kategoria", "Dlaczego", "Uwagi"])
     for komorka in ws[1]:
         komorka.font = Font(bold=True)
@@ -250,7 +284,7 @@ if __name__ == "__main__":
     lista = []
     baza_trenera(lista)
     biblioteki(lista)
-    for k in MOBILNOSC:
+    for k in MOBILNOSC + [PLYOMETRIA]:
         glowne = sum(1 for x in lista if x[1] == k)
         takze = sum(1 for x in lista if k in x[2])
         print(f"{k:18} główna: {glowne:4}   także: {takze:4}")

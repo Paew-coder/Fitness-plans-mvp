@@ -1377,6 +1377,15 @@ Trener: „dodaj mi możliwość wpisywania uwag do wybranych ćwiczeń — w ko
 * **Aplikacja klienta:** widok telefonu niesie `uwaga` wiersz po wierszu; zwinięte „▸ 💬 Uwaga trenera” pod nazwą na liście, w panelu serii i przy TOP SECIE; stan rozwinięcia wspólny dla listy i panelu, przetrwa przerysowanie. Plan po angielsku: linie uwagi w tekstach do tłumaczenia (`tekstyTrenera`, „Uwaga · dzień 1 C2”), podmieniane jak rozgrzewka; „Coach's note” w słowniku. Service worker `trening-v97`.
 * Testy: `uwaga-do-cwiczenia.test.ts` (8: kształt planu, lista zmian, tłumaczenie; trasy — widok telefonu, odmowa za długiej, czekanie na „Zatwierdź”, plan po angielsku, ▲▼). Przegląd klienta (+5, razem 283), przegląd ekranów (+4, razem 262; telefon i iPad oglądane już z uwagą w wierszu).
 
+**124. Plyometria — nowa kategoria ćwiczeń — 30.10.2026.**
+
+Trener: „dodajmy jeszcze kolejną kategorię ćwiczeń i pasujące do niej ćwiczenia — Plyometria, gdzie będą wszystkie ćwiczenia plyometryczne typu np. skoki”.
+
+* **Silnik:** `KATEGORIA_PLYOMETRII` w `KATEGORIE` (po siłowych, przed mobilnością) — 17 kategorii. Zawsze jako dodatkowa: kategoria główna zostaje, bo z niej arkusz 5.18 i szkielet asystenta.
+* **Dane:** `silnik/narzedzia/mobilnosc.py` liczy teraz wszystkie kategorie dodatkowe (sekcja 3 — plyometria): 212 ćwiczeń z rodzajem „plyometria” z bibliotek, 8 z BAZY trenera (skok, plyo, slam piłką w nazwie), 13 kompleksów ze skokiem — razem 233. Kondycja i dwubój celowo poza. Mobilność bez zmian (sprawdzone porównaniem plików). Reguły w `docs/dane/zasady-klasyfikacji.md`.
+* **Konsola:** Plyometria w szkielecie wiersza, liście, wyszukiwarce i filtrze bazy; okienko ćwiczenia — grupa „Plyometria” w kategoriach i pole w „Także w kategoriach”; wyszukiwarka zna „plyo / plyometr / pliometr”.
+* Testy: silnik `plyometria.test.ts` (4: miejsce na liście, BAZA trenera, biblioteki i wyjątki, kontrola szkieletu), `mobilnosc.test.ts` (17 kategorii). Przegląd ekranów (+3, razem 265: filtr — 233 ćwiczenia, Box jump „Lower push + Plyometria”, okienko).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

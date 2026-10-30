@@ -22,7 +22,16 @@ export const KATEGORIE_MOBILNOSCI = [
   "Hip mobility", "Knee mobility", "Ankle mobility",
 ] as const;
 
-export const KATEGORIE = [...KATEGORIE_SILOWE, ...KATEGORIE_MOBILNOSCI] as const;
+/**
+ * Plyometria (trener, 30.10.2026: „kategoria Plyometria, gdzie będą wszystkie
+ * ćwiczenia plyometryczne typu np. skoki”). Przypisana jako dodatkowa —
+ * kategoria główna zostaje (Lower push przy skokach, Upper push przy rzutach
+ * piłką), bo z niej idzie arkusz 5.18 i szkielet asystenta. Box jump jest
+ * więc w „Lower push” i w „Plyometria”. Przypisania: `narzedzia/mobilnosc.py`.
+ */
+export const KATEGORIA_PLYOMETRII = "Plyometria";
+
+export const KATEGORIE = [...KATEGORIE_SILOWE, KATEGORIA_PLYOMETRII, ...KATEGORIE_MOBILNOSCI] as const;
 export type Kategoria = (typeof KATEGORIE)[number];
 
 /** Ćwiczenie w kategorii — głównej albo jednej z dodatkowych. */

@@ -37,7 +37,7 @@ const ROWNOWAZNE = [
   ["chin up", "chinup", "chin-up"], ["step up", "step-up", "stepup"], ["sit up", "sit-up", "situp"],
   ["squat", "przysiad"], ["deadlift", "martwy"], ["press", "wyciskan"], ["row", "wiosł"], ["lunge", "wykrok"],
   ["curl", "uginan"], ["extension", "wyprost"], ["raise", "unoszen", "wznos"], ["plank", "desk"], ["carry", "nosz", "spacer"],
-  ["jump", "skok"], ["hop", "podskok"], ["bridge", "most"], ["hip thrust", "wypych"], ["calf", "łyd"],
+  ["jump", "skok"], ["hop", "podskok"], ["plyo", "plyometric", "plyometr", "pliometr"], ["bridge", "most"], ["hip thrust", "wypych"], ["calf", "łyd"],
   ["band", "gum"], ["cable", "wyciąg"], ["machine", "maszyn"], ["bench", "ławk"], ["crunch", "brzuszk", "spięci"],
   ["stretch", "rozciąg"], ["mobility", "mobiln"], ["swing", "wymach"], ["clean", "zarzut"], ["snatch", "rwan"], ["jerk", "podrzut"],
   ["fly", "flye", "rozpiętk"], ["shoulder", "bark"], ["glute", "pośladk"], ["hamstring", "dwugłow"], ["tricep", "triceps"],

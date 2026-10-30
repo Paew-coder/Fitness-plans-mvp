@@ -120,3 +120,26 @@ trenera — na ekranie „Baza ćwiczeń” (filtr kategorii) i w okienku ćwicz
 („Także w kategoriach”). Elbow mobility nie ma dziś ćwiczenia z kategorią
 główną — tylko „także w”.
 
+## Plyometria (30.10.2026)
+
+Trener: „dodajmy jeszcze kolejną kategorię ćwiczeń i pasujące do niej
+ćwiczenia — Plyometria, gdzie będą wszystkie ćwiczenia plyometryczne typu
+np. skoki”.
+
+Plyometria jest zawsze **„także w”**: kategoria główna zostaje (Lower push
+przy skokach, Upper push przy rzutach piłką), bo z niej idą arkusz 5.18
+i szkielet asystenta. Box jump jest więc na listach „Lower push” i
+„Plyometria”. Przypisuje ten sam `silnik/narzedzia/mobilnosc.py` — liczy
+wszystkie kategorie dodatkowe naraz, więc osobny skrypt kasowałby mobilność.
+
+| Co | Ile |
+|---|---|
+| Biblioteki: rodzaj „plyometria” (skoki, podskoki, pogo, depth jump, rzuty piłką, pompki z klaśnięciem) | 212 |
+| BAZA trenera: skok, podskok, „plyo”, rzut albo slam piłką w nazwie (Box jump, Dumbbells jumps, Extensive plyo jumps s/l, Horizontal jump, Seated broad jump, Zercher jumps, Bulgarian clean plyo, Med ball slam) | 8 |
+| Kompleksy z bibliotek ze skokiem w nazwie (RDL to squat jump, forward hop to box jump, skater hop to vertical jump…) | 13 |
+
+Celowo **bez**: kondycja (burpees, pajacyki, skipy, slamy liną), dwubój
+(„no jump”, jump to split, rebound jerk), ruchy „explosive” i „rebound”
+bez skoku (rebound push press, explosive knee drive) i skater squat
+(przysiad, nie skok). Do przejrzenia na ekranie „Baza ćwiczeń” (filtr
+„Plyometria”); w okienku ćwiczenia „Także w kategoriach” ma pole Plyometria.

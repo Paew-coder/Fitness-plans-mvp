@@ -9,14 +9,16 @@ import { opisFilmow, otworzWyszukiwarke, podgladFilmow, szukajCwiczen } from "./
 import { opisProgresji, otworzFormularzCwiczenia } from "./wlasne-cwiczenie.js";
 
 /**
- * Kategorie siłowe z BAZY i mobilność stawów (27.10.2026) — te same co
- * `KATEGORIE` w `silnik/src/typy.ts`. Ćwiczenie stoi w kategorii głównej
- * i w dodatkowych (`kategorieDodatkowe`): Front foot elevated split squat
- * jest w „Lower push” i w „Ankle mobility”.
+ * Kategorie siłowe z BAZY, plyometria (30.10.2026) i mobilność stawów
+ * (27.10.2026) — te same co `KATEGORIE` w `silnik/src/typy.ts`. Ćwiczenie
+ * stoi w kategorii głównej i w dodatkowych (`kategorieDodatkowe`): Front foot
+ * elevated split squat jest w „Lower push” i w „Ankle mobility”, Box jump —
+ * w „Lower push” i w „Plyometria”.
  */
 const KATEGORIE = [
   "Lower push", "Lower pull", "Upper push horizontal", "Upper push vertical",
   "Upper pull horizontal", "Upper pull vertical", "Core", "Bicep", "Tricep",
+  "Plyometria",
   "Spine mobility", "Shoulder mobility", "Elbow mobility", "Wrist mobility",
   "Hip mobility", "Knee mobility", "Ankle mobility",
 ];

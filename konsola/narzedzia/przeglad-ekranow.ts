@@ -2444,6 +2444,31 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("Ankle mobility bez słów: same ćwiczenia z tą kategorią (główną albo „także w”)",
     wAnkle.length > 20 && wAnkle.every((t) => /Ankle mobility/.test(t)),
     (await s.locator("#baza-wynikow").innerText()));
+  // Plyometria (30.10.2026). Trener: „kategoria Plyometria, gdzie będą
+  // wszystkie ćwiczenia plyometryczne typu np. skoki”.
+  await s.selectOption("#baza-kategoria", "Plyometria");
+  await s.waitForTimeout(300);
+  const wPlyo = await pozycjeBazy().allInnerTexts();
+  sprawdz("filtr „Plyometria”: ponad 200 ćwiczeń, każde z Plyometrią (obok kategorii głównej)",
+    Number((await s.locator("#baza-wynikow").textContent() ?? "").split(" ")[0]) > 200
+      && wPlyo.length > 0 && wPlyo.every((t) => /Plyometria/.test(t)),
+    await s.locator("#baza-wynikow").textContent() ?? "");
+  await s.fill("#baza-szukaj", "box jump");
+  await s.waitForTimeout(300);
+  const boxJump = s.locator('#baza-lista li[data-id="EX-0036"]');
+  sprawdz("Box jump z Twojej bazy: w wierszu „Lower push + Plyometria”",
+    await boxJump.count() === 1 && (await boxJump.innerText()).includes("Lower push + Plyometria"),
+    (await pozycjeBazy().first().innerText().catch(() => "brak")).replace(/\n/g, " | "));
+  await boxJump.click();
+  await s.waitForSelector(".formularz-cwiczenia", { timeout: 5000 });
+  sprawdz("okienko Box jump: główna Lower push, „Także w” zaznaczona Plyometria; grupa „Plyometria” w kategoriach",
+    await okienkoBazy.locator('select[name="kategoria"]').inputValue() === "Lower push"
+      && JSON.stringify(await okienkoBazy.locator('input[name="kategorieDodatkowe"]:checked').evaluateAll(
+        (l: HTMLInputElement[]) => l.map((x) => x.value))) === JSON.stringify(["Plyometria"])
+      && await okienkoBazy.locator('select[name="kategoria"] optgroup[label="Plyometria"] option').count() === 1,
+    await okienkoBazy.locator('select[name="kategoria"]').inputValue());
+  await okienkoBazy.getByRole("button", { name: "Anuluj" }).click();
+  await okienkoBazy.waitFor({ state: "detached", timeout: 5000 });
   await s.selectOption("#baza-kategoria", "Shoulder mobility");
   await s.fill("#baza-szukaj", "dumbbell fly");
   await s.waitForTimeout(300);

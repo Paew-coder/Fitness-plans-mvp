@@ -483,6 +483,17 @@ między listą a panelem. W wysłanym planie nowa albo zmieniona uwaga czeka na
 po angielsku linie uwagi są w okienku „Link dla klienta” do przetłumaczenia,
 tak jak rozgrzewka, a nagłówek to „Coach's note”.
 
+## Plyometria (od 30.10.2026)
+
+Kategoria **Plyometria**: skoki, podskoki, pogo, depth jump, rzuty i slamy
+piłką lekarską, kompleksy ze skokiem — 233 ćwiczenia (8 z Twojej bazy, reszta
+z bibliotek). Plyometria jest zawsze „także w”: Box jump zostaje w Lower push
+(z niej arkusz i asystent) i pokazuje się też na liście „Plyometria”. Jest
+wszędzie tam, gdzie kategorie: szkielet wiersza, lista w wierszu,
+wyszukiwarka, filtr bazy, okienko ćwiczenia (własna grupa w kategoriach
+i pole w „Także w kategoriach”). Kondycja (burpees, pajacyki, skipy) i dwubój
+celowo poza nią — reguły w `docs/dane/zasady-klasyfikacji.md`.
+
 ## Baza ćwiczeń (od 27.10.2026)
 
 Na ekranie głównym przycisk **„Baza ćwiczeń”** — cała baza w jednym miejscu,

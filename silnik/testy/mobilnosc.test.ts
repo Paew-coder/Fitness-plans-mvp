@@ -17,10 +17,10 @@ import { sprawdzPlan } from "../src/walidacja.ts";
 
 const ID = { ffeSplitSquat: "EX-0088", dumbbellFly: "EX-0064", hipSwitch: "EX-0956", jefferson: "EX-0114" };
 
-test("siedem kategorii mobilności obok dziewięciu z BAZY", () => {
+test("siedem kategorii mobilności obok dziewięciu z BAZY (i Plyometrii od 30.10.2026)", () => {
   assert.deepEqual([...KATEGORIE_MOBILNOSCI], ["Spine mobility", "Shoulder mobility", "Elbow mobility",
     "Wrist mobility", "Hip mobility", "Knee mobility", "Ankle mobility"]);
-  assert.equal(KATEGORIE.length, 16);
+  assert.equal(KATEGORIE.length, 17);
 });
 
 test("przykłady trenera: FFE split squat w Lower push i Ankle mobility, Dumbbell fly w Upper push horizontal i Shoulder mobility", () => {
