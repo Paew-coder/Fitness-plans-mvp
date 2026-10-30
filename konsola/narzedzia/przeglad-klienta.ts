@@ -77,6 +77,24 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   const sciezka = await zasiej(srodowisko);
   const { adres, api } = srodowisko;
   const kontekst = await przegladarka.newContext(TELEFON);
+  /*
+   * Plan po angielsku (27.10.2026): audyt słownika. Przegląd przechodzi polską
+   * aplikację, a tłumacz w trybie audytu (`angielski.js`, nic nie zmienia na
+   * ekranie) zgłasza każdy polski tekst, którego nie umie przetłumaczyć.
+   * Nowy napis w aplikacji bez wpisu w słowniku wychodzi tu, zanim klient
+   * z planem po angielsku zobaczy go po polsku.
+   */
+  const brakiTlumaczenia = new Set<string>();
+  const bezZmian = new Set<string>();
+  // Wyłączany przed sekcją po angielsku — tam na ekranie są już angielskie napisy.
+  let audytPolskiej = true;
+  await kontekst.exposeBinding("__brakTlumaczenia", (_zrodlo: unknown, tekst: string, powod: string) => {
+    if (audytPolskiej) (powod === "brak" ? brakiTlumaczenia : bezZmian).add(tekst);
+  });
+  await kontekst.addInitScript(() => {
+    if (!location.pathname.startsWith("/k/")) return;
+    import("/klient/angielski.js").then((m) => m.audytuj((t: string, p: string) => (window as any).__brakTlumaczenia(t, p)));
+  });
   const s = await kontekst.newPage();
   const bledy = pilnujBledow(s);
 
@@ -2506,6 +2524,139 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
         && !(await s.locator("#pomiary").innerText()).includes("Jedna seria do odmowy"),
       (await pomiarClean.innerText()).replace(/\n/g, " ").slice(0, 160));
   }
+
+  /*
+   * Audyt, druga połowa: napisy, które tłumacz zostawiłby bez zmian, to mają
+   * być wyłącznie nazwy ćwiczeń, linie rozgrzewki od trenera, liczby i skróty.
+   * Polskie słowo bez polskich liter („Dalej”, „Zapisz”) bez wpisu w słowniku
+   * wyszłoby właśnie tutaj.
+   */
+  audytPolskiej = false;
+  {
+    const nazwy = new Set([...await api("/api/cwiczenia"), ...await api("/api/cwiczenia-wlasne")].map((c: any) => c.nazwa));
+    const linie = new Set<string>();
+    for (const p of await api("/api/plany")) {
+      for (const r of (await api(`/api/plany/${p.id}`)).zapisany.plan.rozgrzewki ?? []) {
+        for (const l of String(r.tekst).split("\n")) linie.add(l.trim());
+      }
+    }
+    const NEUTRALNE = /\b(kg|min|km|s|RPE|1RM|TOP SET|TOP|TS|OK|deload|Breathe Light|[A-E]\d+\.?)\b/g;
+    const dozwolony = (t: string) => t.split(" · ").every((cz) => {
+      const c = cz.replace(/^[✓—\s]+/, "").replace(/:$/, "");
+      return nazwy.has(c) || linie.has(c) || !/\p{L}/u.test(c.replace(NEUTRALNE, ""));
+    });
+    const nieznane = [...bezZmian].filter((t) => !dozwolony(t)).sort();
+    sprawdz("plan po angielsku: bez tłumaczenia zostają tylko nazwy ćwiczeń, linie rozgrzewki trenera, liczby i skróty",
+      nieznane.length === 0 && bezZmian.size > 0,
+      nieznane.length ? `${nieznane.length}: „${nieznane.slice(0, 4).join("”, „")}”` : `${bezZmian.size} takich napisów`);
+  }
+
+  // ── 40. plan po angielsku (27.10.2026) ────────────────────────────
+  //
+  // Trener: „dodaj opcję przed wysłaniem linku, żeby oznaczyć plan na
+  // anglojęzyczny — wtedy cały plan z linku ma być po angielsku”. Plan
+  // z rozgrzewką trenera, historią „Ostatnio” i filmem: trener zaznacza
+  // angielski i tłumaczy rozgrzewkę, klient otwiera ten sam link.
+  {
+    const { teksty } = await api(`/api/plany/${idRecznego}/jezyk`);
+    const NASZE: Record<string, string> = { "5 min rower": "5 min bike", "2 × 10 dead bug": "2 × 10 dead bugs" };
+    await api(`/api/plany/${idRecznego}/jezyk`, "PUT", { jezyk: "en",
+      tlumaczenia: Object.fromEntries(teksty.map((t: any) => [t.pl, NASZE[t.pl] ?? `EN ${t.pl}`])) });
+    /** Teksty na stronie, które wyglądają na polskie — także na ukrytych ekranach. */
+    const poPolsku = () => s.evaluate(async () => {
+      const { wygladaPoPolsku } = await import("/klient/angielski.js");
+      const wyniki: string[] = [];
+      const idz = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let w = idz.nextNode(); w; w = idz.nextNode()) {
+        const t = (w.textContent ?? "").replace(/\s+/g, " ").trim();
+        if (t && !w.parentElement?.closest('[translate="no"], script, style') && wygladaPoPolsku(t)) wyniki.push(t);
+      }
+      for (const e of document.querySelectorAll("[placeholder], [aria-label], [title]")) {
+        for (const a of ["placeholder", "aria-label", "title"]) {
+          const t = e.getAttribute(a);
+          if (t && wygladaPoPolsku(t)) wyniki.push(`${a}: ${t}`);
+        }
+      }
+      return wyniki;
+    });
+    const wystaje = () => s.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+
+    await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
+    await s.waitForFunction(() => document.documentElement.lang === "en", null, { timeout: 8000 }).catch(() => null);
+    const glowny = await poPolsku();
+    sprawdz("po angielsku: strona główna bez polskich napisów, także na ukrytych ekranach",
+      await s.evaluate(() => document.documentElement.lang) === "en" && glowny.length === 0
+        && (await s.locator("#nastepny-trening .cta-etykieta").textContent() ?? "").match(/^(Next workout|Back to the workout)$/) !== null
+        && (await s.locator(".sekcja-tytul").first().textContent()) === "Weeks of the cycle"
+        && await s.title() === "Training",
+      glowny.slice(0, 4).join(" | ") || await s.locator("#nastepny-trening").innerText());
+    await rozwinTydzien(s.locator("#tygodnie .tydzien").nth(1));
+    sprawdz("po angielsku: tydzień i dzień — „Week 2”, „of 6”, „Day I”, „1 of 1 workout”",
+      /^Week 2\s*of \d/.test(await s.locator("#tygodnie .tydzien").nth(1).locator(".tydzien-nazwa").innerText())
+        && (await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel .nazwa").first().innerText()) === "Day I",
+      (await s.locator("#tygodnie .tydzien").nth(1).innerText()).replace(/\n/g, " · ").slice(0, 120));
+    await s.locator("#tygodnie .tydzien").nth(1).locator(".dzien-kafel").first().click();
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    const dzien = await poPolsku();
+    const deadBugEn = s.locator('#cwiczenia [data-position="D1-S03"]');
+    sprawdz("po angielsku: dzień treningu — rozgrzewka trenera przetłumaczona, „Last time (W1)”, „as in W1”",
+      dzien.length === 0
+        && (await s.locator("#cwiczenia .rozgrzewka li").allInnerTexts()).join(" | ") === "5 min bike | 2 × 10 dead bugs"
+        && (await deadBugEn.locator(".ostatnio").innerText()) === "Last time (W1): 2 kg × 10"
+        && /as in W1/.test(await deadBugEn.locator(".kolumna-ciezar").innerText())
+        && (await s.locator("#zakoncz").innerText()) === "Finish workout",
+      dzien.slice(0, 4).join(" | ") || (await deadBugEn.innerText()).replace(/\n/g, " · ").slice(0, 160));
+    sprawdz("po angielsku: dzień treningu mieści się na telefonie", !(await wystaje()));
+    await deadBugEn.getByRole("button", { name: "▶ Start this exercise" }).click();
+    await s.waitForSelector("#ekran-seria:not(.ukryty)");
+    const panelEn = await poPolsku();
+    sprawdz("po angielsku: panel serii — „Set 1 of …”, „Finish set”, bez polskich napisów",
+      panelEn.length === 0 && /^Set\s*1\s*of/.test(await s.locator("#panel .kolumna-seria").textContent() ?? "")
+        && (await s.locator("#panel button.glowny").last().textContent()) === "Finish set",
+      panelEn.slice(0, 4).join(" | ") || (await s.locator("#panel").innerText()).replace(/\n/g, " · ").slice(0, 160));
+    sprawdz("po angielsku: panel mieści się na telefonie", !(await wystaje()));
+    // Karta filmu rozgrzewki — w aplikacji, po angielsku.
+    await s.locator("#panel .rozgrzewka button.film-karta").click();
+    await s.waitForSelector(".karta-cw", { timeout: 5000 });
+    const kartaEn = await poPolsku();
+    sprawdz("po angielsku: karta filmu — „Warm-up”, „Back to the workout”",
+      kartaEn.length === 0 && (await s.locator(".karta-cw h2").innerText()) === "Warm-up"
+        && (await s.locator(".karta-cw-wroc").innerText()) === "Back to the workout",
+      kartaEn.slice(0, 4).join(" | ") || (await s.locator(".karta-cw").innerText()).replace(/\n/g, " · ").slice(0, 160));
+    await s.locator(".karta-cw-wroc").click();
+    await s.click("#wroc-z-serii");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    await s.click("#wroc-z-treningu");
+    await s.waitForSelector("#ekran-tygodnie:not(.ukryty)");
+    await s.click("#pokaz-pomiary");
+    await s.waitForSelector("#ekran-pomiary:not(.ukryty)");
+    const pomiaryEn = await poPolsku();
+    sprawdz("po angielsku: serie maksymalne — „Max sets”, „Your current 1RM”, „Save set”",
+      pomiaryEn.length === 0 && (await s.locator("#ekran-pomiary h1").innerText()) === "Max sets"
+        && (await s.locator("#pomiary").innerText()).includes("Your current 1RM:"),
+      pomiaryEn.slice(0, 4).join(" | ") || (await s.locator("#pomiary").innerText()).replace(/\n/g, " · ").slice(0, 160));
+    await s.click("#wroc-z-pomiarow");
+    // Z powrotem po polsku — telefon przeładowuje się sam przy najbliższym zapisie albo wejściu.
+    await api(`/api/plany/${idRecznego}/jezyk`, "PUT", { jezyk: "pl" });
+    await s.goto(`${adres}${sciezkaRecznego}`, { waitUntil: "networkidle" });
+    // Telefon pokazuje najpierw zapamiętany widok (po angielsku), a gdy serwer
+    // powie „po polsku” — przeładowuje się. Czekamy, aż przeładowanie minie.
+    let poPolskuZnow = false;
+    for (let i = 0; i < 40 && !poPolskuZnow; i++) {
+      poPolskuZnow = await s.evaluate(() => document.documentElement.lang === "pl"
+        && document.querySelector(".sekcja-tytul")?.textContent === "Tygodnie cyklu").catch(() => false);
+      if (!poPolskuZnow) await s.waitForTimeout(250);
+    }
+    sprawdz("z powrotem po polsku: ten sam link pokazuje polską aplikację", poPolskuZnow);
+  }
+
+  const braki = [...brakiTlumaczenia].sort();
+  if (process.env.BRAKI_TLUMACZENIA) {
+    writeFileSync(process.env.BRAKI_TLUMACZENIA, braki.join("\n") + "\n");
+    writeFileSync(`${process.env.BRAKI_TLUMACZENIA}.bez-zmian`, [...bezZmian].sort().join("\n") + "\n");
+  }
+  sprawdz("plan po angielsku: słownik zna każdy polski tekst, który pojawił się w aplikacji",
+    braki.length === 0, braki.length ? `${braki.length} bez tłumaczenia, np. „${braki.slice(0, 3).join("”, „")}”` : "wszystkie");
 
   console.log(bledy.length
     ? `\n  błędy w przeglądarce: ${JSON.stringify(bledy.slice(0, 3))}`

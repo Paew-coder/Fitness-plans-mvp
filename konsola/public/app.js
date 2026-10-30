@@ -3424,7 +3424,110 @@ $("#eksportuj").onclick = async () => {
  * do wysłania, a stary link zamrażał klienta na poprzednim planie. Teraz ten
  * sam adres pokazuje po prostu aktualny cykl.
  */
-async function pokazLinkKlienta(klientId) {
+/**
+ * Plan po angielsku (27.10.2026). Trener: „dodaj mi opcję przed wysłaniem
+ * linku z planem do klienta, żeby oznaczyć dany plan na anglojęzyczny — wtedy
+ * cały plan z linku ma być przetłumaczony na język angielski”.
+ *
+ * Pole przy linku zmienia język planu od razu (osobno od zapisu planu — nie
+ * czeka na zatwierdzenie). Napisy aplikacji tłumaczy telefon; teksty trenera,
+ * których żaden słownik nie zna — linie rozgrzewki i polskie nazwy ćwiczeń —
+ * trener wpisuje tu po angielsku, sam albo z propozycją AI (do poprawienia
+ * przed zapisem). Bez tłumaczenia tekst zostaje u klienta po polsku.
+ */
+async function sekcjaJezyka(planId) {
+  const sekcja = el("div", "jezyk-planu");
+  let stan;
+  try {
+    stan = await api(`/api/plany/${planId}/jezyk`);
+  } catch {
+    return sekcja;
+  }
+  const wiersz = el("label", "jezyk-przelacznik");
+  const pole = el("input");
+  pole.type = "checkbox";
+  pole.id = "plan-po-angielsku";
+  pole.checked = stan.jezyk === "en";
+  wiersz.append(pole, el("span", "", "Plan po angielsku — klient zobaczy cały plan w aplikacji po angielsku"));
+  const komunikat = el("p", "wskazowka jezyk-komunikat");
+  const teksty = el("div", "jezyk-teksty");
+  const pola = new Map();
+
+  const zbierz = () => Object.fromEntries([...pola].map(([pl, input]) => [pl, input.value.trim()]).filter(([, en]) => en));
+  const zapisz = async (opis) => {
+    try {
+      stan = await api(`/api/plany/${planId}/jezyk`, { method: "PUT",
+        body: { jezyk: pole.checked ? "en" : "pl", tlumaczenia: zbierz() } });
+      for (const input of pola.values()) input.classList.remove("propozycja-ai");
+      komunikat.textContent = opis;
+    } catch (blad) {
+      komunikat.textContent = blad.message;
+    }
+  };
+
+  const rysujTeksty = () => {
+    teksty.replaceChildren();
+    pola.clear();
+    teksty.classList.toggle("ukryty", !pole.checked);
+    if (!pole.checked) return;
+    if (stan.teksty.length === 0) {
+      teksty.append(el("p", "wskazowka", "W planie nie ma Twoich tekstów do przetłumaczenia — cała reszta tłumaczy się sama."));
+      return;
+    }
+    teksty.append(el("p", "wskazowka",
+      "Te teksty wpisałeś Ty — przetłumacz je, bo inaczej klient zobaczy je po polsku. Resztę aplikacja tłumaczy sama."));
+    for (const t of stan.teksty) {
+      const w = el("label", "jezyk-tekst");
+      const input = el("input");
+      input.value = t.en ?? "";
+      input.placeholder = "po angielsku";
+      input.maxLength = 500;
+      input.dataset.pl = t.pl;
+      w.append(el("span", "jezyk-gdzie", t.gdzie), el("span", "jezyk-pl", t.pl), input);
+      pola.set(t.pl, input);
+      teksty.append(w);
+    }
+    const akcje = el("div", "akcje-modala");
+    const zapiszB = el("button", "glowny", "Zapisz tłumaczenia");
+    zapiszB.onclick = () => zapisz("Tłumaczenia zapisane — klient zobaczy je po odświeżeniu planu.");
+    akcje.append(zapiszB);
+    if (stan.ai) {
+      const ai = el("button", "", "Zaproponuj tłumaczenie (AI)");
+      ai.onclick = async () => {
+        const puste = [...pola].filter(([, input]) => !input.value.trim()).map(([pl]) => pl);
+        if (puste.length === 0) { komunikat.textContent = "Wszystkie teksty mają już tłumaczenie."; return; }
+        ai.disabled = true;
+        komunikat.textContent = "Tłumaczę…";
+        try {
+          const { propozycje } = await api(`/api/plany/${planId}/tlumacz`, { method: "POST", body: { teksty: puste } });
+          for (const [pl, en] of Object.entries(propozycje)) {
+            const input = pola.get(pl);
+            if (input && !input.value.trim()) { input.value = en; input.classList.add("propozycja-ai"); }
+          }
+          komunikat.textContent = "Propozycje AI wpisane — sprawdź je i zapisz.";
+        } catch (blad) {
+          komunikat.textContent = blad.message;
+        } finally {
+          ai.disabled = false;
+        }
+      };
+      akcje.append(ai);
+    }
+    teksty.append(akcje);
+  };
+
+  pole.onchange = async () => {
+    await zapisz(pole.checked
+      ? "Plan oznaczony jako angielski — klient zobaczy go po angielsku przy najbliższym otwarciu linku."
+      : "Plan znów po polsku.");
+    rysujTeksty();
+  };
+  rysujTeksty();
+  sekcja.append(wiersz, teksty, komunikat);
+  return sekcja;
+}
+
+async function pokazLinkKlienta(klientId, planId = null) {
   try {
     const { sciezka, widocznyPlan } = await api(`/api/klienci/${klientId}/link`, {
       method: "POST", body: {},
@@ -3460,7 +3563,10 @@ async function pokazLinkKlienta(klientId) {
     linkInstrukcji.href = instrukcja;
     linkInstrukcji.target = "_blank";
     linkInstrukcji.rel = "noopener";
+    // Język planu, który klient zobaczy pod tym linkiem — przed wysłaniem.
+    const planJezyka = planId ?? widocznyPlan ?? kartoteka?.plany?.at(-1)?.id ?? null;
     const tresc = [
+      ...(planJezyka ? [await sekcjaJezyka(planJezyka)] : []),
       el("p", "", "Wyślij klientowi. Otworzy się na telefonie, działa też bez zasięgu."),
       pole,
       el("p", "wskazowka", "Przed pierwszym planem dołącz instrukcję — film i opis krok po kroku:"),
@@ -3520,7 +3626,7 @@ async function pokazLinkKlienta(klientId) {
   }
 }
 
-$("#link-klienta").onclick = () => pokazLinkKlienta(obraz.zapisany.klientId);
+$("#link-klienta").onclick = () => pokazLinkKlienta(obraz.zapisany.klientId, obraz.zapisany.id);
 
 /**
  * Szablony z Base44 — układ dni, numeracja, kategorie i TOP SET, pod nazwami

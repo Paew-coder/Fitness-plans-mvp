@@ -131,10 +131,21 @@ const kolejka = {
     if (ostatniWidok) {
       widok = ostatniWidok;
       zapiszWidokLokalnie();
+      ustawJezyk(widok.jezyk);
     }
     return { wyslane: true, odrzucone, powodOdmowy };
   },
 };
+
+/**
+ * Plan po angielsku (27.10.2026) — serwer mówi `jezyk: "en"`, a tłumacz
+ * (`angielski.js`) wczytuje się tylko wtedy. Powrót do polskiego przeładowuje
+ * stronę: przetłumaczonych już napisów nie ma skąd wziąć z powrotem.
+ */
+async function ustawJezyk(jezyk) {
+  if (jezyk === "en") (await import("./angielski.js")).wlaczAngielski();
+  else if (document.documentElement.lang === "en") location.reload();
+}
 
 function zapiszWidokLokalnie() {
   try { localStorage.setItem(KLUCZ_WIDOKU, JSON.stringify(widok)); } catch { /* pełna pamięć */ }
@@ -3502,6 +3513,7 @@ function komunikat(tytul, tresc) {
   const zapamietany = localStorage.getItem(KLUCZ_WIDOKU);
   if (zapamietany) {
     widok = JSON.parse(zapamietany);
+    await ustawJezyk(widok.jezyk);
     rysuj();
   }
 
@@ -3520,6 +3532,7 @@ function komunikat(tytul, tresc) {
       // z ocenami nie zostaje nawet wysłana — bo `return` był przed nią.
       if (swiezy.czekaNaPlan) {
         if (!zapamietany) {
+          await ustawJezyk(swiezy.jezyk);
           komunikat(`Cześć ${swiezy.klient}!`,
             "Trener przygotowuje Twój plan. Ten link zostaje ten sam — "
             + "otwórz go ponownie, gdy dostaniesz wiadomość.");
@@ -3534,6 +3547,7 @@ function komunikat(tytul, tresc) {
 
       widok = swiezy;
       zapiszWidokLokalnie();
+      await ustawJezyk(widok.jezyk);
       pokazStanPolaczenia(true);
       rysuj();
     } else if (!zapamietany) {

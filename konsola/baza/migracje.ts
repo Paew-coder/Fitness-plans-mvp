@@ -514,6 +514,19 @@ function doWersji13(d: DatabaseSync): void {
   `);
 }
 
+/**
+ * Wersja 14 — plan po angielsku (27.10.2026). Trener: „dodaj opcję przed
+ * wysłaniem linku z planem do klienta, żeby oznaczyć plan na anglojęzyczny —
+ * wtedy cały plan z linku ma być przetłumaczony na angielski”. Język i
+ * tłumaczenia tekstów trenera (rozgrzewka, polskie nazwy) przy planie, osobno
+ * od `plan_json` — zmiana języka to nie zmiana planu, nie czeka na
+ * zatwierdzenie. Puste = po polsku, jak dotąd.
+ */
+function doWersji14(d: DatabaseSync): void {
+  if (!maKolumne(d, "plan", "jezyk")) d.exec("ALTER TABLE plan ADD COLUMN jezyk TEXT");
+  if (!maKolumne(d, "plan", "tlumaczenia_json")) d.exec("ALTER TABLE plan ADD COLUMN tlumaczenia_json TEXT");
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -527,4 +540,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 11, opis: "własne ćwiczenia trenera", wykonaj: doWersji11 },
   { doWersji: 12, opis: "S/l clean z progresją dwuboju — bez liczb akcesorium", wykonaj: doWersji12 },
   { doWersji: 13, opis: "poprawki trenera do ćwiczeń z bazy", wykonaj: doWersji13 },
+  { doWersji: 14, opis: "plan po angielsku — język i tłumaczenia tekstów trenera", wykonaj: doWersji14 },
 ];

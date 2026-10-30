@@ -1222,6 +1222,40 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const slotPoPoprawce = (await zBazy()).wynik.tygodnie[0].sloty.find((x: any) => x.cwiczenie?.id === poPoprawce[0]?.id);
   sprawdz("poprawka coeff liczy się w planie od razu", poPoprawce[0]?.coeff === 0.25
     && slotPoPoprawce?.cwiczenie?.coeff === 0.25, `${poPoprawce[0]?.coeff} / ${slotPoPoprawce?.cwiczenie?.coeff}`);
+  // Plan po angielsku (27.10.2026). Trener: „dodaj opcję przed wysłaniem linku,
+  // żeby oznaczyć plan na anglojęzyczny”. Pole w okienku linku; teksty trenera
+  // (tu: polska nazwa własnego ćwiczenia, które właśnie stoi w planie) pod nim.
+  await s.click("#link-klienta");
+  await s.waitForSelector("#modal:not(.ukryty) #plan-po-angielsku");
+  const jezykPlanu = async () => await (await fetch(`${ADRES}/api/plany/${PLAN}/jezyk`)).json();
+  const poleEn = s.locator("#plan-po-angielsku");
+  sprawdz("okno linku: pole „Plan po angielsku”, niezaznaczone, bez pól tłumaczeń",
+    await poleEn.count() === 1 && !(await poleEn.isChecked()) && await s.locator(".jezyk-tekst").count() === 0);
+  await poleEn.check();
+  await s.waitForFunction(() => /oznaczony jako angielski/.test(document.querySelector(".jezyk-komunikat")?.textContent ?? ""),
+    null, { timeout: 5000 });
+  const tekstyTrenera = (await jezykPlanu()).teksty;
+  const polaTlumaczen = s.locator(".jezyk-tekst input");
+  sprawdz("zaznaczone: plan po angielsku na serwerze, pod polem teksty trenera do przetłumaczenia",
+    (await jezykPlanu()).jezyk === "en" && tekstyTrenera.length > 0
+      && await polaTlumaczen.count() === tekstyTrenera.length
+      && (await s.locator(".jezyk-pl").allTextContents()).includes("Pallof press przegląd"),
+    (await s.locator(".jezyk-pl").allTextContents()).join(" | ") || "brak tekstów");
+  const doPallofa = s.locator('.jezyk-tekst input[data-pl="Pallof press przegląd"]');
+  await doPallofa.fill("Pallof press walkthrough");
+  await s.click(".jezyk-planu button.glowny");
+  await s.waitForFunction(() => /Tłumaczenia zapisane/.test(document.querySelector(".jezyk-komunikat")?.textContent ?? ""),
+    null, { timeout: 5000 });
+  sprawdz("„Zapisz tłumaczenia” — tłumaczenie przy planie",
+    (await jezykPlanu()).teksty.find((t: any) => t.pl === "Pallof press przegląd")?.en === "Pallof press walkthrough");
+  await poleEn.uncheck();
+  await s.waitForFunction(() => /znów po polsku/.test(document.querySelector(".jezyk-komunikat")?.textContent ?? ""),
+    null, { timeout: 5000 });
+  const poOdznaczeniu = await jezykPlanu();
+  sprawdz("odznaczone: plan znów po polsku, tłumaczenia zostają na później",
+    poOdznaczeniu.jezyk === "pl" && await s.locator(".jezyk-tekst").count() === 0
+      && poOdznaczeniu.teksty.find((t: any) => t.pl === "Pallof press przegląd")?.en === "Pallof press walkthrough");
+  await s.click("#modal-zamknij");
   // Wyszukiwarka: „nie ma na liście?” otwiera okienko z wpisaną nazwą.
   await wiersz(0).locator("button.szukaj-cwiczenia").click();
   await s.waitForSelector(".wyszukiwarka", { timeout: 5000 });
@@ -1609,6 +1643,9 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     Boolean(instrukcja) && (await fetch(instrukcja!)).ok
       && await s.locator("#modal-body button", { hasText: "Kopiuj link + instrukcję" }).count() === 0,
     instrukcja ?? "brak");
+  // Plan po angielsku — pole nad linkiem (tłumaczenia sprawdzane przy własnym ćwiczeniu).
+  sprawdz("okno linku: pole „Plan po angielsku” nad linkiem, niezaznaczone",
+    await s.locator("#plan-po-angielsku").count() === 1 && !(await s.locator("#plan-po-angielsku").isChecked()));
   await s.click("#modal-zamknij");
 
   // ── 15. eksport arkusza ───────────────────────────────────────────

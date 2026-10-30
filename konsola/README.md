@@ -452,6 +452,31 @@ co było w plikach i **„Przywróć oryginał”**. Ćwiczenie „do weryfikacj
 pole „Sprawdzone” zdejmuje dopisek. Własne ćwiczenia poprawia się jak dotąd.
 „＋ Własne ćwiczenie” dodaje ćwiczenie do bazy bez otwierania planu.
 
+## Plan po angielsku (od 27.10.2026)
+
+W okienku **„Link dla klienta”** (z ekranu planu i z kartoteki) na górze pole
+**„Plan po angielsku”**. Zaznaczone — klient pod tym samym linkiem widzi cały
+plan po angielsku: przyciski, podpowiedzi, opis RPE, oddech i bieg, serie
+maksymalne, kartę filmu, komunikaty. Zmiana działa od razu, nie jest zmianą
+planu (nie czeka na zatwierdzenie), a nowy cykl ją przejmuje. Odznaczenie
+wraca do polskiego — telefon przeładuje się sam.
+
+Teksty, które wpisałeś Ty — **linie rozgrzewki** i **polskie nazwy ćwiczeń**
+(własne) — pokazują się pod polem: wpisz je po angielsku i „Zapisz
+tłumaczenia”, albo „Zaproponuj tłumaczenie (AI)” (gdy asystent jest włączony;
+propozycje widać w przerywanej ramce, zapisują się dopiero przyciskiem).
+Bez tłumaczenia taki tekst zostaje u klienta po polsku. Do AI idą wyłącznie
+te teksty — bez nazwiska klienta i bez liczb do liczenia.
+
+Jak to działa: serwer wysyła telefonowi `jezyk: "en"` i podmienione teksty
+trenera (`plan-po-angielsku.ts`, kolumny `jezyk` i `tlumaczenia_json`,
+schemat v14); napisy aplikacji tłumaczy telefon słownikiem całych zdań
+(`public/klient/angielski.js`), który wczytuje się tylko przy planie po
+angielsku — polska aplikacja zostaje bez zmian. Przegląd klienta sprawdza
+słownik: przechodzi całą polską aplikację i zgłasza każdy napis bez
+tłumaczenia, a na końcu ogląda ekrany po angielsku. Instrukcja dla klienta
+(`/instrukcja`) jest na razie tylko po polsku.
+
 ## Instrukcja dla klienta (od 18.10.2026)
 
 Strona `/instrukcja` — do wysłania klientowi przed pierwszym planem. Otwiera
@@ -1253,6 +1278,8 @@ npm run kopia
 | `public/wlasne-cwiczenie.js` | okienko własnego ćwiczenia (nazwa, kategoria, part, coeff, progresja, skok, jednostronne, film) |
 | `cwiczenia-wlasne.ts` | własne ćwiczenia trenera: zapis w bazie, sprawdzenie pól, wpięcie do katalogu silnika |
 | `poprawki-cwiczen.ts` | poprawki trenera do ćwiczeń z BAZY i bibliotek (ekran „Baza ćwiczeń”): tylko zmienione pola, wpięcie do katalogu, przywrócenie oryginału, w ilu planach stoi ćwiczenie |
+| `plan-po-angielsku.ts` | plan po angielsku: teksty trenera do tłumaczenia, propozycje AI, podmiana w widoku telefonu |
+| `public/klient/angielski.js` | aplikacja klienta po angielsku — słownik zdań, wczytywany tylko przy planie po angielsku |
 | `public/klient/karta-cwiczenia.css` | wygląd karty ćwiczenia — wspólny dla klienta i podglądu w konsoli |
 | `public/` | interfejs — czysty HTML/CSS/JS, bez frameworka |
 | `public/klient/` | aplikacja klienta na telefon (PWA) |

@@ -71,6 +71,7 @@ import {
 } from "./ai/szkielet.ts";
 import { odczytajAnalize } from "./ai/analiza.ts";
 import { KOMUNIKAT_ZDROWOTNY } from "./ai/sygnaly.ts";
+import { podmienTeksty, sprawdzTlumaczenia, tekstyTrenera, zaproponujTlumaczenia } from "./plan-po-angielsku.ts";
 
 const KATALOG = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(KATALOG, "public");
@@ -915,7 +916,24 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
  * Plan widziany oczami klienta — tylko to, co potrzebne na siłowni.
  * Bez analizy stresu, bez norm, bez nazwisk innych klientów.
  */
+/** Okienko „Link dla klienta”: język planu, teksty trenera z tłumaczeniami i czy AI może zaproponować resztę. */
+function jezykPlanu(zapisany: magazyn.ZapisanyPlan) {
+  return { planId: zapisany.id, jezyk: zapisany.jezyk ?? "pl", teksty: tekstyTrenera(zapisany), ai: stanAI().dostepna };
+}
+
+/**
+ * Widok dla telefonu. Plan po angielsku (27.10.2026): `jezyk: "en"` mówi
+ * telefonowi, żeby przełączył aplikację, a teksty trenera przychodzą już
+ * przetłumaczone (`podmienTeksty`).
+ */
 function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
+  const widok = widokKlientaPoPolsku(zapisany);
+  return zapisany.jezyk === "en"
+    ? { ...podmienTeksty(widok, zapisany.tlumaczenia ?? {}), jezyk: "en" as const }
+    : widok;
+}
+
+function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
   const wynik = przeliczPlan(zapisany.plan);
   const ukonczone = zapisany.ukonczoneDni ?? [];
   const wykonanie = (positionId: string, tydzien: number) =>
@@ -1237,6 +1255,15 @@ function widokKlienta(zapisany: magazyn.ZapisanyPlan) {
     moduly: moduly(zapisany),
     postep: postepKlienta(zapisany, wynik),
   };
+}
+
+/**
+ * Język klienta, gdy aktywnego planu nie ma (trener szykuje kolejny cykl):
+ * jak w jego najnowszym planie — komunikat „trener przygotowuje plan”
+ * po angielsku dla klienta, który ma plan po angielsku.
+ */
+function jezykKlienta(osoba: { trenerId: number; id: string }): { jezyk?: "en" } {
+  return magazyn.planyKlienta(osoba.trenerId, osoba.id).at(-1)?.jezyk === "en" ? { jezyk: "en" } : {};
 }
 
 function plikCzytelny(sciezka: string): boolean {
@@ -1672,6 +1699,30 @@ const serwer = createServer(async (req, res) => {
 
       if (!akcja && req.method === "GET") return json(res, obrazPlanu(zapisany));
 
+      /**
+       * Plan po angielsku (27.10.2026) — okienko „Link dla klienta”: język
+       * i tłumaczenia tekstów trenera, które klient zobaczy (rozgrzewka,
+       * polskie nazwy ćwiczeń). Osobno od zapisu planu: nie czeka na
+       * zatwierdzenie i nie zmienia „zmieniony”.
+       */
+      if (akcja === "/jezyk" && req.method === "GET") return json(res, jezykPlanu(zapisany));
+      if (akcja === "/jezyk" && req.method === "PUT") {
+        const c = await cialo(req);
+        if (c.jezyk !== "pl" && c.jezyk !== "en") return blad(res, "Język: pl albo en.");
+        const tlumaczenia = sprawdzTlumaczenia(c.tlumaczenia ?? zapisany.tlumaczenia);
+        if ("blad" in tlumaczenia) return blad(res, tlumaczenia.blad);
+        magazyn.ustawJezyk(trenerId, zapisany.id, c.jezyk, tlumaczenia);
+        return json(res, jezykPlanu(magazyn.wczytaj(trenerId, zapisany.id)!));
+      }
+      // Propozycje AI dla tekstów bez tłumaczenia (albo wskazanych). Nic się nie zapisuje.
+      if (akcja === "/tlumacz" && req.method === "POST") {
+        const c = await cialo(req);
+        const wszystkie = tekstyTrenera(zapisany);
+        const wskazane = Array.isArray(c.teksty) ? new Set(c.teksty.filter((t: unknown) => typeof t === "string")) : null;
+        const teksty = wszystkie.filter((t) => wskazane ? wskazane.has(t.pl) : !t.en).map((t) => t.pl);
+        return json(res, await zaproponujTlumaczenia(teksty));
+      }
+
       if (!akcja && req.method === "PUT") {
         const zmiany = await cialo(req);
 
@@ -2045,7 +2096,7 @@ const serwer = createServer(async (req, res) => {
       if (!zapisany) {
         // Link działa, planu jeszcze nie ma — szkiców klientowi nie pokazujemy.
         if (req.method === "GET") {
-          return json(res, { klient: osoba.nazwa, czekaNaPlan: true });
+          return json(res, { klient: osoba.nazwa, czekaNaPlan: true, ...jezykKlienta(osoba) });
         }
 
         /**
@@ -2118,7 +2169,7 @@ const serwer = createServer(async (req, res) => {
       const naEkran = (zapisanyWynik: magazyn.ZapisanyPlan) =>
         aktywny
           ? widokKlienta(zapisanyWynik.id === aktywny.id ? zapisanyWynik : aktywny)
-          : { klient: osoba.nazwa, czekaNaPlan: true };
+          : { klient: osoba.nazwa, czekaNaPlan: true, ...jezykKlienta(osoba) };
 
       /**
        * Historia klienta przez wszystkie jego cykle — dla niego samego.

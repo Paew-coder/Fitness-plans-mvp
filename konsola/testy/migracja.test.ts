@@ -161,7 +161,15 @@ describe("migracja v1 → v2", () => {
     // 11: własne ćwiczenia trenera (17.10.2026).
     // 12: S/l clean z progresją dwuboju (17.10.2026).
     // 13: poprawki trenera do ćwiczeń z bazy — ekran „Baza ćwiczeń” (27.10.2026).
-    assert.equal(w, 13);
+    // 14: plan po angielsku — język i tłumaczenia przy planie (27.10.2026).
+    assert.equal(w, 14);
+  });
+
+  test("v14: plany bez języka — klienci dalej widzą plan po polsku", () => {
+    const kolumny = (polaczenie.baza().prepare("PRAGMA table_info(plan)").all() as { name: string }[]).map((k) => k.name);
+    for (const k of ["jezyk", "tlumaczenia_json"]) assert.ok(kolumny.includes(k), k);
+    const zJezykiem = polaczenie.baza().prepare("SELECT COUNT(*) AS n FROM plan WHERE jezyk IS NOT NULL OR tlumaczenia_json IS NOT NULL").get() as { n: number };
+    assert.equal(zJezykiem.n, 0);
   });
 
   test("v13: tabela poprawek ćwiczeń jest i jest pusta — baza ćwiczeń jak w plikach", () => {
