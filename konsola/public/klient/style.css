@@ -660,6 +660,20 @@ a.akcja { text-decoration: none; }
 .proba-notka:empty { display: none; }
 .podpowiedz-dwuboju { margin: .1rem 0 .2rem; }
 
+/* Uwaga trenera do ćwiczenia (30.10.2026) — zwinięta pod nazwą, jak „Co to jest RPE?”. */
+details.uwaga-trenera { margin: .35rem 0 .1rem; font-size: .85rem; }
+details.uwaga-trenera summary {
+  cursor: pointer; color: var(--akcent); font-weight: 600; list-style: none;
+}
+details.uwaga-trenera summary::-webkit-details-marker { display: none; }
+details.uwaga-trenera summary::before { content: "▸ 💬 "; }
+details.uwaga-trenera[open] summary::before { content: "▾ 💬 "; }
+.uwaga-tresc {
+  margin-top: .4rem; padding: .45rem .7rem; border-left: 3px solid var(--akcent);
+  border-radius: 0 8px 8px 0; background: var(--akcent-tlo);
+}
+.uwaga-tresc p { margin: 0; line-height: 1.45; color: var(--tekst); overflow-wrap: anywhere; }
+.uwaga-tresc p + p { margin-top: .3rem; }
 details.rpe { margin-top: .6rem; font-size: .85rem; }
 details.rpe summary {
   cursor: pointer; color: var(--akcent); font-weight: 600; list-style: none;

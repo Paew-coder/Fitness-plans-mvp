@@ -163,6 +163,7 @@ const SLOWNIK = new Map([
     "You choose the weight yourself — enter the weight you use for your sets. It will carry over to the coming weeks."],
   // RPE
   ["Co to jest RPE?", "What is RPE?"],
+  ["Uwaga trenera", "Coach's note"],
   ["RPE mówi, jak ciężka ma być seria. Najprościej liczyć, ile powtórzeń zostaje Ci w zapasie — ile jeszcze zrobiłbyś czysto, gdybyś nie przerwał.",
     "RPE tells you how hard a set should be. The easiest way is to count the reps you have left in reserve — how many more you could do cleanly if you didn't stop."],
   ["nic w zapasie — więcej się nie da", "nothing in reserve — you couldn't do another"],

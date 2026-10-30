@@ -171,9 +171,13 @@ export function podsumujZmiany(
       .map(Number).sort((a, b) => a - b);
     const ustawienia = ["bojGlowny", "bojSilowy", "trybCiezaru", "przesunieciePowtorzen"]
       .some((p) => kanonicznie((s as any)[p]) !== kanonicznie((k as any)?.[p]));
-    if (tygodnie.length || ustawienia) {
-      zmiany.push(`${gdzie}: ${nazwa(po!)} — ${tygodnie.length ? `parametry T${tygodnie.join(", T")}` : "ustawienia"}`
-        + (tygodnie.length && ustawienia ? " i ustawienia" : ""));
+    // Uwaga trenera do ćwiczenia (30.10.2026) — klient ją czyta, więc osobno.
+    const uwaga = (s.uwaga ?? "").trim() !== (k?.uwaga ?? "").trim();
+    const czesci = [tygodnie.length ? `parametry T${tygodnie.join(", T")}` : null,
+      ustawienia ? "ustawienia" : null, uwaga ? "uwaga dla klienta" : null].filter(Boolean);
+    if (czesci.length) {
+      zmiany.push(`${gdzie}: ${nazwa(po!)} — ${czesci.length > 1
+        ? `${czesci.slice(0, -1).join(", ")} i ${czesci.at(-1)}` : czesci[0]}`);
     }
   }
   const klucze = new Set([...Object.keys(klienta), ...Object.keys(trenera)].filter((k) => k !== "sloty"));

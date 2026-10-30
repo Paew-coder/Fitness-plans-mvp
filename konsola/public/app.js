@@ -1855,6 +1855,52 @@ function edytorRozgrzewki(dzien) {
 }
 
 /**
+ * Uwaga trenera do ćwiczenia (30.10.2026). Trener: „możliwość dopisania uwagi
+ * do ćwiczenia — jeżeli dopisana przy C2, to i na liście, i w panelu ma być
+ * widoczna; może nie od razu, ale w formie rozwijanej, żeby nie zajmowała
+ * dużo miejsca”. Ta sama w każdym tygodniu; klient widzi ją zwiniętą pod
+ * „Uwaga trenera”. Granica długości — `UWAGA_MAKS` w `ksztalt-planu.ts`.
+ */
+const UWAGA_MAKS = 500;
+function edytujUwage(slot) {
+  const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
+  const nazwa = cwiczenie(slot.cwiczenieId)?.nazwa ?? slot.cwiczenieId;
+  const pole = el("textarea", "pole-uwagi");
+  pole.name = "uwaga";
+  pole.rows = 4;
+  pole.maxLength = UWAGA_MAKS;
+  pole.placeholder = "np. Łokcie blisko tułowia, na dole pauza 2 s.";
+  pole.value = slot.uwaga ?? "";
+  const ustaw = (tekst) => {
+    const czysty = tekst.split("\n").map((l) => l.trimEnd()).join("\n").trim();
+    zamknijModal();
+    if (czysty === (slot.uwaga ?? "")) return;
+    if (czysty) slot.uwaga = czysty;
+    else delete slot.uwaga;
+    zapiszPozniej(`${lp} · ${czysty ? "uwaga dla klienta" : "usunięta uwaga"}`);
+    rysujDni();
+  };
+  const przycisk = (klasa, tekst, akcja) => {
+    const b = el("button", klasa, tekst);
+    b.type = "button";
+    b.onclick = akcja;
+    return b;
+  };
+  const akcje = el("div", "akcje-modala");
+  akcje.append(przycisk("glowny", "Zapisz", () => ustaw(pole.value)));
+  if (slot.uwaga) akcje.append(przycisk("", "Usuń uwagę", () => ustaw("")));
+  akcje.append(przycisk("", "Anuluj", zamknijModal));
+  pokazModal(`Uwaga do ${lp}: ${nazwa}`,
+    el("p", "wskazowka", "Klient zobaczy ją przy tym ćwiczeniu — na liście i w panelu serii, "
+      + "zwiniętą pod „Uwaga trenera” (rozwija ją dotknięciem). Ta sama w każdym tygodniu."),
+    pole,
+    el("small", "podpowiedz-pola", `do ${UWAGA_MAKS} znaków · Enter — nowa linia`),
+    akcje);
+  $("#modal-zamknij").classList.add("ukryty");   // wyjście bez zapisu jest jedno: „Anuluj”
+  pole.focus();
+}
+
+/**
  * Bój główny: pozycja A i ćwiczenie złożone (coeff 1,0). Ta sama reguła,
  * co w silniku — tylko po to, żeby nie pokazywać przycisków, które przy boju
  * i tak nic nie robią.
@@ -2382,6 +2428,8 @@ function rysujSlot(slot, pusty) {
   const ustaw = (id) => {
     const poprzednie = slot.cwiczenieId;
     slot.cwiczenieId = id || null;
+    // Uwaga należy do ćwiczenia — pusty wiersz jej nie trzyma (nie wróci przy następnym).
+    if (!id) delete slot.uwaga;
     zapytajOPodmiane(slot, poprzednie);
     zapiszPozniej(`${slot.lp?.replace(/\.$/, "") || "ćwiczenie"} · ${id ? cwiczenie(id)?.nazwa ?? id : "usunięte ćwiczenie"}`);
     /*
@@ -2461,8 +2509,22 @@ function rysujSlot(slot, pusty) {
     usun.tabIndex = -1;
     usun.classList.add("pusty");
   }
+  // 💬 — uwaga dla klienta do tego ćwiczenia (trener, 30.10.2026). Podświetlona,
+  // gdy uwaga jest; w pustym wierszu niewidoczna — kolumna się nie przesuwa.
+  const uwaga = el("button", `uwaga-cwiczenia ${wybrane && slot.uwaga ? "jest" : ""}`, "💬");
+  uwaga.type = "button";
+  if (wybrane) {
+    uwaga.title = slot.uwaga ? `Uwaga dla klienta: ${slot.uwaga}\n\nKliknij, żeby zmienić albo usunąć`
+      : "Dodaj uwagę dla klienta do tego ćwiczenia";
+    uwaga.setAttribute("aria-label", `${slot.uwaga ? "Zmień uwagę" : "Dodaj uwagę"} do ćwiczenia: ${wybrane.nazwa}`);
+    uwaga.onclick = () => edytujUwage(slot);
+  } else {
+    uwaga.disabled = true;
+    uwaga.tabIndex = -1;
+    uwaga.classList.add("pusty");
+  }
   const rzad = el("div", "wybor-cwiczenia");
-  rzad.append(wybor, lupa, film, usun);
+  rzad.append(wybor, lupa, film, uwaga, usun);
   // ✎ przy własnym ćwiczeniu — poprawka pól (zmiana idzie do każdego planu z nim).
   if (wybrane?.wlasne) {
     const edytuj = el("button", "edytuj-wlasne", "✎");
@@ -2483,6 +2545,15 @@ function rysujSlot(slot, pusty) {
     rzad.append(edytuj);
   }
   komorkaCwiczenia.append(rzad);
+  // Uwaga widoczna w wierszu — jedna linijka, ucięta; dotknięcie otwiera całą.
+  if (wybrane && slot.uwaga) {
+    const podglad = el("button", "uwaga-podglad");
+    podglad.type = "button";
+    podglad.title = "Uwaga dla klienta — kliknij, żeby zmienić";
+    podglad.append(el("span", "ikona", "💬"), el("span", "tekst", slot.uwaga.replace(/\s*\n\s*/g, " · ")));
+    podglad.onclick = () => edytujUwage(slot);
+    komorkaCwiczenia.append(podglad);
+  }
   wiersz.append(komorkaCwiczenia);
 
   // ── kategoria szkieletu ──
@@ -2879,6 +2950,7 @@ function usunZPozycji(slot) {
   delete slot.trybCiezaru;
   delete slot.przesunieciePowtorzen;
   delete slot.przedRpeRosnacym;
+  delete slot.uwaga;
   zapiszPozniej(`${lp} · usunięte ćwiczenie`);
   rysujDni();
 }

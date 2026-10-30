@@ -465,6 +465,24 @@ i kolejne tygodnie — o krok, który rośnie z czasem: ok. 10 % zaokrąglone do
 1 do 600 s. Tygodnie deload liczą się jak dotąd, bez korekty z ocen. Stres
 liczy się z sekund jak z powtórzeń (tabela kończy się na 15).
 
+## Uwaga do ćwiczenia (od 30.10.2026)
+
+Przy każdym ćwiczeniu w planie przycisk **💬** (obok ▶ i 🗑) otwiera okienko
+z uwagą dla klienta, np. „Łokcie blisko tułowia, na dole pauza 2 s”. Do 500
+znaków, można pisać w kilku wierszach; ta sama uwaga obowiązuje w każdym
+tygodniu. Gdy uwaga jest, 💬 jest podświetlone, a pod nazwą ćwiczenia stoi
+jej pierwsza linijka (dotknięcie otwiera całą do poprawki albo „Usuń uwagę”).
+Uwaga przechodzi razem z ćwiczeniem przy ▲▼ i do nowego cyklu, znika po
+usunięciu ćwiczenia z pozycji (🗑).
+
+U klienta uwaga stoi pod nazwą ćwiczenia jako zwinięte **„▸ 💬 Uwaga
+trenera”**: na liście dnia, w panelu serii i przy TOP SECIE tego ćwiczenia.
+Dotknięcie ją rozwija. Rozwinięta zostaje rozwinięta przy przechodzeniu
+między listą a panelem. W wysłanym planie nowa albo zmieniona uwaga czeka na
+„Zatwierdź” jak każda zmiana (na liście zmian: „uwaga dla klienta”). W planie
+po angielsku linie uwagi są w okienku „Link dla klienta” do przetłumaczenia,
+tak jak rozgrzewka, a nagłówek to „Coach's note”.
+
 ## Baza ćwiczeń (od 27.10.2026)
 
 Na ekranie głównym przycisk **„Baza ćwiczeń”** — cała baza w jednym miejscu,

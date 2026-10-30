@@ -129,6 +129,14 @@ export type SlotPlanu = {
    */
   przesunieciePowtorzen?: number;
   /**
+   * Uwaga trenera do ćwiczenia (30.10.2026), ta sama w każdym tygodniu.
+   * Trener: „możliwość dopisania uwagi do ćwiczenia — przy C2 ma być widoczna
+   * i na liście, i w panelu, w formie rozwijanej, żeby nie zajmowała dużo
+   * miejsca”. Silnik jej nie liczy; klient widzi ją zwiniętą pod „Uwaga
+   * trenera”. Wiersz po wierszu, do 500 znaków (`konsola/ksztalt-planu.ts`).
+   */
+  uwaga?: string;
+  /**
    * Stan sprzed „↗” (RPE 7,5 → 10) — tylko dla konsoli: wyłączenie przywraca
    * to, co było, zamiast zostawiać powtórzenia wpisane przez przycisk.
    */

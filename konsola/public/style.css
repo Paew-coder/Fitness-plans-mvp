@@ -257,7 +257,8 @@ td.cwiczenie { white-space: nowrap; }
    w pionie. Szerokość daje `flex-grow`, dolną granicę — `min-width`. */
 td.cwiczenie .wybor-cwiczenia { display: flex; align-items: center; gap: .3rem; }
 td.cwiczenie .wybor-cwiczenia select { flex: 1 1 0; width: 0; min-width: 12rem; }
-button.szukaj-cwiczenia, button.filmy-cwiczenia, button.usun-cwiczenie, button.edytuj-wlasne {
+button.szukaj-cwiczenia, button.filmy-cwiczenia, button.usun-cwiczenie, button.edytuj-wlasne,
+button.uwaga-cwiczenia {
   flex: none; width: 1.9rem; height: 1.9rem; padding: 0; vertical-align: middle;
   border: 1px solid var(--linia); border-radius: 5px; background: var(--plaszczyzna);
   font-size: .85rem; cursor: pointer;
@@ -265,7 +266,20 @@ button.szukaj-cwiczenia, button.filmy-cwiczenia, button.usun-cwiczenie, button.e
 /* ▶ / ▶ 3 — filmy wybranego ćwiczenia; szerszy przy liczbie nagrań */
 button.filmy-cwiczenia { width: auto; min-width: 1.9rem; padding: 0 .4rem; color: var(--akcent); white-space: nowrap; }
 button.filmy-cwiczenia:disabled { color: var(--tekst-blady); opacity: .45; cursor: default; }
-button.filmy-cwiczenia.pusty, button.usun-cwiczenie.pusty { visibility: hidden; }
+button.filmy-cwiczenia.pusty, button.usun-cwiczenie.pusty, button.uwaga-cwiczenia.pusty { visibility: hidden; }
+/* 💬 uwaga dla klienta (30.10.2026): przygaszona bez uwagi, w kolorze z uwagą */
+button.uwaga-cwiczenia:not(.jest) { opacity: .55; }
+button.uwaga-cwiczenia.jest { border-color: var(--akcent); background: var(--akcent-tlo); }
+/* Uwaga w wierszu — jedna linijka, ucięta. `width: 0` przy tekście jak przy
+   liście wyżej: długa uwaga nie może rozpychać tabeli. */
+td.cwiczenie button.uwaga-podglad {
+  display: flex; align-items: center; gap: .3rem; width: 100%; min-height: 1.5rem; margin-top: .1rem; padding: 0;
+  border: none; background: none; color: var(--tekst-blady); font: inherit; font-size: .74rem;
+  text-align: left; cursor: pointer;
+}
+td.cwiczenie button.uwaga-podglad .ikona { flex: none; font-size: .7rem; }
+td.cwiczenie button.uwaga-podglad .tekst { flex: 1 1 0; width: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.modal-tresc textarea.pole-uwagi { display: block; width: 100%; box-sizing: border-box; font: inherit; resize: vertical; }
 button.usun-cwiczenie:hover:not(:disabled) { border-color: var(--zle); background: var(--zle-tlo); }
 td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
 td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
@@ -627,6 +641,7 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
   table.sloty td.cwiczenie .wybor-cwiczenia select { flex: 1 0 100%; min-width: 0; }
   table.sloty td.cwiczenie button.szukaj-cwiczenia,
   table.sloty td.cwiczenie button.usun-cwiczenie,
+  table.sloty td.cwiczenie button.uwaga-cwiczenia,
   table.sloty td.cwiczenie button.edytuj-wlasne { width: 2.1rem; min-width: 2.1rem; }
   table.sloty td.cwiczenie button.filmy-cwiczenia { min-width: 2.1rem; padding: 0 .25rem; }
   table.sloty td.liczba input { width: 2.4rem; }
@@ -692,10 +707,11 @@ td.ciezar .zrobione {
      klienta": lista wyjątków zawsze jest o jeden krótsza, niż trzeba. */
   select, input:not([type="checkbox"]) { min-height: 2.25rem; }
   select.lp-wybor { min-height: 1.75rem; min-width: 2.4rem; }
-  button.szukaj-cwiczenia, button.filmy-cwiczenia, button.usun-cwiczenie, button.edytuj-wlasne {
+  button.szukaj-cwiczenia, button.filmy-cwiczenia, button.usun-cwiczenie, button.edytuj-wlasne,
+  button.uwaga-cwiczenia {
     height: 2.25rem; min-width: 2.25rem;
   }
-  button.szukaj-cwiczenia, button.usun-cwiczenie, button.edytuj-wlasne { width: 2.25rem; }
+  button.szukaj-cwiczenia, button.usun-cwiczenie, button.edytuj-wlasne, button.uwaga-cwiczenia { width: 2.25rem; }
   /* `flex: none` nie jest ozdobą: kratka TOP SETU stoi w pasku ustawionym
      na flex i bez tego ściskała się z powrotem do 16 px szerokości. */
   input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; }

@@ -10,8 +10,8 @@
  * - **Teksty aplikacji** (przyciski, podpowiedzi, opisy RPE, komunikaty
  *   serwera) tłumaczy telefon — słownik w `public/klient/angielski.js`.
  *   Polska aplikacja zostaje bez zmian.
- * - **Teksty trenera**, których słownik nie zna: linie rozgrzewki i polskie
- *   nazwy ćwiczeń (własne, wpisane w konsoli). Te trener tłumaczy w okienku
+ * - **Teksty trenera**, których słownik nie zna: linie rozgrzewki, uwagi do
+ *   ćwiczeń (od 30.10.2026) i polskie nazwy ćwiczeń (własne, wpisane w konsoli). Te trener tłumaczy w okienku
  *   linku — sam albo z propozycją AI — a tłumaczenia leżą przy planie
  *   (`tlumaczenia`, schemat v14). Telefon dostaje je już podmienione.
  *
@@ -41,9 +41,9 @@ function nazwaDoTlumaczenia(c: { nazwa: string; wlasne?: true }): boolean {
 }
 
 /**
- * Teksty trenera, które klient zobaczy w planie: linie rozgrzewki (z planu
- * trenera i z wersji, którą klient ma teraz) i nazwy ćwiczeń, które mogą być
- * po polsku. Każdy raz, w kolejności dni.
+ * Teksty trenera, które klient zobaczy w planie: linie rozgrzewki i uwag do
+ * ćwiczeń (z planu trenera i z wersji, którą klient ma teraz) i nazwy ćwiczeń,
+ * które mogą być po polsku. Każdy raz, w kolejności dni.
  */
 export function tekstyTrenera(zapisany: ZapisanyPlan): TekstTrenera[] {
   const plany: Plan[] = [zapisany.plan, ...(zapisany.wersjaKlienta ? [zapisany.wersjaKlienta.plan] : [])];
@@ -53,6 +53,15 @@ export function tekstyTrenera(zapisany: ZapisanyPlan): TekstTrenera[] {
     for (const r of [...(plan.rozgrzewki ?? [])].sort((a, b) => a.dzien - b.dzien)) {
       for (const linia of (r.tekst ?? "").split("\n").map((l) => l.trim()).filter(Boolean)) {
         if (!teksty.has(linia)) teksty.set(linia, `Rozgrzewka · dzień ${r.dzien}`);
+      }
+    }
+  }
+  for (const plan of plany) {
+    const sloty = [...plan.sloty].filter((s) => s.cwiczenieId && s.uwaga).sort((a, b) => a.dzien - b.dzien);
+    for (const s of sloty) {
+      for (const linia of s.uwaga!.split("\n").map((l) => l.trim()).filter(Boolean)) {
+        const lp = (s.lp ?? "").replace(/\.$/, "");
+        if (!teksty.has(linia)) teksty.set(linia, `Uwaga · dzień ${s.dzien}${lp ? ` ${lp}` : ""}`);
       }
     }
   }
@@ -90,12 +99,12 @@ export function sprawdzTlumaczenia(dane: unknown): Record<string, string> | { bl
   return wynik;
 }
 
-/** Pola widoku, w których stoją teksty trenera: nazwy ćwiczeń (także na karcie filmu) i linie rozgrzewki. */
-const POLA_TEKSTOW = new Set(["nazwa", "nazwaEn", "linie"]);
+/** Pola widoku, w których stoją teksty trenera: nazwy ćwiczeń (także na karcie filmu), linie rozgrzewki i uwagi. */
+const POLA_TEKSTOW = new Set(["nazwa", "nazwaEn", "linie", "uwaga"]);
 
 /**
  * Widok dla telefonu po angielsku: nazwa ćwiczenia (w planie, w TOP SECIE,
- * w seriach maksymalnych, na karcie filmu) i linia rozgrzewki równe tekstowi
+ * w seriach maksymalnych, na karcie filmu), linia rozgrzewki i uwagi równe tekstowi
  * trenera z tłumaczeniem — podmienione. Porównanie całych napisów i tylko
  * w tych polach, więc tłumaczenie nie wejdzie w środek innego tekstu ani
  * w wartości, z których telefon liczy (np. „guma” w kolumnie ciężaru).
@@ -116,7 +125,7 @@ export function podmienTeksty<T>(widok: T, tlumaczenia: Readonly<Record<string, 
 }
 
 const ZASADY = `Tłumaczysz na angielski teksty trenera personalnego, które klient zobaczy
-w aplikacji treningowej: linie rozgrzewki i nazwy ćwiczeń.
+w aplikacji treningowej: linie rozgrzewki, uwagi do ćwiczeń i nazwy ćwiczeń.
 
 Zasady:
 - Krótko i naturalnie, językiem siłowni (np. „wykroki chodzone” → „walking lunges”,

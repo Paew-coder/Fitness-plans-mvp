@@ -2588,6 +2588,59 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       await plank.locator(".wykonanie-opis").innerText());
   }
 
+  // ── 41. uwaga trenera do ćwiczenia (30.10.2026) ───────────────────
+  //
+  // Trener: „jeżeli uwaga została dopisana przy C2, to i na liście, i w panelu
+  // ma być widoczna — może nie od razu, ale w formie rozwijanej, żeby nie
+  // zajmowała dużo miejsca”. Plank z uwagą w dwóch wierszach, obok ćwiczenie bez.
+  {
+    await api("/api/plany", "POST", { klient: "Uwaga telefon", wersja: 1 });
+    const idUwagi = (await api("/api/plany")).find((p: any) => p.klient === "Uwaga telefon").id;
+    const planUwagi = (await api(`/api/plany/${idUwagi}`)).zapisany.plan;
+    planUwagi.sloty[0].cwiczenieId = "EX-0150";   // Plank contralateral
+    planUwagi.sloty[0].tygodnie = { 1: { serie: 2, powtorzenia: 30, rpe: 8 } };
+    planUwagi.sloty[0].uwaga = "Brzuch napięty, biodra w linii z barkami.\nOddychaj spokojnie, nie wstrzymuj powietrza.";
+    planUwagi.sloty[1].cwiczenieId = "EX-0150";
+    planUwagi.sloty[1].tygodnie = { 1: { serie: 2, powtorzenia: 30, rpe: 8 } };
+    await api(`/api/plany/${idUwagi}`, "PUT", { plan: planUwagi, dataStartu: null, status: "wysłany" });
+    const sciezkaUwagi = (await api(`/api/plany/${idUwagi}/link`, "POST")).sciezka;
+    await s.goto(`${adres}${sciezkaUwagi}`, { waitUntil: "networkidle" });
+    await s.click("#nastepny-trening");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    const zUwaga = s.locator('#cwiczenia [data-position="D1-S01"]');
+    const uwagaNaLiscie = zUwaga.locator("details.uwaga-trenera");
+    const LINIE = ["Brzuch napięty, biodra w linii z barkami.", "Oddychaj spokojnie, nie wstrzymuj powietrza."];
+    sprawdz("na liście: „Uwaga trenera” zwinięta pod nazwą ćwiczenia, tekst schowany; bez uwagi — nic",
+      await uwagaNaLiscie.count() === 1 && !(await uwagaNaLiscie.evaluate((d: any) => d.open))
+        && (await uwagaNaLiscie.locator("summary").textContent()) === "Uwaga trenera"
+        && !(await uwagaNaLiscie.locator(".uwaga-tresc").isVisible())
+        && await s.locator('#cwiczenia [data-position="D1-S02"] details.uwaga-trenera').count() === 0,
+      `${await uwagaNaLiscie.count()} uwag przy D1-S01`);
+    await uwagaNaLiscie.locator("summary").click();
+    sprawdz("dotknięcie rozwija uwagę: oba wiersze, mieści się na telefonie",
+      JSON.stringify(await uwagaNaLiscie.locator(".uwaga-tresc p").allInnerTexts()) === JSON.stringify(LINIE)
+        && await uwagaNaLiscie.locator(".uwaga-tresc").isVisible()
+        && !(await s.evaluate(() => document.documentElement.scrollWidth > innerWidth)),
+      (await uwagaNaLiscie.locator(".uwaga-tresc p").allInnerTexts()).join(" | "));
+    // Ocena przerysowuje listę — rozwinięta uwaga ma zostać rozwinięta.
+    await zUwaga.getByRole("button", { name: "OK", exact: true }).click();
+    await s.waitForTimeout(400);
+    sprawdz("po ocenie (lista przerysowana) uwaga dalej rozwinięta",
+      await zUwaga.locator("details.uwaga-trenera").evaluate((d: any) => d.open));
+    await zUwaga.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
+    await s.waitForSelector("#ekran-seria:not(.ukryty)");
+    const uwagaWPanelu = s.locator("#panel details.uwaga-trenera");
+    sprawdz("w panelu serii ta sama uwaga, pod nazwą ćwiczenia, tak jak klient ją zostawił",
+      await uwagaWPanelu.count() === 1 && await uwagaWPanelu.evaluate((d: any) => d.open)
+        && JSON.stringify(await uwagaWPanelu.locator(".uwaga-tresc p").allInnerTexts()) === JSON.stringify(LINIE),
+      (await s.locator("#panel").innerText()).replace(/\n/g, " · ").slice(0, 160));
+    await uwagaWPanelu.locator("summary").click();
+    await s.click("#wroc-z-serii");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    sprawdz("zwinięta w panelu — zwinięta też na liście",
+      !(await zUwaga.locator("details.uwaga-trenera").evaluate((d: any) => d.open)));
+  }
+
   /*
    * Audyt, druga połowa: napisy, które tłumacz zostawiłby bez zmian, to mają
    * być wyłącznie nazwy ćwiczeń, linie rozgrzewki od trenera, liczby i skróty.

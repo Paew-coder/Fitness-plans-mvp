@@ -2480,6 +2480,62 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await s.waitForSelector("#ekran-lista:not(.ukryty)", { timeout: 5000 });
   sprawdz("„← klienci” wraca do ekranu głównego", await s.locator("#ekran-baza.ukryty").count() === 1);
 
+  // ── 19e. uwaga do ćwiczenia (30.10.2026) ──────────────────────────
+  // Trener: „w konsoli trenera ma być możliwość dopisania uwagi do ćwiczenia”.
+  // Uwaga zostaje w planie — sekcja 20 sprawdza z nią telefon i iPada.
+  {
+    await s.locator("#lista-klientow .pozycja", { hasText: KLIENT_PO_ZMIANIE }).getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-klient:not(.ukryty)");
+    await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-plan:not(.ukryty)");
+    await s.waitForTimeout(400);
+    const wierszUwagi = s.locator("#dni tr").filter({ has: s.locator("button.uwaga-cwiczenia:not(.pusty)") }).first();
+    const przyciskUwagi = wierszUwagi.locator("button.uwaga-cwiczenia");
+    sprawdz("w wierszu ćwiczenia przycisk 💬 „Dodaj uwagę”; w pustym wierszu niewidoczny",
+      await przyciskUwagi.count() === 1 && !(await przyciskUwagi.evaluate((b) => b.classList.contains("jest")))
+        && /Dodaj uwagę/.test(await przyciskUwagi.getAttribute("title") ?? "")
+        && await s.locator("#dni button.uwaga-cwiczenia.pusty").count() > 0
+        && await s.locator("#dni button.uwaga-cwiczenia.pusty").first().isVisible() === false,
+      await przyciskUwagi.getAttribute("title") ?? "brak przycisku");
+    await przyciskUwagi.click();
+    await s.waitForSelector("#modal:not(.ukryty)");
+    const UWAGA = "Łokcie blisko tułowia, na dole pauza 2 s — bez odbijania od klatki, "
+      + "pełny zakres ruchu w każdym powtórzeniu.\nOstatnia seria wolniej w dół.";
+    sprawdz("okienko uwagi: tytuł z Lp. i nazwą, puste pole, „Zapisz” i „Anuluj”, bez „Usuń” i „Zamknij”",
+      /^Uwaga do [A-Z]\d+: \S/.test(await s.locator("#modal-tytul").textContent() ?? "")
+        && await s.locator("#modal-body textarea.pole-uwagi").inputValue() === ""
+        && await s.locator("#modal-body").getByRole("button", { name: "Usuń uwagę" }).count() === 0
+        && !(await s.locator("#modal-zamknij").isVisible()),
+      await s.locator("#modal-tytul").textContent() ?? "");
+    await s.locator("#modal-body textarea.pole-uwagi").fill(`  ${UWAGA}  \n\n`);
+    // „zapisano” może już stać na ekranie z poprzedniego zapisu — czekamy na sam zapis.
+    const zapisUwagi = s.waitForResponse((r: any) => /\/api\/plany\/[^/]+$/.test(r.url()) && r.request().method() === "PUT");
+    await s.locator("#modal-body").getByRole("button", { name: "Zapisz" }).click();
+    const planZUwaga = (await (await zapisUwagi).json()).zapisany;
+    await s.waitForTimeout(300);
+    const zapisanaUwaga = planZUwaga.plan.sloty.find((x: any) => x.uwaga);
+    const zPlanu = async () => (await (await fetch(`${ADRES}/api/plany/${planZUwaga.id}`)).json()).zapisany.plan;
+    sprawdz("„Zapisz”: uwaga w planie (bez spacji i pustych linii na brzegach), 💬 podświetlone, w wierszu jedna linijka",
+      zapisanaUwaga?.uwaga === UWAGA
+        && await s.locator("#dni button.uwaga-cwiczenia.jest").count() === 1
+        && (await s.locator("#dni .uwaga-podglad .tekst").innerText()).startsWith("Łokcie blisko tułowia")
+        && await s.locator("#dni .uwaga-podglad .tekst").evaluate((e) => e.scrollWidth > e.clientWidth),
+      `${zapisanaUwaga?.positionId ?? "brak"} · ${JSON.stringify(zapisanaUwaga?.uwaga ?? null).slice(0, 60)}`);
+    // Dotknięcie linijki otwiera tę samą uwagę; „Anuluj” niczego nie zmienia.
+    await s.locator("#dni .uwaga-podglad").click();
+    await s.waitForSelector("#modal:not(.ukryty)");
+    const wPolu = await s.locator("#modal-body textarea.pole-uwagi").inputValue();
+    const usunJest = await s.locator("#modal-body").getByRole("button", { name: "Usuń uwagę" }).count();
+    await s.locator("#modal-body textarea.pole-uwagi").fill("coś innego");
+    await s.locator("#modal-body").getByRole("button", { name: "Anuluj" }).click();
+    await s.waitForTimeout(500);
+    sprawdz("linijka w wierszu otwiera uwagę do poprawki (z „Usuń uwagę”); „Anuluj” zostawia ją bez zmian",
+      wPolu === UWAGA && usunJest === 1
+        && (await zPlanu()).sloty.find((x: any) => x.uwaga)?.uwaga === UWAGA);
+  }
+  await s.goto(ADRES, { waitUntil: "networkidle" });
+  await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
+
   // ── 20. konsola z telefonu i z iPada ──────────────────────────────
   //
   // Cały przegląd wyżej chodzi w oknie 1500×1000. Konsola ma style na telefon

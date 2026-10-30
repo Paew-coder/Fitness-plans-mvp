@@ -25,6 +25,8 @@ import { TRYBY_AKCESORIOW, CZESCI_PLANU } from "../silnik/src/typy.ts";
 const MAX_SLOTOW = 100;
 const MAX_SERII = 300;
 const MAX_TOPSETOW = 60;   // od 27.09.2026 TOP SET może stać przy każdym ćwiczeniu dnia
+/** Uwaga trenera do ćwiczenia — kilka zdań, nie instrukcja na stronę. */
+export const UWAGA_MAKS = 500;
 
 const jestObiektem = (w: unknown): w is Record<string, unknown> =>
   typeof w === "object" && w !== null && !Array.isArray(w);
@@ -74,6 +76,10 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
     if (slot.przesunieciePowtorzen != null && (!Number.isInteger(slot.przesunieciePowtorzen)
         || Math.abs(slot.przesunieciePowtorzen as number) > 30)) {
       return `${gdzie}: przesunięcie powtórzeń musi być liczbą całkowitą od −30 do 30`;
+    }
+    // Uwaga trenera do ćwiczenia (30.10.2026) — klient widzi ją przy ćwiczeniu.
+    if (slot.uwaga != null && (typeof slot.uwaga !== "string" || slot.uwaga.length > UWAGA_MAKS)) {
+      return `${gdzie}: uwaga do ćwiczenia musi być tekstem do ${UWAGA_MAKS} znaków`;
     }
     // Stan sprzed „↗” — przywracany przy jego wyłączeniu.
     if (slot.przedRpeRosnacym != null && !jestObiektem(slot.przedRpeRosnacym)) {

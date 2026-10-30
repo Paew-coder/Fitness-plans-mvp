@@ -1368,6 +1368,15 @@ Trener (przy „Wall drill calf izo hold s/l”): „w ćwiczeniach tego typu po
 * **Aplikacja klienta:** kolumna „Czas” bez ciężaru, pole sekund w panelu, „Następna seria: 40 s (o 5 s krócej)”, propozycja w kolejnej serii, opis w „Jak trenować”; tłumaczenia w `angielski.js`; service worker `trening-v96`.
 * Testy: silnik `czas.test.ts` (4: kroki, czas po ocenie, plan po ocenach, „±” do 600 s). Przegląd klienta (+6, razem 278), przegląd ekranów (+2, razem 258).
 
+**123. Uwaga trenera do ćwiczenia — 30.10.2026.**
+
+Trener: „dodaj mi możliwość wpisywania uwag do wybranych ćwiczeń — w konsoli trenera ma być możliwość dopisania uwagi do ćwiczenia, i jeżeli taka uwaga została dopisana przy powiedzmy ćwiczeniu C2, to i na liście wyświetlanej, i w panelu ma być ona widoczna — może nie od razu, ale w formie rozwijanej, żeby nie zajmowała dużo miejsca”.
+
+* **Plan:** `SlotPlanu.uwaga` (tekst, do 500 znaków — `ksztalt-planu.ts`), jedna na cały cykl. Silnik jej nie liczy. Przechodzi z ćwiczeniem przy ▲▼ (`/przenies`) i do nowego cyklu; 🗑 i wyczyszczenie pozycji ją zdejmują. Wersja robocza: „Dzień 1 C2: … — uwaga dla klienta” na liście zmian.
+* **Konsola:** 💬 w wierszu (obok ▶ i 🗑, w pustym wierszu niewidoczny), okienko z polem na kilka wierszy, „Zapisz” / „Usuń uwagę” / „Anuluj”; pierwsza linijka uwagi pod nazwą ćwiczenia, ucięta, nie rozpycha tabeli.
+* **Aplikacja klienta:** widok telefonu niesie `uwaga` wiersz po wierszu; zwinięte „▸ 💬 Uwaga trenera” pod nazwą na liście, w panelu serii i przy TOP SECIE; stan rozwinięcia wspólny dla listy i panelu, przetrwa przerysowanie. Plan po angielsku: linie uwagi w tekstach do tłumaczenia (`tekstyTrenera`, „Uwaga · dzień 1 C2”), podmieniane jak rozgrzewka; „Coach's note” w słowniku. Service worker `trening-v97`.
+* Testy: `uwaga-do-cwiczenia.test.ts` (8: kształt planu, lista zmian, tłumaczenie; trasy — widok telefonu, odmowa za długiej, czekanie na „Zatwierdź”, plan po angielsku, ▲▼). Przegląd klienta (+5, razem 283), przegląd ekranów (+4, razem 262; telefon i iPad oglądane już z uwagą w wierszu).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

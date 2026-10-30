@@ -1026,6 +1026,16 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
       : null;
   };
 
+  /**
+   * Uwaga trenera do ćwiczenia (30.10.2026) — wiersz po wierszu, jak
+   * rozgrzewka (tak też idzie do tłumaczenia). Pusta albo brak = `null`.
+   */
+  const uwagaSlotu = (positionId: string) => {
+    const linie = (zapisany.plan.sloty.find((x) => x.positionId === positionId)?.uwaga ?? "")
+      .split("\n").map((l) => l.trim()).filter(Boolean);
+    return linie.length > 0 ? linie : null;
+  };
+
   const kalibracjaW = (cwiczenieId: string, positionId: string, tydzien: number) => {
     const k = zapisany.plan.serieMaksymalne
       .find((x) => x.cwiczenieId === cwiczenieId)?.kalibracja;
@@ -1109,6 +1119,8 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
             lp: s.lp,
             grupa: (s.lp || "").charAt(0),
             nazwa: s.cwiczenie!.nazwa,
+            // Uwaga trenera — telefon pokazuje ją zwiniętą na liście i w panelu.
+            uwaga: uwagaSlotu(s.positionId),
             film: s.cwiczenie!.film ?? null,
             // Karta ćwiczenia z filmem w aplikacji (09.10.2026, test OPEX):
             // opis i odtwarzacz zamiast linku do YouTube. Od 16.10.2026 także
@@ -1851,8 +1863,11 @@ const serwer = createServer(async (req, res) => {
         // Zamieniamy TREŚĆ slotów, nie całe wiersze — position_id i Lp. należą
         // do miejsca w planie, nie do ćwiczenia. Dokładnie tak, jak w arkuszu
         // przenosi się tylko widoczny zakres komórek.
-        const trescA = { cwiczenieId: slot.cwiczenieId, kategoriaSzkieletu: slot.kategoriaSzkieletu, tygodnie: slot.tygodnie };
-        const trescB = { cwiczenieId: cel.cwiczenieId, kategoriaSzkieletu: cel.kategoriaSzkieletu, tygodnie: cel.tygodnie };
+        // Uwaga trenera (30.10.2026) dotyczy ćwiczenia — idzie razem z nim.
+        const trescA = { cwiczenieId: slot.cwiczenieId, kategoriaSzkieletu: slot.kategoriaSzkieletu, tygodnie: slot.tygodnie,
+          uwaga: slot.uwaga };
+        const trescB = { cwiczenieId: cel.cwiczenieId, kategoriaSzkieletu: cel.kategoriaSzkieletu, tygodnie: cel.tygodnie,
+          uwaga: cel.uwaga };
         Object.assign(slot, trescB);
         Object.assign(cel, trescA);
 

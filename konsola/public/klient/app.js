@@ -748,6 +748,29 @@ function jakDobrac(powtorzenia, rpe) {
     + `${wZapasie(rpe)} w zapasie.`;
 }
 
+/**
+ * Uwaga trenera do ćwiczenia (30.10.2026) — zwinięta, rozwija się dotknięciem.
+ * Trener: „na liście i w panelu ma być widoczna — może nie od razu, ale
+ * w formie rozwijanej, żeby nie zajmowała dużo miejsca”. Rozwinięta zostaje
+ * rozwinięta, gdy lista się przerysuje (po każdej ocenie i serii) — i ta sama
+ * na liście i w panelu, do zamknięcia aplikacji. Tekst trenera nie idzie przez
+ * słownik (`translate="no"`): w planie po angielsku przychodzi z serwera
+ * już przetłumaczony.
+ */
+const otwarteUwagi = new Set();
+function uwagaTrenera(c) {
+  if (!c?.uwaga?.length) return null;
+  const blok = el("details", "uwaga-trenera");
+  blok.open = otwarteUwagi.has(c.positionId);
+  blok.ontoggle = () => (blok.open ? otwarteUwagi.add(c.positionId) : otwarteUwagi.delete(c.positionId));
+  blok.append(el("summary", "", "Uwaga trenera"));
+  const tresc = el("div", "uwaga-tresc");
+  tresc.setAttribute("translate", "no");
+  for (const linia of c.uwaga) tresc.append(el("p", "", linia));
+  blok.append(tresc);
+  return blok;
+}
+
 /** „Co to jest RPE?" — zwinięte objaśnienie skali. */
 function objasnienieRPE() {
   const d = el("details", "rpe");
@@ -1470,6 +1493,8 @@ function kartaCwiczenia(c, stan = null) {
   const film = przyciskFilmu(c.film, c.karta);
   if (film) gora.append(film);
   karta.append(gora);
+  const uwaga = uwagaTrenera(c);
+  if (uwaga) karta.append(uwaga);
 
   const pasuje = (k) => k.positionId === c.positionId;
   const ile = stan ? stan.kroki.filter(pasuje).filter((k) => stan.zrobione.has(k.klucz)).length : 0;
@@ -2668,6 +2693,9 @@ function panelTopSetu(k, kroki) {
   const karta = el("div", "panel-karta topset-panel");
   karta.append(el("div", "etykieta", "TOP SET"));
   karta.append(gloweczka(k.lp || "", k.nazwa, null, k.karta ?? null));
+  // Uwaga trenera do ćwiczenia, przy którym stoi TOP SET.
+  const uwaga = uwagaTrenera(dzienBiezacy()?.cwiczenia.find((c) => c.positionId === k.slotTopSetu));
+  if (uwaga) karta.append(uwaga);
   const bezCiezaru = k.ciezar === "— brak 1RM";
   karta.append(kolumnyZadania({
     ciezar: k.ciezar, dobierz: bezCiezaru && !k.procent, proba: bezCiezaru && !!k.procent,
@@ -2738,6 +2766,8 @@ function panelSerii(k, kroki, d) {
 
   karta.append(gloweczka(c.lp, c.nazwa, c.film, c.karta));
   if (k.wGrupie) karta.append(el("div", "seria-numer", `superseria ${k.litera}`));
+  const uwaga = uwagaTrenera(c);
+  if (uwaga) karta.append(uwaga);
 
   // Wcześniej stały tu szare podpowiedzi z planu, a zapisywało się tylko to,
   // co klient wpisał sam. Zgłoszone z testów: przy „9 kg · 10 powt." wpisane
