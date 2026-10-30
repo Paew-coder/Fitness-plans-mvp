@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   przeliczPlan, porownajLiczenieJednostronnych, tydzienWyliczony, tygodniePlanu,
-  numerTygodniaNaEkranie, TYDZIEN_MAKSOW, type Plan,
+  numerTygodniaNaEkranie, TYDZIEN_MAKSOW, type Plan, type SlotPlanu,
 } from "../silnik/src/plan.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
@@ -1864,10 +1864,17 @@ const serwer = createServer(async (req, res) => {
         // do miejsca w planie, nie do ćwiczenia. Dokładnie tak, jak w arkuszu
         // przenosi się tylko widoczny zakres komórek.
         // Uwaga trenera (30.10.2026) dotyczy ćwiczenia — idzie razem z nim.
-        const trescA = { cwiczenieId: slot.cwiczenieId, kategoriaSzkieletu: slot.kategoriaSzkieletu, tygodnie: slot.tygodnie,
-          uwaga: slot.uwaga };
-        const trescB = { cwiczenieId: cel.cwiczenieId, kategoriaSzkieletu: cel.kategoriaSzkieletu, tygodnie: cel.tygodnie,
-          uwaga: cel.uwaga };
+        // Tak samo „G”, „S”, „R”, „±” i stan sprzed „↗” (30.10.2026). To
+        // ustawienia „tego jednego ćwiczenia”, a trasa powstała przed nimi
+        // i ich nie znała: zostawały na starym wierszu i liczyły ćwiczenie,
+        // które weszło na jego miejsce. „G” też — od 16.10.2026 reguła boju
+        // nie patrzy na pozycję (`bojGlownySlotu`), a 🗑 zdejmuje je wszystkie
+        // razem z ćwiczeniem.
+        const tresc = ({ cwiczenieId, kategoriaSzkieletu, tygodnie, uwaga, bojGlowny, bojSilowy, trybCiezaru,
+          przesunieciePowtorzen, przedRpeRosnacym }: SlotPlanu) => ({ cwiczenieId, kategoriaSzkieletu, tygodnie,
+          uwaga, bojGlowny, bojSilowy, trybCiezaru, przesunieciePowtorzen, przedRpeRosnacym });
+        const trescA = tresc(slot);
+        const trescB = tresc(cel);
         Object.assign(slot, trescB);
         Object.assign(cel, trescA);
 

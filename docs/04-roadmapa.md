@@ -1394,6 +1394,14 @@ Trener (zrzut wiersza z „10 s”): „to ćwiczenie akurat powinno być na pow
 * **Konsola:** ✎ w wierszu przy każdym ćwiczeniu, nie tylko własnym — to samo okienko co na ekranie „Baza ćwiczeń”; ćwiczenie z arkusza albo biblioteki dostaje poprawkę (obejmuje każdy plan z nim, „Przywróć” wraca do oryginału). Na iPadzie przyciski przy ćwiczeniu schodzą linijkę niżej, zamiast wypychać tabelę.
 * Testy: przegląd ekranów (+1, razem 266).
 
+**126. ▲▼ przenosi „G”, „S”, „R”, „±” i „↗” razem z ćwiczeniem — 30.10.2026.**
+
+Błąd: `/przenies` zamieniał tylko ćwiczenie, kategorię, tygodnie i uwagę. Trasa powstała 16.08.2026, przed przyciskami przy wierszu, i nikt ich do niej nie dopisał — zostawały na starym wierszu. „R” na B1 po przestawieniu B1 w górę liczyło ciężar ćwiczeniu, które weszło na jego miejsce; „↗” wyłączone po przestawieniu nie wracało do stanu wyjściowego, bo ten stan został gdzie indziej; wersja robocza pokazywała przy obu ćwiczeniach „ustawienia”, których nikt nie zmieniał. Celowe to nie było: „G” od 16.10.2026 nie zależy od pozycji (`bojGlownySlotu`), a 🗑 zdejmuje wszystkie te pola razem z ćwiczeniem.
+
+* **Serwer:** `trescA`/`trescB` w `/przenies` niosą też `bojGlowny`, `bojSilowy`, `trybCiezaru`, `przesunieciePowtorzen`, `przedRpeRosnacym`. Mapa pozycji wersji roboczej (`przestaw`) bez zmian — lista zmian porównuje ćwiczenie z tym samym ćwiczeniem u klienta, więc teraz mówi samo „przestawione”.
+* **Poza zakresem:** TOP SET (`topSety[].slotPositionId`) dalej wskazuje pozycję, nie ćwiczenie.
+* Testy: `przestawienie-wierszy.test.ts` (3: każdy przycisk zmienia liczby w planie hipertroficznym; ▼ i ▲ — pola przy ćwiczeniach, Lp. na miejscu, liczby każdego ćwiczenia jak przed przestawieniem; lista zmian bez „ustawień”), `wersja-robocza.test.ts` (+1). Przegląd ekranów bez zmian (262).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
