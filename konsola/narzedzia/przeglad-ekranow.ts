@@ -1998,6 +1998,24 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   sprawdz("obciążenie pokazuje tygodnie po cyklu bez oceny normą",
     obciazenie.includes("T7 deload") && obciazenie.includes("T8 maksy"),
     obciazenie.replace(/\n/g, " ").slice(-80));
+  // Wykres stresu w cyklu (30.10.2026): słupek na tydzień, zmiana w %, pas
+  // normy przy całości; przełącznik pokazuje jeden wzorzec ruchu.
+  const wykres = s.locator("#obciazenie .wykres-stresu");
+  const slupki = await wykres.locator("svg g.tydzien").count();
+  const zmiany = await wykres.locator("svg text.zmiana").allTextContents();
+  const podpisCalosci = await wykres.locator("svg").getAttribute("aria-label") ?? "";
+  const zNorma = await wykres.locator("svg rect.norma").count();
+  sprawdz("wykres stresu: 8 słupków (T1–T6, deload, maksy), zmiana w %, pas normy, zdanie T1 → T6",
+    slupki === 8 && zmiany.slice(1).every((z) => /^[+-]?\d+%$/.test(z)) && zNorma === 1
+      && /T1 → T6: [+-]?\d+%/.test(await wykres.locator(".wykres-podsumowanie").innerText()),
+    `${slupki} słupków · ${zmiany.join(" ")}`);
+  await wykres.locator(".wykres-wzorce button", { hasText: "przysiad" }).click();
+  const poWzorcu = s.locator("#obciazenie .wykres-stresu");
+  sprawdz("przełącznik „przysiad”: inny wykres, bez pasa normy, przycisk wciśnięty",
+    (await poWzorcu.locator("svg").getAttribute("aria-label") ?? "") !== podpisCalosci
+      && await poWzorcu.locator("svg rect.norma").count() === 0
+      && await poWzorcu.locator('.wykres-wzorce button[aria-pressed="true"]').textContent() === "przysiad");
+  await poWzorcu.locator(".wykres-wzorce button", { hasText: "całość" }).click();
 
   await s.click("#przelacz-deload");
   await s.waitForTimeout(1200);

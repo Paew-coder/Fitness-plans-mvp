@@ -1402,6 +1402,13 @@ Błąd: `/przenies` zamieniał tylko ćwiczenie, kategorię, tygodnie i uwagę. 
 * **TOP SET:** wskazuje ćwiczenie pozycją (`topSety[].slotPositionId`) i tak samo zostawał na miejscu — stawał przed ćwiczeniem, które weszło, i liczył się z jego 1RM. `/przenies` zamienia pozycje we wszystkich wpisach TOP SETU, także wyłączonych (ponowne „T” przywraca RPE tygodni zapisane przy ćwiczeniu); dzień bez zmian. `podsumujZmiany` porównuje TOP SETY na pozycjach klienta (`naKlienta`), żeby samo przestawienie nie wychodziło jako „Plan: TOP SETY”.
 * Testy: `przestawienie-wierszy.test.ts` (3: każdy przycisk zmienia liczby w planie hipertroficznym; ▼ i ▲ — pola przy ćwiczeniach, TOP SET przy hip thruście, Lp. na miejscu, liczby każdego ćwiczenia z TOP SETEM jak przed przestawieniem; lista zmian bez „ustawień” i „TOP SETÓW”), `wersja-robocza.test.ts` (+2). Przegląd ekranów bez zmian (262).
 
+**127. Wykres stresu w cyklu — 30.10.2026.**
+
+Trener: „dodaj do konsoli trenerskiej jakieś dane albo jakiś wykres, który pokazuje stres, jaki ktoś ma w planie treningowym — jak on rośnie itp.”.
+
+* **Konsola, karta „Obciążenie” przy planie:** wykres słupkowy (SVG, bez bibliotek) — słupek na tydzień T1–T6 i tygodnie po cyklu (bledsze), w słupku stres centralny i obwodowy, nad nim zmiana wobec poprzedniego tygodnia w %, w tle pas normy tygodniowej (12–18 × dni), obrysowany tydzień otwarty w tabeli. Przełącznik: całość / przysiad / m. ciąg / wycisk. / wiosł. / core. Pod wykresem zdanie: T1 → T6 w % i liczbach, szczyt (gdy nie w T6), deload wobec T6, tygodnie ponad i poniżej normy. Dymek nad słupkiem — liczby. Liczby z silnika (`bilans`), konsola tylko rysuje.
+* Testy: przegląd ekranów (+2, razem 268; przyciski przełącznika ≥ 24 px na telefonie i iPadzie).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

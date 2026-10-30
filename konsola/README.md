@@ -483,6 +483,15 @@ między listą a panelem. W wysłanym planie nowa albo zmieniona uwaga czeka na
 po angielsku linie uwagi są w okienku „Link dla klienta” do przetłumaczenia,
 tak jak rozgrzewka, a nagłówek to „Coach's note”.
 
+## Wykres stresu w cyklu (od 30.10.2026)
+
+W karcie „Obciążenie” obok planu: słupek na każdy tydzień (T1–T6, deload,
+maksy), w nim stres centralny (ciemniej) i obwodowy (jaśniej), nad nim zmiana
+wobec poprzedniego tygodnia w %. Zielony pas to norma tygodniowa. Przyciski
+nad wykresem pokazują jeden wzorzec ruchu (przysiad, martwy ciąg, wyciskanie,
+wiosłowanie, core). Pod spodem jednym zdaniem: o ile stres rośnie od T1 do T6,
+gdzie jest szczyt, ile schodzi deload i które tygodnie są poza normą.
+
 ## ✎ przy każdym ćwiczeniu w planie (od 30.10.2026)
 
 Długopis ✎ w wierszu planu stoi przy każdym ćwiczeniu, nie tylko przy

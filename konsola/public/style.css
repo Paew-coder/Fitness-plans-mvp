@@ -392,6 +392,28 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .propozycja .wskazowka.ostrzezenie { color: var(--uwaga); }
 .propozycja button { margin-top: .5rem; }
 
+/* Wykres stresu w cyklu (30.10.2026) — słupki centralny/obwodowy, pas normy. */
+.wykres-stresu { margin-bottom: .6rem; }
+.wykres-stresu svg { display: block; width: 100%; max-width: 24rem; height: auto; overflow: visible; }
+.wykres-wzorce { display: flex; flex-wrap: wrap; gap: .25rem; margin-bottom: .4rem; }
+.wykres-wzorce button.mikro { width: auto; padding: 0 .45rem; font-size: .7rem; }
+.wykres-stresu .norma { fill: var(--dobrze); opacity: .12; }
+.wykres-stresu .zero { stroke: var(--linia-mocna); stroke-width: 1; }
+.wykres-stresu .centralny { fill: var(--akcent); }
+.wykres-stresu .obwodowy { fill: var(--akcent); opacity: .45; }
+/* Deload i maksy — ten sam kolor, bledszy cały słupek (poza normą z założenia). */
+.wykres-stresu g.dodatkowy { opacity: .5; }
+.wykres-stresu .biezacy rect.centralny { stroke: var(--tekst); stroke-width: 1.2; }
+.wykres-stresu text { font-family: var(--mono); fill: var(--tekst-slaby); }
+.wykres-stresu text.os { font-size: 8px; fill: var(--tekst-blady); }
+.wykres-stresu text.zmiana { font-size: 8px; }
+.wykres-stresu text.wzrost { fill: var(--dobrze); }
+.wykres-stresu text.spadek { fill: var(--uwaga); }
+.wykres-legenda { display: flex; flex-wrap: wrap; align-items: center; gap: .15rem; margin: .3rem 0 0; }
+.wykres-legenda .probka { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; background: var(--akcent); }
+.wykres-legenda .probka.obwodowy { opacity: .45; }
+.wykres-legenda .probka.norma { background: var(--dobrze); opacity: .25; }
+.wykres-podsumowanie { margin: .3rem 0 0; }
 .wiersz-miary {
   display: flex; align-items: center; gap: .6rem; padding: .22rem 0;
   font-family: var(--mono); font-size: .78rem;
@@ -718,6 +740,7 @@ td.ciezar .zrobione {
   /* ✎ przy każdym ćwiczeniu (30.10.2026): na iPadzie przyciski schodzą
      linijkę niżej, zamiast ściskać kolumnę Lp. i wypychać tabelę. */
   td.cwiczenie .wybor-cwiczenia { flex-wrap: wrap; }
+  .wykres-wzorce button.mikro { min-height: 1.9rem; padding: 0 .6rem; font-size: .78rem; }
 }
 
 /* iPad w pionie: dwie kolumny analityczne ustępują miejsca liczbom — tak jak

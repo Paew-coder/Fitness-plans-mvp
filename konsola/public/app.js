@@ -2683,7 +2683,7 @@ function rysujAnalize() {
 
   // obciążenie tydzień po tygodniu
   const obciazenie = $("#obciazenie");
-  obciazenie.replaceChildren();
+  obciazenie.replaceChildren(wykresStresu());
   const maks = Math.max(...obraz.wynik.tygodnie.map((t) => t.bilans.razem), 0.001);
   const dni = obraz.wynik.dniTreningowe;
   if (dni > 0) {
@@ -2728,6 +2728,124 @@ function rysujAnalize() {
       `${liczba(obraz.jednostronne.stresRazemObieStrony)} zamiast ` +
       `${liczba(obraz.jednostronne.stresRazemJakWArkuszu)}`));
   }
+}
+
+/**
+ * Wykres stresu w cyklu (30.10.2026). Trener: „jakieś dane albo jakiś wykres,
+ * który pokazuje stres, jaki ktoś ma w planie treningowym — jak on rośnie”.
+ *
+ * Słupek na tydzień: stres centralny (ciemniej) i obwodowy (jaśniej), nad nim
+ * zmiana wobec poprzedniego tygodnia. W tle pas normy tygodniowej (tylko dla
+ * całości — wzorce mają własne normy objętości). Przełącznik pokazuje jeden
+ * wzorzec ruchu. Pod spodem zdanie: ile przybyło od T1 do T6, gdzie szczyt,
+ * ile zszedł deload. Liczby z silnika (`bilans` tygodnia) — tu tylko rysunek.
+ */
+const WZORCE_WYKRESU = [["", "całość"], ["s", "przysiad"], ["d", "m. ciąg"], ["b", "wycisk."], ["r", "wiosł."], ["c", "core"]];
+let wzorzecWykresu = "";
+function wykresStresu() {
+  const blok = el("div", "wykres-stresu");
+  const tygodnie = [...obraz.wynik.tygodnie, ...(obraz.wynik.tygodnieDodatkowe ?? [])];
+  const wartosc = (t) => {
+    const b = t.bilans;
+    const w = wzorzecWykresu ? b.wzorce.find((x) => x.part === wzorzecWykresu) : b;
+    return { razem: w?.calkowity ?? w?.razem ?? 0, centralny: w?.centralny ?? 0, obwodowy: w?.obwodowy ?? 0 };
+  };
+  const dane = tygodnie.map((t) => ({ t, etykieta: `T${numerTygodnia(obraz.zapisany.plan, t.tydzien)}`,
+    dodatkowy: Boolean(t.rodzaj), ...wartosc(t) }));
+
+  const wybor = el("div", "wykres-wzorce");
+  for (const [part, nazwa] of WZORCE_WYKRESU) {
+    const b = el("button", `mikro ${wzorzecWykresu === part ? "wlaczony" : ""}`, nazwa);
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(wzorzecWykresu === part));
+    b.onclick = () => { wzorzecWykresu = part; blok.replaceWith(wykresStresu()); };
+    wybor.append(b);
+  }
+  blok.append(wybor);
+  if (dane.every((d) => d.razem === 0)) {
+    blok.append(el("p", "wskazowka", "Wykres pojawi się, gdy w planie będą ćwiczenia."));
+    return blok;
+  }
+
+  const dni = obraz.wynik.dniTreningowe;
+  const norma = !wzorzecWykresu && dni > 0 ? obraz.normy.stresTygodniowy.map((x) => x * dni) : null;
+  const gora = Math.max(...dane.map((d) => d.razem), norma?.[1] ?? 0) * 1.12 || 1;
+  const W = 300, H = 150, L = 26, D = 18, G = 16;
+  const szer = (W - L - 4) / dane.length;
+  const y = (v) => G + (H - G - D) * (1 - v / gora);
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("role", "img");
+  const s = (tag, atrybuty, tekst) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(atrybuty)) e.setAttribute(k, String(v));
+    if (tekst !== undefined) e.textContent = tekst;
+    svg.append(e);
+    return e;
+  };
+  if (norma) {
+    s("rect", { x: L, y: y(norma[1]), width: W - L - 4, height: y(norma[0]) - y(norma[1]), class: "norma" });
+    s("text", { x: L - 3, y: y(norma[1]) + 3, class: "os", "text-anchor": "end" }, liczba(norma[1]));
+    s("text", { x: L - 3, y: y(norma[0]) + 3, class: "os", "text-anchor": "end" }, liczba(norma[0]));
+  }
+  s("line", { x1: L, x2: W - 4, y1: y(0), y2: y(0), class: "zero" });
+  dane.forEach((d, i) => {
+    const x = L + i * szer + szer * 0.18, w = szer * 0.64;
+    const g = s("g", { class: `tydzien ${d.dodatkowy ? "dodatkowy" : ""} ${d.t.tydzien === tydzien ? "biezacy" : ""}` });
+    const kawalek = (od, ile, klasa) => {
+      const r = document.createElementNS(NS, "rect");
+      for (const [k, v] of Object.entries({ x, y: y(od + ile), width: w, height: Math.max(0, y(od) - y(od + ile)), class: klasa })) {
+        r.setAttribute(k, String(v));
+      }
+      g.append(r);
+    };
+    kawalek(0, d.centralny, "centralny");
+    kawalek(d.centralny, Math.max(0, d.razem - d.centralny), "obwodowy");
+    const tytul = document.createElementNS(NS, "title");
+    tytul.textContent = `${etykietaTygodnia(obraz.zapisany.plan, d.t.tydzien)}: stres ${liczba(d.razem)}`
+      + ` (centralny ${liczba(d.centralny)}, obwodowy ${liczba(d.obwodowy)})`;
+    g.append(tytul);
+    s("text", { x: x + w / 2, y: H - 5, class: "os", "text-anchor": "middle" }, d.etykieta);
+    const poprzedni = dane[i - 1];
+    if (poprzedni?.razem > 0) {
+      const zmiana = Math.round((d.razem / poprzedni.razem - 1) * 100);
+      s("text", { x: x + w / 2, y: y(d.razem) - 3, "text-anchor": "middle",
+        class: `zmiana ${zmiana > 0 ? "wzrost" : zmiana < 0 ? "spadek" : ""}` }, `${zmiana > 0 ? "+" : ""}${zmiana}%`);
+    } else {
+      s("text", { x: x + w / 2, y: y(d.razem) - 3, "text-anchor": "middle", class: "zmiana" }, liczba(d.razem));
+    }
+  });
+  const robocze = dane.filter((d) => !d.dodatkowy);
+  const pierwszy = robocze[0], ostatni = robocze.at(-1), szczyt = robocze.reduce((a, d) => (d.razem > a.razem ? d : a), robocze[0]);
+  svg.setAttribute("aria-label", `Stres ${wzorzecWykresu ? WZORCE_WYKRESU.find(([p]) => p === wzorzecWykresu)[1] : "w cyklu"} `
+    + dane.map((d) => `${d.etykieta} ${liczba(d.razem)}`).join(", "));
+  blok.append(svg);
+
+  const legenda = el("p", "wskazowka wykres-legenda");
+  legenda.append(el("span", "probka centralny"), document.createTextNode(" centralny  "),
+    el("span", "probka obwodowy"), document.createTextNode(" obwodowy"));
+  if (norma) legenda.append(document.createTextNode("  "), el("span", "probka norma"), document.createTextNode(` norma ${liczba(norma[0])}–${liczba(norma[1])}`));
+  blok.append(legenda);
+
+  const zdania = [];
+  if (pierwszy?.razem > 0 && ostatni && ostatni !== pierwszy) {
+    const z = Math.round((ostatni.razem / pierwszy.razem - 1) * 100);
+    zdania.push(`${pierwszy.etykieta} → ${ostatni.etykieta}: ${z > 0 ? "+" : ""}${z}% (${liczba(pierwszy.razem)} → ${liczba(ostatni.razem)})`);
+  }
+  if (szczyt && szczyt !== ostatni) zdania.push(`szczyt w ${szczyt.etykieta} (${liczba(szczyt.razem)})`);
+  const deload = dane.find((d) => d.t.rodzaj === "deload");
+  if (deload && ostatni?.razem > 0) {
+    zdania.push(`deload ${Math.round((deload.razem / ostatni.razem - 1) * 100)}% wobec ${ostatni.etykieta}`);
+  }
+  if (norma) {
+    const ponad = robocze.filter((d) => d.razem > norma[1]).map((d) => d.etykieta);
+    const pod = robocze.filter((d) => d.razem < norma[0]).map((d) => d.etykieta);
+    if (ponad.length) zdania.push(`ponad normą: ${ponad.join(", ")}`);
+    if (pod.length) zdania.push(`poniżej normy: ${pod.join(", ")}`);
+  }
+  if (zdania.length) blok.append(el("p", "wskazowka wykres-podsumowanie", zdania.join(" · ")));
+  return blok;
 }
 
 function wierszMiary(etykieta, wartosc, maks, ocena) {
