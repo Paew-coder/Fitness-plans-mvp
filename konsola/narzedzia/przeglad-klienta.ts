@@ -2590,6 +2590,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
         && (await s.locator(".sekcja-tytul").first().textContent()) === "Weeks of the cycle"
         && await s.title() === "Training",
       glowny.slice(0, 4).join(" | ") || await s.locator("#nastepny-trening").innerText());
+    const instrukcjaEn = await s.locator("#pokaz-instrukcje").getAttribute("href") ?? "";
+    sprawdz("po angielsku: „How to use the app” prowadzi do angielskiej instrukcji, z powrotem do planu",
+      instrukcjaEn.startsWith("/instrukcja/en?wroc=")
+        && await s.locator("#instrukcja-otworz").getAttribute("href") === instrukcjaEn
+        && /How to use the training app/.test(await (await fetch(`${adres}${instrukcjaEn}`)).text()),
+      instrukcjaEn);
     await rozwinTydzien(s.locator("#tygodnie .tydzien").nth(1));
     sprawdz("po angielsku: tydzień i dzień — „Week 2”, „of 6”, „Day I”, „1 of 1 workout”",
       /^Week 2\s*of \d/.test(await s.locator("#tygodnie .tydzien").nth(1).locator(".tydzien-nazwa").innerText())

@@ -475,7 +475,7 @@ schemat v14); napisy aplikacji tłumaczy telefon słownikiem całych zdań
 angielsku — polska aplikacja zostaje bez zmian. Przegląd klienta sprawdza
 słownik: przechodzi całą polską aplikację i zgłasza każdy napis bez
 tłumaczenia, a na końcu ogląda ekrany po angielsku. Instrukcja dla klienta
-(`/instrukcja`) jest na razie tylko po polsku.
+ma wersję angielską — `/instrukcja/en` (niżej).
 
 ## Instrukcja dla klienta (od 18.10.2026)
 
@@ -501,6 +501,15 @@ zmianach w `public/klient/` wystarczy puścić to jeszcze raz. Tekst strony
 (`public/instrukcja/index.html`) i podpisy plansz (`PLANSZE` w
 `narzedzia/instrukcja.ts`) są pisane ręcznie — po zmianie działania
 aplikacji trzeba je przejrzeć.
+
+**Po angielsku** (od 27.10.2026): `/instrukcja/en` — ta sama strona,
+film, PDF i zrzuty z aplikacji po angielsku (przykładowy klient „John
+Example”). Klient z planem po angielsku dostaje ją w aplikacji zamiast
+polskiej, a okno „Link dla klienta” po zaznaczeniu „Plan po angielsku”
+podaje jej adres. Zrzuty, film i PDF: `npm run instrukcja -- en` (do
+`public/instrukcja/en/`, polskie pliki zostają); tekst strony
+(`public/instrukcja/en/index.html`) i podpisy plansz (`PLANSZE_EN`) to
+tłumaczenie polskich — po zmianie polskich przejrzyj i te.
 
 Film iPhone odtwarza tylko przez zapytania o zakres bajtów — serwer odpowiada
 na nie kodem 206 (`plikStatyczny`). Strona leży poza `/klient/`, żeby nie

@@ -1339,9 +1339,16 @@ Trener: „dodaj mi opcję przed wysłaniem linku z planem do klienta, żeby ozn
 
 * **Konsola:** w okienku „Link dla klienta” pole „Plan po angielsku” (plan z ekranu planu; z kartoteki — plan, który klient widzi). Pod nim teksty trenera, których nie zna żaden słownik — linie rozgrzewki i polskie nazwy ćwiczeń — do wpisania po angielsku albo z propozycją AI (zapis dopiero po sprawdzeniu). Zmiana języka nie jest zmianą planu: bez wersji roboczej, bez zmiany znacznika; nowy cykl przejmuje język i tłumaczenia.
 * **Serwer:** schemat v14 (`plan.jezyk`, `plan.tlumaczenia_json`), `GET/PUT /api/plany/{id}/jezyk`, `POST /api/plany/{id}/tlumacz` (propozycje AI, bez nazwiska klienta, nic nie zapisuje). Widok telefonu: `jezyk: "en"`, nazwy ćwiczeń i linie rozgrzewki podmienione (tylko całe napisy, tylko w tych polach), karta filmu z nazwą angielską; komunikat „trener przygotowuje plan” też po angielsku.
-* **Telefon:** `angielski.js` — słownik całych zdań i wzory zdań z liczbami; tłumaczy gotowy ekran (także dorysowywany) i okienko potwierdzenia, przecinek dziesiętny na kropkę. Wczytuje się tylko przy planie po angielsku — polska aplikacja bez zmian. Imię klienta nietłumaczone. Powrót do polskiego przeładowuje stronę. Service worker `trening-v94`.
+* **Telefon:** `angielski.js` — słownik całych zdań i wzory zdań z liczbami; tłumaczy gotowy ekran (także dorysowywany) i okienko potwierdzenia, przecinek dziesiętny na kropkę. Wczytuje się tylko przy planie po angielsku — polska aplikacja bez zmian. Imię klienta nietłumaczone. Powrót do polskiego przeładowuje stronę. Service worker `trening-v94` (z angielską instrukcją — `v95`).
 * Testy: `plan-po-angielsku.test.ts` (9: teksty trenera, propozycje AI bez nazwiska i bez zapisu, zapis bez ruszania planu, widok telefonu, odmowy, nowy cykl i komunikat między cyklami, powrót do polskiego, podmiana tylko w nazwach, sprawdzanie tłumaczeń), migracja (v14). Przegląd klienta (+12, razem 271): audyt słownika na całej polskiej aplikacji (brak tłumaczeń; bez zmian tylko nazwy, rozgrzewka, liczby), strona główna, tydzień i dzień, dzień treningu z rozgrzewką i „Last time (W1)”, panel serii, karta filmu, serie maksymalne, telefon bez przewijania w bok, powrót do polskiego. Przegląd ekranów (+5, razem 250).
-* Zostaje: instrukcja dla klienta (`/instrukcja`: film, zrzuty, PDF) jest tylko po polsku.
+
+**120. Instrukcja dla klienta po angielsku — 27.10.2026.**
+
+Trener: „tak, zrób instrukcję po angielsku”.
+
+* **Strona `/instrukcja/en`:** tłumaczenie polskiej instrukcji (film, prezentacja PDF, osiem kroków ze zrzutami, częste pytania), pasek „← Back to your plan”. Zrzuty, film i PDF nagrane z prawdziwej aplikacji na planie po angielsku („John Example”) — `npm run instrukcja -- en` zapisuje je do `public/instrukcja/en/`, polskich nie rusza; plansze filmu po angielsku (`PLANSZE_EN`).
+* **Gdzie trafia klient:** aplikacja przy planie po angielsku prowadzi „How to use the app” (karta na górze i „More”) do `/instrukcja/en`; okno „Link dla klienta” po zaznaczeniu „Plan po angielsku” podaje adres angielskiej instrukcji, po odznaczeniu — polskiej.
+* Testy: `plan-po-angielsku.test.ts` (+1: strona po angielsku bez polskich napisów, wszystkie zrzuty, film i PDF z folderu `en`, polska pod starym adresem). Przegląd klienta (+1, razem 272), przegląd ekranów (+1, razem 251).
 
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 

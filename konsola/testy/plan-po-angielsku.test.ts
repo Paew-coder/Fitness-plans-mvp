@@ -204,6 +204,24 @@ describe("plan po angielsku — trasy serwera", () => {
   });
 });
 
+describe("instrukcja po angielsku (27.10.2026)", () => {
+  test("/instrukcja/en: strona po angielsku (bez polskiego poza komentarzami), zrzuty, film i PDF z folderu en", async () => {
+    for (const adresStrony of ["/instrukcja/en", "/instrukcja/en/"]) {
+      const odp = await fetch(`${adres}${adresStrony}`);
+      assert.equal(odp.status, 200, adresStrony);
+      const html = await odp.text();
+      assert.match(html, /<html lang="en">/);
+      assert.match(html, /How to use the training app/);
+      const widoczne = html.replace(/<!--[\s\S]*?-->|<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, "");
+      assert.ok(!/[ąćęłńóśźż]/i.test(widoczne), widoczne.match(/.{0,40}[ąćęłńóśźż].{0,40}/i)?.[0]);
+      const pliki = [...new Set([...widoczne.matchAll(/(?:src|href|poster)="(\/instrukcja\/[^"]+)"/g)].map((m) => m[1]))];
+      assert.ok(pliki.length >= 14 && pliki.every((p) => p.startsWith("/instrukcja/en/")), pliki.join(", "));
+      for (const plik of pliki) assert.equal((await fetch(`${adres}${plik}`, { method: "HEAD" })).status, 200, plik);
+    }
+    assert.match(await (await fetch(`${adres}/instrukcja`)).text(), /<html lang="pl">/, "polska zostaje pod starym adresem");
+  });
+});
+
 describe("plan po angielsku — funkcje", () => {
   test("podmiana tylko całych napisów i tylko w nazwach i liniach rozgrzewki", () => {
     const widok = { nazwa: "Rowerek", ciezar: "guma", linie: ["Rowerek", "Rowerek 5 min"], karta: { nazwaEn: "Rowerek" }, opis: "Rowerek" };

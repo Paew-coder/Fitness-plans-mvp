@@ -143,8 +143,11 @@ const kolejka = {
  * stronę: przetłumaczonych już napisów nie ma skąd wziąć z powrotem.
  */
 async function ustawJezyk(jezyk) {
-  if (jezyk === "en") (await import("./angielski.js")).wlaczAngielski();
-  else if (document.documentElement.lang === "en") location.reload();
+  if (jezyk === "en") {
+    (await import("./angielski.js")).wlaczAngielski();
+    // Instrukcja też po angielsku — osobna strona z angielskimi zrzutami i filmem.
+    for (const a of [$("#pokaz-instrukcje"), $("#instrukcja-otworz")]) a.href = ADRES_INSTRUKCJI.replace("/instrukcja?", "/instrukcja/en?");
+  } else if (document.documentElement.lang === "en") location.reload();
 }
 
 function zapiszWidokLokalnie() {

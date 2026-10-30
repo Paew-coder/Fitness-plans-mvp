@@ -3435,7 +3435,7 @@ $("#eksportuj").onclick = async () => {
  * trener wpisuje tu po angielsku, sam albo z propozycją AI (do poprawienia
  * przed zapisem). Bez tłumaczenia tekst zostaje u klienta po polsku.
  */
-async function sekcjaJezyka(planId) {
+async function sekcjaJezyka(planId, naZmiane = () => {}) {
   const sekcja = el("div", "jezyk-planu");
   let stan;
   try {
@@ -3460,6 +3460,7 @@ async function sekcjaJezyka(planId) {
         body: { jezyk: pole.checked ? "en" : "pl", tlumaczenia: zbierz() } });
       for (const input of pola.values()) input.classList.remove("propozycja-ai");
       komunikat.textContent = opis;
+      naZmiane(stan.jezyk);
     } catch (blad) {
       komunikat.textContent = blad.message;
     }
@@ -3523,6 +3524,7 @@ async function sekcjaJezyka(planId) {
     rysujTeksty();
   };
   rysujTeksty();
+  naZmiane(stan.jezyk);
   sekcja.append(wiersz, teksty, komunikat);
   return sekcja;
 }
@@ -3555,18 +3557,23 @@ async function pokazLinkKlienta(klientId, planId = null) {
     // stałym adresem — do wysłania razem z linkiem przed pierwszym planem.
     // Sam link; „Kopiuj link + instrukcję” zdjęty 19.10.2026 — trener: „nie
     // działa prawidłowo, więc możesz go usunąć”.
-    const instrukcja = `${location.origin}/instrukcja`;
     const akcje = el("div", "akcje-modala");
     akcje.append(kopiuj, uniewaznij);
 
-    const linkInstrukcji = el("a", "", instrukcja);
-    linkInstrukcji.href = instrukcja;
+    const linkInstrukcji = el("a", "");
     linkInstrukcji.target = "_blank";
     linkInstrukcji.rel = "noopener";
+    // Plan po angielsku — instrukcja też po angielsku (27.10.2026).
+    const ustawInstrukcje = (jezyk) => {
+      const instrukcja = `${location.origin}/instrukcja${jezyk === "en" ? "/en" : ""}`;
+      linkInstrukcji.href = instrukcja;
+      linkInstrukcji.textContent = instrukcja;
+    };
+    ustawInstrukcje("pl");
     // Język planu, który klient zobaczy pod tym linkiem — przed wysłaniem.
     const planJezyka = planId ?? widocznyPlan ?? kartoteka?.plany?.at(-1)?.id ?? null;
     const tresc = [
-      ...(planJezyka ? [await sekcjaJezyka(planJezyka)] : []),
+      ...(planJezyka ? [await sekcjaJezyka(planJezyka, ustawInstrukcje)] : []),
       el("p", "", "Wyślij klientowi. Otworzy się na telefonie, działa też bez zasięgu."),
       pole,
       el("p", "wskazowka", "Przed pierwszym planem dołącz instrukcję — film i opis krok po kroku:"),

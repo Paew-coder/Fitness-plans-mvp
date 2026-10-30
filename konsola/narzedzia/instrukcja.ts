@@ -18,6 +18,14 @@
  *   film-plakat.webp  pierwsza klatka filmu na stronie
  *   instrukcja.pdf    te same plansze jako prezentacja
  *
+ * Wersja angielska (27.10.2026, do planów po angielsku):
+ *
+ *   npm run instrukcja -- en
+ *
+ * Ten sam przebieg na planie oznaczonym jako angielski („John Example”),
+ * plansze po angielsku, wynik w `public/instrukcja/en/` — strona
+ * `/instrukcja/en` (`en/index.html`, pisana ręcznie). Polskie pliki zostają.
+ *
  * Wymaga Playwrighta z Chromium i ffmpeg z libx264 i libwebp.
  */
 import { execFileSync } from "node:child_process";
@@ -29,7 +37,9 @@ import { fileURLToPath } from "node:url";
 import { zKonsola, type Srodowisko } from "./przegladarka.ts";
 
 const KONSOLA = join(dirname(fileURLToPath(import.meta.url)), "..");
-const WYJSCIE = join(KONSOLA, "public", "instrukcja");
+/** Wersja angielska — dla klientów z planem po angielsku. */
+const EN = process.argv.slice(2).includes("en");
+const WYJSCIE = join(KONSOLA, "public", "instrukcja", ...(EN ? ["en"] : []));
 const EKRANY = join(WYJSCIE, "ekrany");
 const ROBOCZY = mkdtempSync(join(tmpdir(), "instrukcja-"));
 const PORT = 4193;
@@ -41,7 +51,7 @@ const TELEFON = {
   isMobile: true,
   hasTouch: true,
   colorScheme: "dark",
-  locale: "pl-PL",
+  locale: EN ? "en-GB" : "pl-PL",
   userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 "
     + "(KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
 };
@@ -57,8 +67,7 @@ const CWICZENIA: Record<string, string> = {
 };
 
 async function zasiej({ api }: Srodowisko): Promise<string> {
-  await api("/api/plany", "POST", { klient: "Jan Przykładowy", wersja: 1 });
-  const id = "jan-przykladowy-1";
+  const id = (await api("/api/plany", "POST", { klient: EN ? "John Example" : "Jan Przykładowy", wersja: 1 })).zapisany.id;
   await api(`/api/plany/${id}/szablon`, "POST", { szablonId: "fbw_3dni_6w" });
   const plan = (await api(`/api/plany/${id}`)).zapisany.plan;
   for (const s of plan.sloty) if (CWICZENIA[s.positionId]) s.cwiczenieId = CWICZENIA[s.positionId];
@@ -75,8 +84,14 @@ async function zasiej({ api }: Srodowisko): Promise<string> {
   await api(`/api/plany/${id}/tygodnie`, "POST", { tryb: "progresja", zrodlo: 1 });
   const zProgresja = (await api(`/api/plany/${id}`)).zapisany.plan;
   await api(`/api/plany/${id}`, "PUT", { plan: zProgresja, dataStartu: null, status: "wysłany" });
+  if (EN) await api(`/api/plany/${id}/jezyk`, "PUT", { jezyk: "en" });
   return (await api(`/api/plany/${id}/link`, "POST")).sciezka;
 }
+
+/** Napisy przycisków, w które przegląd klika — w języku planu. */
+const PRZYCISKI = EN
+  ? { pominPrzerwe: "Skip rest", calyDzien: "Whole day as a list" }
+  : { pominPrzerwe: "Pomiń przerwę", calyDzien: "Cały dzień na liście" };
 
 // ── znaczniki na zrzutach ─────────────────────────────────────────────
 const KOLOR = "#FFC857";
@@ -139,6 +154,7 @@ async function zrobZrzuty(przegladarka: any, srodowisko: Srodowisko): Promise<vo
     `instrukcja-${sciezka.split("/")[2]}`);
   const s = await kontekst.newPage();
   await s.goto(`${srodowisko.adres}${sciezka}`, { waitUntil: "networkidle" });
+  if (EN) await s.waitForFunction(() => document.documentElement.lang === "en", null, { timeout: 10000 });
   await s.waitForTimeout(400);
 
   await zrzut(s, "glowna");
@@ -225,13 +241,13 @@ async function zrobZrzuty(przegladarka: any, srodowisko: Srodowisko): Promise<vo
   await zrzut(s, "prowadzenie-dotyk");
   await s.locator("#panel button.glowny").first().click();
   await s.waitForTimeout(1300);
-  await zaznacz(s, s.locator("#panel button", { hasText: "Pomiń przerwę" }), "dotyk");
+  await zaznacz(s, s.locator("#panel button", { hasText: PRZYCISKI.pominPrzerwe }), "dotyk");
   await zrzut(s, "przerwa");
 
   // Koniec treningu z listy.
-  await s.locator("#panel button", { hasText: "Pomiń przerwę" }).click();
+  await s.locator("#panel button", { hasText: PRZYCISKI.pominPrzerwe }).click();
   await s.waitForTimeout(300);
-  await s.locator("#panel", { hasText: "Cały dzień na liście" }).getByText("Cały dzień na liście").click();
+  await s.locator("#panel", { hasText: PRZYCISKI.calyDzien }).getByText(PRZYCISKI.calyDzien).click();
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   // Przycisk stoi na samym dole strony — bez zapasu pod spodem nie da się
   // go przewinąć na wysokość, którą widać w ramce telefonu na planszy.
@@ -260,7 +276,7 @@ async function zrobZrzuty(przegladarka: any, srodowisko: Srodowisko): Promise<vo
 // ── plansze filmu i prezentacji ───────────────────────────────────────
 type Plansza = { tytul: string; tresc: string; ekran: string };
 
-const PLANSZE: Plansza[] = [
+const PLANSZE_PL: Plansza[] = [
   { tytul: "Twój plan treningowy w telefonie",
     tresc: "Minuta o tym, jak otworzyć plan, zrobić trening i dać trenerowi znać, jak poszło.",
     ekran: "glowna" },
@@ -302,12 +318,56 @@ const PLANSZE: Plansza[] = [
     ekran: "koniec" },
 ];
 
+/** Te same plansze po angielsku — do filmu i PDF-u w `instrukcja/en/`. */
+const PLANSZE_EN: Plansza[] = [
+  { tytul: "Your training plan on your phone",
+    tresc: "One minute on how to open your plan, do a workout and let your coach know how it went.",
+    ekran: "glowna" },
+  { tytul: "Open the link from your coach",
+    tresc: "This is your plan for the whole cycle. Your next workout is always waiting at the top — tap it to start.",
+    ekran: "glowna-dotyk" },
+  { tytul: "Add it to your home screen",
+    tresc: "iPhone: share icon → “Add to Home Screen”. Android: menu ⋮ → “Add to Home screen”.",
+    ekran: "instalacja" },
+  { tytul: "Where your weights come from",
+    tresc: "Start right away and choose the weight by RPE — or do max sets first.",
+    ekran: "ciezary" },
+  { tytul: "What is RPE?",
+    tresc: "How many reps you have left in reserve. RPE 8 is a set after which two more clean reps would still be possible.",
+    ekran: "rpe" },
+  { tytul: "Training from the list",
+    tresc: "All of the day's exercises, each with a ▶ technique video. B1 and B2 are a superset — you alternate them.",
+    ekran: "superseria" },
+  { tytul: "Log your set",
+    tresc: "Different weight than planned? Enter it — the app will recalculate the rest of the plan from that set.",
+    ekran: "karta" },
+  { tytul: "Choosing the weight? Reps aren't fixed",
+    tresc: "Plan: 8 reps at RPE 8. Got 10 and still had 2 in reserve? Enter 10 — the weights for the rest of the plan go up.",
+    ekran: "dobor" },
+  { tytul: "Rate the exercise",
+    tresc: "Too hard — it gets lighter. Too easy — heavier. Exercises without a rating are saved as OK.",
+    ekran: "ocena" },
+  { tytul: "Or: set by set",
+    tresc: "“▶ Guide me” shows one set at a time: weight, reps and warm-up.",
+    ekran: "prowadzenie-dotyk" },
+  { tytul: "Rest is timed for you",
+    tresc: "Take your rest. You can skip it or add 30 seconds.",
+    ekran: "przerwa" },
+  { tytul: "At the end: Finish workout",
+    tresc: "Everything saves right away — even without signal. It syncs when you're back online.",
+    ekran: "zakoncz" },
+  { tytul: "Done. Have a great workout!",
+    tresc: "Questions about your plan or the exercises? Message your coach.",
+    ekran: "koniec" },
+];
+const PLANSZE = EN ? PLANSZE_EN : PLANSZE_PL;
+
 const dataUrl = (plik: string, typ = "image/png") =>
   `data:${typ};base64,${readFileSync(plik).toString("base64")}`;
 
 function htmlPlanszy(p: Plansza, numer: number, ile: number): string {
   const licznik = numer === 1 ? "" : `${numer - 1} / ${ile - 1}`;
-  return `<!doctype html><html lang="pl"><head><meta charset="utf-8"><style>
+  return `<!doctype html><html lang="${EN ? "en" : "pl"}"><head><meta charset="utf-8"><style>
     * { box-sizing: border-box; }
     body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; color: #E9EBF2;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

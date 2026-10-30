@@ -2496,6 +2496,10 @@ const serwer = createServer(async (req, res) => {
     if (sciezka === "/instrukcja" || sciezka === "/instrukcja/") {
       if (plikStatyczny("/instrukcja/index.html", res, req)) return;
     }
+    // Po angielsku (27.10.2026) — dla klientów z planem po angielsku.
+    if (sciezka === "/instrukcja/en" || sciezka === "/instrukcja/en/") {
+      if (plikStatyczny("/instrukcja/en/index.html", res, req)) return;
+    }
 
     // ── 1RM z serii maksymalnej (podgląd na żywo) ────────────────────
     if (sciezka === "/api/1rm") {

@@ -1234,6 +1234,9 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await poleEn.check();
   await s.waitForFunction(() => /oznaczony jako angielski/.test(document.querySelector(".jezyk-komunikat")?.textContent ?? ""),
     null, { timeout: 5000 });
+  sprawdz("zaznaczone: w okienku link do instrukcji po angielsku",
+    await s.locator('#modal-body a[href$="/instrukcja/en"]').count() === 1
+      && await s.locator('#modal-body a[href$="/instrukcja"]').count() === 0);
   const tekstyTrenera = (await jezykPlanu()).teksty;
   const polaTlumaczen = s.locator(".jezyk-tekst input");
   sprawdz("zaznaczone: plan po angielsku na serwerze, pod polem teksty trenera do przetłumaczenia",
@@ -1252,8 +1255,9 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   await s.waitForFunction(() => /znów po polsku/.test(document.querySelector(".jezyk-komunikat")?.textContent ?? ""),
     null, { timeout: 5000 });
   const poOdznaczeniu = await jezykPlanu();
-  sprawdz("odznaczone: plan znów po polsku, tłumaczenia zostają na później",
+  sprawdz("odznaczone: plan znów po polsku, tłumaczenia zostają na później, instrukcja polska",
     poOdznaczeniu.jezyk === "pl" && await s.locator(".jezyk-tekst").count() === 0
+      && await s.locator('#modal-body a[href$="/instrukcja"]').count() === 1
       && poOdznaczeniu.teksty.find((t: any) => t.pl === "Pallof press przegląd")?.en === "Pallof press walkthrough");
   await s.click("#modal-zamknij");
   // Wyszukiwarka: „nie ma na liście?” otwiera okienko z wpisaną nazwą.
