@@ -1377,6 +1377,14 @@ Trener: „dodaj mi możliwość wpisywania uwag do wybranych ćwiczeń — w ko
 * **Aplikacja klienta:** widok telefonu niesie `uwaga` wiersz po wierszu; zwinięte „▸ 💬 Uwaga trenera” pod nazwą na liście, w panelu serii i przy TOP SECIE; stan rozwinięcia wspólny dla listy i panelu, przetrwa przerysowanie. Plan po angielsku: linie uwagi w tekstach do tłumaczenia (`tekstyTrenera`, „Uwaga · dzień 1 C2”), podmieniane jak rozgrzewka; „Coach's note” w słowniku. Service worker `trening-v97`.
 * Testy: `uwaga-do-cwiczenia.test.ts` (8: kształt planu, lista zmian, tłumaczenie; trasy — widok telefonu, odmowa za długiej, czekanie na „Zatwierdź”, plan po angielsku, ▲▼). Przegląd klienta (+5, razem 283), przegląd ekranów (+4, razem 262; telefon i iPad oglądane już z uwagą w wierszu).
 
+**124. ▲▼ przenosi „G”, „S”, „R”, „±” i „↗” razem z ćwiczeniem — 30.10.2026.**
+
+Błąd: `/przenies` zamieniał tylko ćwiczenie, kategorię, tygodnie i uwagę. Trasa powstała 16.08.2026, przed przyciskami przy wierszu, i nikt ich do niej nie dopisał — zostawały na starym wierszu. „R” na B1 po przestawieniu B1 w górę liczyło ciężar ćwiczeniu, które weszło na jego miejsce; „↗” wyłączone po przestawieniu nie wracało do stanu wyjściowego, bo ten stan został gdzie indziej; wersja robocza pokazywała przy obu ćwiczeniach „ustawienia”, których nikt nie zmieniał. Celowe to nie było: „G” od 16.10.2026 nie zależy od pozycji (`bojGlownySlotu`), a 🗑 zdejmuje wszystkie te pola razem z ćwiczeniem.
+
+* **Serwer:** `trescA`/`trescB` w `/przenies` niosą też `bojGlowny`, `bojSilowy`, `trybCiezaru`, `przesunieciePowtorzen`, `przedRpeRosnacym`. Mapa pozycji wersji roboczej (`przestaw`) bez zmian — lista zmian porównuje ćwiczenie z tym samym ćwiczeniem u klienta, więc teraz mówi samo „przestawione”.
+* **Poza zakresem:** TOP SET (`topSety[].slotPositionId`) dalej wskazuje pozycję, nie ćwiczenie.
+* Testy: `przestawienie-wierszy.test.ts` (3: każdy przycisk zmienia liczby w planie hipertroficznym; ▼ i ▲ — pola przy ćwiczeniach, Lp. na miejscu, liczby każdego ćwiczenia jak przed przestawieniem; lista zmian bez „ustawień”), `wersja-robocza.test.ts` (+1). Przegląd ekranów bez zmian (262).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

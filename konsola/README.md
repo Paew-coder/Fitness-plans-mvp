@@ -647,9 +647,11 @@ na wiersz. Zamieniają **treść** slotów, nie całe wiersze: `position_id` i `
 należą do miejsca w planie, nie do ćwiczenia — dokładnie jak w arkuszu, gdzie
 przenosi się tylko widoczny zakres komórek, a kolumny techniczne zostają.
 
-> Skutek uboczny warty zapamiętania: przeniesienie ćwiczenia na pozycję **A1**
-> czyni je bojem głównym, więc powtórzenia przestaje liczyć automat akcesoriów.
-> Ciężar zmieni się od razu — to poprawne, bo A1 jest bojem głównym z definicji.
+Z ćwiczeniem idzie wszystko, co trener przy nim ustawił: parametry tygodni,
+uwaga 💬, „G”, „S”, „R”, „±” i stan sprzed „↗” (od 30.10.2026 — wcześniej te
+przyciski zostawały na starym wierszu i liczyły ćwiczenie, które weszło na jego
+miejsce). Liczby przestawionego ćwiczenia się nie zmieniają: od 16.10.2026
+pozycja nie decyduje też o boju głównym — przysiad na B1 dalej jest bojem.
 
 ## Powtórki z poprzedniego cyklu
 

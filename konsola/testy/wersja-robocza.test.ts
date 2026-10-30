@@ -103,6 +103,24 @@ describe("lista zmian do zatwierdzenia", () => {
     assert.deepEqual(z, ["Dzień 1 A1: Wiosło przestawione (było B1)", "Dzień 1 B1: Przysiad przestawione (było A1)"]);
   });
 
+  test("▲▼ z „G”, „R” i „±” przy ćwiczeniach — dalej samo przestawienie", () => {
+    // Ustawienia idą z ćwiczeniem (`/przenies`), a lista porównuje ćwiczenie
+    // z tym samym ćwiczeniem u klienta — więc nic się w nich nie zmieniło.
+    const klienta = plan([["A1.", "EX-0010"], ["B1.", "EX-0016"]]);
+    Object.assign(klienta.sloty[0]!, { bojGlowny: false });
+    Object.assign(klienta.sloty[1]!, { trybCiezaru: "licz z RPE", przesunieciePowtorzen: 2 });
+    const trenera = plan([["A1.", "EX-0016"], ["B1.", "EX-0010"]]);
+    Object.assign(trenera.sloty[0]!, { trybCiezaru: "licz z RPE", przesunieciePowtorzen: 2 });
+    Object.assign(trenera.sloty[1]!, { bojGlowny: false });
+    const mapa = przestaw({}, "D1-S01", "D1-S02");
+    assert.deepEqual(podsumujZmiany(klienta, trenera, mapa, nazwa),
+      ["Dzień 1 A1: Wiosło przestawione (było B1)", "Dzień 1 B1: Przysiad przestawione (było A1)"]);
+    // Zmiana ustawienia razem z przestawieniem — oba zdania.
+    trenera.sloty[1]!.bojGlowny = true;
+    assert.deepEqual(podsumujZmiany(klienta, trenera, mapa, nazwa).slice(1),
+      ["Dzień 1 B1: Przysiad przestawione (było A1)", "Dzień 1 B1: Przysiad — ustawienia"]);
+  });
+
   test("oceny klienta to nie zmiana trenera", () => {
     const klienta = plan([["A1.", "EX-0010", { 1: { feedback: "OK" } }]]);
     const trenera = plan([["A1.", "EX-0010", { 1: {} }]]);
