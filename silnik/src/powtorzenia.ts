@@ -1,6 +1,7 @@
 import type { Coeff, CzescPlanu, Tydzien } from "./typy.ts";
 import { ogranicz } from "./pomocnicze.ts";
 import { POWT_MAX, POWT_MIN } from "./rpe.ts";
+import { CZAS_MAKS_S } from "./czas.ts";
 
 /**
  * Górna granica automatu bez tabeli %1RM (masa ciała, czas, guma…). Przy
@@ -67,11 +68,13 @@ export function powtorzeniaAkcesorium(args: {
   przesuniecieTrenera?: number;
   /** Ciężar nie idzie z tabeli %1RM — powtórzeń może być więcej niż 15. */
   bezTabeli?: boolean;
+  /** Ćwiczenie na czas (27.10.2026): liczba to sekundy, górna granica `CZAS_MAKS_S`. */
+  czas?: boolean;
 }): number {
   const { coeff, czesc, tydzien, korekta = 0, przezCalyCykl = false,
-    przesuniecieTrenera = 0, bezTabeli = false } = args;
+    przesuniecieTrenera = 0, bezTabeli = false, czas = false } = args;
   const baza = powtorzeniaBazowe(coeff, czesc);
   const przesuniecie = przezCalyCykl ? offsetCyklu(tydzien) : offsetTygodnia(tydzien);
   return ogranicz(baza + przesuniecie + korekta + przesuniecieTrenera, POWT_MIN,
-    bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX);
+    czas ? CZAS_MAKS_S : bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX);
 }

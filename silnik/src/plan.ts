@@ -1,4 +1,5 @@
 import { PROGRESJE_Z_TABELI, zGuma } from "./typy.ts";
+import { czasPoOcenie, naCzas } from "./czas.ts";
 import type {
   Cwiczenie,
   CzescPlanu,
@@ -380,19 +381,27 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     const efektywne = serieEfektywne(
       serie, cwiczenie.jednostronne, plan.liczenieJednostronnych ?? "jak w arkuszu",
     );
-    const powtorzenia =
+    // Ćwiczenie na czas (27.10.2026): liczba to sekundy, a ocena zmienia je
+    // krokiem rosnącym z czasem (5 s → 4 s, 45 s → 40 s) — także wtedy, gdy
+    // czas wpisał trener. Patrz `czas.ts`.
+    const czas = naCzas(cwiczenie.progresja);
+    const korekta = korektaPowtorzen(cwiczenie.progresja, mnoznik);
+    const powtorzeniaPlanu =
       p.powtorzenia ??
       szablon.powtorzenia ??
       powtorzeniaAkcesorium({
         coeff: cwiczenie.coeff,
         czesc: plan.czescPlanu,
         tydzien,
-        korekta: korektaPowtorzen(cwiczenie.progresja, mnoznik),
+        korekta: czas ? 0 : korekta,
+        czas,
         // Masa ciała: T1–T6 bez restartu w T4 (trener, 10.10.2026).
         przezCalyCykl: cwiczenie.progresja === "masa ciała",
         przesuniecieTrenera: slot.przesunieciePowtorzen,
         bezTabeli: !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja),
       });
+    // Deload bierze czas z T6 — już po ocenach.
+    const powtorzenia = czas && !wzor ? czasPoOcenie(powtorzeniaPlanu, korekta) : powtorzeniaPlanu;
     // Dwubój: procent z planu albo wpisany przez trenera; RPE tylko jako
     // odpowiednik do stresu — wpisane RPE nic tu nie zmienia.
     const procentDwuboju = dwuboj ? (p.procent ?? szablon.procent!) : undefined;

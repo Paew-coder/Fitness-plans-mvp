@@ -1974,9 +1974,15 @@ function przesunPowtorzenia(slot) {
   const teraz = [1, 2, 3, 4, 5, 6].map((t) => slot.tygodnie?.[t]?.powtorzenia
     ?? wyliczonyTydzienNr(t)?.sloty.find((s) => s.positionId === slot.positionId)?.powtorzenia);
   if (teraz.some((x) => typeof x !== "number")) return;
-  const odpowiedz = prompt(`${lp}: powtórzenia T1–T6 teraz ${teraz.join(" · ")}.\n`
-    + "Ile powtórzeń w T1? Pozostałe tygodnie ułożą się od tej liczby według progresji ćwiczenia.\n"
-    + "Puste pole — powrót do progresji z planu.",
+  // Na czas (27.10.2026) — te same liczby to sekundy utrzymania.
+  const czas = cwiczenie(slot.cwiczenieId)?.progresja === "czas";
+  const odpowiedz = prompt(czas
+    ? `${lp}: czas T1–T6 teraz ${teraz.join(" · ")} s.\n`
+      + "Ile sekund w T1? Pozostałe tygodnie ułożą się od tej liczby według progresji ćwiczenia.\n"
+      + "Puste pole — powrót do progresji z planu."
+    : `${lp}: powtórzenia T1–T6 teraz ${teraz.join(" · ")}.\n`
+      + "Ile powtórzeń w T1? Pozostałe tygodnie ułożą się od tej liczby według progresji ćwiczenia.\n"
+      + "Puste pole — powrót do progresji z planu.",
   String(teraz[0]));
   if (odpowiedz === null) return;
   const t1 = odpowiedz.trim() === "" ? null : Number(odpowiedz.trim().replace(",", "."));
@@ -2535,12 +2541,21 @@ function rysujSlot(slot, pusty) {
     "1",
     String(wyliczony?.serie ?? ""),
   ));
-  wiersz.append(poleLiczbowe(
+  const komorkaPowt = poleLiczbowe(
     parametry.powtorzenia,
     (v) => { parametry.powtorzenia = v; },
     "1",
     String(wyliczony?.powtorzenia ?? ""),
-  ));
+  );
+  // Ćwiczenie na czas (27.10.2026): w tym polu sekundy utrzymania; ocena
+  // klienta zmienia je w kolejnych tygodniach krokiem rosnącym z czasem.
+  if (wyliczony?.cwiczenie?.progresja === "czas") {
+    komorkaPowt.classList.add("czas");
+    komorkaPowt.title = "Czas utrzymania w sekundach. „Za trudne” u klienta skraca go w kolejnych tygodniach "
+      + "(5 s → 4 s, 45 s → 40 s), „za łatwe” wydłuża.";
+    komorkaPowt.append(el("span", "jednostka", "s"));
+  }
+  wiersz.append(komorkaPowt);
   // Dwubój (16.10.2026): w kolumnie RPE procent 1RM — z niego idzie ciężar.
   const dwuboj = wyliczony?.dwuboj || liczonyDwuboj(slot);
   const komorkaRpe = dwuboj
@@ -2671,25 +2686,24 @@ function wierszMiary(etykieta, wartosc, maks, ocena) {
  * Serie w jednej linijce: „80 · 90 · 85 · 80 kg × 6", a przy różnych
  * powtórzeniach „80×6 · 90×6 · 85×5". Ten sam zapis co w telefonie klienta.
  */
-function opisSerii(serie) {
+function opisSerii(serie, jedn = "powt.") {
   const kg = (n) => liczba(n).replace(",0", "");
   const pusta = (x) => !x || (!x.ciezar && !x.powtorzenia);
   const wszystkie = [...(serie ?? [])];
   while (wszystkie.length > 0 && pusta(wszystkie.at(-1))) wszystkie.pop();
   const jedna = (x) => (x.ciezar && x.powtorzenia ? `${kg(x.ciezar)}×${x.powtorzenia}`
-    : x.ciezar ? `${kg(x.ciezar)} kg` : `${x.powtorzenia} powt.`);
+    : x.ciezar ? `${kg(x.ciezar)} kg` : `${x.powtorzenia} ${jedn}`);
   // Dziura w środku zostaje jako „—": „— · 10×10" to niewpisana pierwsza
   // seria, a nie trening z jedną serią.
   if (wszystkie.some(pusta)) return wszystkie.map((x) => (pusta(x) ? "—" : jedna(x))).join(" · ");
   const s = wszystkie;
   if (s.length === 0) return "";
-  if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} powt.`;
+  if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} ${jedn}`;
   const powt = s[0].powtorzenia;
   if (powt && s.every((x) => x.ciezar && x.powtorzenia === powt)) {
     return `${s.map((x) => kg(x.ciezar)).join(" · ")} kg × ${powt}`;
   }
-  return s.map((x) => (x.ciezar && x.powtorzenia ? `${kg(x.ciezar)}×${x.powtorzenia}`
-    : x.ciezar ? `${kg(x.ciezar)} kg` : `${x.powtorzenia} powt.`)).join(" · ");
+  return s.map(jedna).join(" · ");
 }
 
 /**
@@ -2708,7 +2722,8 @@ function zrobioneWTygodniu(slot) {
   const serie = w.serie ?? (w.ciezarWykonany || w.powtorzeniaWykonane
     ? [{ ciezar: w.ciezarWykonany ?? null, powtorzenia: w.powtorzeniaWykonane ?? null }]
     : []);
-  const opis = opisSerii(serie);
+  // Ćwiczenie na czas — sekundy (27.10.2026).
+  const opis = opisSerii(serie, cwiczenie(slot.cwiczenieId)?.progresja === "czas" ? "s" : "powt.");
   if (!opis) return null;
   const e = el("div", "zrobione", `zrobione: ${opis}`);
   e.title = "Serie wpisane przez klienta w tym tygodniu. Do propozycji 1RM idzie najcięższa.";

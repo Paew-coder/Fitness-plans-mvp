@@ -21,6 +21,7 @@ import { PROGRESJE_Z_TABELI, type Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { bojGlownySlotu, dwubojSlotu, parametrySzablonu, pauzaSlotu } from "./szablon-boju.ts";
 import { POWT_MAX_BEZ_TABELI, powtorzeniaAkcesorium } from "./powtorzenia.ts";
+import { CZAS_MAKS_S, naCzas } from "./czas.ts";
 import { POWT_MAX, POWT_MIN } from "./rpe.ts";
 
 export {
@@ -153,18 +154,21 @@ export function powtorzeniaOdT1(
     return { blad: "To ćwiczenie ma własną periodyzację — jego powtórzeń się nie przesuwa." };
   }
   const bezTabeli = !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja);
+  // Na czas (27.10.2026) — sekundy, do `CZAS_MAKS_S`.
+  const czas = naCzas(cwiczenie.progresja);
   const automat = TYGODNIE.map((t) => powtorzeniaAkcesorium({
     coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: t,
-    przezCalyCykl: cwiczenie.progresja === "masa ciała", bezTabeli,
+    przezCalyCykl: cwiczenie.progresja === "masa ciała", bezTabeli, czas,
   }));
   let przesuniecie = 0;
   if (t1 !== null) {
     if (!Number.isInteger(t1)) return { blad: "Wpisz liczbę całkowitą." };
     przesuniecie = t1 - automat[0]!;
     const po = automat.map((x) => x + przesuniecie);
-    const maks = bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX;
+    const maks = czas ? CZAS_MAKS_S : bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX;
     if (Math.min(...po) < POWT_MIN || Math.max(...po) > maks) {
-      return { blad: bezTabeli
+      return { blad: czas ? `Od ${POWT_MIN} do ${maks} s w każdym tygodniu — wyszłoby ${po.join(" · ")}.`
+        : bezTabeli
         ? `Od ${POWT_MIN} do ${maks} powtórzeń w każdym tygodniu — wyszłoby ${po.join(" · ")}.`
         : `Przy ćwiczeniu z ciężarem tabela %1RM kończy się na ${POWT_MAX} powtórzeniach — `
           + `wyszłoby ${po.join(" · ")}.` };

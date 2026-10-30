@@ -2250,6 +2250,47 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       `${poResecie.zapisany.wykonania.length} wykonań, start ${poResecie.zapisany.dataStartu}`);
   }
 
+  // ── 19c. ćwiczenie na czas — sekundy w wierszu (27.10.2026) ───────
+  // Trener: „w ćwiczeniach tego typu powinienem mieć możliwość wpisania
+  // konkretnego czasu”. W polu powtórzeń sekundy, z jednostką „s”.
+  {
+    await api("/api/plany", "POST", { klient: "Czas Ekran", wersja: 1 });
+    const idCzasu = (await api("/api/plany")).find((p: any) => p.klient === "Czas Ekran").id;
+    const planCzasu = (await api(`/api/plany/${idCzasu}`)).zapisany.plan;
+    planCzasu.sloty[0].cwiczenieId = "EX-0150";   // Plank contralateral — progresja „czas”
+    planCzasu.sloty[0].tygodnie = { 1: { serie: 3, powtorzenia: 45, rpe: 8 } };
+    await api(`/api/plany/${idCzasu}`, "PUT", { plan: planCzasu, dataStartu: null, status: "szkic" });
+    await s.goto(ADRES, { waitUntil: "networkidle" });
+    await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
+    await s.locator("#lista-klientow .pozycja", { hasText: "Czas Ekran" }).getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-klient:not(.ukryty)");
+    await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
+    await s.waitForSelector("#ekran-plan:not(.ukryty)");
+    await s.waitForTimeout(400);
+    const komorkaCzasu = s.locator("#dni tr td.czas").first();
+    sprawdz("wiersz ćwiczenia na czas: w polu powtórzeń sekundy — 45 i jednostka „s”, z podpowiedzią",
+      await s.locator("#dni tr td.czas").count() === 1
+        && await komorkaCzasu.locator("input").inputValue() === "45"
+        && (await komorkaCzasu.locator(".jednostka").innerText()) === "s"
+        && /Czas utrzymania w sekundach/.test(await komorkaCzasu.getAttribute("title") ?? ""),
+      `${await s.locator("#dni tr td.czas").count()} komórek z czasem`);
+    // „±” przy czasie pyta o sekundy i przyjmuje więcej niż 30 (do 600).
+    const wierszCzasu = s.locator("#dni tr").filter({ has: s.locator("td.czas") }).first();
+    const pytanPrzedCzasem = pytania.length;
+    odpowiedzi.push("60");
+    await wierszCzasu.hover();
+    const odpCzasu = s.waitForResponse((r: any) => r.url().endsWith("/tygodnie") && r.request().method() === "POST");
+    await wierszCzasu.locator("td.lp button", { hasText: /^±$/ }).click();
+    const statusCzasu = (await odpCzasu).status();
+    await s.waitForTimeout(250);
+    const t1Czasu = (await api(`/api/plany/${idCzasu}`)).wynik.tygodnie[0].sloty
+      .find((x: any) => x.positionId === planCzasu.sloty[0].positionId)?.powtorzenia;
+    sprawdz("„±” przy ćwiczeniu na czas pyta o sekundy; 60 s w T1 przyjęte",
+      pytania.slice(pytanPrzedCzasem).some((m) => /Ile sekund w T1/.test(m) && /45 · .* s\./.test(m))
+        && statusCzasu === 200 && t1Czasu === 60,
+      `${pytania.slice(pytanPrzedCzasem).join(" | ")} · ${statusCzasu} · T1 ${t1Czasu}`);
+  }
+
   // ── 19d. baza ćwiczeń (27.10.2026) ────────────────────────────────
   // Trener: „zrób tak, żebym miał dostęp do całej bazy ćwiczeń tak po prostu,
   // a nie tylko podczas wybierania ćwiczenia do planu, i żebym mógł edytować

@@ -104,6 +104,9 @@ const SLOWNIK = new Map([
   ["Seria", "Set"],
   ["Serie", "Sets"],
   ["Powt.", "Reps"],
+  ["Czas", "Time"],
+  ["przy masie ciała — liczba powtórzeń", "for bodyweight exercises — the number of reps"],
+  ["przy ćwiczeniach na czas — czas utrzymania", "for timed exercises — the hold time"],
   ["Powtórzenia", "Reps"],
   ["powt.", "reps"],
   ["na stronę", "per side"],
@@ -265,7 +268,7 @@ const SLOWNIK = new Map([
   ["Ciężar musi być z zakresu 0–1000 kg", "Weight must be between 0 and 1000 kg"],
   ["Ciężar TOP SETU musi być z zakresu 0–1000 kg.", "TOP SET weight must be between 0 and 1000 kg."],
   ["Ciężar serii maksymalnej musi być z zakresu 0–1000 kg.", "Max set weight must be between 0 and 1000 kg."],
-  ["Powtórzenia muszą być z zakresu 0–200", "Reps must be between 0 and 200"],
+  ["Powtórzenia (albo sekundy) muszą być z zakresu 0–600", "Reps (or seconds) must be between 0 and 600"],
   ["Numer tygodnia musi być z zakresu 1–6", "Week number must be between 1 and 6"],
   ["Dzień musi być z zakresu 1–5, a tydzień 1–6", "Day must be between 1 and 5, and week between 1 and 6"],
   // postęp (ekran schowany)
@@ -411,6 +414,8 @@ const SLOWNIK = new Map([
 ]);
 
 const RZYMSKIE = "I|II|III|IV|V";
+/** Co zmienia ocena — w zdaniach pod przyciskami oceny. */
+const CO_ZMIENIA_OCENA = { "ciężar": "weight", "powtórzenia": "reps", "czas": "time" };
 /** „1 workout”, „3 workouts”. */
 const liczbaMnoga = (n, jeden, wiele) => `${n} ${Number(n) === 1 ? jeden : wiele}`;
 /** „o 5%” → „5%”, „o 2,5 kg” → „2.5 kg”. */
@@ -482,10 +487,10 @@ const WZORY = [
   [/^Twoje obecne 1RM to (.+) kg — jeśli idzie lekko, dołóż\.$/, "Your current 1RM is $1 kg — if it moves easily, add weight."],
   // trening
   [/^▶ Wróć do treningu — (.+)$/, (_, o, t) => `▶ Back to the workout — ${t(o)}`],
-  [/^zrobiłeś inny ciężar niż w planie\? Wpisz go — od tej serii policzę resztę planu\. Nie chcesz wpisywać\? Wystarczy ocena: „Za trudne” — lżej, „Za łatwe” — ciężej( \(przy masie ciała — liczba powtórzeń\))?\.(.*)$/,
-    (_, mc, reszta, t) => "lifted a different weight than planned? Enter it — I'll calculate the rest of the plan from this set. "
+  [/^zrobiłeś inny ciężar niż w planie\? Wpisz go — od tej serii policzę resztę planu\. Nie chcesz wpisywać\? Wystarczy ocena: „Za trudne” — lżej, „Za łatwe” — ciężej(?: \((.+?)\))?\.(.*)$/,
+    (_, co, reszta, t) => "lifted a different weight than planned? Enter it — I'll calculate the rest of the plan from this set. "
       + "Don't want to type it? A rating is enough: “Too hard” — lighter, “Too easy” — heavier"
-      + `${mc ? " (for bodyweight exercises — the number of reps)" : ""}.${reszta.trim() ? ` ${t(reszta.trim())}` : ""}`],
+      + `${co ? ` (${co.split(", ").map(t).join(", ")})` : ""}.${reszta.trim() ? ` ${t(reszta.trim())}` : ""}`],
   [/^(Dalej) (TOP SET|pierwsza seria robocza) — (.+) kg\.$/,
     (_, d, co, kg) => `Then the ${co === "TOP SET" ? "TOP SET" : "first working set"} — ${kg} kg.`],
   [/^Procenty liczysz od ciężaru (TOP SETU|pierwszej serii roboczej), który dobierasz\.( Wpisz go w pole niżej — pokażę rampę w kilogramach\.)?$/,
@@ -500,16 +505,26 @@ const WZORY = [
   [/^(\d+) powt\.$/, "$1 reps"],
   [/^Ostatnio \((poprzedni cykl, )?T(\d+)\): (.+)$/,
     (_, cykl, n, serie, t) => `Last time (${cykl ? "previous cycle, " : ""}W${n}): ${t(serie)}`],
-  [/^Jeśli jest OK — nic nie klikaj\. Jeśli nie, dopasuję następną serię i (ciężar|powtórzenia) w kolejnych tygodniach\.$/,
-    (_, co) => `If it's OK — don't tap anything. If not, I'll adjust the next set and the ${co === "ciężar" ? "weight" : "reps"} in the coming weeks.`],
+  [/^Jeśli jest OK — nic nie klikaj\. Jeśli nie, dopasuję następną serię i (ciężar|powtórzenia|czas) w kolejnych tygodniach\.$/,
+    (_, co) => `If it's OK — don't tap anything. If not, I'll adjust the next set and the ${CO_ZMIENIA_OCENA[co]} in the coming weeks.`],
   [/^Ocena z serii (\d+) \(„(.+)”\) zostaje dla kolejnych tygodni\. Kliknij, tylko jeśli ostatnia seria była inna\.$/,
     (_, n, o, t) => `The rating from set ${n} (“${t(o)}”) stays for the coming weeks. Tap only if the last set was different.`],
-  [/^Jeśli było OK — nic nie klikaj\. Ocena zmienia (ciężar|powtórzenia) w kolejnych tygodniach\.$/,
-    (_, co) => `If it was OK — don't tap anything. The rating changes the ${co === "ciężar" ? "weight" : "reps"} in the coming weeks.`],
+  [/^Jeśli było OK — nic nie klikaj\. Ocena zmienia (ciężar|powtórzenia|czas) w kolejnych tygodniach\.$/,
+    (_, co) => `If it was OK — don't tap anything. The rating changes the ${CO_ZMIENIA_OCENA[co]} in the coming weeks.`],
   [/^Następna seria: (.+) kg( × \d+)? \((lżej|ciężej) (o .+)\)\.$/,
     (_, kg, x, k, o) => `Next set: ${kg} kg${x ?? ""} (${oIle(o)} ${k === "lżej" ? "lighter" : "heavier"}).`],
   [/^Następna seria: (\d+) powt\. \(o 1 (mniej|więcej)\)\.$/,
     (_, n, k) => `Next set: ${n} reps (1 ${k === "mniej" ? "fewer" : "more"}).`],
+  // Ćwiczenia na czas (27.10.2026).
+  [/^Następna seria: (\d+) s \(o (\d+) s (krócej|dłużej)\)\.$/,
+    (_, n, o, k) => `Next set: ${n} s (${o} s ${k === "krócej" ? "shorter" : "longer"}).`],
+  [/^O (\d+) s (krócej|dłużej) po Twojej ocenie „(za trudne|za łatwe)”: (\d+) s\.$/,
+    (_, o, k, ocena, n, t) => `${o} s ${k === "krócej" ? "shorter" : "longer"} after your “${t(ocena)}” rating: ${n} s.`],
+  [/^Blade liczby to propozycja: (\d+) s — o (\d+) s (krócej|dłużej) po Twojej ocenie\. Po serii dotknij ✓ albo popraw\.$/,
+    (_, n, o, k) => `The faded numbers are a suggestion: ${n} s — ${o} s ${k === "krócej" ? "shorter" : "longer"} after your rating. `
+      + "After the set, tap ✓ or correct them."],
+  [/^Seria (\d+): powtórzenia \(albo sekundy\) muszą być z zakresu 0–600$/, "Set $1: reps (or seconds) must be between 0 and 600"],
+  [/^Seria (\d+): ciężar musi być z zakresu 0–1000 kg$/, "Set $1: weight must be between 0 and 1000 kg"],
   [/^W tym tygodniu celujemy w RPE (\S+), czyli (\S+) (powtórzenie|powtórzenia|powtórzeń) w zapasie\. Jeśli tyle mniej więcej Ci zostało, ćwiczenie jest dokładnie takie, jakie ma być\.$/,
     (_, rpe, z) => `This week we're aiming for RPE ${rpe}, i.e. ${z} ${z === "1" ? "rep" : "reps"} in reserve. `
       + "If that's roughly what you had left, the exercise is exactly as it should be."],

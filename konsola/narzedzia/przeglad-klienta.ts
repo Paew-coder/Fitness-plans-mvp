@@ -2525,6 +2525,69 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       (await pomiarClean.innerText()).replace(/\n/g, " ").slice(0, 160));
   }
 
+  // ── 39. ćwiczenie na czas — sekundy (27.10.2026) ──────────────────
+  //
+  // Trener (przy „Wall drill calf izo hold s/l”): „powinienem mieć możliwość
+  // wpisania konkretnego czasu, a klient — ilości sekund, jakie udało mu się
+  // utrzymać. Za trudne / za łatwe powinny dostosowywać czas: 5 s → 4 s,
+  // ale 45 s → 40 s”. Plank 3 × 45 s w T1 i T2.
+  {
+    await api("/api/plany", "POST", { klient: "Czas telefon", wersja: 1 });
+    const idCzasu = (await api("/api/plany")).find((p: any) => p.klient === "Czas telefon").id;
+    const planCzasu = (await api(`/api/plany/${idCzasu}`)).zapisany.plan;
+    planCzasu.sloty[0].cwiczenieId = "EX-0150";   // Plank contralateral — progresja „czas”
+    planCzasu.sloty[0].tygodnie = { 1: { serie: 3, powtorzenia: 45, rpe: 8 }, 2: { serie: 3, powtorzenia: 45, rpe: 8 } };
+    await api(`/api/plany/${idCzasu}`, "PUT", { plan: planCzasu, dataStartu: null, status: "wysłany" });
+    const sciezkaCzasu = (await api(`/api/plany/${idCzasu}/link`, "POST")).sciezka;
+    await s.goto(`${adres}${sciezkaCzasu}`, { waitUntil: "networkidle" });
+    await s.click("#nastepny-trening");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    const plank = s.locator('#cwiczenia [data-position="D1-S01"]');
+    sprawdz("na liście: kolumna „Czas” z „45 s”, bez kolumny ciężaru",
+      (await plank.locator(".kolumna-czas").innerText()).replace(/\s+/g, " ").trim().toLowerCase() === "czas 45 s"
+        && await plank.locator(".kolumna-ciezar").count() === 0,
+      (await plank.locator(".zadanie-kolumny").innerText()).replace(/\n/g, " | "));
+    await plank.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
+    await s.waitForSelector("#ekran-seria:not(.ukryty)");
+    const panelCzasu = s.locator("#panel");
+    const poleSekund = panelCzasu.locator(".panel-pola input");
+    sprawdz("panel: „Czas 45 s”, jedno pole w sekundach („s”), bez pola kilogramów",
+      await poleSekund.count() === 1 && await poleSekund.getAttribute("placeholder") === "s"
+        && await poleSekund.inputValue() === "45"
+        && (await panelCzasu.locator(".panel-pola .razy").innerText()) === "s"
+        && (await panelCzasu.locator(".podpowiedz-oceny").innerText()).includes("czas w kolejnych tygodniach"),
+      (await panelCzasu.locator(".podpowiedz-oceny").innerText()));
+    await panelCzasu.getByRole("button", { name: "Za trudne" }).click();
+    await s.waitForTimeout(300);
+    sprawdz("„Za trudne” przy 45 s: następna seria 40 s (o 5 s krócej)",
+      (await panelCzasu.locator(".korekta-serii").innerText()) === "Następna seria: 40 s (o 5 s krócej).",
+      await panelCzasu.locator(".korekta-serii").innerText());
+    await panelCzasu.getByRole("button", { name: "Zakończ serię" }).click();
+    await s.waitForTimeout(500);
+    await panelCzasu.getByRole("button", { name: "Pomiń przerwę" }).click();
+    await s.waitForTimeout(300);
+    sprawdz("seria 2: w polu 40 s i zdanie, skąd się wzięło",
+      await panelCzasu.locator(".panel-pola input").inputValue() === "40"
+        && (await panelCzasu.locator(".korekta-serii").first().innerText()) === "O 5 s krócej po Twojej ocenie „za trudne”: 40 s.",
+      (await panelCzasu.locator(".korekta-serii").allInnerTexts()).join(" | "));
+    // Ocena idzie na serwer w tle — chwila na zapis.
+    for (let i = 0; i < 20; i++) {
+      if ((await api(`/api/klient/${sciezkaCzasu.replace("/k/", "")}`)).tygodnie[1].dni[0].cwiczenia[0].powtorzenia === 40) break;
+      await s.waitForTimeout(250);
+    }
+    const czasT2 = (await api(`/api/klient/${sciezkaCzasu.replace("/k/", "")}`)).tygodnie[1].dni[0].cwiczenia[0];
+    const wpisCzasu = (await api(`/api/plany/${idCzasu}`)).zapisany.wykonania?.find((w: any) => w.positionId === "D1-S01");
+    sprawdz("w T2 czas z planu (45 s) po ocenie „za trudne” — 40 s; zapisane sekundy klienta",
+      czasT2.powtorzenia === 40 && wpisCzasu?.serie?.[0]?.powtorzenia === 45,
+      `T2: ${czasT2.powtorzenia} s · wpis: ${JSON.stringify(wpisCzasu?.serie ?? null)}`);
+    await s.click("#wroc-z-serii");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    sprawdz("na liście: „Zrobione: 45 s” i pola w sekundach",
+      /Zrobione: 45 s/.test(await plank.locator(".wykonanie-opis").innerText())
+        && await plank.locator('.wykonanie-pola input[placeholder="s"]').count() >= 1,
+      await plank.locator(".wykonanie-opis").innerText());
+  }
+
   /*
    * Audyt, druga połowa: napisy, które tłumacz zostawiłby bez zmian, to mają
    * być wyłącznie nazwy ćwiczeń, linie rozgrzewki od trenera, liczby i skróty.

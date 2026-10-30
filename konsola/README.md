@@ -450,6 +450,21 @@ główną, ćwiczenia siłowe z dużym zakresem ruchu — mobilność jako „ta
 reguły i to, czego celowo nie przypisano, w `docs/dane/zasady-klasyfikacji.md`.
 Wszystko do przejrzenia: filtr kategorii na ekranie bazy i ✎ przy ćwiczeniu.
 
+## Ćwiczenia na czas (od 27.10.2026)
+
+Przy ćwiczeniach z progresją **„czas”** (izometrie, planki, wiszenia —
+np. Wall drill calf izo hold) liczba w polu powtórzeń to **sekundy
+utrzymania**. W wierszu planu pole ma jednostkę „s”, „±” pyta o sekundy w T1.
+Klient widzi kolumnę „Czas” (np. „45 s”), w panelu serii wpisuje, ile sekund
+udało mu się utrzymać, a u trenera stoi „Zrobione: 45 s”.
+
+„Za trudne” / „za łatwe” skracają albo wydłużają czas — następną serię
+i kolejne tygodnie — o krok, który rośnie z czasem: ok. 10 % zaokrąglone do
+1, 2, 5, 10, 15, 30 albo 60 s. Przykłady: 5 s → 4 s, 20 s → 18 s,
+45 s → 40 s, 90 s → 80 s. Dwie oceny to dwa kroki (45 → 40 → 35 s). Czas od
+1 do 600 s. Tygodnie deload liczą się jak dotąd, bez korekty z ocen. Stres
+liczy się z sekund jak z powtórzeń (tabela kończy się na 15).
+
 ## Baza ćwiczeń (od 27.10.2026)
 
 Na ekranie głównym przycisk **„Baza ćwiczeń”** — cała baza w jednym miejscu,

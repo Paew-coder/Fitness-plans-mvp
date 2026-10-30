@@ -1359,6 +1359,15 @@ Trener: „czy możemy dodać nowe kategorie dla ćwiczeń mobility? Każdy staw
 * **Konsola:** kategorie mobilności w szkielecie wiersza, liście, wyszukiwarce i filtrze bazy (z kategoriami dodatkowymi; w wierszu „Lower push + Ankle mobility”); okienko ćwiczenia — kategorie w grupach „Siła” i „Mobilność stawów” i pola „Także w kategoriach” (własne i poprawki ćwiczeń z bazy; bez pola w zapisie — zostają, jakie były).
 * Testy: silnik `mobilnosc.test.ts` (5: lista kategorii, przykłady trenera, każda kategoria ma ćwiczenia, spójność danych i BAZA z kategoriami z arkusza, kontrola szkieletu i poprawka), `cwiczenia-wlasne.test.ts` (+1), `baza-cwiczen.test.ts` (+1). Przegląd ekranów (+5, razem 256).
 
+**122. Ćwiczenia na czas — sekundy w planie i u klienta, ocena zmienia czas — 27.10.2026.**
+
+Trener (przy „Wall drill calf izo hold s/l”): „w ćwiczeniach tego typu powinienem mieć możliwość wpisania konkretnego czasu, a klient — ilości sekund, jakie udało mu się utrzymać. Przyciski za łatwe / za trudne powinny też dostosowywać czas: przy 5 s »za trudne« daje 4 s, przy 45 s — 40 s; wartość skaluje się z tym, jak duża będzie zmiana”.
+
+* **Silnik:** `silnik/src/czas.ts` — przy progresji „czas” liczba powtórzeń to sekundy; `krokCzasu` (najmniejszy z 1/2/5/10/15/30/60 s, który ma co najmniej 10 % czasu), `czasPoOcenie` (krok po kroku, 1–600 s). Ocena klienta zmienia czas w kolejnych tygodniach, także wpisany przez trenera (bez deloadu). „±” i automat przyjmują do 600 s.
+* **Konsola:** pole powtórzeń w wierszu z jednostką „s” i podpowiedzią; „±” pyta o sekundy; „Zrobione: 45 s”; granica serii 0–600.
+* **Aplikacja klienta:** kolumna „Czas” bez ciężaru, pole sekund w panelu, „Następna seria: 40 s (o 5 s krócej)”, propozycja w kolejnej serii, opis w „Jak trenować”; tłumaczenia w `angielski.js`; service worker `trening-v96`.
+* Testy: silnik `czas.test.ts` (4: kroki, czas po ocenie, plan po ocenach, „±” do 600 s). Przegląd klienta (+6, razem 278), przegląd ekranów (+2, razem 258).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

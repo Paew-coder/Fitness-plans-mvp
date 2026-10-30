@@ -1179,6 +1179,9 @@ function rysujJakTrenowac(t, d) {
     return li;
   };
   const zMasaCiala = d.cwiczenia.some((c) => naMasieCiala(c));
+  const naCzasWDniu = d.cwiczenia.some((c) => naCzas(c));
+  const coZmienia = [zMasaCiala ? "przy masie ciała — liczba powtórzeń" : null,
+    naCzasWDniu ? "przy ćwiczeniach na czas — czas utrzymania" : null].filter(Boolean).join(", ");
   $("#jak-trenowac-tresc").replaceChildren(
     punkt("Z listy", "rób ćwiczenia z tej listy, w swoim tempie, i odhaczaj zrobione przyciskiem",
       "„OK” (albo „Za trudne” / „Za łatwe”, jeśli tak było). Ciężaru nie musisz wpisywać.",
@@ -1190,7 +1193,7 @@ function rysujJakTrenowac(t, d) {
     punkt("Ciężar na kolejne tygodnie", "zrobiłeś inny ciężar niż w planie? Wpisz go —",
       "od tej serii policzę resztę planu. Nie chcesz wpisywać? Wystarczy ocena:",
       "„Za trudne” — lżej, „Za łatwe” — ciężej"
-      + (zMasaCiala ? " (przy masie ciała — liczba powtórzeń)." : "."),
+      + (coZmienia ? ` (${coZmienia}).` : "."),
       d.cwiczenia.some((c) => c.dwuboj) ? "Przy rwaniu i zarzucie liczy się tylko ocena." : ""),
     ...(d.cwiczenia.some(dobieraCiezar)
       ? [punkt("Wyjątek: „dobierz”", "tam ciężar wybierasz sam. Z pierwszej wpisanej serii",
@@ -1218,7 +1221,7 @@ function rysujJakTrenowac(t, d) {
  */
 function kolumnyZadania({
   seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne, podpisCiezaru = "Ciężar",
-  dopisekCiezaru = null, dopisekPowtorzen = null, procent = null, proba = false,
+  dopisekCiezaru = null, dopisekPowtorzen = null, procent = null, proba = false, czas = false,
 }) {
   const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
@@ -1232,7 +1235,9 @@ function kolumnyZadania({
     siatka.append(k);
   };
   if (seria != null) kolumna("kolumna-seria", "Seria", String(seria), `z ${zSerii}`);
-  if (typeof ciezar === "number") {
+  // Na czas bez gumy (27.10.2026) — kolumny ciężaru nie ma, czas stoi obok.
+  if (czas && ciezar === "czas") { /* bez kolumny ciężaru */ }
+  else if (typeof ciezar === "number") {
     kolumna("kolumna-ciezar", podpisCiezaru, liczba(ciezar), "kg", dopisekCiezaru);
   }
   else if (dobierz) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "dobierz");
@@ -1240,8 +1245,9 @@ function kolumnyZadania({
   else if (proba) kolumna("kolumna-ciezar slowo dobierz", podpisCiezaru, "sprawdź maks");
   else kolumna("kolumna-ciezar slowo", podpisCiezaru, String(ciezar || "—"), null, dopisekCiezaru);
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
-  kolumna("kolumna-powt", serie != null ? "Powt." : "Powtórzenia", String(powtorzenia ?? "—"),
-    null, [jednostronne ? "na stronę" : null, dopisekPowtorzen].filter(Boolean).join(" · ") || null);
+  kolumna(`kolumna-powt${czas ? " kolumna-czas" : ""}`, czas ? "Czas" : serie != null ? "Powt." : "Powtórzenia",
+    String(powtorzenia ?? "—"), czas ? "s" : null,
+    [jednostronne ? "na stronę" : null, dopisekPowtorzen].filter(Boolean).join(" · ") || null);
   blok.append(siatka);
   // Samo „RPE 8", bez „2 w zapasie" — trener: dopisek zbędny. Co znaczy
   // RPE, mówi „Co to jest RPE?" tam, gdzie klient dobiera ciężar.
@@ -1497,7 +1503,7 @@ function kartaCwiczenia(c, stan = null) {
     ciezar: c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
-    procent: c.procent, proba: c.probaMaksu,
+    procent: c.procent, proba: c.probaMaksu, czas: naCzas(c),
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
     dopisekCiezaru: c.ciezarZTygodnia ? `jak w T${c.ciezarZTygodnia}` : dopisekGumy(c),
@@ -1587,21 +1593,21 @@ function oznaczGrupy(kontener) {
  * Jedna linijka, nie wiersz na serię: trener prosił, żeby nie zasypywać
  * klienta liczbami, a cztery serie w jednym zdaniu czyta się jednym rzutem oka.
  */
-function opisSerii(serie) {
+function opisSerii(serie, jedn = "powt.") {
   const wszystkie = listaSerii(serie ?? []);
   // Dziura w środku zostaje na swoim miejscu jako „—": „— · 10×10 · 10×10"
   // mówi, że pierwsza seria nie jest wpisana, a nie że były dwie.
   if (wszystkie.some(pustaSeria)) {
-    return wszystkie.map((x) => (pustaSeria(x) ? "—" : zapisSerii(x))).join(" · ");
+    return wszystkie.map((x) => (pustaSeria(x) ? "—" : zapisSerii(x, jedn))).join(" · ");
   }
   const s = wszystkie;
   if (s.length === 0) return "";
-  if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} powt.`;
+  if (s.every((x) => !x.ciezar)) return `${s.map((x) => x.powtorzenia).join(" · ")} ${jedn}`;
   const powt = s[0].powtorzenia;
   if (powt && s.every((x) => x.ciezar && x.powtorzenia === powt)) {
     return `${s.map((x) => liczba(x.ciezar)).join(" · ")} kg × ${powt}`;
   }
-  return s.map(zapisSerii).join(" · ");
+  return s.map((x) => zapisSerii(x, jedn)).join(" · ");
 }
 
 /**
@@ -1617,7 +1623,7 @@ function linijkaOstatnio(c) {
   const o = c.ostatnio;
   if (!o) return null;
   const kiedy = o.cykl ? `poprzedni cykl, T${o.tydzien}` : `T${o.tydzien}`;
-  return el("p", "ostatnio", `Ostatnio (${kiedy}): ${opisSerii(o.serie)}`);
+  return el("p", "ostatnio", `Ostatnio (${kiedy}): ${opisSerii(o.serie, jednostka(c))}`);
 }
 
 /** Serie ćwiczenia wpisane w tym treningu — ze wszystkich stron te same dane. */
@@ -1627,8 +1633,8 @@ const serieWykonane = (c) => c.serieWykonane ?? [];
  * Jedna seria słowami: „9×11", a bez ciężaru „11 powt.", bez powtórzeń „10 kg".
  * Goła liczba („1: 11") nie mówiła, czy to kilogramy, czy powtórzenia.
  */
-const zapisSerii = (x) => (x.ciezar && x.powtorzenia ? `${liczba(x.ciezar)}×${x.powtorzenia}`
-  : x.ciezar ? `${liczba(x.ciezar)} kg` : `${x.powtorzenia} powt.`);
+const zapisSerii = (x, jedn = "powt.") => (x.ciezar && x.powtorzenia ? `${liczba(x.ciezar)}×${x.powtorzenia}`
+  : x.ciezar ? `${liczba(x.ciezar)} kg` : `${x.powtorzenia} ${jedn}`);
 
 /**
  * Liczby, które pokazujemy w polach serii `i`: to, co już wpisane, a gdy
@@ -1654,14 +1660,16 @@ function podpowiedzSerii(c, i, serie) {
   // Na masie ciała ocena zmienia powtórzenia następnej serii o ±1 (trener,
   // 02.10.2026: „miałem 10 powtórzeń, zaznaczyłem »za trudne«, a w kolejnej
   // serii znowu 10”). Dalsze serie idą za tym, co klient zrobił.
-  const naPowtorzenia = !skorygowana && naMasieCiala(c) && !wlasna?.powtorzenia
+  // Na czas (27.10.2026) tak samo, krokiem rosnącym z czasem (45 s → 40 s).
+  const naPowtorzenia = !skorygowana && ocenaZmieniaLiczbe(c) && !wlasna?.powtorzenia
     && poprzednia?.powtorzenia && korekta?.od === i + 1;
+  const zmianaLiczby = naPowtorzenia ? krokLiczby(c, poprzednia.powtorzenia) : 0;
   return {
     ciezar: skorygowana
       ? poKorekcie(baza, korekta.kierunek, c.skokKg)
       : wlasna?.ciezar ?? baza ?? (typeof c.ciezar === "number" ? c.ciezar : null),
     powtorzenia: naPowtorzenia
-      ? Math.max(1, poprzednia.powtorzenia + korekta.kierunek)
+      ? Math.max(1, poprzednia.powtorzenia + korekta.kierunek * zmianaLiczby)
       : dopasowany !== null ? Number(c.powtorzenia)
       : wlasna?.powtorzenia ?? poprzednia?.powtorzenia ?? (c.powtorzenia || null),
     korekta: skorygowana || naPowtorzenia ? korekta.kierunek : 0,
@@ -1670,8 +1678,10 @@ function podpowiedzSerii(c, i, serie) {
     /** Dopasowanie do powtórzeń z planu: z jakiej serii i na ile kg. */
     dopasowanie: dopasowany !== null
       ? { zKg: poprzednia.ciezar, zPowt: poprzednia.powtorzenia, kg: dopasowany } : null,
-    /** Korekta poszła w powtórzenia, nie w ciężar (masa ciała). */
+    /** Korekta poszła w powtórzenia, nie w ciężar (masa ciała) — albo w czas. */
     korektaPowtorzen: Boolean(naPowtorzenia),
+    /** O ile — przy czasie krok rośnie z czasem. */
+    zmianaLiczby,
     /** Skąd ciężar w polu — do dopisku pod dużą liczbą. */
     zrodlo: skorygowana ? "korekta" : wlasna?.ciezar ? "wlasna" : dopasowany !== null ? "dopasowana"
       : poprzednia?.ciezar ? "poprzednia" : "plan",
@@ -1764,7 +1774,7 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
   // kliknięcia i tak oznacza OK). Na liście „OK" zostaje.
   blok.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
   // Trener, 16.10.2026: klient ma wiedzieć, że ocena sięga dalej niż ta seria.
-  const co = naMasieCiala(c) ? "powtórzenia" : "ciężar";
+  const co = naMasieCiala(c) ? "powtórzenia" : naCzas(c) ? "czas" : "ciężar";
   // Dwubój (16.10.2026): o ciężarze decyduje technika i szybkość sztangi.
   if (c.dwuboj) {
     blok.append(el("p", "drobne podpowiedz-dwuboju",
@@ -1795,6 +1805,10 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
       notka.textContent = `Następna seria: ${liczba(kg)} kg`
         + `${podstawa !== baza ? ` × ${c.powtorzenia}` : ""} `
         + `(${korekta.kierunek < 0 ? "lżej" : "ciężej"} ${oIle(podstawa, kg)}).`;
+    } else if (nastepna && naCzas(c) && powt) {
+      const krok = krokCzasu(powt);
+      notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek * krok)} s `
+        + `(o ${krok} s ${korekta.kierunek < 0 ? "krócej" : "dłużej"}).`;
     } else if (nastepna && naMasieCiala(c) && powt) {
       notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek)} powt. `
         + `(o 1 ${korekta.kierunek < 0 ? "mniej" : "więcej"}).`;
@@ -2005,7 +2019,7 @@ function polaWykonania(c) {
   const opisEl = el("span", "wykonanie-opis");
   const przelacz = el("button", "wykonanie-przelacz");
   const podpisz = () => {
-    const opis = opisSerii(serie);
+    const opis = opisSerii(serie, jednostka(c));
     opisEl.textContent = opis ? `Zrobione: ${opis}` : "";
     // „Wpisz serie ręcznie” (19.10.2026, trener) — dawniej „+ zapisz, co poszło”.
     przelacz.textContent = opis ? "✎ edytuj" : "Wpisz serie ręcznie";
@@ -2084,11 +2098,11 @@ function polaWykonania(c) {
         const baza = dopasowany ?? s.ciezar;
         const ciezar = bezCiezaru ? null
           : poOcenie ? poKorekcie(baza, k.kierunek, c.skokKg) : baza;
-        // Masa ciała: ocena przestawia powtórzenia o ±1 (02.10.2026).
-        const powtorzenia = poOcenie && naMasieCiala(c)
-          ? Math.max(1, s.powtorzenia + k.kierunek)
+        // Masa ciała: ocena przestawia powtórzenia o ±1 (02.10.2026); czas — o krok (27.10.2026).
+        const powtorzenia = poOcenie && ocenaZmieniaLiczbe(c)
+          ? Math.max(1, s.powtorzenia + k.kierunek * krokLiczby(c, s.powtorzenia))
           : dopasowany !== null ? Number(c.powtorzenia) : s.powtorzenia;
-        return { ciezar, powtorzenia, zCiezaru: baza, dopasowany: dopasowany !== null };
+        return { ciezar, powtorzenia, zCiezaru: baza, dopasowany: dopasowany !== null, zPowtorzen: s.powtorzenia };
       }
     }
     return null;
@@ -2125,6 +2139,9 @@ function polaWykonania(c) {
       : p0?.dopasowany && !bezCiezaru
         ? `Blade liczby to propozycja: ${liczba(p0.ciezar)} kg × ${p0.powtorzenia} — tyle powtórzeń, `
           + "ile w planie, z ciężarem o tym samym wysiłku co Twoja seria. Po serii dotknij ✓ albo popraw."
+      : poOcenie && naCzas(c)
+        ? `Blade liczby to propozycja: ${p0.powtorzenia} s — o ${Math.abs(p0.powtorzenia - p0.zPowtorzen)} s `
+          + `${k.kierunek < 0 ? "krócej" : "dłużej"} po Twojej ocenie. Po serii dotknij ✓ albo popraw.`
       : poOcenie && naMasieCiala(c)
         ? `Blade liczby to propozycja: ${p0.powtorzenia} powt. — o 1 ${k.kierunek < 0 ? "mniej" : "więcej"} `
           + "po Twojej ocenie. Po serii dotknij ✓ albo popraw."
@@ -2137,7 +2154,7 @@ function polaWykonania(c) {
     wCiezar.placeholder = "kg";
     wCiezar.value = serie[i]?.ciezar ?? "";
     const wPowt = el("input");
-    wPowt.placeholder = "powt.";
+    wPowt.placeholder = jednostka(c);
     wPowt.value = serie[i]?.powtorzenia ?? "";
     for (const x of [wCiezar, wPowt]) {
       x.type = "number";
@@ -2159,7 +2176,7 @@ function polaWykonania(c) {
     wCiezar.onchange = zmien;
     wPowt.onchange = zmien;
     if (!bezCiezaru) w.append(wCiezar, el("span", "razy", "kg ×"));
-    w.append(wPowt, el("span", "razy", "powt."));
+    w.append(wPowt, el("span", "razy", jednostka(c)));
     const potwierdz = el("button", "potwierdz-serie ukryty", "✓");
     potwierdz.title = "Zrobione tak, jak stoi";
     potwierdz.setAttribute("aria-label", `Seria ${i + 1} zrobiona tak, jak stoi`);
@@ -2228,6 +2245,21 @@ const BEZ_POLA_CIEZARU = ["masa ciała", "czas", "dystans", "guma"];
  * w kolumnie ciężaru stoi wtedy „guma”, a ocena dalej zmienia powtórzenia.
  */
 const naMasieCiala = (c) => c.ciezar === "masa ciała" || (c.ciezar === "guma" && c.progresja === "masa ciała");
+
+/**
+ * Ćwiczenie na czas (27.10.2026, trener: „klient powinien mieć możliwość
+ * wpisania ilości sekund, jakie udało mu się utrzymać”) — liczba w kolumnie
+ * powtórzeń to sekundy, a ocena zmienia je krokiem rosnącym z czasem.
+ */
+const naCzas = (c) => c?.progresja === "czas";
+/** Jednostka liczby w kolumnie powtórzeń. */
+const jednostka = (c) => (naCzas(c) ? "s" : "powt.");
+/** Krok oceny przy czasie: okrągły, co najmniej 10 % — ta sama reguła co `krokCzasu` w silniku (`czas.ts`). */
+const krokCzasu = (s) => [1, 2, 5, 10, 15, 30, 60].find((k) => k >= Math.max(s, 1) * 0.1) ?? 60;
+/** Ocena zmienia liczbę w kolumnie powtórzeń (masa ciała: o 1, czas: o krok) zamiast ciężaru. */
+const ocenaZmieniaLiczbe = (c) => naMasieCiala(c) || naCzas(c);
+/** O ile ocena zmienia tę liczbę. */
+const krokLiczby = (c, n) => (naCzas(c) ? krokCzasu(n) : 1);
 
 /** Pod „guma” w kolumnie ciężaru — czym jest to ćwiczenie poza gumą (17.10.2026). */
 const dopisekGumy = (c) => c.ciezar !== "guma" ? null
@@ -2567,7 +2599,7 @@ async function cofnijSerie(k, kroki, d) {
   const oceny = c ? prowadzenie.ocenySerii?.[c.positionId] : null;
   const coZniknie = [
     ...(wpis && !pustaSeria(wpis)
-      ? [`wpisane ${wpis.ciezar && wpis.powtorzenia ? `${liczba(wpis.ciezar)} kg × ${wpis.powtorzenia} powt.` : zapisSerii(wpis)}`]
+      ? [`wpisane ${wpis.ciezar && wpis.powtorzenia ? `${liczba(wpis.ciezar)} kg × ${wpis.powtorzenia} powt.` : zapisSerii(wpis, jednostka(c))}`]
       : []),
     ...(zapisanyTopSet?.kg ? [`ciężar ${liczba(zapisanyTopSet.kg)} kg`] : []),
     ...(oceny?.[k.seria] || zapisanyTopSet?.feedback ? [`ocena „${oceny?.[k.seria] ?? zapisanyTopSet.feedback}”`] : []),
@@ -2729,7 +2761,7 @@ function panelSerii(k, kroki, d) {
     seria: k.seria, zSerii: k.zSerii, ciezar: zPola ?? c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
     powtorzenia: powtZPola ?? c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
-    procent: c.procent, proba: c.probaMaksu,
+    procent: c.procent, proba: c.probaMaksu, czas: naCzas(c),
     dopisekPowtorzen: powtZPola !== null && c.powtorzenia ? `w planie ${c.powtorzenia}` : null,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
@@ -2776,9 +2808,9 @@ function panelSerii(k, kroki, d) {
       if (!s.ciezar && !s.powtorzenia) return;
       const tutaj = i + 1 === k.seria;
       const cel = kroki.findIndex((x) => x.klucz === `${c.positionId}#${i + 1}`);
-      const chip = el("button", `chip ${tutaj ? "biezaca" : ""}`, `${i + 1}: ${zapisSerii(s)}`);
+      const chip = el("button", `chip ${tutaj ? "biezaca" : ""}`, `${i + 1}: ${zapisSerii(s, jednostka(c))}`);
       chip.type = "button";
-      chip.setAttribute("aria-label", `Seria ${i + 1}: ${zapisSerii(s)}${tutaj ? " — na ekranie" : " — popraw"}`);
+      chip.setAttribute("aria-label", `Seria ${i + 1}: ${zapisSerii(s, jednostka(c))}${tutaj ? " — na ekranie" : " — popraw"}`);
       if (tutaj || cel < 0) chip.disabled = true;
       else {
         klikalnych += 1;
@@ -2805,7 +2837,7 @@ function panelSerii(k, kroki, d) {
   wCiezar.placeholder = "kg";
   wCiezar.value = podpowiedz.ciezar ?? "";
   const wPowt = el("input");
-  wPowt.placeholder = "powt.";
+  wPowt.placeholder = jednostka(c);
   wPowt.value = podpowiedz.powtorzenia ?? "";
   for (const i of [wCiezar, wPowt]) {
     i.type = "number";
@@ -2813,7 +2845,7 @@ function panelSerii(k, kroki, d) {
     i.min = "0";
   }
   if (!bezCiezaru) pola.append(wCiezar, el("span", "razy", "kg ×"));
-  pola.append(wPowt, el("span", "razy", "powt."));
+  pola.append(wPowt, el("span", "razy", jednostka(c)));
   // Ciężar w polu to nie plan, tylko korekta po ocenie z poprzedniej serii —
   // mówimy wprost, skąd się wziął.
   if (skorygowany) {
@@ -2828,7 +2860,11 @@ function panelSerii(k, kroki, d) {
       `Na ${c.powtorzenia} powtórzeń z planu: ${liczba(dp.kg)} kg — tyle samo wysiłku co Twoja `
       + `seria ${k.seria - 1} (${liczba(dp.zKg)} kg × ${dp.zPowt}).`));
   }
-  if (podpowiedz.korektaPowtorzen) {
+  if (podpowiedz.korektaPowtorzen && naCzas(c)) {
+    karta.append(el("p", "korekta-serii", `O ${podpowiedz.zmianaLiczby} s ${podpowiedz.korekta < 0 ? "krócej" : "dłużej"} `
+      + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
+      + `${podpowiedz.powtorzenia} s.`));
+  } else if (podpowiedz.korektaPowtorzen) {
     karta.append(el("p", "korekta-serii", `O 1 powtórzenie ${podpowiedz.korekta < 0 ? "mniej" : "więcej"} `
       + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
       + `${podpowiedz.powtorzenia} powt.`));

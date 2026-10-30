@@ -333,7 +333,8 @@ const GRANICE = {
   dzien: [1, 5],
   /** Rekord świata w martwym ciągu to około 500 kg. */
   ciezar: [0, 1000],
-  powtorzenia: [0, 200],
+  /** Powtórzenia albo — przy ćwiczeniu na czas — sekundy utrzymania (do 10 minut, 27.10.2026). */
+  powtorzenia: [0, 600],
   /** Masa ciała dorosłego człowieka, z zapasem w obie strony. */
   waga: [20, 400],
 } as const;
@@ -2289,7 +2290,7 @@ const serwer = createServer(async (req, res) => {
           }
           if (cialoZadania.powtorzeniaWykonane != null) {
             const powt = wZakresie(cialoZadania.powtorzeniaWykonane, GRANICE.powtorzenia);
-            if (powt === null) return blad(res, "Powtórzenia muszą być z zakresu 0–200");
+            if (powt === null) return blad(res, "Powtórzenia (albo sekundy) muszą być z zakresu 0–600");
             wpis.powtorzeniaWykonane = powt || undefined;
           }
           wpis.serie = wpis.ciezarWykonany || wpis.powtorzeniaWykonane

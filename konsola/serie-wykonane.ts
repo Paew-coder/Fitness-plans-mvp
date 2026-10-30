@@ -52,7 +52,7 @@ export function sprawdzSerie(
     const kg = liczbaAlboPusto(ciezar, granice.ciezar, false);
     const powt = liczbaAlboPusto(powtorzenia, granice.powtorzenia, true);
     if (kg === undefined) return { blad: `Seria ${i + 1}: ciężar musi być z zakresu 0–1000 kg` };
-    if (powt === undefined) return { blad: `Seria ${i + 1}: powtórzenia muszą być z zakresu 0–200` };
+    if (powt === undefined) return { blad: `Seria ${i + 1}: powtórzenia (albo sekundy) muszą być z zakresu 0–600` };
     serie.push({ ciezar: kg, powtorzenia: powt });
   }
   // Puste serie z końca nic nie znaczą — zostają tylko te w środku listy.
