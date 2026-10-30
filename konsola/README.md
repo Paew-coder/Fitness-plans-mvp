@@ -648,9 +648,9 @@ należą do miejsca w planie, nie do ćwiczenia — dokładnie jak w arkuszu, gd
 przenosi się tylko widoczny zakres komórek, a kolumny techniczne zostają.
 
 Z ćwiczeniem idzie wszystko, co trener przy nim ustawił: parametry tygodni,
-uwaga 💬, „G”, „S”, „R”, „±” i stan sprzed „↗” (od 30.10.2026 — wcześniej te
-przyciski zostawały na starym wierszu i liczyły ćwiczenie, które weszło na jego
-miejsce). Liczby przestawionego ćwiczenia się nie zmieniają: od 16.10.2026
+uwaga 💬, „G”, „S”, „R”, „±”, stan sprzed „↗” i TOP SET (od 30.10.2026 —
+wcześniej te przyciski i TOP SET zostawały na starym wierszu i liczyły
+ćwiczenie, które weszło na jego miejsce). Liczby przestawionego ćwiczenia się nie zmieniają: od 16.10.2026
 pozycja nie decyduje też o boju głównym — przysiad na B1 dalej jest bojem.
 
 ## Powtórki z poprzedniego cyklu

@@ -11,11 +11,15 @@
  * z ćwiczeniem wszystkie — tak samo, jak 🗑 zdejmuje je wszystkie razem
  * z ćwiczeniem (`usunZPozycji` w `public/app.js`).
  *
+ * TOP SET wskazuje ćwiczenie pozycją (`topSety[].slotPositionId`) i też
+ * zostawał na miejscu — stawał przed ćwiczeniem, które weszło. Idzie z nim.
+ *
  * Plan hipertroficzny, bo tam każdy z przycisków zmienia liczby: hip thrust
- * z „G” i „S” idzie progresją siłową boju, wiosłowanie z „R” i „±2” — ciężar
- * z RPE i dwa powtórzenia więcej, rozpiętki z „↗” — RPE 7,5 → 10 ze stanem
- * do przywrócenia. Sprawdzamy pola slotów, liczby z silnika i listę zmian
- * wersji roboczej. Czysta logika listy zmian — `wersja-robocza.test.ts`.
+ * z „G” i „S” idzie progresją siłową boju (z TOP SETEM, w T4 z RPE trenera),
+ * wiosłowanie z „R” i „±2” — ciężar z RPE i dwa powtórzenia więcej, rozpiętki
+ * z „↗” — RPE 7,5 → 10 ze stanem do przywrócenia. Sprawdzamy pola slotów,
+ * TOP SET, liczby z silnika i listę zmian wersji roboczej. Czysta logika
+ * listy zmian — `wersja-robocza.test.ts`.
  */
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -64,11 +68,13 @@ describe("▲▼ — ustawienia ćwiczenia idą razem z nim", () => {
   };
   const obraz = async () => (await zapytaj(`/api/plany/${planId}`)).tresc;
   const ustawienia = (slot: any) => Object.fromEntries(USTAWIENIA.map((p) => [p, slot[p]]));
-  /** Serie × powtórzenia @ RPE i ciężar każdego ćwiczenia w T1–T6 — niezależnie od wiersza. */
+  /** Serie × powtórzenia @ RPE, ciężar i TOP SET każdego ćwiczenia w T1–T6 — niezależnie od wiersza. */
   const liczbyCwiczen = (o: any) => Object.fromEntries([HIP_THRUST, WIOSLOWANIE, ROZPIETKI].map((id) => [id,
     o.wynik.tygodnie.slice(0, 6).map((t: any) => {
       const s = t.sloty.find((x: any) => x.cwiczenie?.id === id);
-      return `${s.serie}×${s.powtorzenia}@${s.rpe} ${JSON.stringify(s.ciezar)}`;
+      const top = t.topSety.find((x: any) => x.cwiczenie?.id === id);
+      return `${s.serie}×${s.powtorzenia}@${s.rpe} ${JSON.stringify(s.ciezar)}`
+        + (top ? ` · TOP @${top.rpe} ${JSON.stringify(top.ciezar)}` : "");
     })]));
 
   before(async () => {
@@ -99,6 +105,10 @@ describe("▲▼ — ustawienia ćwiczenia idą razem z nim", () => {
     Object.assign(plan.sloty[0], { cwiczenieId: HIP_THRUST, bojGlowny: true, bojSilowy: true, uwaga: "Pauza na górze." });
     Object.assign(plan.sloty[1], { cwiczenieId: WIOSLOWANIE, trybCiezaru: "licz z RPE", przesunieciePowtorzen: 2 });
     Object.assign(plan.sloty[2], { cwiczenieId: ROZPIETKI, ...structuredClone(zRpeRosnacym) });
+    // „T” przy hip thruście — jak `przelaczTopSet`: włącza wpis przy tym ćwiczeniu albo dopisuje nowy.
+    const top = plan.topSety.find((t: any) => t.slotPositionId === plan.sloty[0].positionId);
+    if (top) Object.assign(top, { wlaczony: true, rpeTygodni: { 4: 9 } });
+    else plan.topSety.push({ dzien: plan.sloty[0].dzien, wlaczony: true, slotPositionId: plan.sloty[0].positionId, rpeTygodni: { 4: 9 } });
     // Wysłany — każde przestawienie czeka potem na „Zatwierdź” i stoi na liście zmian.
     const zapis = await zapytaj(`/api/plany/${planId}`, "PUT", { plan, dataStartu: null, status: "wysłany" });
     assert.equal(zapis.kod, 200, JSON.stringify(zapis.tresc));
@@ -120,9 +130,11 @@ describe("▲▼ — ustawienia ćwiczenia idą razem z nim", () => {
     assert.notEqual(wioslowanie[1]!.split(" ")[1], wioslowanie[0]!.split(" ")[1], "„R”: ciężar schodzi z rosnącymi powtórzeniami");
     assert.deepEqual(liczbyPrzed[ROZPIETKI]!.map((l) => l.split(" ")[0]),
       RPE_ROSNACE.map((rpe) => `3×12@${rpe}`), "„↗”: RPE 7,5 → 10 przy stałych powtórzeniach");
+    assert.match(hipThrust[3]!, / · TOP @9 \d/, "TOP SET przy hip thruście, w T4 z RPE trenera");
+    assert.ok(![...wioslowanie, ...liczbyPrzed[ROZPIETKI]!].some((l) => l.includes("TOP")), "przy innych TOP SETU nie ma");
   });
 
-  test("„▲▼” przenosi „G”, „S”, „R”, „±” i „↗” razem z ćwiczeniem", async () => {
+  test("„▲▼” przenosi „G”, „S”, „R”, „±”, „↗” i TOP SET razem z ćwiczeniem", async () => {
     const [s1, s2, s3] = poczatek.map((s) => s.positionId);
     // ▼ na pierwszym: hip thrust ↔ wiosłowanie.
     assert.equal((await zapytaj(`/api/plany/${planId}/przenies`, "POST", { positionId: s1, kierunek: "dol" })).kod, 200);
@@ -140,14 +152,17 @@ describe("▲▼ — ustawienia ćwiczenia idą razem z nim", () => {
       [ROZPIETKI, ustawienia(poczatek[2])],
       [HIP_THRUST, ustawienia(poczatek[0])],
     ]);
+    assert.deepEqual(po.zapisany.plan.topSety.filter((t: any) => t.wlaczony)
+      .map((t: any) => [t.slotPositionId, t.rpeTygodni]), [[s3, { 4: 9 }]], "TOP SET stoi przy hip thruście");
     // Liczy się to, co widzi klient: każde ćwiczenie dostaje te same liczby co przed przestawieniem.
     assert.deepEqual(liczbyCwiczen(po), liczbyPrzed);
   });
 
-  test("wersja robocza: same przestawienia — bez „ustawień”, których nikt nie zmieniał", async () => {
+  test("wersja robocza: same przestawienia — bez „ustawień” i „TOP SETÓW”, których nikt nie zmieniał", async () => {
     // Lista porównuje wiersz trenera z wierszem klienta, w którym stoi to samo
     // ćwiczenie (`przestaw` w `wersja-robocza.ts`). Ustawienia zostawione na
-    // starym miejscu wyszłyby tu jako zmiana „ustawień” przy obu ćwiczeniach.
+    // starym miejscu wyszłyby tu jako zmiana „ustawień” przy obu ćwiczeniach,
+    // a TOP SET porównany bez mapy pozycji — jako „Plan: TOP SETY”.
     const { zmianyDlaKlienta } = await obraz();
     const lp = poczatek.map((s) => s.lp.replace(/\.$/, ""));
     const dzien = poczatek[0].dzien;
