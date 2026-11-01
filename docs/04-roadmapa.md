@@ -1409,6 +1409,13 @@ Trener: „dodaj do konsoli trenerskiej jakieś dane albo jakiś wykres, który 
 * **Konsola, karta „Obciążenie” przy planie:** wykres słupkowy (SVG, bez bibliotek) — słupek na tydzień T1–T6 i tygodnie po cyklu (bledsze), w słupku stres centralny i obwodowy, nad nim zmiana wobec poprzedniego tygodnia w %, w tle pas normy tygodniowej (12–18 × dni), obrysowany tydzień otwarty w tabeli. Przełącznik: całość / przysiad / m. ciąg / wycisk. / wiosł. / core. Pod wykresem zdanie: T1 → T6 w % i liczbach, szczyt (gdy nie w T6), deload wobec T6, tygodnie ponad i poniżej normy. Dymek nad słupkiem — liczby. Liczby z silnika (`bilans`), konsola tylko rysuje.
 * Testy: przegląd ekranów (+2, razem 268; przyciski przełącznika ≥ 24 px na telefonie i iPadzie).
 
+**128. Plan cofnięty do szkicu znika z telefonu — 01.11.2026.**
+
+Trener (zrzut z banerem „Trener przygotowuje nowy plan” nad starym planem): „po tym, jak zmienię status z »wysłany« na »szkic«, chcę, żeby klient tracił widok tego planu całkiem, a nie że ma do niego dostęp cały czas”.
+
+* **Aplikacja klienta:** gdy serwer mówi „czeka na plan”, telefon najpierw wysyła kolejkę (oceny i serie z odbytego treningu dochodzą do trenera), potem kasuje zapamiętany plan i pokazuje tylko „Cześć …! Trener przygotowuje Twój plan…”. Baner nad starym planem usunięty (HTML i słownik). Bez sieci klient dalej widzi plan z pamięci — telefon nie wie jeszcze, że plan cofnięto. Service worker `trening-v98`.
+* Testy: przegląd klienta, sekcja 18 — plan znika, zapamiętany widok skasowany, zaległa ocena u trenera, po ponownym wysłaniu plan wraca (razem 282).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

@@ -807,8 +807,8 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // poprawić. Do tej pory kosztowało to klienta dwie rzeczy naraz. Serwer
   // odmawiał zapisów kodem 409, a kolejka w telefonie traktuje 4xx jako „tego
   // nigdy się nie uda zapisać" i **wyrzucała oceny z odbytego treningu**.
-  // Aplikacja zaś zastępowała cały ekran komunikatem „trener przygotowuje
-  // plan" — czyli zabierała klientowi trening, który miał przed sobą.
+  // Oceny z treningu sprzed cofnięcia muszą dojść do trenera, choć sam plan
+  // (od 01.11.2026) znika z telefonu.
   const planTeraz = (await widok()).planId;
   const przedZmiana = await api(`/api/plany/${planTeraz}`);
 
@@ -835,12 +835,13 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForTimeout(1500);
 
-  sprawdz("klient nie traci treningu, gdy trener poprawia plan",
-    await czekajNa(s, "#ekran-tygodnie:not(.ukryty)")
-      && await s.locator("#tygodnie .tydzien").count() === 6,
-    `${await s.locator("#tygodnie .tydzien").count()} tygodni na ekranie`);
-  sprawdz("aplikacja mówi, dlaczego nie ma nowego planu",
-    await s.locator("#baner-przygotowania:not(.ukryty)").count() === 1);
+  // Od 01.11.2026 plan w szkicu znika z telefonu całkiem (trener: „po zmianie
+  // statusu z »wysłany« na »szkic« klient ma tracić widok tego planu całkiem”).
+  const tekstSzkicu = await s.locator("body").innerText();
+  sprawdz("plan w szkicu: telefon nie pokazuje planu, tylko „Trener przygotowuje Twój plan”",
+    /Trener przygotowuje Twój plan/.test(tekstSzkicu) && await s.locator("#tygodnie .tydzien").count() === 0
+      && await s.evaluate(() => localStorage.getItem(`widok-${location.pathname.split("/").pop()}`)) === null,
+    tekstSzkicu.replace(/\n/g, " ").slice(0, 120));
 
   const wKolejcePoSzkicu = await s.evaluate(() =>
     JSON.parse(localStorage.getItem(`kolejka-${location.pathname.split("/").pop()}`) || "[]").length);
@@ -858,8 +859,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.reload({ waitUntil: "networkidle" });
   await s.waitForTimeout(500);
   sprawdz("po ponownym wysłaniu plan wraca na telefon",
-    await s.locator("#baner-przygotowania.ukryty").count() === 1
-      && await s.locator("#tygodnie .tydzien").count() === 6);
+    await s.locator("#tygodnie .tydzien").count() === 6);
 
   // Ten krok celowo rozłącza sieć, więc zgłoszenie przeglądarki o braku
   // połączenia jest spodziewane. Czyścimy je dopiero tutaj — przy sprzątaniu

@@ -3591,25 +3591,25 @@ function komunikat(tytul, tresc) {
     if (odp.ok) {
       const swiezy = await odp.json();
 
-      // Link działa, ale trener nie wysłał jeszcze planu. To normalny stan
-      // między cyklami — i drugi, mniej oczywisty: trener cofnął plan do
-      // szkicu, żeby go poprawić, a klient stoi właśnie na siłowni.
+      // Link działa, ale trener nie wysłał jeszcze planu — między cyklami
+      // albo po cofnięciu planu do szkicu. Klient planu nie widzi wcale
+      // (trener, 01.11.2026: „po zmianie statusu z »wysłany« na »szkic«
+      // klient ma tracić widok tego planu całkiem”). Dotąd zostawał na
+      // ekranie zapamiętany plan z banerem „Trener przygotowuje nowy plan”.
       //
-      // Dopóki nie ma nic zapisanego, zostaje komunikat. Ale gdy klient ma
-      // u siebie poprzedni cykl, zabranie mu go z ekranu jest najgorszym
-      // z możliwych wyjść: traci trening, który miał przed sobą, a kolejka
-      // z ocenami nie zostaje nawet wysłana — bo `return` był przed nią.
+      // Najpierw jednak kolejka: oceny i serie z odbytego treningu muszą
+      // dojść do trenera, zanim plan zniknie z telefonu. Bez sieci tu nie
+      // dochodzimy (fetch wyżej się nie uda) — klient ma wtedy plan
+      // z pamięci, a kolejka czeka.
       if (swiezy.czekaNaPlan) {
-        if (!zapamietany) {
-          await ustawJezyk(swiezy.jezyk);
-          komunikat(`Cześć ${swiezy.klient}!`,
-            "Trener przygotowuje Twój plan. Ten link zostaje ten sam — "
-            + "otwórz go ponownie, gdy dostaniesz wiadomość.");
-          return;
+        if (zapamietany) {
+          await synchronizuj(false);
+          try { localStorage.removeItem(KLUCZ_WIDOKU); } catch { /* bez pamięci */ }
         }
-        $("#baner-przygotowania").classList.remove("ukryty");
-        pokazStanPolaczenia(true);
-        await synchronizuj();
+        await ustawJezyk(swiezy.jezyk);
+        komunikat(`Cześć ${swiezy.klient}!`,
+          "Trener przygotowuje Twój plan. Ten link zostaje ten sam — "
+          + "otwórz go ponownie, gdy dostaniesz wiadomość.");
         zarejestrujWorkera();
         return;
       }
