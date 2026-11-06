@@ -1,0 +1,474 @@
+[
+ {
+  "nazwa": "High Bar Back Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 1.0,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Low Bar Back Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 1.0,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Front Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 1.0,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Bulgarian Split Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Hack Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Leg Press",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Goblet Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Romanian Split Squat",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Lunge",
+  "kategoria": "Lower Push",
+  "part": "s",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Conventional Deadlift",
+  "kategoria": "Lower Pull",
+  "part": "d",
+  "coef": 1.0,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Sumo Deadlift",
+  "kategoria": "Lower Pull",
+  "part": "d",
+  "coef": 1.0,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Trap Bar Deadlift",
+  "kategoria": "Lower Pull",
+  "part": "d",
+  "coef": 1.0,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Romanian Deadlift",
+  "kategoria": "Lower Pull",
+  "part": "d",
+  "coef": 0.75,
+  "klasa": "main_lower",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Good Morning",
+  "kategoria": "Lower Pull",
+  "part": "d",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Leg Curl (machine)",
+  "kategoria": "Lower Pull",
+  "part": "d",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Barbell Bench Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 1.0,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Close-Grip Barbell Bench Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 1.0,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Paused Barbell Bench Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 1.0,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Dumbbell Bench Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Incline Barbell Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 0.75,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Incline Dumbbell Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Cable Fly",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Dumbbell Fly",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Machine Chest Press",
+  "kategoria": "Upper Push Horizontal",
+  "part": "b",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Overhead Barbell Press",
+  "kategoria": "Upper Push Vertical",
+  "part": "b",
+  "coef": 1.0,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Dumbbell Shoulder Press",
+  "kategoria": "Upper Push Vertical",
+  "part": "b",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Arnold Press",
+  "kategoria": "Upper Push Vertical",
+  "part": "b",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Machine Shoulder Press",
+  "kategoria": "Upper Push Vertical",
+  "part": "b",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Landmine Press",
+  "kategoria": "Upper Push Vertical",
+  "part": "b",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Barbell Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 1.0,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Dumbbell Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Cable Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Machine Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Chest-Supported Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Pendlay Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 1.0,
+  "klasa": "main_upper",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Seal Row",
+  "kategoria": "Upper Pull Horizontal",
+  "part": "r",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Lat Pulldown",
+  "kategoria": "Upper Pull Vertical",
+  "part": "r",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Close-Grip Pulldown",
+  "kategoria": "Upper Pull Vertical",
+  "part": "r",
+  "coef": 0.75,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Single-Arm Pulldown",
+  "kategoria": "Upper Pull Vertical",
+  "part": "r",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Cable Straight-Arm Pulldown",
+  "kategoria": "Upper Pull Vertical",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Barbell Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Dumbbell Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Incline Dumbbell Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Hammer Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Cable Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Preacher Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Concentration Curl",
+  "kategoria": "Bicep",
+  "part": "r",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Close-Grip Bench Press",
+  "kategoria": "Tricep",
+  "part": "b",
+  "coef": 0.5,
+  "klasa": "secondary",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Cable Pushdown",
+  "kategoria": "Tricep",
+  "part": "b",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Overhead Tricep Extension",
+  "kategoria": "Tricep",
+  "part": "b",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Skull Crusher",
+  "kategoria": "Tricep",
+  "part": "b",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Kickback",
+  "kategoria": "Tricep",
+  "part": "b",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Ab Wheel Rollout",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.5,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Hanging Leg Raise",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.5,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Cable Crunch",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.5,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Pallof Press",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Dead Bug",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": true
+ },
+ {
+  "nazwa": "Bicycle Crunch",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ },
+ {
+  "nazwa": "Russian Twist",
+  "kategoria": "Core",
+  "part": "c",
+  "coef": 0.25,
+  "klasa": "accessory",
+  "jednostronne": false
+ }
+]

@@ -1,0 +1,27 @@
+# HTTPS bez zabawy w certyfikaty — Caddy załatwia to sam i sam odnawia.
+#
+# HTTPS nie jest tu ozdobą: link klienta zawiera token w adresie, a token
+# jest kluczem do planu. Po zwykłym HTTP każdy po drodze mógłby go odczytać.
+
+{
+	email {$EMAIL}
+}
+
+{$DOMENA} {
+	encode gzip
+
+	# Nagłówki, które nic nie kosztują, a zamykają kilka klas problemów.
+	header {
+		# Przeglądarka ma pamiętać, że tu wchodzi się tylko po HTTPS.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Nie zgaduj typu pliku wbrew temu, co podaliśmy.
+		X-Content-Type-Options "nosniff"
+		# Nie osadzaj tej strony w cudzej ramce.
+		X-Frame-Options "DENY"
+		# Adres z tokenem klienta nie ma wyciekać w nagłówku Referer.
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	reverse_proxy konsola:4173
+}
