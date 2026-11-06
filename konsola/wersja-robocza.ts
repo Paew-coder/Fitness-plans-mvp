@@ -137,6 +137,7 @@ const ETYKIETY_PLANU: Record<string, string> = {
   cwiczeniaMaksow: "ćwiczenia tygodnia maksów",
   liczenieJednostronnych: "liczenie jednostronnych",
   nazwa: "nazwa planu",
+  tytul: "nazwa planu",
 };
 
 /**

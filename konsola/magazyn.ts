@@ -710,6 +710,28 @@ export function ustawJezyk(
 }
 
 /**
+ * Nazwa planu (06.11.2026, trener: „dodasz mi możliwość edytowania nazwy
+ * planu?”). Pole `tytul` w planie trenera i w wersji, którą widzi klient —
+ * naraz, bez wersji roboczej: nazwa to opis dla trenera, nie zmiana treningu,
+ * więc nie czeka na „Zatwierdź”.
+ */
+export function ustawNazwePlanu(trenerId: number, id: string, nazwa: string): boolean {
+  // Pusta nazwa — pole znika (`json_remove`), plan wygląda jak przed nazwą.
+  const wynik = baza().prepare(nazwa ? `
+    UPDATE plan SET plan_json = json_set(plan_json, '$.tytul', ?1),
+      plan_klienta_json = CASE WHEN plan_klienta_json IS NULL THEN NULL
+        ELSE json_set(plan_klienta_json, '$.tytul', ?1) END
+     WHERE trener_id = ?2 AND id = ?3
+  ` : `
+    UPDATE plan SET plan_json = json_remove(plan_json, '$.tytul'),
+      plan_klienta_json = CASE WHEN plan_klienta_json IS NULL THEN NULL
+        ELSE json_remove(plan_klienta_json, '$.tytul') END
+     WHERE trener_id = ?2 AND id = ?3
+  `).run(nazwa || null, trenerId, id);
+  return Number(wynik.changes) > 0;
+}
+
+/**
  * Jeden pomiar. `kg <= 0` kasuje wpis z tego dnia — tak klient poprawia pomyłkę.
  * Wpis dopisuje się pojedynczo, nie przez podmianę całej listy: historia wagi
  * bywa dłuższa niż rok i nie ma powodu przepisywać jej przy każdym ważeniu.

@@ -1424,6 +1424,14 @@ Trener (zrzuty B1 i B3): „na górnej karcie B1 i B3 mają 1/3, a po wejściu w
 * **Aplikacja klienta:** `najwczesniejszaSeria` — gdy następny krok to seria ćwiczenia, które ma wcześniejszą niezrobioną serię, panel idzie do niej. Licznik na kafelku i numer serii w panelu znaczą zawsze to samo. Service worker `trening-v99`.
 * Testy: przegląd klienta (+1, razem 283) — skok do B2 w drugiej rundzie, po nim B1 seria 2 (nie 3), kafelki 1/3 i 2/3.
 
+**130. Nazwa planu — 06.11.2026.**
+
+Trener (zrzut „Wymaga uwagi” z „Klient 2.0”): „dodasz mi możliwość edytowania nazwy planu?”.
+
+* **Plan:** nowe pole `tytul` (do 60 znaków). Nie `nazwa` — tę każdy plan ma od założenia (imię klienta z tamtego dnia) i po zmianie imienia klienta udawałaby nazwę planu. Trasa `PUT /api/plany/:id/nazwa` zapisuje w planie trenera i w wersji klienta naraz — bez wersji roboczej i bez „Zatwierdź” (to opis dla trenera, nie zmiana treningu). Puste pole zdejmuje nazwę. Nowy cykl przejmuje nazwę z poprzedniego.
+* **Konsola:** „✎ nazwa planu” w nagłówku planu; nazwa obok „Klient N.0” w nagłówku, na liście cykli klienta, w „Wymaga uwagi” i w wyborze poprzedniego cyklu. Klient w aplikacji jej nie widzi.
+* Testy: `nazwa-planu.test.ts` (3: bez nazwy, zapis bez wersji roboczej + lista i kartoteka, odmowa za długiej i zdjęcie nazwy). Przegląd ekranów (+1, razem 269).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

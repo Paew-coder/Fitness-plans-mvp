@@ -42,6 +42,11 @@ const jestLiczba = (w: unknown): w is number =>
 export function bladKsztaltuPlanu(plan: unknown): string | null {
   if (!jestObiektem(plan)) return "Plan musi być obiektem";
 
+  // Nazwa planu z konsoli (06.11.2026).
+  if (plan.tytul != null && (typeof plan.tytul !== "string" || plan.tytul.length > 60)) {
+    return "Nazwa planu musi być tekstem do 60 znaków";
+  }
+
   // ── sloty ─────────────────────────────────────────────────────────
   if (!Array.isArray(plan.sloty)) return "Plan musi mieć listę slotów";
   if (plan.sloty.length > MAX_SLOTOW) {

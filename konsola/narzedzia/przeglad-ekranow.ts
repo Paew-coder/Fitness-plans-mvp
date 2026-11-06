@@ -2551,6 +2551,25 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-plan:not(.ukryty)");
     await s.waitForTimeout(400);
+    // Nazwa planu (06.11.2026): „dodasz mi możliwość edytowania nazwy planu?”.
+    // Zapis od razu, bez wersji roboczej; w sekcji 20 plan ma ją w nagłówku.
+    const przedNazwa = await s.locator("#zmien-nazwe-planu").textContent();
+    const czekalyPrzed = (await (await fetch(`${ADRES}/api/plany`)).json())
+      .find((p: any) => p.klient === KLIENT_PO_ZMIANIE && p.status !== "szkic")?.zmianyCzekaja;
+    odpowiedzi.push("Siła jesień");
+    const zapisNazwy = s.waitForResponse((r: any) => r.url().endsWith("/nazwa") && r.request().method() === "PUT");
+    await s.locator("#zmien-nazwe-planu").click();
+    const poNazwie = (await (await zapisNazwy).json()).zapisany;
+    await s.waitForTimeout(300);
+    sprawdz("„✎ nazwa planu”: nazwa w nagłówku obok „Klient N.0”, zapisana w planie, bez „zmiany czekają”",
+      przedNazwa === "✎ nazwa planu" && poNazwie.plan.tytul === "Siła jesień"
+        && (await s.locator("#nazwa-wlasna-planu").textContent()) === "Siła jesień"
+        && await s.locator("#nazwa-wlasna-planu").isVisible()
+        && (await s.locator("#zmien-nazwe-planu").textContent()) === "✎"
+        && (await (await fetch(`${ADRES}/api/plany`)).json()).find((p: any) => p.id === poNazwie.id)?.zmianyCzekaja
+          === (poNazwie.status === "szkic" ? false : czekalyPrzed),
+      `${przedNazwa} → ${await s.locator("#zmien-nazwe-planu").textContent()} · ${poNazwie.plan.tytul} · `
+        + `${await s.locator("#nazwa-planu").textContent()} · ${await s.locator("#nazwa-wlasna-planu").textContent()}`);
     const wierszUwagi = s.locator("#dni tr").filter({ has: s.locator("button.uwaga-cwiczenia:not(.pusty)") }).first();
     const przyciskUwagi = wierszUwagi.locator("button.uwaga-cwiczenia");
     sprawdz("w wierszu ćwiczenia przycisk 💬 „Dodaj uwagę”; w pustym wierszu niewidoczny",

@@ -176,6 +176,8 @@ export type TopSet = {
 
 export type Plan = {
   nazwa: string;
+  /** Nazwa planu nadana w konsoli (06.11.2026), np. „Redukcja zima”. Silnik jej nie liczy. */
+  tytul?: string;
   trybAkcesoriow: TrybAkcesoriow;
   czescPlanu: CzescPlanu;
   serieMaksymalne: readonly SeriaMaksymalna[];

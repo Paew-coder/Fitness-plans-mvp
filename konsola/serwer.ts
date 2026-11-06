@@ -583,8 +583,21 @@ export type Powod =
  * trzy razy — a wołać ma o niego jego bieżący plan, ten sam, który widzi
  * pod swoim linkiem.
  */
+/**
+ * Nazwa planu nadana przez trenera (06.11.2026) albo `null`. Osobne pole
+ * `tytul`: `nazwa` każdy plan ma od założenia (imię klienta z tamtego dnia),
+ * więc po zmianie imienia klienta wyglądałaby jak nazwa planu.
+ */
+function nazwaPlanu(zapisany: magazyn.ZapisanyPlan): string | null {
+  return zapisany.plan.tytul?.trim() || null;
+}
+
+/** Nazwa planu z konsoli: tekst do 60 znaków, pusta = bez nazwy. */
+const NAZWA_PLANU_MAKS = 60;
+
 function wymagajaUwagi(trenerId: number) {
-  const wynik: { id: string; klientId: string; klient: string; wersja: number; powody: Powod[] }[] = [];
+  const wynik: { id: string; klientId: string; klient: string; wersja: number; nazwaPlanu: string | null;
+    powody: Powod[] }[] = [];
 
   for (const klient of magazyn.listaKlientow(trenerId)) {
     const zapisany = magazyn.aktywnyPlan(trenerId, klient.id);
@@ -625,7 +638,7 @@ function wymagajaUwagi(trenerId: number) {
     if (powody.length > 0) {
       wynik.push({
         id: zapisany.id, klientId: klient.id,
-        klient: klient.nazwa, wersja: zapisany.wersja, powody,
+        klient: klient.nazwa, wersja: zapisany.wersja, nazwaPlanu: nazwaPlanu(zapisany), powody,
       });
     }
   }
@@ -843,6 +856,7 @@ function kartotekaKlienta(trenerId: number, klientId: string) {
     plany: plany.map((zapisany) => ({
       id: zapisany.id,
       wersja: zapisany.wersja,
+      nazwaPlanu: nazwaPlanu(zapisany),
       status: zapisany.status,
       dataStartu: zapisany.dataStartu,
       zmieniony: zapisany.zmieniony,
@@ -1559,6 +1573,7 @@ const serwer = createServer(async (req, res) => {
         return {
           ...reszta,
           zmianyCzekaja: Boolean(wersjaKlienta),
+          nazwaPlanu: nazwaPlanu(zapisany),
           cwiczen: plan.sloty.filter((s) => s.cwiczenieId).length,
           realizacja: realizacja(zapisany),
           cykl: cyklWCzasie(zapisany),
@@ -1719,6 +1734,15 @@ const serwer = createServer(async (req, res) => {
        * zatwierdzenie i nie zmienia „zmieniony”.
        */
       if (akcja === "/jezyk" && req.method === "GET") return json(res, jezykPlanu(zapisany));
+      // Nazwa planu (06.11.2026) — bez wersji roboczej, patrz `ustawNazwePlanu`.
+      if (akcja === "/nazwa" && req.method === "PUT") {
+        const { nazwa } = await cialo(req);
+        if (nazwa != null && typeof nazwa !== "string") return blad(res, "Nazwa planu musi być tekstem.");
+        const tekst = String(nazwa ?? "").replace(/\s+/g, " ").trim();
+        if (tekst.length > NAZWA_PLANU_MAKS) return blad(res, `Nazwa planu — najwyżej ${NAZWA_PLANU_MAKS} znaków.`);
+        magazyn.ustawNazwePlanu(trenerId, zapisany.id, tekst);
+        return json(res, obrazPlanu(magazyn.wczytaj(trenerId, zapisany.id)!));
+      }
       if (akcja === "/jezyk" && req.method === "PUT") {
         const c = await cialo(req);
         if (c.jezyk !== "pl" && c.jezyk !== "en") return blad(res, "Język: pl albo en.");
