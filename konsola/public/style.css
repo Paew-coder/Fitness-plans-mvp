@@ -415,7 +415,6 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .wykres-legenda .probka.norma { background: var(--dobrze); opacity: .25; }
 .wykres-podsumowanie { margin: .3rem 0 0; }
 /* Nazwa planu obok „Klient 2.0” (06.11.2026). */
-.nazwa-wlasna-planu { font-size: 1rem; font-weight: 600; color: var(--tekst-slaby); }
 #zmien-nazwe-planu { font-size: .8rem; min-width: 2rem; min-height: 1.6rem; }
 .wiersz-miary {
   display: flex; align-items: center; gap: .6rem; padding: .22rem 0;
@@ -493,8 +492,8 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 }
 
 #lista-cykli .pozycja .nazwa { flex: 0 1 auto; min-width: 8rem; font-family: var(--mono); white-space: normal; }
-/* Nazwa planu przy numerze cyklu (06.11.2026) — zwykłym pismem, zawija się. */
-.pozycja .nazwa .nazwa-cyklu { font-family: var(--sans); color: var(--tekst-slaby); overflow-wrap: anywhere; }
+/* Nazwa planu zamiast numeru cyklu (06.11.2026) — zwykłym pismem, zawija się. */
+.pozycja .nazwa .nazwa-cyklu { font-family: var(--sans); overflow-wrap: anywhere; }
 
 .wiersz-sciezki {
   display: flex; align-items: baseline; gap: .8rem;

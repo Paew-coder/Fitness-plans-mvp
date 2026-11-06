@@ -2551,25 +2551,35 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-plan:not(.ukryty)");
     await s.waitForTimeout(400);
-    // Nazwa planu (06.11.2026): „dodasz mi możliwość edytowania nazwy planu?”.
-    // Zapis od razu, bez wersji roboczej; w sekcji 20 plan ma ją w nagłówku.
-    const przedNazwa = await s.locator("#zmien-nazwe-planu").textContent();
+    // Nazwa planu (06.11.2026): „dodasz mi możliwość edytowania nazwy planu?”,
+    // potem „od razu niech się zmienia np. na 1.0, bez zachowywania poprzedniej
+    // wersji”. Nazwa zastępuje „Klient N.0”; zapis od razu, bez wersji roboczej.
+    const domyslna = await s.locator("#nazwa-planu").textContent() ?? "";
     const czekalyPrzed = (await (await fetch(`${ADRES}/api/plany`)).json())
       .find((p: any) => p.klient === KLIENT_PO_ZMIANIE && p.status !== "szkic")?.zmianyCzekaja;
-    odpowiedzi.push("Siła jesień");
-    const zapisNazwy = s.waitForResponse((r: any) => r.url().endsWith("/nazwa") && r.request().method() === "PUT");
-    await s.locator("#zmien-nazwe-planu").click();
-    const poNazwie = (await (await zapisNazwy).json()).zapisany;
-    await s.waitForTimeout(300);
-    sprawdz("„✎ nazwa planu”: nazwa w nagłówku obok „Klient N.0”, zapisana w planie, bez „zmiany czekają”",
-      przedNazwa === "✎ nazwa planu" && poNazwie.plan.tytul === "Siła jesień"
-        && (await s.locator("#nazwa-wlasna-planu").textContent()) === "Siła jesień"
-        && await s.locator("#nazwa-wlasna-planu").isVisible()
-        && (await s.locator("#zmien-nazwe-planu").textContent()) === "✎"
-        && (await (await fetch(`${ADRES}/api/plany`)).json()).find((p: any) => p.id === poNazwie.id)?.zmianyCzekaja
+    const nazwijPlan = async (odpowiedz: string) => {
+      odpowiedzi.push(odpowiedz);
+      const zapis = s.waitForResponse((r: any) => r.url().endsWith("/nazwa") && r.request().method() === "PUT");
+      await s.locator("#zmien-nazwe-planu").click();
+      const zapisany = (await (await zapis).json()).zapisany;
+      await s.waitForTimeout(300);
+      return zapisany;
+    };
+    const pytanPrzedNazwa = pytania.length;
+    const poNazwie = await nazwijPlan(`${KLIENT_PO_ZMIANIE} 1.0`);
+    const listaPoNazwie = await (await fetch(`${ADRES}/api/plany`)).json();
+    sprawdz("✎ przy nazwie planu: okienko z pytaniem o nazwę; nowa zastępuje „Klient N.0” w nagłówku, bez „zmiany czekają”",
+      /^.+ \d+\.0$/.test(domyslna) && /Nazwa planu/.test(pytania[pytanPrzedNazwa] ?? "")
+        && poNazwie.plan.tytul === `${KLIENT_PO_ZMIANIE} 1.0`
+        && (await s.locator("#nazwa-planu").textContent()) === `${KLIENT_PO_ZMIANIE} 1.0`
+        && listaPoNazwie.find((p: any) => p.id === poNazwie.id)?.nazwaPlanu === `${KLIENT_PO_ZMIANIE} 1.0`
+        && listaPoNazwie.find((p: any) => p.id === poNazwie.id)?.zmianyCzekaja
           === (poNazwie.status === "szkic" ? false : czekalyPrzed),
-      `${przedNazwa} → ${await s.locator("#zmien-nazwe-planu").textContent()} · ${poNazwie.plan.tytul} · `
-        + `${await s.locator("#nazwa-planu").textContent()} · ${await s.locator("#nazwa-wlasna-planu").textContent()}`);
+      `${domyslna} → ${await s.locator("#nazwa-planu").textContent()}`);
+    const poPustej = await nazwijPlan("");
+    sprawdz("puste pole w okienku — wraca „Klient N.0”",
+      poPustej.plan.tytul === undefined && (await s.locator("#nazwa-planu").textContent()) === domyslna,
+      await s.locator("#nazwa-planu").textContent() ?? "");
     const wierszUwagi = s.locator("#dni tr").filter({ has: s.locator("button.uwaga-cwiczenia:not(.pusty)") }).first();
     const przyciskUwagi = wierszUwagi.locator("button.uwaga-cwiczenia");
     sprawdz("w wierszu ćwiczenia przycisk 💬 „Dodaj uwagę”; w pustym wierszu niewidoczny",

@@ -205,7 +205,7 @@ function rysujWyborPoprzedniego(plany) {
   wybor.replaceChildren(el("option", "", "— brak —"));
   wybor.firstChild.value = "";
   for (const p of plany) {
-    const opcja = el("option", "", `${p.klient} ${p.wersja}.0${p.nazwaPlanu ? ` · ${p.nazwaPlanu}` : ""}`);
+    const opcja = el("option", "", p.nazwaPlanu ?? `${p.klient} ${p.wersja}.0`);
     opcja.value = p.id;
     wybor.append(opcja);
   }
@@ -257,7 +257,7 @@ function rysujUwage(pozycje) {
 
   for (const w of pozycje) {
     const wiersz = el("div", "pozycja");
-    wiersz.append(el("div", "nazwa", `${w.klient} ${w.wersja}.0${w.nazwaPlanu ? ` · ${w.nazwaPlanu}` : ""}`));
+    wiersz.append(el("div", "nazwa", w.nazwaPlanu ?? `${w.klient} ${w.wersja}.0`));
     wiersz.append(el("span", "meta powody", w.powody.map(opisPowodu).join(" · ")));
     const otworz = el("button", "", "Otwórz");
     otworz.onclick = () => otworzKlienta(w.klientId);
@@ -343,8 +343,8 @@ function rysujCykle(plany) {
   // Najnowszy na górze — tam trener pracuje.
   for (const p of [...plany].reverse()) {
     const wiersz = el("div", "pozycja");
-    const nazwa = el("div", "nazwa", `${p.wersja}.0`);
-    if (p.nazwaPlanu) nazwa.append(el("span", "nazwa-cyklu", ` · ${p.nazwaPlanu}`));
+    const nazwa = el("div", "nazwa");
+    nazwa.append(p.nazwaPlanu ? el("span", "nazwa-cyklu", p.nazwaPlanu) : `${p.wersja}.0`);
     if (p.id === kartoteka.aktywnyPlanId) {
       const znacznik = el("span", "znacznik-aktywny", "← widzi klient");
       znacznik.title = "Ten plan otwiera się pod linkiem klienta";
@@ -522,17 +522,22 @@ $("#nowy-cykl").onclick = async () => {
 
 /**
  * Nazwa planu (06.11.2026, trener: „dodasz mi możliwość edytowania nazwy
- * planu?”), np. „Redukcja zima”. Stoi obok „Klient 2.0” — w nagłówku planu,
- * na liście cykli i w „Wymaga uwagi”. Pole `tytul` w planie — `nazwa` każdy
+ * planu?”). Od razu **zamiast** „Klient 2.0” — w nagłówku planu, na liście
+ * cykli, w „Wymaga uwagi” (trener: „od razu niech się zmienia np. na 1.0, bez
+ * zachowywania poprzedniej wersji”). Pole `tytul` w planie — `nazwa` każdy
  * plan ma od założenia (imię klienta). Zapis od razu, bez wersji roboczej.
  */
 const NAZWA_PLANU_MAKS = 60;
 const nazwaZPlanu = (z) => z.plan?.tytul?.trim() || null;
+const domyslnaNazwa = (z) => `${z.klient} ${z.wersja}.0`;
+const nazwaNaEkranie = (z) => nazwaZPlanu(z) ?? domyslnaNazwa(z);
 $("#zmien-nazwe-planu").onclick = () => poZapisieTrenera(async () => {
   const z = obraz.zapisany;
-  const nowa = prompt(`Nazwa planu ${z.klient} ${z.wersja}.0 (np. „Redukcja zima”, do ${NAZWA_PLANU_MAKS} znaków).\n`
-    + "Puste pole — bez nazwy.", nazwaZPlanu(z) ?? "");
-  if (nowa === null) return;
+  const wpisana = prompt(`Nazwa planu (do ${NAZWA_PLANU_MAKS} znaków), np. „${z.klient} 1.0” albo „Redukcja zima”.\n`
+    + `Puste pole — z powrotem „${domyslnaNazwa(z)}”.`, nazwaNaEkranie(z));
+  if (wpisana === null) return;
+  // Wpisana nazwa domyślna to brak nazwy — zostaje pusto, ekran i tak ją pokaże.
+  const nowa = wpisana.replace(/\s+/g, " ").trim() === domyslnaNazwa(z) ? "" : wpisana;
   try {
     obraz = await api(`/api/plany/${z.id}/nazwa`, { method: "PUT", body: { nazwa: nowa } });
     Object.assign(historia, { obraz, stan: migawka() });
@@ -881,11 +886,9 @@ function rysujPlan() {
   $("#ekran-plan").classList.remove("ukryty");
 
   const z = obraz.zapisany;
-  $("#nazwa-planu").textContent = `${z.klient} ${z.wersja}.0`;
-  const wlasnaNazwa = nazwaZPlanu(z);
-  $("#nazwa-wlasna-planu").textContent = wlasnaNazwa ?? "";
-  $("#nazwa-wlasna-planu").hidden = !wlasnaNazwa;
-  $("#zmien-nazwe-planu").textContent = wlasnaNazwa ? "✎" : "✎ nazwa planu";
+  $("#nazwa-planu").textContent = nazwaNaEkranie(z);
+  $("#zmien-nazwe-planu").title = nazwaZPlanu(z)
+    ? `Zmień nazwę planu (bez nazwy: „${domyslnaNazwa(z)}”)` : "Zmień nazwę planu";
   $("#status-planu").textContent = z.status;
   $("#status-planu").className = `odznaka ${z.status.replace(/[łą]/g, "l")}`;
   $("#status-wybor").value = z.status;
@@ -1574,7 +1577,7 @@ $("#resetuj-plan").onclick = () => {
   const akcje = el("div", "akcje-modala");
   akcje.append(resetuj, anuluj);
 
-  pokazModal(`Zresetować plan „${z.klient} ${z.wersja}.0”?`,
+  pokazModal(`Zresetować plan „${nazwaNaEkranie(z)}”?`,
     el("p", "", "Klient zacznie ten plan od pierwszego treningu. Znikną jego wpisy z tego cyklu:"),
     lista,
     el("p", "wskazowka", "Zostaje cały plan: ćwiczenia, serie, powtórzenia, RPE, ciężary wpisane przez Ciebie, "

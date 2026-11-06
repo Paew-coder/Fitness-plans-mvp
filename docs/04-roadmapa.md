@@ -1432,6 +1432,13 @@ Trener (zrzut „Wymaga uwagi” z „Klient 2.0”): „dodasz mi możliwość 
 * **Konsola:** „✎ nazwa planu” w nagłówku planu; nazwa obok „Klient N.0” w nagłówku, na liście cykli klienta, w „Wymaga uwagi” i w wyborze poprzedniego cyklu. Klient w aplikacji jej nie widzi.
 * Testy: `nazwa-planu.test.ts` (3: bez nazwy, zapis bez wersji roboczej + lista i kartoteka, odmowa za długiej i zdjęcie nazwy). Przegląd ekranów (+1, razem 269).
 
+**131. Nazwa planu zastępuje „Klient N.0” — 06.11.2026.**
+
+Trener (zrzut listy cykli z „2.0 · Klient” i „1.0”): „od razu niech się zmienia np. na 1.0, jak w tym przypadku, bez zachowywania poprzedniej wersji”.
+
+* **Konsola:** nazwa planu (`tytul`) stoi **zamiast** „Klient N.0” — w nagłówku planu, na liście cykli, w „Wymaga uwagi”, w wyborze poprzedniego cyklu i w okienku resetu. ✎ przy nagłówku; okienko podsuwa nazwę, którą widać; puste pole albo wpisana nazwa domyślna — z powrotem „Klient N.0”. Numer cyklu w bazie (`wersja`) się nie zmienia — kolejność cykli i „Nowa wersja” liczą się jak dotąd.
+* Testy: przegląd ekranów (+1, razem 270: nazwa zamiast „Klient N.0”, puste pole wraca do domyślnej).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
