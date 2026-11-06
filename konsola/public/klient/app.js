@@ -2417,9 +2417,24 @@ function wczytajProwadzenie(d) {
  */
 function nastepnaNiezrobiona(kroki, zrobione, od) {
   const po = kroki.findIndex((k, i) => i > od && !zrobione.has(k.klucz));
-  if (po >= 0) return po;
-  const odPoczatku = kroki.findIndex((k) => !zrobione.has(k.klucz));
-  return odPoczatku >= 0 ? odPoczatku : kroki.length;
+  const cel = po >= 0 ? po : kroki.findIndex((k) => !zrobione.has(k.klucz));
+  return cel >= 0 ? najwczesniejszaSeria(kroki, zrobione, cel) : kroki.length;
+}
+
+/**
+ * Serie jednego ćwiczenia zawsze po kolei (06.11.2026). Trener: „na karcie
+ * B1 i B3 jest 1/3, a po wejściu w panel w jednym seria 1 z 3, w drugim
+ * 2 z 3 — pojawia się przy przeskakiwaniu po ćwiczeniach w różnej
+ * kolejności”. Po skoku do B3 „dalej” szło w kolejności superserii od
+ * miejsca skoku, czyli do B1 seria 2 — choć seria 1 B1 była niezrobiona.
+ * Teraz, gdy to ćwiczenie ma wcześniejszą niezrobioną serię, idziemy do niej:
+ * „1/3” na kafelku i „seria 2 z 3” w panelu znaczą wtedy zawsze to samo.
+ */
+function najwczesniejszaSeria(kroki, zrobione, i) {
+  const k = kroki[i];
+  if (k?.typ !== "seria") return i;
+  const wczesniej = kroki.findIndex((x) => x.typ === "seria" && x.positionId === k.positionId && !zrobione.has(x.klucz));
+  return wczesniej >= 0 && wczesniej < i ? wczesniej : i;
 }
 
 /**

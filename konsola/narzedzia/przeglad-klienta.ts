@@ -1409,6 +1409,24 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
 
   await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
 
+  // Przeskok w superserii (06.11.2026). Trener: „na karcie B1 i B3 jest 1/3,
+  // a w panelu raz seria 1 z 3, raz 2 z 3 — przy przeskakiwaniu po
+  // ćwiczeniach”. Stoimy na B1 seria 2; skok do B2 i jej seria 2, potem
+  // „dalej” ma wrócić do B1 seria 2, a nie iść do B1 seria 3.
+  await kafel("B2").click();
+  await s.waitForTimeout(200);
+  const poSkoku = await seriaNaPanelu();
+  await panel.getByRole("button", { name: "Zakończ serię" }).click();
+  await s.waitForTimeout(300);
+  if (await s.locator("#licznik").count() > 0) await panel.getByRole("button", { name: "Pomiń przerwę" }).click();
+  await s.waitForTimeout(200);
+  sprawdz("po skoku do B2 „dalej” wraca do B1 seria 2 — serie ćwiczenia po kolei, licznik na kafelku zgodny",
+    poSkoku === "2 z 3" && await seriaNaPanelu() === "2 z 3"
+      && (await panel.locator(".panel-gora .nazwa").innerText()) === pierwszeWRundzie
+      && (await kafel("B1").innerText()).includes("1/3") && (await kafel("B2").innerText()).includes("2/3"),
+    `B2 ${poSkoku} → ${await panel.locator(".panel-gora .nazwa").innerText()} ${await seriaNaPanelu()} · `
+      + `${await kafel("B1").innerText()} / ${await kafel("B2").innerText()}`);
+
   // Do końca dnia — ostatni panel domyka trening tak samo, jak przycisk
   // na liście.
   for (let i = 0; i < 20; i++) {

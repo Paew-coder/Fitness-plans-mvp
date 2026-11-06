@@ -1416,6 +1416,14 @@ Trener (zrzut z banerem „Trener przygotowuje nowy plan” nad starym planem): 
 * **Aplikacja klienta:** gdy serwer mówi „czeka na plan”, telefon najpierw wysyła kolejkę (oceny i serie z odbytego treningu dochodzą do trenera), potem kasuje zapamiętany plan i pokazuje tylko „Cześć …! Trener przygotowuje Twój plan…”. Baner nad starym planem usunięty (HTML i słownik). Bez sieci klient dalej widzi plan z pamięci — telefon nie wie jeszcze, że plan cofnięto. Service worker `trening-v98`.
 * Testy: przegląd klienta, sekcja 18 — plan znika, zapamiętany widok skasowany, zaległa ocena u trenera, po ponownym wysłaniu plan wraca (razem 282).
 
+**129. Serie jednego ćwiczenia zawsze po kolei przy przeskakiwaniu — 06.11.2026.**
+
+Trener (zrzuty B1 i B3): „na górnej karcie B1 i B3 mają 1/3, a po wejściu w panel w jednym jest seria 1 z 3, a w drugim 2 z 3 — pojawia się przy przeskakiwaniu po ćwiczeniach w różnej kolejności”.
+
+* **Przyczyna:** po skoku do innego ćwiczenia „dalej” szło w kolejności superserii od miejsca skoku — do B1 seria 2, choć B1 seria 1 była niezrobiona. Klient robił serię 2 jako pierwszą, kafelek mówił „1/3”, a panel potem wracał do „seria 1 z 3”.
+* **Aplikacja klienta:** `najwczesniejszaSeria` — gdy następny krok to seria ćwiczenia, które ma wcześniejszą niezrobioną serię, panel idzie do niej. Licznik na kafelku i numer serii w panelu znaczą zawsze to samo. Service worker `trening-v99`.
+* Testy: przegląd klienta (+1, razem 283) — skok do B2 w drugiej rundzie, po nim B1 seria 2 (nie 3), kafelki 1/3 i 2/3.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
