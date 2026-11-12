@@ -1094,6 +1094,15 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       && JSON.stringify(poTopSecie.wynik.tygodnie[0].sloty.map((x: any) => x.ciezar))
         === JSON.stringify(planGolyPrzed),
     JSON.stringify(poTopSecie.zapisany.plan.sloty[0].tygodnie?.["1"]?.topSetKlienta));
+  // 12.11.2026: inny ciężar TOP SETU liczy kolejne TOP SETY, a telefon w T2
+  // pokazuje „Ostatnio (T1)” z tym ciężarem.
+  const tsT2 = poTopSecie.wynik.tygodnie[1].topSety.find((x: any) => x.positionId === tsPrzysiadu.positionId);
+  const tsT2Klienta = (await api(`/api/klient/${golySciezka.replace("/k/", "")}`)).tygodnie[1].dni[0].topSety
+    .find((x: any) => x.positionId === tsPrzysiadu.positionId);
+  sprawdz("inny ciężar TOP SETU liczy TOP SET w T2; telefon w T2 ma „Ostatnio (T1)” z ciężarem klienta",
+    !tsT2 || (JSON.stringify(tsT2.zTopSetuKlienta) === JSON.stringify({ tydzien: 1, kg: tsPrzysiadu.ciezar - 5 })
+      && JSON.stringify(tsT2Klienta?.ostatnio) === JSON.stringify({ tydzien: 1, kg: tsPrzysiadu.ciezar - 5, zPlanu: false })),
+    `T2: ${tsT2?.ciezar ?? "bez TOP SETU"} · ${JSON.stringify(tsT2Klienta?.ostatnio ?? null)}`);
   await s.waitForSelector("#licznik");
   sprawdz("po serii wchodzi przerwa z odliczaniem",
     wZakresie(await s.locator("#licznik").innerText(), 170, 180),

@@ -61,3 +61,27 @@ describe("kilka TOP SETÓW w dniu", () => {
     assert.deepEqual(jeden.tygodnie[1]!.topSety.map((t) => t.positionId), ["D1-S01"]);
   });
 });
+
+/*
+ * Inny ciężar w TOP SECIE liczy kolejne TOP SETY (12.11.2026). Trener:
+ * „mimo iż w przysiadzie zrobiłem większy top set, nie aktualizuje to
+ * kolejnych tygodni”. Serie robocze bez zmian.
+ */
+test("TOP SET klienta 130 kg w T2 — kolejne TOP SETY od 130 kg, serie robocze jak w planie", () => {
+  const plan = (tyg = {}) => ({
+    nazwa: "ts", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "intensywność",
+    serieMaksymalne: [{ cwiczenieId: "EX-0010", ciezar: 140, powtorzenia: 1 }],
+    topSety: [{ dzien: 1, wlaczony: true, slotPositionId: "D1-S07" }],
+    sloty: [{ positionId: "D1-S07", dzien: 1, lp: "C1.", cwiczenieId: "EX-0010", tygodnie: tyg }],
+  }) as unknown as Plan;
+  const top = (p: Plan) => przeliczPlan(p).tygodnie.map((t) => t.topSety[0]?.ciezar ?? null);
+  const robocze = (p: Plan) => przeliczPlan(p).tygodnie.map((t) => t.sloty[0]!.ciezar);
+  const bez = plan();
+  const z = plan({ 2: { topSetKlienta: { kg: 130 } } });
+  assert.deepEqual(top(bez).slice(1), [120, 125, 130, 132.5, 135]);
+  assert.deepEqual(top(z).slice(1), [120, 135, 140, 142.5, 145], "T3 = 130 × %(RPE 7,5) / %(RPE 7), zaokrąglone");
+  assert.deepEqual(przeliczPlan(z).tygodnie[2]!.topSety[0]!.zTopSetuKlienta, { tydzien: 2, kg: 130 });
+  assert.deepEqual(robocze(z), robocze(bez), "serie robocze bez zmian");
+  // Sama ocena (bez ciężaru) niczego nie liczy.
+  assert.deepEqual(top(plan({ 2: { topSetKlienta: { feedback: "za trudne" } } })), top(bez));
+});

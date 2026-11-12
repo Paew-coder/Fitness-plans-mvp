@@ -1447,6 +1447,14 @@ Trener (bench D1, T4 107,5 × 3, zrobione 105 i cztery serie po 103): „robiłe
 * **Serwer:** do zmiany 1RM w środku cyklu (`kalibracja.ts`) idzie teraz `seriaRobocza` — ciężar zrobiony w największej liczbie serii, przy remisie późniejszy (rozgrzewanie się kończy się ciężarem roboczym), powtórzenia najwięcej przy nim. Najcięższa seria zostaje tam, gdzie chodzi o siłę: `ciezarWykonany` i propozycja 1RM na kolejny cykl. W przykładzie trenera T5 107,5 i T6 110 (było 110 i 115 przy 1RM z 105).
 * Testy: `kalibracja.test.ts` (+2: wybór serii roboczej, przykład trenera). Przegląd klienta bez zmian (283).
 
+**133. Inny ciężar w TOP SECIE liczy kolejne TOP SETY; „Ostatnio” przy TOP SECIE — 12.11.2026.**
+
+Trener (TOP SET przysiadu: plan 125 kg, zrobione 130, w kolejnym tygodniu 127,5): „mimo iż zrobiłem większy top set, nie aktualizuje to kolejnych tygodni — poprawmy albo chociaż dodajmy informację, ile kg było w poprzednich tygodniach w top setach”.
+
+* **Silnik:** TOP SET liczy się od ostatniego innego ciężaru klienta z wcześniejszego tygodnia (to samo ćwiczenie): kg × % 1RM tego tygodnia / % 1RM tamtego, zaokrąglone do skoku (`zTopSetuKlienta`). Np. 130 kg przy RPE 8 → kolejny przy RPE 8,5 ok. 132,5. Serie robocze bez zmian (decyzja z 02.10.2026). Sama ocena TOP SETU dalej nic nie liczy.
+* **Aplikacja klienta:** przy TOP SECIE (lista i panel) „Ostatnio (T2): 130 kg” — ciężar klienta albo z planu, gdy dzień był domknięty; gdy dzisiejszy ciężar idzie od TOP SETU klienta — dopisek „dziś policzone od Twojego TOP SETU 130 kg”. Podpowiedź: „Inny ciężar policzy kolejne TOP SETY, serii roboczych nie zmienia”. Tłumaczenia; service worker `trening-v100`.
+* Testy: silnik `kilka-top-setow.test.ts` (+1), przegląd klienta (+1, razem 284).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

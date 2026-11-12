@@ -257,6 +257,8 @@ export type TopSetWyliczony = {
   /** Przy dwuboju: % 1RM TOP SETU (RPE to wtedy tylko odpowiednik). */
   procent?: number;
   ciezar: WynikCiezaru;
+  /** Ciężar policzony od innego ciężaru, który klient zrobił w TOP SECIE wcześniej (12.11.2026). */
+  zTopSetuKlienta?: { tydzien: number; kg: number };
 };
 
 export type PodsumowanieDnia = {
@@ -577,21 +579,47 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
           ? (procent === null ? null : rpeDlaProcentu(1, procent))
           : t.rpeTygodni?.[tydzien] ?? rpeTopSetu(czescBoju(plan.czescPlanu, silowy), tydzien);
         const cwiczenie = rpe === null ? null : (zrodlo?.cwiczenie ?? null);
+        const zPlanu = cwiczenie
+          ? obliczCiezarTopSetu({
+              oneRM: zrodlo!.oneRM,
+              rpe: rpe!,
+              ...(procent != null ? { procent } : {}),
+              skokKg: cwiczenie.skokKg,
+              progresja: cwiczenie.progresja,
+            })
+          : "";
+        /*
+         * Inny ciężar w TOP SECIE liczy kolejne TOP SETY (12.11.2026). Trener:
+         * „zrobiłem większy top set, a nie aktualizuje to kolejnych tygodni”.
+         * Ostatni ciężar klienta z wcześniejszego tygodnia (to samo ćwiczenie)
+         * × stosunek procentów 1RM obu tygodni: 130 kg przy RPE 8 → przy
+         * RPE 8,5 o tyle więcej, ile więcej wymaga RPE. Serie robocze bez
+         * zmian — decyzja z 02.10.2026 („top set mógłby być za ciężki,
+         * a robocze okej”).
+         */
+        let ciezar: WynikCiezaru = zPlanu;
+        let zTopSetuKlienta: TopSetWyliczony["zTopSetuKlienta"];
+        if (cwiczenie && typeof zPlanu === "number") {
+          const procentTeraz = procent ?? procent1RM(1, rpe!);
+          for (let w = tydzien - 1; w >= 1 && procentTeraz; w--) {
+            const kg = slotZrodla?.tygodnie?.[w as Tydzien]?.topSetKlienta?.kg;
+            const wtedy = wyliczone.get(w as Tydzien)?.topSety.find((x) => x.positionId === t.slotPositionId);
+            if (!kg || !wtedy?.cwiczenie || wtedy.cwiczenie.id !== cwiczenie.id || wtedy.rpe === null) continue;
+            const procentWtedy = wtedy.procent ?? procent1RM(1, wtedy.rpe);
+            if (!procentWtedy) break;
+            ciezar = mround(kg * procentTeraz / procentWtedy, Math.max(cwiczenie.skokKg, SKOK_MINIMALNY));
+            zTopSetuKlienta = { tydzien: w, kg };
+            break;
+          }
+        }
         return {
           dzien: t.dzien,
           positionId: t.slotPositionId,
           cwiczenie,
           rpe,
           ...(procent != null ? { procent } : {}),
-          ciezar: cwiczenie
-            ? obliczCiezarTopSetu({
-                oneRM: zrodlo!.oneRM,
-                rpe: rpe!,
-                ...(procent != null ? { procent } : {}),
-                skokKg: cwiczenie.skokKg,
-                progresja: cwiczenie.progresja,
-              })
-            : "",
+          ciezar,
+          ...(zTopSetuKlienta ? { zTopSetuKlienta } : {}),
         } as TopSetWyliczony;
       });
 

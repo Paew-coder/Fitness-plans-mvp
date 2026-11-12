@@ -1430,6 +1430,22 @@ function ocenyTopSetu(wybrana, poZmianie) {
 }
 
 /** Karta TOP SETU na liście dnia — przed ćwiczeniem, do którego należy. */
+/*
+ * TOP SET (12.11.2026). Trener: „zrobiłem większy top set, a nie aktualizuje
+ * to kolejnych tygodni — poprawmy albo chociaż dodajmy informację, ile kg było
+ * w poprzednich tygodniach”. Inny ciężar liczy teraz kolejne TOP SETY (silnik,
+ * `zTopSetuKlienta`); serie robocze dalej bez zmian.
+ */
+const PODPOWIEDZ_TOP_SETU = "Jeśli było OK — nic nie klikaj. Inny ciężar policzy kolejne TOP SETY, "
+  + "serii roboczych nie zmienia.";
+/** „Ostatnio (T2): 130 kg” — i skąd dzisiejszy ciężar, gdy liczy się od niego. */
+function linijkaTopSetu(ts) {
+  if (!ts.ostatnio) return null;
+  const tekst = `Ostatnio (T${ts.ostatnio.tydzien}): ${liczba(ts.ostatnio.kg)} kg`
+    + (ts.zTopSetuKlienta ? ` — dziś policzone od Twojego TOP SETU ${liczba(ts.zTopSetuKlienta.kg)} kg` : "");
+  return el("p", "ostatnio", tekst);
+}
+
 function kartaTopSetu(ts, d, stan) {
   const karta = el("div", "topset");
   karta.dataset.topset = ts.positionId;
@@ -1446,6 +1462,8 @@ function kartaTopSetu(ts, d, stan) {
   if (ts.ciezar === "— brak 1RM") {
     karta.append(el("div", "drobne", ts.procent ? TOP_SET_DWUBOJU_BEZ_1RM : jakDobrac(1, ts.rpe)));
   }
+  const historia = linijkaTopSetu(ts);
+  if (historia) karta.append(historia);
   const klucz = `topset-${ts.positionId}`;
   const rampa = d.cwiczenia.find((c) => c.positionId === ts.positionId)?.rampa;
   if (rampa?.przed === "topset" && !d.ukonczony && !stan?.zrobione.has(klucz)) {
@@ -1453,8 +1471,7 @@ function kartaTopSetu(ts, d, stan) {
   }
   // Ocena i inny ciężar — informacja dla trenera (02.10.2026).
   if (!d.ukonczony || ts.klient) {
-    karta.append(el("p", "drobne podpowiedz-oceny",
-      "Jeśli było OK — nic nie klikaj. Ocena idzie do trenera, serii roboczych nie zmienia."));
+    karta.append(el("p", "drobne podpowiedz-oceny", PODPOWIEDZ_TOP_SETU));
     karta.append(ocenyTopSetu(ts.klient?.feedback ?? null, (f) =>
       zapiszTopSet(d, ts.positionId, { feedback: f, kg: topSetW(d, ts.positionId)?.klient?.kg ?? 0 })));
     const inny = el("label", "inny-ciezar");
@@ -2717,6 +2734,8 @@ function panelTopSetu(k, kroki) {
     powtorzenia: 1, rpe: k.rpe, procent: k.procent,
   }));
   if (bezCiezaru) karta.append(el("p", "dobor", k.procent ? TOP_SET_DWUBOJU_BEZ_1RM : jakDobrac(1, k.rpe)));
+  const historiaTopSetu = linijkaTopSetu(topSetW(dzienBiezacy(), k.slotTopSetu) ?? {});
+  if (historiaTopSetu) karta.append(historiaTopSetu);
   const d = dzienBiezacy();
   const rampa = d?.cwiczenia.find((c) => c.positionId === k.slotTopSetu)?.rampa;
   const ramkaRampy = rampa?.przed === "topset" && !prowadzenie.zrobione.includes(k.klucz)
@@ -2747,7 +2766,7 @@ function panelTopSetu(k, kroki) {
     const blokOceny = el("div", "ocena-w-panelu");
     blokOceny.append(el("div", "pytanie", "Za ciężko albo za lekko?"));
     blokOceny.append(el("p", "drobne podpowiedz-oceny",
-      "Jeśli było OK — nic nie klikaj. Ocena idzie do trenera, serii roboczych nie zmienia."));
+      PODPOWIEDZ_TOP_SETU));
     blokOceny.append(ocenyTopSetu(ocena, (f) => {
       ocena = f;
       zapiszTopSet(d, k.slotTopSetu, { feedback: f, kg: Number(pole.value) || 0 });

@@ -1030,6 +1030,25 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
       : null;
   };
 
+  /**
+   * TOP SET tydzień wcześniej (12.11.2026, trener: „dodajmy informację, ile kg
+   * było w poprzednich tygodniach w top setach”). Ostatni tydzień cyklu,
+   * w którym klient ten TOP SET zrobił — dzień domknięty albo wpis przy
+   * TOP SECIE — z ciężarem klienta, a bez niego z planu.
+   */
+  const ostatniTopSet = (ts: { positionId: string; dzien: number; cwiczenie: { id: string } | null }, tydzien: number) => {
+    for (let w = Math.min(tydzien, 7) - 1; w >= 1; w--) {
+      const wtedy = wynik.tygodnie[w - 1]?.topSety.find((x) => x.positionId === ts.positionId);
+      if (!wtedy?.cwiczenie || wtedy.cwiczenie.id !== ts.cwiczenie?.id) continue;
+      const klient = zapisany.plan.sloty.find((x) => x.positionId === ts.positionId)?.tygodnie?.[w as 1]?.topSetKlienta;
+      const zrobiony = klient || ukonczone.some((u) => u.dzien === ts.dzien && u.tydzien === w);
+      if (!zrobiony) continue;
+      const kg = klient?.kg || (typeof wtedy.ciezar === "number" ? wtedy.ciezar : null);
+      return kg ? { tydzien: numerTygodniaNaEkranie(zapisany.plan, w), kg, zPlanu: !klient?.kg } : null;
+    }
+    return null;
+  };
+
   /** Rozgrzewka dnia — wiersz po wierszu. Pusta albo brak = `null`. */
   const rozgrzewka = (dzien: number) => {
     const r = zapisany.plan.rozgrzewki?.find((x) => x.dzien === dzien);
@@ -1119,7 +1138,8 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
         topSety: t.topSety.filter((x) => x.dzien === dzien)
           .map((ts) => ({ ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff),
             klient: zapisany.plan.sloty.find((x) => x.positionId === ts.positionId)
-              ?.tygodnie?.[t.tydzien]?.topSetKlienta ?? null })),
+              ?.tygodnie?.[t.tydzien]?.topSetKlienta ?? null,
+            ostatnio: ostatniTopSet(ts, t.tydzien) })),
         topSet: (() => {
           const ts = t.topSety.find((x) => x.dzien === dzien);
           return ts ? { ...ts, przerwaSekundy: przerwaSekund(ts.cwiczenie?.coeff) } : null;
