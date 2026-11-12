@@ -91,6 +91,30 @@ export function najciezsza(serie: readonly SeriaWykonana[]): SeriaWykonana | nul
 }
 
 /**
+ * Seria, z której liczy się 1RM do końca planu (`kalibracja.ts`): ciężar
+ * zrobiony w **największej liczbie serii**, przy remisie — ten późniejszy
+ * (rozgrzanie się albo zejście z ciężaru kończy się tym, przy czym klient
+ * został). Powtórzenia — najwięcej przy tym ciężarze.
+ *
+ * Trener, 12.11.2026: „miało być 107,5 kg × 3, robiłem na 103, bo było za
+ * ciężko — wpisałem wszystkie serie, a kolejny tydzień pokazuje 110”. Seria
+ * 105 + cztery po 103 szła do 1RM jako 105 (najcięższa) — plan zszedł tylko
+ * o tyle, ile ta jedna próba. Najcięższa zostaje tam, gdzie chodzi o siłę
+ * (propozycja 1RM na kolejny cykl, `ciezarWykonany`).
+ */
+export function seriaRobocza(serie: readonly SeriaWykonana[]): SeriaWykonana | null {
+  const pelne = serie.filter((s) => s.ciezar !== null && s.powtorzenia !== null);
+  if (pelne.length === 0) return najciezsza(serie);
+  const ile = new Map<number, number>();
+  for (const s of pelne) ile.set(s.ciezar!, (ile.get(s.ciezar!) ?? 0) + 1);
+  const najczesciej = Math.max(...ile.values());
+  // Remis — ciężar, który pojawił się najpóźniej.
+  const ciezar = [...pelne].reverse().find((s) => ile.get(s.ciezar!) === najczesciej)!.ciezar!;
+  const powtorzenia = Math.max(...pelne.filter((s) => s.ciezar === ciezar).map((s) => s.powtorzenia!));
+  return { ciezar, powtorzenia };
+}
+
+/**
  * Serie wpisu do pokazania. Wpis sprzed wersji 6 bazy zna tylko najcięższą
  * parę — pokazujemy ją jako jedną serię, bo tyle o nim wiadomo. Rozpisanie
  * jej na wszystkie serie z planu byłoby wymyślaniem liczb, których nikt

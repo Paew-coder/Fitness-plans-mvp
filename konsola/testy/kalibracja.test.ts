@@ -244,3 +244,38 @@ describe("inny ciężar w środku cyklu liczy resztę planu", () => {
       { cwiczenieId: BOJ, ciezar: 100, powtorzenia: 5 });
   });
 });
+
+/*
+ * Ciężar, przy którym klient został (12.11.2026). Trener: „miało być 107,5 kg
+ * × 3, robiłem na 103, bo było za ciężko — wpisałem wszystkie serie, a kolejny
+ * tydzień pokazuje 110”. Pierwsza seria 105, cztery kolejne 103.
+ */
+describe("1RM z serii, przy której klient został, nie z najcięższej próby", async () => {
+  const { seriaRobocza, najciezsza } = await import("../serie-wykonane.ts");
+  const BENCH = "EX-0011";
+  const planBench = (): Plan => ({
+    nazwa: "bench", trybAkcesoriow: "trzymaj z bloku", czescPlanu: "intensywność",
+    serieMaksymalne: [{ cwiczenieId: BENCH, ciezar: 100, powtorzenia: 9 }],
+    sloty: [{ positionId: "D1-S04", dzien: 1, lp: "D1.", cwiczenieId: BENCH }],
+  } as unknown as Plan);
+  const serie = [105, 103, 103, 103, 103].map((ciezar) => ({ ciezar, powtorzenia: 3 }));
+
+  test("seria robocza: najczęstszy ciężar; remis — późniejszy; najcięższa zostaje najcięższą", () => {
+    assert.deepEqual(seriaRobocza(serie), { ciezar: 103, powtorzenia: 3 });
+    assert.deepEqual(najciezsza(serie), { ciezar: 105, powtorzenia: 3 });
+    assert.deepEqual(seriaRobocza([{ ciezar: 60, powtorzenia: 8 }, { ciezar: 80, powtorzenia: 8 }, { ciezar: 100, powtorzenia: 6 }]),
+      { ciezar: 100, powtorzenia: 6 }, "rozgrzewanie się — ostatni ciężar");
+    assert.deepEqual(seriaRobocza([{ ciezar: null, powtorzenia: 12 }]), { ciezar: null, powtorzenia: 12 });
+  });
+
+  test("przykład trenera: T4 107,5 × 3, zrobione 105 i 4 × 103 — T5 107,5, nie 110", () => {
+    const p = planBench();
+    const ciezary = () => przeliczPlan(p).tygodnie.map((t) => t.sloty[0]!.ciezar);
+    assert.deepEqual(ciezary().slice(3, 6), [107.5, 112.5, 115], "punkt wyjścia: plan z 1RM ok. 129 kg");
+    const robocza = seriaRobocza(serie)!;
+    p.serieMaksymalne = skalibruj(p, { positionId: "D1-S04", tydzien: 4,
+      ciezarWykonany: robocza.ciezar!, powtorzeniaWykonane: robocza.powtorzenia! }, TERAZ)!;
+    assert.deepEqual(ciezary().slice(4, 6), [107.5, 110], "z 105 wyszłoby 110 i 115");
+    assert.deepEqual(ciezary().slice(0, 3), [100, 100, 105], "minione tygodnie bez zmian");
+  });
+});

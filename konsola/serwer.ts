@@ -49,7 +49,7 @@ import { poprawCwiczenie, przywrocCwiczenie, uzycieCwiczenia, zarejestrujPoprawk
 import { zastosujSzablon } from "../silnik/src/szablony-planow.ts";
 import { dobierzCwiczenia } from "../silnik/src/dobor-cwiczen.ts";
 import { SZABLONY_BASE44 } from "../silnik/src/dane/szablony.ts";
-import { najciezsza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
+import { najciezsza, seriaRobocza, serieWpisu, sprawdzSerie } from "./serie-wykonane.ts";
 import { oblicz1RM, procent1RM, rozwiaz1RM, POWT_MAX, type SeriaMaksymalna } from "../silnik/src/rpe.ts";
 import { propozycja1RM, ocenPropozycje, oneRMzSerii, type SeriaRobocza } from "../silnik/src/odczyt-1rm.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
@@ -2377,8 +2377,13 @@ const serwer = createServer(async (req, res) => {
         // w środku cyklu zmienia 1RM do końca planu — patrz `kalibracja.ts`.
         // Tylko gdy przyszły serie: sama ocena później nie liczy niczego od nowa
         // względem planu, który po zmianie stoi już na innym ciężarze.
+        // Z serii — ciężar, przy którym klient został (`seriaRobocza`), nie
+        // najcięższa próba (12.11.2026).
         if ("serie" in cialoZadania || "ciezarWykonany" in cialoZadania) {
-          const skalibrowane = skalibruj(cel.plan, wpis, wpis.data);
+          const robocza = wpis.serie ? seriaRobocza(wpis.serie) : null;
+          const skalibrowane = skalibruj(cel.plan, robocza
+            ? { ...wpis, ciezarWykonany: robocza.ciezar ?? undefined, powtorzeniaWykonane: robocza.powtorzenia ?? undefined }
+            : wpis, wpis.data);
           if (skalibrowane) cel.plan.serieMaksymalne = skalibrowane;
         }
 

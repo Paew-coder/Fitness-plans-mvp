@@ -1439,6 +1439,14 @@ Trener (zrzut listy cykli z „2.0 · Klient” i „1.0”): „od razu niech s
 * **Konsola:** nazwa planu (`tytul`) stoi **zamiast** „Klient N.0” — w nagłówku planu, na liście cykli, w „Wymaga uwagi”, w wyborze poprzedniego cyklu i w okienku resetu. ✎ przy nagłówku; okienko podsuwa nazwę, którą widać; puste pole albo wpisana nazwa domyślna — z powrotem „Klient N.0”. Numer cyklu w bazie (`wersja`) się nie zmienia — kolejność cykli i „Nowa wersja” liczą się jak dotąd.
 * Testy: przegląd ekranów (+1, razem 270: nazwa zamiast „Klient N.0”, puste pole wraca do domyślnej).
 
+**132. Inny ciężar w środku cyklu liczy się z ciężaru, przy którym klient został — 12.11.2026.**
+
+Trener (bench D1, T4 107,5 × 3, zrobione 105 i cztery serie po 103): „robiłem na 103 kg, bo było za ciężko — mimo że wpisałem tak wszystkie serie, kolejny tydzień pokazuje mi 110 kg, więc chyba nie przeliczyło się poprawnie po moich korektach”.
+
+* **Przyczyna:** plan się przeliczył, ale z **najcięższej** serii (105 × 3 → 1RM ok. 125,7 → T5 110). Pozostałe cztery serie po 103 nie miały wpływu.
+* **Serwer:** do zmiany 1RM w środku cyklu (`kalibracja.ts`) idzie teraz `seriaRobocza` — ciężar zrobiony w największej liczbie serii, przy remisie późniejszy (rozgrzewanie się kończy się ciężarem roboczym), powtórzenia najwięcej przy nim. Najcięższa seria zostaje tam, gdzie chodzi o siłę: `ciezarWykonany` i propozycja 1RM na kolejny cykl. W przykładzie trenera T5 107,5 i T6 110 (było 110 i 115 przy 1RM z 105).
+* Testy: `kalibracja.test.ts` (+2: wybór serii roboczej, przykład trenera). Przegląd klienta bez zmian (283).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
