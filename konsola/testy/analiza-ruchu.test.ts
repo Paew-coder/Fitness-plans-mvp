@@ -19,7 +19,7 @@ import {
 import {
   chwilaKlatki, katySesji, klatkaDlaCzasu, klatkaWChwili, seria, trajektoria, wygladz, wypelnijLuki, wykryjPowtorzenia, zakresRuchu,
 } from "../public/ruch/przebieg.js";
-import { PROFIL, powtorzeniaProfilu } from "../public/ruch/profile.js";
+import { klasaGlebokosci, opisDolu, PROFIL, powtorzeniaProfilu } from "../public/ruch/profile.js";
 import {
   BladSesji, doCSV, doJSON, klatkaZWyniku, nowaSesja, skutekSugestii, ustawSugestie, usunSugestie, zJSON,
 } from "../public/ruch/sesja.js";
@@ -337,6 +337,14 @@ describe("ruch w czasie", () => {
     okolo(p.tulowMaks.wartosc, 40, 1);
     // Biodro nad kolanem o 180·cos80° ≈ 31 px przy udzie 180 px → ≈ −17 %.
     okolo(p.glebokosc, -100 * Math.cos(rad(80)), 1);
+    // 13.11.2026: to samo w stopniach — udo 10° nad poziomem (zgięcie 80° od pionu).
+    okolo(p.udoDoPoziomu, -10, 1);
+    assert.equal(klasaGlebokosci(p.udoDoPoziomu), "powyżej równoległej");
+    assert.deepEqual([klasaGlebokosci(4), klasaGlebokosci(-5), klasaGlebokosci(6), klasaGlebokosci(null)],
+      ["równolegle", "równolegle", "poniżej równoległej", null]);
+    const zdanie = opisDolu(p);
+    assert.match(zdanie, /^powyżej równoległej — udo 10° nad poziomem, kolano zgięte \d+°, biodro \d+°/);
+    assert.match(opisDolu({ ...p, udoDoPoziomu: 8, kolanoDoPalcow: 12 }), /^poniżej równoległej — udo 8° pod poziomem.*kolano 12% długości stopy przed palcami/);
     assert.ok(p.zejscie > 0.5 && p.wstawanie > 0.5, `${p.zejscie} / ${p.wstawanie}`);
     // Profil „inne ćwiczenie” nie liczy powtórzeń.
     assert.deepEqual(powtorzeniaProfilu(PROFIL.ogolny, katy, "L"), []);
@@ -977,6 +985,25 @@ describe("zapis wersja 2 — sztanga, badanie, wersja narzędzia (24.10.2026)", 
       ["cialo surowa", "sztanga surowa", "uklad surowa", "cialo wygladzona", "sztanga wygladzona", "uklad wygladzona"]);
     assert.ok(nag.includes("czas_w_srodstopiu_proc") && nag.includes("przesuniecie_do_palcow_zejscie_proc") && nag.includes("klatka_najdalej_do_palcow"));
     assert.ok(powt.slice(1).every((w) => w.split(";").length === nag.length));
+    // 13.11.2026: pozycja w najgłębszym punkcie w tym samym pliku — w każdym
+    // wierszu powtórzenia; bez środka ciężkości wiersz na powtórzenie.
+    const zDolem = doCSVPowtorzen(wczytana, [{ numer: 1, poczatek: 15, dol: 45, koniec: 75, zejscie: 1.234, wstawanie: 1.1,
+      udoDoPoziomu: 7.26, glebokosc: 12.64, kolanoDol: { wartosc: 118.44, klatka: 45 }, kolanaDoStop: null,
+      opisDolu: "poniżej równoległej — udo 7° pod poziomem, kolano zgięte 118°" }]).trim().split("\r\n");
+    const w1 = zDolem[1]!.split(";");
+    const kol = (n: string) => w1[nag.indexOf(n)];
+    assert.deepEqual([kol("udo_do_poziomu_st"), kol("biodro_wzgledem_kolana_proc_uda"), kol("glebokosc"), kol("kolano_dol_st"),
+      kol("czas_zejscia_s"), kol("biodro_dol_st"), kol("rozstaw_kolan_do_stop")],
+      ["7,3", "12,6", "poniżej równoległej", "118,4", "1,23", "", ""]);
+    assert.ok(zDolem[1]!.includes("poniżej równoległej — udo 7° pod poziomem, kolano zgięte 118°"));
+    assert.ok(nag.indexOf("opis_dolu") < nag.indexOf("wersja_narzedzia") && nag.indexOf("udo_do_poziomu_st") > nag.indexOf("klatek_w_powtorzeniu"));
+    const bezSrodka = doCSVPowtorzen({ ...wczytana, srodekCiezkosci: undefined },
+      [{ numer: 1, poczatek: 15, dol: 45, koniec: 75, udoDoPoziomu: -3 }]).trim().split("\r\n");
+    assert.equal(bezSrodka.length, 2, "wiersz na powtórzenie");
+    const b = bezSrodka[1]!.split(";");
+    const nagBez = bezSrodka[0]!.split(";");
+    assert.equal(b.length, nagBez.length);
+    assert.deepEqual([b[2], b[nagBez.indexOf("glebokosc")], b[nagBez.indexOf("klatka_dol")]], ["", "równolegle", "45"]);
   });
 });
 

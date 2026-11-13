@@ -640,7 +640,11 @@ w przeglądarce — film nie wychodzi z urządzenia.
   jest oznaczony „?” z powodem.
 - **Przysiad**: powtórzenia liczone same, w każdym czasy zejścia i wstawania,
   największe zgięcia, biodro względem kolana w dole, kolana względem stóp
-  (z przodu); wiersz przenosi do dołu powtórzenia. „Inne ćwiczenie” — to samo
+  (z przodu); wiersz przenosi do dołu powtórzenia. Od 13.11.2026 także
+  **udo względem poziomu** w stopniach (0° = równolegle; próg „równolegle”
+  ±5°), zdanie „W dole: poniżej równoległej — udo 8° pod poziomem, kolano
+  zgięte 118°, …” pod każdym powtórzeniem i te same liczby w „Pobierz CSV
+  (powtórzenia)” (kąty w dole i największe, czasy, głębokość słowem, opis). „Inne ćwiczenie” — to samo
   bez liczenia powtórzeń.
 - **Sugerowana pozycja**: wybierz punkt → „Zaznacz sugerowaną pozycję” →
   dotknij obrazu. ● obecna → ○ sugerowana, z wyliczeniem, jak to zmienia

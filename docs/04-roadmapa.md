@@ -1455,6 +1455,15 @@ Trener (TOP SET przysiadu: plan 125 kg, zrobione 130, w kolejnym tygodniu 127,5)
 * **Aplikacja klienta:** przy TOP SECIE (lista i panel) „Ostatnio (T2): 130 kg” — ciężar klienta albo z planu, gdy dzień był domknięty; gdy dzisiejszy ciężar idzie od TOP SETU klienta — dopisek „dziś policzone od Twojego TOP SETU 130 kg”. Podpowiedź: „Inny ciężar policzy kolejne TOP SETY, serii roboczych nie zmienia”. Tłumaczenia; service worker `trening-v100`.
 * Testy: silnik `kilka-top-setow.test.ts` (+1), przegląd klienta (+1, razem 284).
 
+**134. Analiza ruchu: udo względem poziomu, opis pozycji w dole, dół przysiadu w CSV — 13.11.2026.**
+
+Trener: „czy możemy wnioskować o głębokości przysiadu na podstawie ustawienia biodra względem kolana? Czy analiza umożliwia zarejestrowanie, w którym momencie przysiad był najniższy, i opisanie jakoś tej pozycji?” — po odpowiedzi: „zrób punkty 1, 2 i 3”.
+
+* **Udo względem poziomu** (`udoDoPoziomu`, stopnie): 0° = równolegle, + = biodro poniżej kolana; nowa kolumna tabeli powtórzeń obok „biodro względem kolana” (% uda). `klasaGlebokosci`: poniżej równoległej / równolegle (±5°, `PROG_ROWNOLEGLEJ_ST`) / powyżej równoległej.
+* **Opis słowny** (`opisDolu`): wiersz „W dole: …” pod każdym powtórzeniem — głębokość, kąty kolana, biodra, stawu skokowego i tułowia w najgłębszej klatce, z boku kolano względem palców (% długości stopy), z przodu rozstaw kolan do stóp. Tylko liczby, bez ocen.
+* **CSV powtórzeń:** 16 nowych kolumn (czasy zejścia i wstawania, udo do poziomu, biodro względem kolana, głębokość słowem, kąty w dole i największe, kolano do palców, rozstaw kolan, opis) w każdym wierszu powtórzenia; bez środka ciężkości — wiersz na powtórzenie (przycisk widoczny także wtedy).
+* Testy: `analiza-ruchu.test.ts` (kąt, klasy, zdanie, kolumny CSV), przegląd ruchu (+2, razem 112).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

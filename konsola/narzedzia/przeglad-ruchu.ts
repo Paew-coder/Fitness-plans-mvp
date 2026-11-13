@@ -510,6 +510,12 @@ await zSerwerem(4231, async ({ adres }) => {
         "biodro względem kolana", "rozstaw kolan do stóp", "środek ciężkości nad stopą"].every((n) => naglowkiTabeli.includes(n))
         && !naglowkiTabeli.includes("stopa"),
       naglowkiTabeli.join(" | "));
+    // 13.11.2026: nachylenie uda w stopniach i pozycja w dole jednym zdaniem.
+    const zdaniaDolu = await s.locator("#tabela-powtorzen tr.wiersz-opis-dolu").allInnerTexts();
+    sprawdz("…kolumna „udo względem poziomu” w stopniach i zdanie „W dole: …” przy każdym powtórzeniu",
+      naglowkiTabeli.includes("udo względem poziomu") && zdaniaDolu.length > 0
+        && zdaniaDolu.every((z) => /^W dole: (poniżej równoległej|powyżej równoległej|udo równolegle)/.test(z.trim()) && /kolano zgięte \d+°/.test(z)),
+      zdaniaDolu[0]?.trim() ?? "brak zdania");
     sprawdz("…tabela mieści się w panelu na laptopie (bez przewijania w bok)",
       await s.locator("#tabela-powtorzen").evaluate((e: Element) => e.scrollWidth <= e.parentElement!.clientWidth + 1));
     await s.locator("#tabela-powtorzen tr.wiersz-dol").first().click();
@@ -754,6 +760,14 @@ await zSerwerem(4231, async ({ adres }) => {
         && naglowekMiar!.startsWith("plik_filmu;powtorzenie;wynik;seria;") && naglowekMiar!.includes(";czas_w_srodstopiu_proc;")
         && wierszeCsv.every((w) => w.includes(";P01;HB-bez-wskazowki;deleva-m;")),
       `${pobranieMiar.suggestedFilename()}, ${wierszeCsv.length} wierszy`);
+    const kolMiar = naglowekMiar!.split(";");
+    const w0 = wierszeCsv[0]!.split(";");
+    sprawdz("CSV powtórzeń niesie pozycję w dole: udo do poziomu, głębokość słowem, kąty w dole, opis",
+      /^-?\d+(,\d)?$/.test(w0[kolMiar.indexOf("udo_do_poziomu_st")] ?? "")
+        && /równoleg/.test(w0[kolMiar.indexOf("glebokosc")] ?? "")
+        && /^\d+(,\d)?$/.test(w0[kolMiar.indexOf("kolano_dol_st")] ?? "")
+        && /udo/.test(w0[kolMiar.indexOf("opis_dolu")] ?? ""),
+      `udo ${w0[kolMiar.indexOf("udo_do_poziomu_st")]}° · ${w0[kolMiar.indexOf("glebokosc")]} · kolano ${w0[kolMiar.indexOf("kolano_dol_st")]}°`);
     const [pobranieJsonSztangi] = await Promise.all([s.waitForEvent("download"), s.click("#pobierz-json")]);
     const plikJsonSztangi = join(robocze, "sztanga-zapis.json");
     await pobranieJsonSztangi.saveAs(plikJsonSztangi);

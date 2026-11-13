@@ -253,6 +253,8 @@ table.tabela tr.wybrany td { background: var(--akcent-tlo); }
 #tabela-powtorzen tr.wiersz-maks td { border-bottom-style: dashed; }
 #tabela-powtorzen td.rodzaj-wiersza { text-align: left; font-family: var(--sans); font-size: .78rem; color: var(--tekst-slaby); }
 #tabela-powtorzen tr.wiersz-dol td.rodzaj-wiersza { color: var(--tekst); font-weight: 600; }
+/* Pozycja w dole jednym zdaniem (13.11.2026) — zawija się, nie rozpycha tabeli. */
+#tabela-powtorzen tr.wiersz-opis-dolu td { text-align: left; font-family: var(--sans); font-size: .8rem; color: var(--tekst-slaby); white-space: normal; }
 /* Tabela miar środka ciężkości i sztangi w powtórzeniach (24.10.2026) — jak tabela powtórzeń. */
 #tabela-miar-srodka th { font-family: var(--sans); text-transform: none; letter-spacing: normal; font-size: .74rem; }
 #tabela-miar-srodka th.liczba { white-space: normal; vertical-align: bottom; max-width: 7rem; line-height: 1.25; }

@@ -12,7 +12,7 @@ import { analizujWideo, MODELE, przejdzFilm, przewin, utworzDetektor, WERSJA_MED
 import { KAT, KATY, katyKlatki, pewny, punktyKlatki, stronaBlizejKamery, ujecieNagrania } from "./geometria.js";
 import { miarySrodkaPowtorzen, pasmoZUstawien, WYNIKI } from "./miary-srodka.js";
 import { chwilaKlatki, katySesji, klatkaDlaCzasu, klatkaWChwili, seria, trajektoria, zakresRuchu } from "./przebieg.js";
-import { katStrony, PROFIL, PROFILE, powtorzeniaProfilu, punktStrony } from "./profile.js";
+import { katStrony, opisDolu, PROFIL, PROFILE, powtorzeniaProfilu, punktStrony } from "./profile.js";
 import { kolorPunktu, KOLORY_TRAJEKTORII, punktPodPalcem, rysujKlatke } from "./rysowanie.js";
 import {
   BladSesji, doCSV, doCSVPowtorzen, doJSON, klatekZSylwetka, klatkaZWyniku, nowaSesja, opisNarzedzia, opisSugestii, skutekSugestii,
@@ -1084,6 +1084,9 @@ function rysujPowtorzenia(katy) {
   const wDole = [
     ["biodro względem kolana", (r) => (r.glebokosc === null ? "—"
       : `${r.glebokosc > 0 ? "pod" : "nad"} ${liczba(Math.abs(r.glebokosc))}%`)],
+    // 13.11.2026: nachylenie uda w stopniach — 0° = równolegle.
+    ["udo względem poziomu", (r) => (r.udoDoPoziomu === null || r.udoDoPoziomu === undefined ? "—"
+      : `${liczba(Math.abs(r.udoDoPoziomu))}° ${r.udoDoPoziomu >= 0 ? "pod" : "nad"}`)],
     ["rozstaw kolan do stóp", (r) => (r.kolanaDoStop === null ? "—" : liczba(r.kolanaDoStop, 2))],
     ...(stan.srodek ? [[`środek ciężkości ${konczynySrodka() === "obie" ? "między stopami" : "nad stopą"}`,
       (r) => procent(stan.srodek.wzgledemGladkie[r.dol])]] : []),
@@ -1116,7 +1119,16 @@ function rysujPowtorzenia(katy) {
       maks.append(el("td", "liczba", ""));
       dol.append(el("td", "liczba", f(r)));
     }
-    return [opis, maks, dol];
+    // Pozycja w dole jednym zdaniem — pod liczbami tego powtórzenia.
+    const slownie = opisDolu(r);
+    if (!slownie) return [opis, maks, dol];
+    const zdanie = el("tr", "klikalny wiersz-opis-dolu");
+    zdanie.title = dol.title;
+    zdanie.addEventListener("click", doDolu);
+    const td = el("td", "", `W dole: ${slownie}.`);
+    td.colSpan = liczbaKolumn;
+    zdanie.append(td);
+    return [opis, maks, dol, zdanie];
   });
   if (wiersze.length === 0) {
     const w = el("tr");
@@ -1778,7 +1790,8 @@ function rysujMiarySrodka(podsumowanie) {
   const s = stan.srodek;
   const pokaz = !!s && !!profil().powtorzenia && podsumowanie.length > 0;
   panel.classList.toggle("ukryty", !pokaz);
-  $("#pobierz-csv-powtorzen").classList.toggle("ukryty", !pokaz);
+  // CSV powtórzeń także bez środka ciężkości — niesie pozycję w dole (13.11.2026).
+  $("#pobierz-csv-powtorzen").classList.toggle("ukryty", !(profil().powtorzenia && podsumowanie.length > 0));
   if (!pokaz) return;
   const u = ustawieniaSrodka();
   const zBoku = konczynySrodka() !== "obie";
@@ -1943,7 +1956,8 @@ $("#pobierz-csv").addEventListener("click", () => {
 });
 $("#pobierz-csv-powtorzen").addEventListener("click", () => {
   przedZapisem();
-  const powtorzenia = stan.podsumowanie.map(({ numer, poczatek, dol, koniec }) => ({ numer, poczatek, dol, koniec }));
+  // Całe podsumowanie — z pozycją w najgłębszym punkcie i jej opisem.
+  const powtorzenia = stan.podsumowanie.map((r) => ({ ...r, opisDolu: opisDolu(r) }));
   pobierz(`\ufeff${doCSVPowtorzen(stan.sesja, powtorzenia)}`, nazwaPliku("powtorzenia", "csv"), "text/csv;charset=utf-8");
 });
 

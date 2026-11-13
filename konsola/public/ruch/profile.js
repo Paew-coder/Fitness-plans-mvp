@@ -103,6 +103,8 @@ function podsumowaniePrzysiadu(sesja, katy, strona, powtorzenia) {
     const dolKlatka = sesja.klatki[dol];
     const punkty = punktyWUkladzie(dolKlatka, wymiary, "2d");
     let glebokosc = null;
+    let udoDoPoziomu = null;
+    let kolanoDoPalcow = null;
     let kolanaDoStop = null;
     if (punkty) {
       const q = rozwiazywacz(punkty);
@@ -111,6 +113,18 @@ function podsumowaniePrzysiadu(sesja, katy, strona, powtorzenia) {
       const udo = Math.hypot(kol.x - bio.x, kol.y - bio.y);
       // + = biodro poniżej kolana (poniżej równoległej); oś Y obrazu w dół.
       if (udo > 0) glebokosc = ((bio.y - kol.y) / udo) * 100;
+      // Udo względem poziomu w stopniach (13.11.2026): 0° = równolegle,
+      // + = biodro poniżej kolana. Z boku to wprost nachylenie uda.
+      if (udo > 0) udoDoPoziomu = Math.asin(Math.max(-1, Math.min(1, (bio.y - kol.y) / udo))) * 180 / Math.PI;
+      // Kolano względem palców, w % długości stopy: + = kolano przed palcami.
+      // Tylko z boku — z przodu oś przód–tył nie leży w obrazie.
+      const pieta = q(`${przedrostek}_heel`);
+      const palce = q(`${przedrostek}_foot_index`);
+      const stopa = palce.x - pieta.x;
+      if (ujecie(punkty) === "bok" && Math.abs(stopa) > 0
+          && Math.min(pieta.v, palce.v, kol.v) >= PROG_WIDOCZNOSCI) {
+        kolanoDoPalcow = ((kol.x - palce.x) / stopa) * 100;
+      }
       // Rozstaw kolan do stóp ma sens tylko z przodu (albo z tyłu).
       const kolana = Math.abs(q("left_knee").x - q("right_knee").x);
       const stopy = Math.abs(q("left_ankle").x - q("right_ankle").x);
@@ -132,7 +146,52 @@ function podsumowaniePrzysiadu(sesja, katy, strona, powtorzenia) {
       skokowyDol: wDole(skokowy),
       tulowDol: wDole(tulow),
       glebokosc,
+      udoDoPoziomu,
+      kolanoDoPalcow,
       kolanaDoStop,
     };
   });
+}
+
+/**
+ * Próg „równolegle”: udo w granicach ±5° od poziomu. Punkty modelu to środki
+ * stawów, a nachylenie uda z jednej kamery ma kilka stopni niepewności —
+ * węższy próg rozstrzygałby szum.
+ */
+export const PROG_ROWNOLEGLEJ_ST = 5;
+
+/** Głębokość słowem: „poniżej równoległej” / „równolegle” / „powyżej równoległej”. */
+export function klasaGlebokosci(udoDoPoziomu) {
+  if (udoDoPoziomu === null || udoDoPoziomu === undefined) return null;
+  return udoDoPoziomu > PROG_ROWNOLEGLEJ_ST ? "poniżej równoległej"
+    : udoDoPoziomu < -PROG_ROWNOLEGLEJ_ST ? "powyżej równoległej" : "równolegle";
+}
+
+/**
+ * Pozycja w najgłębszym punkcie jednym zdaniem (13.11.2026, trener: „czy
+ * analiza umożliwia zarejestrowanie, w którym momencie przysiad był najniższy,
+ * i opisanie jakoś tej pozycji?”). Tylko to, co policzone — bez ocen.
+ */
+export function opisDolu(r) {
+  const st = (v) => `${Math.round(v)}°`;
+  const czesci = [];
+  const klasa = klasaGlebokosci(r.udoDoPoziomu);
+  if (klasa) {
+    const kat = Math.abs(Math.round(r.udoDoPoziomu));
+    czesci.push(klasa === "równolegle"
+      ? `udo równolegle do podłoża (${kat === 0 ? "0°" : `${kat}° ${r.udoDoPoziomu > 0 ? "pod" : "nad"} poziomem`})`
+      : `${klasa} — udo ${kat}° ${r.udoDoPoziomu > 0 ? "pod" : "nad"} poziomem`);
+  }
+  if (r.kolanoDol) czesci.push(`kolano zgięte ${st(r.kolanoDol.wartosc)}`);
+  if (r.biodroDol) czesci.push(`biodro ${st(r.biodroDol.wartosc)}`);
+  if (r.skokowyDol) czesci.push(`zgięcie grzbietowe stawu skokowego ${st(r.skokowyDol.wartosc)}`);
+  if (r.tulowDol) czesci.push(`tułów pochylony ${st(r.tulowDol.wartosc)}`);
+  if (r.kolanoDoPalcow !== null && r.kolanoDoPalcow !== undefined) {
+    const p = Math.abs(Math.round(r.kolanoDoPalcow));
+    czesci.push(p < 5 ? "kolano nad palcami" : `kolano ${p}% długości stopy ${r.kolanoDoPalcow > 0 ? "przed palcami" : "za palcami"}`);
+  }
+  if (r.kolanaDoStop !== null && r.kolanaDoStop !== undefined) {
+    czesci.push(`rozstaw kolan ${r.kolanaDoStop.toFixed(2).replace(".", ",")} rozstawu stóp`);
+  }
+  return czesci.join(", ");
 }

@@ -31,6 +31,7 @@
  * Czysty moduł: bez DOM, działa w przeglądarce i w testach Node.
  */
 import { KATY, katyKlatki, punktyKlatki } from "./geometria.js";
+import { klasaGlebokosci } from "./profile.js";
 import { GLOWNE_PUNKTY, LANDMARKI, LICZBA_LANDMARKOW, nazwaPunktu } from "./szkielet.js";
 import { miarySrodkaPowtorzen, pasmoZUstawien, WYNIKI } from "./miary-srodka.js";
 import {
@@ -264,6 +265,31 @@ export function doCSV(sesja) {
 }
 
 /**
+ * Pozycja w najgłębszym punkcie i czasy powtórzenia (13.11.2026) — kolumny
+ * CSV powtórzeń. Te same w każdym wierszu powtórzenia (układ długi); puste,
+ * gdy `powtorzenia` niosą tylko klatki. Kąty w stopniach, konwencja z ekranu.
+ */
+const kat = (m) => liczbaCSV(m?.wartosc, 1);
+const KOLUMNY_DOLU = [
+  ["czas_zejscia_s", (p) => liczbaCSV(p.zejscie, 2)],
+  ["czas_wstawania_s", (p) => liczbaCSV(p.wstawanie, 2)],
+  ["udo_do_poziomu_st", (p) => liczbaCSV(p.udoDoPoziomu, 1)],
+  ["biodro_wzgledem_kolana_proc_uda", (p) => liczbaCSV(p.glebokosc, 1)],
+  ["glebokosc", (p) => tekstCSV(klasaGlebokosci(p.udoDoPoziomu) ?? "")],
+  ["kolano_dol_st", (p) => kat(p.kolanoDol)],
+  ["biodro_dol_st", (p) => kat(p.biodroDol)],
+  ["skokowy_dol_st", (p) => kat(p.skokowyDol)],
+  ["tulow_dol_st", (p) => kat(p.tulowDol)],
+  ["kolano_maks_st", (p) => kat(p.kolanoMaks)],
+  ["biodro_maks_st", (p) => kat(p.biodroMaks)],
+  ["skokowy_maks_st", (p) => kat(p.skokowyMaks)],
+  ["tulow_maks_st", (p) => kat(p.tulowMaks)],
+  ["kolano_do_palcow_proc_stopy", (p) => liczbaCSV(p.kolanoDoPalcow, 1)],
+  ["rozstaw_kolan_do_stop", (p) => liczbaCSV(p.kolanaDoStop, 2)],
+  ["opis_dolu", (p) => tekstCSV(p.opisDolu ?? "")],
+];
+
+/**
  * CSV powtórzeń (24.10.2026): jeden wiersz = powtórzenie × wynik (ciało,
  * sztanga, układ) × seria (surowa, wygładzona) — układ „długi”, który SPSS,
  * R czy Excel czytają od razu. `powtorzenia` — `[{ numer, poczatek, dol, koniec }]`
@@ -282,8 +308,20 @@ export function doCSVPowtorzen(sesja, powtorzenia) {
     "zakres_przod_tyl_proc", "zakres_przod_tyl_px", "zakres_zejscie_proc", "zakres_zejscie_px",
     "zakres_wstawanie_proc", "zakres_wstawanie_px",
     "czas_w_srodstopiu_proc", "klatek_z_wynikiem", "klatek_w_powtorzeniu",
+    ...KOLUMNY_DOLU.map(([n]) => n),
     ...parametry.map(([n]) => n)];
   const wiersze = [];
+  const dolPowtorzenia = new Map(powtorzenia.map((p) => [p.numer, KOLUMNY_DOLU.map(([, f]) => f(p))]));
+  const PUSTE_MIARY = Array(18).fill("");
+  if (!srodek) {
+    // Bez środka ciężkości — wiersz na powtórzenie: klatki, czasy i pozycja w dole.
+    const t = (i) => liczbaCSV(sesja.klatki[i]?.t, 1);
+    for (const p of powtorzenia) {
+      wiersze.push([tekstCSV(sesja.wideo.nazwa), p.numer, "", "",
+        p.poczatek, p.dol, p.koniec, t(p.poczatek), t(p.dol), t(p.koniec),
+        ...PUSTE_MIARY, ...dolPowtorzenia.get(p.numer), ...parametry.map(([, v]) => v)].join(";"));
+    }
+  }
   if (srodek) {
     const t = (i) => liczbaCSV(sesja.klatki[i]?.t, 1);
     for (const [seria, gladkie] of [["surowa", false], ["wygladzona", true]]) {
@@ -302,6 +340,7 @@ export function doCSVPowtorzen(sesja, powtorzenia) {
             liczbaCSV(m.zakres.proc, 2), liczbaCSV(m.zakres.px, 1), liczbaCSV(m.zakresZejscie.proc, 2), liczbaCSV(m.zakresZejscie.px, 1),
             liczbaCSV(m.zakresWstawanie.proc, 2), liczbaCSV(m.zakresWstawanie.px, 1),
             liczbaCSV(m.wPasmie, 1), m.klatekZWynikiem, m.klatekWPowtorzeniu,
+            ...dolPowtorzenia.get(r.numer),
             ...parametry.map(([, v]) => v)].join(";"));
         }
       }
