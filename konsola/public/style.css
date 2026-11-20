@@ -538,7 +538,9 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .spostrzezenie .nazwa { font-weight: 600; font-size: .82rem; }
 .spostrzezenie p { margin: .2rem 0 0; color: var(--tekst-slaby); }
 
-.akcje-modala { display: flex; gap: .5rem; margin-top: .9rem; }
+.akcje-modala { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .9rem; }
+/* „Zamknij” pod przyciskami okna — z odstępem, nie przyklejony (20.11.2026). */
+#modal-zamknij { margin-top: .9rem; }
 /* Plan po angielsku (27.10.2026) — w okienku linku, nad samym linkiem. */
 .jezyk-planu { border: 1px solid var(--linia); border-radius: 8px; padding: .7rem .8rem; margin: 0 0 .9rem; }
 .jezyk-przelacznik { display: flex; gap: .5rem; align-items: flex-start; font-weight: 600; cursor: pointer; }

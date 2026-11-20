@@ -1323,9 +1323,19 @@ function topSetyDnia(d) {
  * i ciężary liczy silnik (`rampa.ts`): lekko × 8–10, 50 % × 5, 70 % × 3,
  * 85 % × 1. Serie rampy się nie zapisują.
  */
+/*
+ * Rampa zwinięta (20.11.2026), jak „Co to jest RPE?” — trener: „żeby nie
+ * pokazywało się od razu, tylko było schowane i można sobie to otworzyć”.
+ * Rozwinięta zostaje rozwinięta przy przerysowaniu (po ocenie, po serii),
+ * do zamknięcia aplikacji — po kroku rampy jako kluczu.
+ */
+const otwarteRampy = new Set();
 function blokRampy(r) {
-  const blok = el("div", "rampa");
-  blok.append(el("div", "rampa-tytul", "Rozgrzewka rampą"));
+  const blok = el("details", "rampa");
+  const klucz = `${r.przed}:${r.cel ?? ""}:${JSON.stringify(r.schemat ?? r.kroki)}`;
+  blok.open = otwarteRampy.has(klucz);
+  blok.addEventListener("toggle", () => (blok.open ? otwarteRampy.add(klucz) : otwarteRampy.delete(klucz)));
+  blok.append(el("summary", "rampa-tytul", "Rozgrzewka rampą"));
   const kroki = el("div", "rampa-kroki");
   const opis = el("p", "drobne");
   blok.append(kroki, opis);

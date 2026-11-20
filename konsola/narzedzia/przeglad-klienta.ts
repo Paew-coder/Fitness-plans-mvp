@@ -96,6 +96,9 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
     import("/klient/angielski.js").then((m) => m.audytuj((t: string, p: string) => (window as any).__brakTlumaczenia(t, p)));
   });
   const s = await kontekst.newPage();
+  /** Rampa jest zwinięta (20.11.2026) — przed czytaniem jej treści rozwijamy wszystkie. */
+  const otworzRampy = () => s.evaluate(() => document.querySelectorAll<HTMLDetailsElement>("details.rampa")
+    .forEach((d) => { d.open = true; }));
   const bledy = pilnujBledow(s);
 
   /** Widok prosto z serwera — sprawdzamy skutek dotknięcia, nie sam ekran. */
@@ -1023,6 +1026,12 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   // nie — jego pierwsza ciężka seria to TOP SET. Dead bug na masie ciała bez rampy.
   const tsPrzysiadu = golyWidok.tygodnie[0].dni[0].topSety[0];
   const kartaTsPrzysiadu = s.locator('#cwiczenia .topset[data-topset="D1-S01"]');
+  // Rampa zwinięta (20.11.2026) — najpierw sprawdzamy, że jest zamknięta, potem ją otwieramy.
+  const rampaZwinieta = await kartaTsPrzysiadu.locator("details.rampa:not([open])").count() === 1
+    && !(await kartaTsPrzysiadu.locator(".rampa-kroki").isVisible());
+  await kartaTsPrzysiadu.locator(".rampa-tytul").click();
+  sprawdz("rampa zwinięta jak „Co to jest RPE?”; dotknięcie ją rozwija",
+    rampaZwinieta && await kartaTsPrzysiadu.locator(".rampa-kroki").isVisible());
   const rampaListy = await kartaTsPrzysiadu.locator(".rampa").innerText().catch(() => "");
   const krokiListy = await kartaTsPrzysiadu.locator(".rampa-krok").allInnerTexts();
   const ostatniKrok = parseFloat((krokiListy.at(-1) ?? "").replace(",", "."));
@@ -2175,6 +2184,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const kartaListy = s.locator('#cwiczenia [data-position="D1-S01"]');
   // Bój bez TOP SETU: rampa idzie do pierwszej serii roboczej (02.10.2026).
+  await otworzRampy();
   const rampaBoju = await kartaListy.locator(".rampa").innerText().catch(() => "");
   sprawdz("bój bez TOP SETU: rampa do pierwszej serii roboczej",
     rampaBoju.includes("lekko × 8–10 powt.") && rampaBoju.includes("Dalej pierwsza seria robocza")
@@ -2313,6 +2323,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.click("#wroc-z-serii");
   await s.waitForSelector("#ekran-trening:not(.ukryty)");
   const kartaBezCelu = s.locator('#cwiczenia [data-position="D1-S04"]');
+  await otworzRampy();
   const rampaBezCelu = await kartaBezCelu.locator(".rampa").innerText().catch(() => "");
   sprawdz("bez ciężaru docelowego rampa pokazuje cały schemat w procentach i od czego je liczyć",
     (await kartaBezCelu.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 powt. · 50% × 5 powt. · 70% × 3 powt. · 85% × 1 powt."
@@ -2323,6 +2334,7 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
   await s.waitForSelector("#panel .panel-pola");
   await panel.locator('.panel-pola input[placeholder="kg"]').fill("60");
   await s.waitForTimeout(200);
+  await otworzRampy();
   const rampaPanelu = await panel.locator(".rampa").innerText();
   sprawdz("w panelu wpisany ciężar przelicza rampę na kilogramy",
     (await panel.locator(".rampa-krok").allInnerTexts()).join(" · ") === "lekko × 8–10 powt. · 30 kg × 5 powt. · 42,5 kg × 3 powt. · 50 kg × 1 powt."

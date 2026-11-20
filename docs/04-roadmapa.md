@@ -1474,6 +1474,14 @@ Trener: „gdy ćwiczenie jest robione naprzemiennie — w T1 robię 12 powtórz
 * **Aplikacja klienta:** „naprzemiennie, 6 na stronę” przy liczbie powtórzeń; przypomnienie przy nieparzystej liczbie w panelu (bez blokady); korekty po ocenie o 2. Tłumaczenia; service worker `trening-v101`.
 * Testy: silnik `naprzemienne.test.ts` (4), `jednostkowe.test.ts` (36 jednostronnych + 4 naprzemienne); konsola `baza-cwiczen.test.ts` (+1); przegląd ekranów (+1, razem 271), przegląd klienta (+3, razem 287).
 
+**136. Rampa zwinięta; odstęp „Zamknij” w oknie konsoli — 20.11.2026.**
+
+Trener (zrzuty): „popraw to, że tutaj te przyciski nachodzą na siebie” (okno „Link dla klienta”) i „to warm up ramp zrób, żeby nie pokazywało się od razu, ale działało jak to z RPE — wyjściowo schowane i można sobie to otworzyć”.
+
+* **Aplikacja klienta:** „Rozgrzewka rampą” jako zwinięte „▸” (jak „Co to jest RPE?”) — na liście, w panelu serii i przy TOP SECIE; rozwinięta zostaje rozwinięta przy przerysowaniu. Service worker `trening-v102`.
+* **Konsola:** „Zamknij” pod przyciskami okna z odstępem; przyciski okna zawijają się zamiast nachodzić.
+* Testy: przegląd klienta (+1, razem 288: rampa zwinięta, dotknięcie rozwija), przegląd ekranów bez zmian (271).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

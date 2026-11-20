@@ -456,8 +456,13 @@ a.akcja { text-decoration: none; }
 }
 .rampa-tytul {
   font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--akcent); font-weight: 700;
+  color: var(--akcent); font-weight: 700; cursor: pointer; list-style: none;
 }
+/* Zwinięta jak „Co to jest RPE?” (20.11.2026). */
+.rampa-tytul::-webkit-details-marker { display: none; }
+.rampa-tytul::before { content: "▸ "; }
+details.rampa[open] .rampa-tytul::before { content: "▾ "; }
+details.rampa:not([open]) { padding-top: .45rem; padding-bottom: .45rem; }
 .rampa-kroki { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin-top: .35rem; font-weight: 600; }
 .rampa-krok { white-space: nowrap; }
 .rampa-powt { font-weight: 400; color: var(--tekst-slaby); font-size: .85em; }
