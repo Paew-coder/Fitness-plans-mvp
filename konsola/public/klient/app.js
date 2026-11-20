@@ -1244,7 +1244,7 @@ function rysujJakTrenowac(t, d) {
  */
 function kolumnyZadania({
   seria, zSerii, ciezar, dobierz, serie, powtorzenia, rpe, jednostronne, podpisCiezaru = "Ciężar",
-  dopisekCiezaru = null, dopisekPowtorzen = null, procent = null, proba = false, czas = false,
+  dopisekCiezaru = null, dopisekPowtorzen = null, procent = null, proba = false, czas = false, naprzemienne = false,
 }) {
   const blok = el("div", "zadanie-blok");
   const siatka = el("div", "zadanie-kolumny");
@@ -1270,7 +1270,10 @@ function kolumnyZadania({
   if (serie != null) kolumna("kolumna-serie", "Serie", String(serie));
   kolumna(`kolumna-powt${czas ? " kolumna-czas" : ""}`, czas ? "Czas" : serie != null ? "Powt." : "Powtórzenia",
     String(powtorzenia ?? "—"), czas ? "s" : null,
-    [jednostronne ? "na stronę" : null, dopisekPowtorzen].filter(Boolean).join(" · ") || null);
+    [jednostronne ? "na stronę" : null,
+      // Naprzemienne (20.11.2026): liczba łącznie, obok ile na każdą stronę.
+      naprzemienne && !czas && powtorzenia > 0 ? `naprzemiennie, ${powtorzenia / 2} na stronę` : null,
+      dopisekPowtorzen].filter(Boolean).join(" · ") || null);
   blok.append(siatka);
   // Samo „RPE 8", bez „2 w zapasie" — trener: dopisek zbędny. Co znaczy
   // RPE, mówi „Co to jest RPE?" tam, gdzie klient dobiera ciężar.
@@ -1544,7 +1547,7 @@ function kartaCwiczenia(c, stan = null) {
   karta.append(kolumnyZadania({
     ciezar: c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
-    serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    serie: c.serie, powtorzenia: c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne, naprzemienne: c.naprzemienne,
     procent: c.procent, proba: c.probaMaksu, czas: naCzas(c),
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
     // „jak w T1" — ręczny ciężar przeniesiony z tygodnia, w którym go wybrano.
@@ -1852,8 +1855,10 @@ function ocenaWPanelu(k, c, wCiezar, bezCiezaru, wPowt) {
       notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek * krok)} s `
         + `(o ${krok} s ${korekta.kierunek < 0 ? "krócej" : "dłużej"}).`;
     } else if (nastepna && naMasieCiala(c) && powt) {
-      notka.textContent = `Następna seria: ${Math.max(1, powt + korekta.kierunek)} powt. `
-        + `(o 1 ${korekta.kierunek < 0 ? "mniej" : "więcej"}).`;
+      // Naprzemienne (20.11.2026) — o 2, po jednym na stronę.
+      const krok = krokLiczby(c, powt);
+      notka.textContent = `Następna seria: ${Math.max(krok, powt + korekta.kierunek * krok)} powt. `
+        + `(o ${krok} ${korekta.kierunek < 0 ? "mniej" : "więcej"}).`;
     } else {
       notka.textContent = "";
     }
@@ -2301,7 +2306,7 @@ const krokCzasu = (s) => [1, 2, 5, 10, 15, 30, 60].find((k) => k >= Math.max(s, 
 /** Ocena zmienia liczbę w kolumnie powtórzeń (masa ciała: o 1, czas: o krok) zamiast ciężaru. */
 const ocenaZmieniaLiczbe = (c) => naMasieCiala(c) || naCzas(c);
 /** O ile ocena zmienia tę liczbę. */
-const krokLiczby = (c, n) => (naCzas(c) ? krokCzasu(n) : 1);
+const krokLiczby = (c, n) => (naCzas(c) ? krokCzasu(n) : c?.naprzemienne ? 2 : 1);
 
 /** Pod „guma” w kolumnie ciężaru — czym jest to ćwiczenie poza gumą (17.10.2026). */
 const dopisekGumy = (c) => c.ciezar !== "guma" ? null
@@ -2824,7 +2829,7 @@ function panelSerii(k, kroki, d) {
   karta.append(kolumnyZadania({
     seria: k.seria, zSerii: k.zSerii, ciezar: zPola ?? c.ciezar,
     dobierz: c.dobierzCiezar || c.ciezarWybieraKlient || (c.maks && typeof c.ciezar !== "number"),
-    powtorzenia: powtZPola ?? c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne,
+    powtorzenia: powtZPola ?? c.powtorzenia, rpe: c.rpe, jednostronne: c.jednostronne, naprzemienne: c.naprzemienne,
     procent: c.procent, proba: c.probaMaksu, czas: naCzas(c),
     dopisekPowtorzen: powtZPola !== null && c.powtorzenia ? `w planie ${c.powtorzenia}` : null,
     podpisCiezaru: c.maks ? "1RM teraz" : "Ciężar",
@@ -2910,6 +2915,16 @@ function panelSerii(k, kroki, d) {
   }
   if (!bezCiezaru) pola.append(wCiezar, el("span", "razy", "kg ×"));
   pola.append(wPowt, el("span", "razy", jednostka(c)));
+  // Naprzemienne (20.11.2026): nieparzysta liczba to zwykle jedna strona
+  // policzona podwójnie albo pominięta — przypomnienie, bez blokowania zapisu.
+  if (c.naprzemienne && !naCzas(c)) {
+    const nieparzyste = el("p", "drobne nieparzyste ukryty",
+      "Naprzemiennie wpisz łącznie z obu stron — liczba zwykle parzysta.");
+    const pokaz = () => nieparzyste.classList.toggle("ukryty", !(Number(wPowt.value) % 2));
+    wPowt.addEventListener("input", pokaz);
+    pokaz();
+    karta.append(nieparzyste);
+  }
   // Ciężar w polu to nie plan, tylko korekta po ocenie z poprzedniej serii —
   // mówimy wprost, skąd się wziął.
   if (skorygowany) {
@@ -2929,7 +2944,8 @@ function panelSerii(k, kroki, d) {
       + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
       + `${podpowiedz.powtorzenia} s.`));
   } else if (podpowiedz.korektaPowtorzen) {
-    karta.append(el("p", "korekta-serii", `O 1 powtórzenie ${podpowiedz.korekta < 0 ? "mniej" : "więcej"} `
+    // Naprzemienne (20.11.2026) — o 2 powtórzenia.
+    karta.append(el("p", "korekta-serii", `${podpowiedz.zmianaLiczby === 2 ? "O 2 powtórzenia" : "O 1 powtórzenie"} ${podpowiedz.korekta < 0 ? "mniej" : "więcej"} `
       + `po Twojej ocenie „${podpowiedz.korekta < 0 ? "za trudne" : "za łatwe"}”: `
       + `${podpowiedz.powtorzenia} powt.`));
   }

@@ -105,7 +105,9 @@ export function sprawdzCwiczenie(
     coeff: coeff as Coeff,
     skokKg: naKg ? skokKg : 0,
     progresja,
-    ...(d.jednostronne === true ? { jednostronne: true } : {}),
+    // Naprzemienne (20.11.2026) wyklucza jednostronne — powtórzenia łącznie, nie na stronę.
+    ...(d.jednostronne === true && d.naprzemienne !== true ? { jednostronne: true } : {}),
+    ...(d.naprzemienne === true ? { naprzemienne: true } : {}),
     ...(guma !== undefined ? { guma } : {}),
     ...(film ? { film } : {}),
     ...(jednorazowe ? { jednorazowe: true as const, planId } : {}),
@@ -113,7 +115,7 @@ export function sprawdzCwiczenie(
 }
 
 /** Pola, które decydują o ćwiczeniu — do porównania dwóch ćwiczeń tylko do planu. */
-const POLA = ["nazwa", "kategoria", "kategorieDodatkowe", "part", "coeff", "skokKg", "progresja", "jednostronne", "guma", "film"] as const;
+const POLA = ["nazwa", "kategoria", "kategorieDodatkowe", "part", "coeff", "skokKg", "progresja", "jednostronne", "naprzemienne", "guma", "film"] as const;
 
 /**
  * Ćwiczenie tylko do planu o tej samej nazwie i tych samych ustawieniach już
@@ -161,7 +163,11 @@ export function zmienWlasne(trenerId: number, id: string, dane: unknown): Cwicze
   const d = dane && typeof dane === "object" ? dane as Record<string, unknown> : {};
   const poprzednie = JSON.parse(jest.dane_json) as Cwiczenie;
   // Bez pola „także w kategoriach” (np. zapis z innego miejsca niż okienko) — zostają, jakie były.
-  const zKategoriami = "kategorieDodatkowe" in d ? d : { ...d, kategorieDodatkowe: poprzednie.kategorieDodatkowe };
+  const zKategoriami = {
+    ...("kategorieDodatkowe" in d ? {} : { kategorieDodatkowe: poprzednie.kategorieDodatkowe }),
+    ...("naprzemienne" in d ? {} : { naprzemienne: poprzednie.naprzemienne === true }),
+    ...d,
+  };
   const sprawdzone = sprawdzCwiczenie(d.jednorazowe === true && !d.planId
     ? { ...zKategoriami, planId: poprzednie.planId } : zKategoriami, id);
   if ("blad" in sprawdzone) return sprawdzone;

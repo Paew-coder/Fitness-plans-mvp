@@ -15,7 +15,7 @@ import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
 import { obliczCiezar, obliczCiezarTopSetu, SKOK_MINIMALNY, tydzienBazowyBloku } from "./ciezar.ts";
 import { mround } from "./pomocnicze.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
-import { powtorzeniaAkcesorium } from "./powtorzenia.ts";
+import { parzystePowtorzenia, powtorzeniaAkcesorium } from "./powtorzenia.ts";
 import {
   bojGlownySlotu, czescBoju, DELOAD_DWUBOJU, DWUBOJ, dwubojSlotu, parametrySzablonu, pauzaSlotu,
   procentTopSetuDwuboju, type RodzajPauzy,
@@ -32,7 +32,7 @@ import {
   type SlotObliczony,
   type TrybJednostronnych,
 } from "./stres.ts";
-import { procent1RM, rozwiaz1RM, rpeDlaProcentu, type SeriaMaksymalna } from "./rpe.ts";
+import { POWT_MAX, procent1RM, rozwiaz1RM, rpeDlaProcentu, type SeriaMaksymalna } from "./rpe.ts";
 
 export const TYGODNIE: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 
@@ -397,7 +397,9 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     // krokiem rosnącym z czasem (5 s → 4 s, 45 s → 40 s) — także wtedy, gdy
     // czas wpisał trener. Patrz `czas.ts`.
     const czas = naCzas(cwiczenie.progresja);
-    const korekta = korektaPowtorzen(cwiczenie.progresja, mnoznik);
+    // Naprzemienne (20.11.2026): ocena przy masie ciała — po jednym na stronę, czyli o 2.
+    const naprzemienne = !!cwiczenie.naprzemienne && !czas;
+    const korekta = korektaPowtorzen(cwiczenie.progresja, mnoznik) * (naprzemienne ? 2 : 1);
     const powtorzeniaPlanu =
       p.powtorzenia ??
       szablon.powtorzenia ??
@@ -413,7 +415,10 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         bezTabeli: !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja),
       });
     // Deload bierze czas z T6 — już po ocenach.
-    const powtorzenia = czas && !wzor ? czasPoOcenie(powtorzeniaPlanu, korekta) : powtorzeniaPlanu;
+    const powtorzeniaPoOcenie = czas && !wzor ? czasPoOcenie(powtorzeniaPlanu, korekta) : powtorzeniaPlanu;
+    const powtorzenia = naprzemienne
+      ? parzystePowtorzenia(powtorzeniaPoOcenie, PROGRESJE_Z_TABELI.includes(cwiczenie.progresja) ? POWT_MAX : Infinity)
+      : powtorzeniaPoOcenie;
     // Dwubój: procent z planu albo wpisany przez trenera; RPE tylko jako
     // odpowiednik do stresu — wpisane RPE nic tu nie zmienia.
     const procentDwuboju = dwuboj ? (p.procent ?? szablon.procent!) : undefined;

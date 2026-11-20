@@ -498,7 +498,10 @@ describe("katalog BAZY 5.17", () => {
     // Tego samego dnia +4: dead bug (dwa) „tak jak gorilla row”, Bird dog row
     // („raz na jedną stronę, a raz na drugą”), Kettlebell march (na stronę kettla).
     // 17.10.2026: +1 — „S/l clean”, na jednej nodze.
-    assert.equal(bazaTrenera.jednostronne().length, 40);
+    // 20.11.2026: −4 — „… alternating” (Arnold press, DB bench, DB OHP, incline
+    // DB press) to od teraz naprzemienne (powtórzenia łącznie, parzyste).
+    assert.equal(bazaTrenera.jednostronne().length, 36);
+    assert.equal(bazaTrenera.wszystkie.filter((c) => c.naprzemienne).length, 4);
     for (const nazwa of ["Gorilla row", "Seesaw press", "Seated seesaw press (nogi proste)", "Bear renegade row",
       "Dead bug straight legs", "Deadbug OH", "Bird dog row", "Kettlebell march"]) {
       assert.equal(katalog.poNazwie(nazwa)?.jednostronne, true, nazwa);

@@ -2296,6 +2296,9 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     const planCzasu = (await api(`/api/plany/${idCzasu}`)).zapisany.plan;
     planCzasu.sloty[0].cwiczenieId = "EX-0150";   // Plank contralateral — progresja „czas”
     planCzasu.sloty[0].tygodnie = { 1: { serie: 3, powtorzenia: 45, rpe: 8 } };
+    // Naprzemienne (20.11.2026) — w drugim wierszu, z nieparzystą liczbą w T1.
+    planCzasu.sloty[1].cwiczenieId = "EX-0975";   // Alt. Drop Lunge — masa ciała
+    planCzasu.sloty[1].tygodnie = { 1: { serie: 3, powtorzenia: 13, rpe: 8 } };
     await api(`/api/plany/${idCzasu}`, "PUT", { plan: planCzasu, dataStartu: null, status: "szkic" });
     await s.goto(ADRES, { waitUntil: "networkidle" });
     await s.waitForSelector("#lista-klientow .pozycja", { timeout: 10000 });
@@ -2311,6 +2314,14 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
         && (await komorkaCzasu.locator(".jednostka").innerText()) === "s"
         && /Czas utrzymania w sekundach/.test(await komorkaCzasu.getAttribute("title") ?? ""),
       `${await s.locator("#dni tr td.czas").count()} komórek z czasem`);
+    // Naprzemienne: 13 wpisane → 14 łącznie, „7/str.”, w liście „⇄”.
+    const wierszNaprz = s.locator("#dni tr").filter({ has: s.locator('td.cwiczenie select option[value="EX-0975"]:checked') }).first();
+    const opcjaNaprz = await wierszNaprz.locator("td.cwiczenie select").evaluate((x: HTMLSelectElement) => x.selectedOptions[0]?.textContent ?? "");
+    const wyliczoneNaprz = (await api(`/api/plany/${idCzasu}`)).wynik.tygodnie[0].sloty[1].powtorzenia;
+    sprawdz("naprzemienne: w liście „⇄”, 13 wpisane liczy się jako 14, przy polu „7/str.”",
+      /⇄/.test(opcjaNaprz) && wyliczoneNaprz === 14
+        && (await wierszNaprz.locator("td.naprzemienne .jednostka").innerText()) === "7/str.",
+      `${opcjaNaprz.trim()} · ${wyliczoneNaprz} · ${await wierszNaprz.locator("td.naprzemienne .jednostka").innerText().catch(() => "brak")}`);
     // „±” przy czasie pyta o sekundy i przyjmuje więcej niż 30 (do 600).
     const wierszCzasu = s.locator("#dni tr").filter({ has: s.locator("td.czas") }).first();
     const pytanPrzedCzasem = pytania.length;

@@ -154,7 +154,7 @@ export function otworzFormularzCwiczenia({
       const o = cwiczenie.oryginal;
       info.append(el("p", "formularz-podpowiedz formularz-oryginal",
         `W plikach bazy: ${o.nazwa} · ${o.kategoria}${o.kategorieDodatkowe?.length ? ` + ${o.kategorieDodatkowe.join(", ")}` : ""} · part ${o.part} · coeff ${String(o.coeff).replace(".", ",")} · ${opisProgresji(o)}`
-        + `${NA_KILOGRAMY.includes(o.progresja) ? ` (skok ${String(o.skokKg).replace(".", ",")} kg)` : ""}${o.jednostronne ? " · jednostronne" : ""}`));
+        + `${NA_KILOGRAMY.includes(o.progresja) ? ` (skok ${String(o.skokKg).replace(".", ",")} kg)` : ""}${o.jednostronne ? " · jednostronne" : ""}${o.naprzemienne ? " · naprzemienne" : ""}`));
     }
     if (doWeryfikacji) {
       const uwagi = cwiczenie.oryginal?.uwagi ?? cwiczenie.uwagi;
@@ -292,6 +292,17 @@ export function otworzFormularzCwiczenia({
   pJedn.checked = cwiczenie?.jednostronne === true;
   jedn.append(pJedn, el("span", "", "Jednostronne — powtórzenia na stronę (↔)"));
   pola.append(jedn);
+  // Naprzemienne (20.11.2026): powtórzenia łącznie na obie strony, zawsze
+  // parzyste. Wyklucza „jednostronne” — zaznaczenie jednego zdejmuje drugie.
+  const naprz = el("label", "formularz-wiersz formularz-ptaszek");
+  const pNaprz = el("input");
+  pNaprz.type = "checkbox";
+  pNaprz.name = "naprzemienne";
+  pNaprz.checked = cwiczenie?.naprzemienne === true;
+  naprz.append(pNaprz, el("span", "", "Naprzemienne — powtórzenia łącznie na obie strony, zawsze parzyste (⇄)"));
+  pola.append(naprz);
+  pJedn.addEventListener("change", () => { if (pJedn.checked) pNaprz.checked = false; });
+  pNaprz.addEventListener("change", () => { if (pNaprz.checked) pJedn.checked = false; });
 
   const pFilm = el("input");
   pFilm.name = "film";
@@ -375,6 +386,7 @@ export function otworzFormularzCwiczenia({
       skokKg: NA_KILOGRAMY.includes(progresja()) ? Number(pSkok.value) : 0,
       guma: zGuma(),
       jednostronne: pJedn.checked,
+      naprzemienne: pNaprz.checked,
       film: pFilm.value.trim(),
       jednorazowe: pDoPlanu.checked,
       // Poprawka ćwiczenia tylko do planu zostaje przy jego planie; nowe — przy tym, który się tworzy.

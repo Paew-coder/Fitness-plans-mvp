@@ -7,7 +7,7 @@ import { BAZA_CWICZEN } from "./dane/cwiczenia.ts";
  * z oryginału, `zweryfikowane` — dopisek „DO WERYFIKACJI” / „UZUPEŁNIĆ” z uwag.
  */
 export type PoprawkaCwiczenia = Partial<Pick<Cwiczenie,
-  "nazwa" | "kategoria" | "kategorieDodatkowe" | "part" | "coeff" | "skokKg" | "progresja" | "jednostronne" | "film" | "guma">> & { zweryfikowane?: true };
+  "nazwa" | "kategoria" | "kategorieDodatkowe" | "part" | "coeff" | "skokKg" | "progresja" | "jednostronne" | "naprzemienne" | "film" | "guma">> & { zweryfikowane?: true };
 
 const DOPISEK_WERYFIKACJI = /^(DO WERYFIKACJI|UZUPEŁNIĆ)\s*[–—-]?\s*/u;
 
@@ -15,6 +15,7 @@ export function zastosujPoprawke(c: Cwiczenie, p: PoprawkaCwiczenia): Cwiczenie 
   const { zweryfikowane, ...pola } = p;
   const n: Cwiczenie = { ...c, ...pola, poprawione: true };
   if (pola.jednostronne === false) delete n.jednostronne;
+  if (pola.naprzemienne === false) delete n.naprzemienne;
   if (pola.film === "") delete n.film;
   if (pola.kategorieDodatkowe?.length === 0) delete n.kategorieDodatkowe;
   if (zweryfikowane && n.uwagi) {

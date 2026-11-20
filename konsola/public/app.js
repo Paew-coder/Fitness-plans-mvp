@@ -22,6 +22,8 @@ const KATEGORIE = [
   "Spine mobility", "Shoulder mobility", "Elbow mobility", "Wrist mobility",
   "Hip mobility", "Knee mobility", "Ankle mobility",
 ];
+/** „↔” — jednostronne (na stronę), „⇄” — naprzemienne (łącznie, parzyste; 20.11.2026). */
+const znakStron = (c) => (c.naprzemienne ? "  ⇄" : c.jednostronne ? "  ↔" : "");
 /** Ćwiczenie w kategorii — głównej albo dodatkowej. */
 const wKategorii = (c, k) => c.kategoria === k || (c.kategorieDodatkowe ?? []).includes(k);
 const RZYMSKIE = ["I", "II", "III", "IV", "V"];
@@ -1422,6 +1424,7 @@ function legendaPlanu() {
     ["powt. +2", "przy numerze: powtórzenia przesunięte względem progresji z planu"],
     ["●", "ciężar wpisany na sztywno — wyczyść pole, żeby wrócić do liczonego"],
     ["↔", "ciężar na stronę"],
+    ["⇄", "naprzemienne — powtórzenia łącznie na obie strony, zawsze parzyste"],
     ["+5%", "korekta z ocen klienta"],
   ]) {
     const poz = el("span", "legenda-pozycja");
@@ -2425,7 +2428,7 @@ function rysujSlot(slot, pusty) {
   const dostepne = cwiczenia.filter((c) => !c.biblioteka && !zInnegoPlanu(c)
     && (!slot.kategoriaSzkieletu || wKategorii(c, slot.kategoriaSzkieletu)));
   for (const c of dostepne) {
-    const o = el("option", "", c.nazwa + (c.jednostronne ? "  ↔" : "") + dopisekWlasnego(c));
+    const o = el("option", "", c.nazwa + znakStron(c) + dopisekWlasnego(c));
     o.value = c.id;
     wybor.append(o);
   }
@@ -2437,7 +2440,7 @@ function rysujSlot(slot, pusty) {
     const c = cwiczenie(slot.cwiczenieId);
     if (c) {
       const spoza = slot.kategoriaSzkieletu && !wKategorii(c, slot.kategoriaSzkieletu);
-      const o = el("option", "", `${c.nazwa}${c.jednostronne ? "  ↔" : ""}${spoza ? " (spoza szkieletu)" : ""}`);
+      const o = el("option", "", `${c.nazwa}${znakStron(c)}${spoza ? " (spoza szkieletu)" : ""}`);
       o.value = c.id;
       wybor.append(o);
     }
@@ -2661,6 +2664,12 @@ function rysujSlot(slot, pusty) {
     komorkaPowt.title = "Czas utrzymania w sekundach. „Za trudne” u klienta skraca go w kolejnych tygodniach "
       + "(5 s → 4 s, 45 s → 40 s), „za łatwe” wydłuża.";
     komorkaPowt.append(el("span", "jednostka", "s"));
+  } else if (wyliczony?.cwiczenie?.naprzemienne && wyliczony.powtorzenia > 0) {
+    // Naprzemienne (20.11.2026): liczba łącznie, zawsze parzysta — obok ile na stronę.
+    komorkaPowt.classList.add("naprzemienne");
+    komorkaPowt.title = "Naprzemienne: powtórzenia łącznie na obie strony, zawsze parzyste — "
+      + "nieparzysta liczba (wpisana albo z progresji) idzie w górę, 13 → 14.";
+    komorkaPowt.append(el("span", "jednostka", `${wyliczony.powtorzenia / 2}/str.`));
   }
   wiersz.append(komorkaPowt);
   // Dwubój (16.10.2026): w kolumnie RPE procent 1RM — z niego idzie ciężar.
@@ -4067,7 +4076,7 @@ function wierszBazy(c) {
   const li = el("li", "pozycja-bazy");
   li.dataset.id = c.id;
   const opis = el("div", "baza-opis-cw");
-  opis.append(el("span", "baza-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : "")));
+  opis.append(el("span", "baza-nazwa", c.nazwa + znakStron(c)));
   opis.append(el("span", "baza-meta", [
     c.kategoria + (c.kategorieDodatkowe?.length ? ` + ${c.kategorieDodatkowe.join(", ")}` : ""),
     `part ${c.part}`, `coeff ${String(c.coeff).replace(".", ",")}`,

@@ -2668,6 +2668,42 @@ await zKonsola(PORT, async (przegladarka, srodowisko) => {
       !(await zUwaga.locator("details.uwaga-trenera").evaluate((d: any) => d.open)));
   }
 
+  // ── 42. ćwiczenie naprzemienne (20.11.2026) ──────────────────────
+  // Trener: „w T1 robię 12 na przemian, a w T2 muszę zrobić 14, żeby strony
+  // były symetryczne”. Powtórzenia łącznie, obok ile na stronę.
+  {
+    await api("/api/plany", "POST", { klient: "Naprzemienne telefon", wersja: 1 });
+    const idN = (await api("/api/plany")).find((p: any) => p.klient === "Naprzemienne telefon").id;
+    const planN = (await api(`/api/plany/${idN}`)).zapisany.plan;
+    planN.sloty[0].cwiczenieId = "EX-0975";   // Alt. Drop Lunge — masa ciała
+    planN.sloty[0].tygodnie = { 1: { serie: 2, powtorzenia: 12, rpe: 8 } };
+    await api(`/api/plany/${idN}`, "PUT", { plan: planN, dataStartu: null, status: "wysłany" });
+    const sciezkaN = (await api(`/api/plany/${idN}/link`, "POST")).sciezka;
+    await s.goto(`${adres}${sciezkaN}`, { waitUntil: "networkidle" });
+    await s.click("#nastepny-trening");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+    const kartaN = s.locator('#cwiczenia [data-position="D1-S01"]');
+    sprawdz("naprzemienne na liście: „12” i „naprzemiennie, 6 na stronę”",
+      (await kartaN.locator(".kolumna-powt .wartosc").innerText()).trim() === "12"
+        && (await kartaN.locator(".kolumna-powt .dopisek").innerText()).includes("naprzemiennie, 6 na stronę"),
+      (await kartaN.locator(".kolumna-powt").innerText()).replace(/\n/g, " | "));
+    await kartaN.getByRole("button", { name: "▶ Zacznij to ćwiczenie" }).click();
+    await s.waitForSelector("#ekran-seria:not(.ukryty)");
+    const poleN = s.locator("#panel .panel-pola input");
+    const ukryteNaPoczatku = await s.locator("#panel .nieparzyste.ukryty").count() === 1;
+    await poleN.fill("13");
+    sprawdz("panel: przy nieparzystej liczbie przypomnienie „wpisz łącznie z obu stron”",
+      ukryteNaPoczatku && await s.locator("#panel .nieparzyste:not(.ukryty)").count() === 1);
+    await poleN.fill("12");
+    await s.locator("#panel").getByRole("button", { name: "Za trudne" }).click();
+    await s.waitForTimeout(300);
+    sprawdz("„Za trudne” przy naprzemiennym — następna seria o 2 mniej (po jednym na stronę)",
+      await s.locator("#panel .korekta-serii").first().innerText().then((t) => t === "Następna seria: 10 powt. (o 2 mniej).").catch(() => false),
+      await s.locator("#panel .korekta-serii").first().innerText().catch(() => "brak"));
+    await s.click("#wroc-z-serii");
+    await s.waitForSelector("#ekran-trening:not(.ukryty)");
+  }
+
   /*
    * Audyt, druga połowa: napisy, które tłumacz zostawiłby bez zmian, to mają
    * być wyłącznie nazwy ćwiczeń, linie rozgrzewki od trenera, liczby i skróty.

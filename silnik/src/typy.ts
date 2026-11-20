@@ -146,6 +146,15 @@ export type Cwiczenie = {
    */
   jednostronneDoPotwierdzenia?: boolean;
   /**
+   * Naprzemienne (20.11.2026) — powtórzenia na zmianę, liczone łącznie na obie
+   * strony, więc zawsze parzyste (trener: „w T1 12 na przemian, w T2 muszę
+   * zrobić 14, żeby strony były symetryczne — licznik przeskakuje z 12 na 13,
+   * co w tego typu ćwiczeniach nie ma sensu”). Z nazwy („alternating”, „alt.”,
+   * „naprzemiennie”) albo z okienka ćwiczenia. Nie jednostronne: tam serie są
+   * na stronę. Patrz `parzystePowtorzenia`.
+   */
+  naprzemienne?: boolean;
+  /**
    * Guma wskazana wprost przez trenera (27.10.2026, okienko ćwiczenia: „nie mam
    * opcji do wybrania przy ćwiczeniu, które chcę zrobić z gumą”). `true` —
    * ćwiczenie z gumą, choć nazwa i sprzęt tego nie mówią; `false` — bez gumy,

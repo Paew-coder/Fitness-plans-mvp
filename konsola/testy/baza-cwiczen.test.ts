@@ -155,6 +155,20 @@ describe("baza ćwiczeń — poprawki trenera", () => {
     await api("/api/cwiczenia/EX-0016/poprawka", "DELETE");
   });
 
+  test("naprzemienne (20.11.2026): z nazwy; zdjęte poprawką i z powrotem; bez pola zostaje; wyklucza jednostronne", async () => {
+    const alt = await zListy("EX-0060");   // Dumbbell bench press alternating
+    assert.deepEqual([alt.naprzemienne, alt.jednostronne], [true, undefined]);
+    assert.equal((await api("/api/cwiczenia/EX-0060", "PUT", pola(alt))).dane.poprawione, undefined, "bez pola — bez poprawki");
+    const jako = await api("/api/cwiczenia/EX-0060", "PUT", { ...pola(alt), naprzemienne: false, jednostronne: true });
+    assert.deepEqual([jako.dane.naprzemienne, jako.dane.jednostronne, jako.dane.poprawione], [undefined, true, true]);
+    const obie = await api("/api/cwiczenia/EX-0060", "PUT", { ...pola(alt), naprzemienne: true, jednostronne: true });
+    assert.deepEqual([obie.dane.naprzemienne, obie.dane.jednostronne], [true, undefined], "naprzemienne wyklucza jednostronne");
+    await api("/api/cwiczenia/EX-0060/poprawka", "DELETE");
+    const curl = await api("/api/cwiczenia/EX-0016", "PUT", { ...pola(await zListy("EX-0016")), naprzemienne: true });
+    assert.equal(curl.dane.naprzemienne, true);
+    await api("/api/cwiczenia/EX-0016/poprawka", "DELETE");
+  });
+
   test("odmowy: nazwa innego ćwiczenia, zły coeff; własne ćwiczenie tą drogą — nie", async () => {
     const c = await zListy("EX-0011");
     const zajeta = await api("/api/cwiczenia/EX-0011", "PUT", { ...pola(c), nazwa: "Przysiad ze sztangą (high bar)" });

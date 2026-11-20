@@ -78,3 +78,14 @@ export function powtorzeniaAkcesorium(args: {
   return ogranicz(baza + przesuniecie + korekta + przesuniecieTrenera, POWT_MIN,
     czas ? CZAS_MAKS_S : bezTabeli ? POWT_MAX_BEZ_TABELI : POWT_MAX);
 }
+
+/**
+ * Powtórzenia ćwiczenia naprzemiennego (20.11.2026) — łącznie na obie strony,
+ * więc parzyste. Nieparzyste w górę (13 → 14: progresja nie cofa się ani
+ * o tydzień, decyzja trenera); gdy w górę wyszłoby ponad tabelę %1RM (`maks`),
+ * w dół — 15 → 14 przy ciężarze z tabeli.
+ */
+export function parzystePowtorzenia(powtorzenia: number, maks = Infinity): number {
+  if (powtorzenia % 2 === 0) return powtorzenia;
+  return powtorzenia + 1 <= maks ? powtorzenia + 1 : powtorzenia - 1;
+}

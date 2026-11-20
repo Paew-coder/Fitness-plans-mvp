@@ -214,7 +214,7 @@ function oryginalDoListy(id: string) {
   const o = katalog.oryginal(id);
   return o ? {
     nazwa: o.nazwa, kategoria: o.kategoria, kategorieDodatkowe: o.kategorieDodatkowe ?? [], part: o.part, coeff: o.coeff, progresja: o.progresja,
-    skokKg: o.skokKg, jednostronne: o.jednostronne === true, film: o.film ?? "", uwagi: o.uwagi ?? null,
+    skokKg: o.skokKg, jednostronne: o.jednostronne === true, naprzemienne: o.naprzemienne === true, film: o.film ?? "", uwagi: o.uwagi ?? null,
     guma: zGuma(o),
   } : null;
 }
@@ -1162,6 +1162,8 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
             // tam zostaje `film`.
             karta: kartaDlaKlienta(s.cwiczenie!),
             jednostronne: s.cwiczenie!.jednostronne ?? false,
+            // Naprzemienne (20.11.2026) — powtórzenia łącznie; telefon dopisuje „na stronę”.
+            naprzemienne: s.cwiczenie!.naprzemienne ?? false,
             // Skok ciężaru z BAZY — telefon zaokrągla do niego korektę ±5 %
             // w trakcie treningu (ocena przy serii, 26.09.2026).
             skokKg: s.cwiczenie!.skokKg,

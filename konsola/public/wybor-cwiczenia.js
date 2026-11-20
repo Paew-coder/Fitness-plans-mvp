@@ -231,7 +231,7 @@ export function otworzWyszukiwarke({ cwiczenia, kategorie, kategoria = "", wybra
       li.dataset.id = c.id;
       if (c.id === wybraneId) li.classList.add("obecne");
       const opis = el("div", "wyszukiwarka-opis");
-      const nazwa = el("span", "wyszukiwarka-nazwa", c.nazwa + (c.jednostronne ? "  ↔" : ""));
+      const nazwa = el("span", "wyszukiwarka-nazwa", c.nazwa + (c.naprzemienne ? "  ⇄" : c.jednostronne ? "  ↔" : ""));
       const meta = el("span", "wyszukiwarka-meta",
         [c.kategoria + (c.kategorieDodatkowe?.length ? ` + ${c.kategorieDodatkowe.join(", ")}` : ""),
           `coeff ${String(c.coeff).replace(".", ",")}`, c.guma ? `guma (${c.progresja})` : c.progresja,

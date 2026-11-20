@@ -1464,6 +1464,16 @@ Trener: „czy możemy wnioskować o głębokości przysiadu na podstawie ustawi
 * **CSV powtórzeń:** 16 nowych kolumn (czasy zejścia i wstawania, udo do poziomu, biodro względem kolana, głębokość słowem, kąty w dole i największe, kolano do palców, rozstaw kolan, opis) w każdym wierszu powtórzenia; bez środka ciężkości — wiersz na powtórzenie (przycisk widoczny także wtedy).
 * Testy: `analiza-ruchu.test.ts` (kąt, klasy, zdanie, kolumny CSV), przegląd ruchu (+2, razem 112).
 
+**135. Ćwiczenia naprzemienne — powtórzenia łącznie, zawsze parzyste — 20.11.2026.**
+
+Trener: „gdy ćwiczenie jest robione naprzemiennie — w T1 robię 12 powtórzeń na przemian, a w T2 muszę zrobić 14, żeby strony były symetryczne — licznik przeskakuje z 12 na 13, co w tego typu ćwiczeniach nie ma sensu”. Decyzje: liczba łącznie, nieparzyste w górę, „alternating” z bibliotek to naprzemienne, nie jednostronne.
+
+* **Silnik:** `Cwiczenie.naprzemienne`; `parzystePowtorzenia` — po progresji, ocenach i wpisie trenera nieparzyste w górę (13 → 14), ponad tabelę %1RM w dół (15 → 14). Ocena przy masie ciała o 2. Stres z łącznej liczby, jak dotąd.
+* **Dane:** `generuj-dane.py` — „alternating”, „alt.”, „naprzemiennie” w nazwie: 125 ćwiczeń (4 z BAZY trenera: Arnold press, DB bench, DB OHP, incline DB press — dotąd jednostronne). Jednostronne bez nich: 36 w BAZIE.
+* **Konsola:** „⇄” w liście, wyszukiwarce i bazie; przy polu powtórzeń „7/str.” i podpowiedź; w okienku ✎ kratka „Naprzemienne” (wyklucza „Jednostronne”); legenda. Poprawka i własne ćwiczenie bez pola — wartość zostaje.
+* **Aplikacja klienta:** „naprzemiennie, 6 na stronę” przy liczbie powtórzeń; przypomnienie przy nieparzystej liczbie w panelu (bez blokady); korekty po ocenie o 2. Tłumaczenia; service worker `trening-v101`.
+* Testy: silnik `naprzemienne.test.ts` (4), `jednostkowe.test.ts` (36 jednostronnych + 4 naprzemienne); konsola `baza-cwiczen.test.ts` (+1); przegląd ekranów (+1, razem 271), przegląd klienta (+3, razem 287).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

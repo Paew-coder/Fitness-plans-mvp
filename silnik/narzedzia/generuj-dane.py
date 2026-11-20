@@ -1,5 +1,5 @@
 """Generuje moduly TS z docs/dane/*.json. Uruchom po kazdej zmianie danych zrodlowych."""
-import json, pathlib
+import json, pathlib, re
 root = pathlib.Path(__file__).resolve().parents[2]
 dane = root / "docs" / "dane"
 out  = root / "silnik" / "src" / "dane"
@@ -35,6 +35,8 @@ for nazwa, klucz, opis in (
 
 b = json.load(open(dane / "baza-cwiczen.json", encoding="utf-8"))
 jedn = json.load(open(dane / "jednostronne.json", encoding="utf-8"))
+# Ćwiczenie naprzemienne — „alternating”, „alt.”/„alt ”, „naprzemiennie” w nazwie.
+NAPRZEMIENNE = re.compile(r"alternat|\balt\b|naprzemien", re.I)
 POTWIERDZONE = {e["id"] for e in jedn["potwierdzone"]}
 KANDYDACI = {e["id"] for e in jedn["kandydaci"]}
 lin = ["// PLIK GENEROWANY — nie edytuj recznie.",
@@ -73,7 +75,10 @@ for e in b["cwiczenia"] + bib["cwiczenia"]:
     if e.get("scalone_id"): p.append(f'scaloneId: {json.dumps(e["scalone_id"], ensure_ascii=False)}')
     if e.get("biblioteka"):  p.append(f'biblioteka: {json.dumps(e["biblioteka"])}')
     if e.get("ukryte"):      p.append("ukryte: true")
-    if e["id"] in POTWIERDZONE or e.get("jednostronne") == "tak": p.append("jednostronne: true")
+    # Naprzemienne (20.11.2026) — z nazwy; wtedy nie jednostronne (trener:
+    # „Alternating Bicep Curl” to ruch na zmianę, nie seria na jedną rękę).
+    if NAPRZEMIENNE.search(e["nazwa"]):                                 p.append("naprzemienne: true")
+    elif e["id"] in POTWIERDZONE or e.get("jednostronne") == "tak": p.append("jednostronne: true")
     elif e["id"] in KANDYDACI or e.get("jednostronne") == "?":   p.append("jednostronneDoPotwierdzenia: true")
     lin.append("  { " + ", ".join(p) + " },")
 lin += ["];", ""]

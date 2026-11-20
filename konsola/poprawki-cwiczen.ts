@@ -24,7 +24,7 @@ import { sprawdzCwiczenie } from "./cwiczenia-wlasne.ts";
 import type { ZapisanyPlan } from "./magazyn.ts";
 
 /** Pola, które trener może poprawić — te same co w okienku własnego ćwiczenia. */
-const POLA = ["nazwa", "kategoria", "kategorieDodatkowe", "part", "coeff", "skokKg", "progresja", "jednostronne", "film"] as const;
+const POLA = ["nazwa", "kategoria", "kategorieDodatkowe", "part", "coeff", "skokKg", "progresja", "jednostronne", "naprzemienne", "film"] as const;
 const NA_KILOGRAMY = ["kg", "dodatkowy ciężar"];
 const DO_WERYFIKACJI = /^(DO WERYFIKACJI|UZUPEŁNIĆ)/;
 
@@ -51,7 +51,9 @@ export function poprawCwiczenie(trenerId: number, id: string, dane: unknown): Cw
   if (!oryginal) return null;
   const d = dane && typeof dane === "object" ? dane as Record<string, unknown> : {};
   // Bez pola „także w kategoriach” — zostają te z plików (mobilność stawów, 27.10.2026).
-  const sprawdzone = sprawdzCwiczenie({ kategorieDodatkowe: oryginal.kategorieDodatkowe, ...d, jednorazowe: false }, id);
+  // Bez pola „naprzemienne” (okienko sprzed 20.11.2026) — też z plików.
+  const sprawdzone = sprawdzCwiczenie({ kategorieDodatkowe: oryginal.kategorieDodatkowe,
+    naprzemienne: oryginal.naprzemienne === true, ...d, jednorazowe: false }, id);
   if ("blad" in sprawdzone) return sprawdzone;
   // Skok liczy się tylko przy kilogramach — przy innej progresji zostaje taki, jak w oryginale
   // (np. asysta ze skokiem 5), żeby zapis bez zmian nie robił poprawki.
@@ -60,9 +62,10 @@ export function poprawCwiczenie(trenerId: number, id: string, dane: unknown): Cw
   for (const pole of POLA) {
     const nowe = sprawdzone[pole] ?? null;
     const stare = oryginal[pole] ?? null;
-    if (JSON.stringify(nowe) === JSON.stringify(stare) || (pole === "jednostronne" && !nowe && !stare)) continue;
+    const flaga = pole === "jednostronne" || pole === "naprzemienne";
+    if (JSON.stringify(nowe) === JSON.stringify(stare) || (flaga && !nowe && !stare)) continue;
     // Puste pole w poprawce zdejmuje wartość z plików (także „także w kategoriach”).
-    poprawka[pole] = nowe ?? (pole === "jednostronne" ? false : pole === "film" ? "" : pole === "kategorieDodatkowe" ? [] : null);
+    poprawka[pole] = nowe ?? (flaga ? false : pole === "film" ? "" : pole === "kategorieDodatkowe" ? [] : null);
   }
   // Guma (27.10.2026): przy ćwiczeniu z plików decyduje też sprzęt, więc
   // porównanie idzie po wyniku — poprawka dostaje „guma” tylko wtedy, gdy bez
