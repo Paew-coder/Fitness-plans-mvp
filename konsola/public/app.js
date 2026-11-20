@@ -322,11 +322,184 @@ function rysujKartoteke() {
   $("#podsumowanie-klienta").textContent = kartoteka.podsumowanie;
 
   rysujCykle(plany);
+  rysujTeraz(kartoteka.teraz);
+  rysujDziennik(kartoteka.dziennik ?? []);
   rysujSciezki1RM(historia.cwiczenia);
   rysujHistorieObciazenia(historia.cykle);
   rysujHistorieWzorcow(historia.wzorce);
   rysujHistorieFrekwencji(historia.cykle);
   rysujHistorieWagi(kartoteka.waga);
+  pokazZakladke(zakladkaProfilu);
+}
+
+/*
+ * Profil klienta (20.11.2026). Trener: „klienci mają swoje panele/profile,
+ * gdzie widoczne są ich plany treningowe, analiza dotychczasowych planów
+ * i treningów, zebrane w przejrzystej i spójnej formie”. Zakładki: Teraz
+ * (cykle i bieżący cykl), Dziennik treningów, Historia. Wybrana zakładka
+ * zostaje przy przejściu do innego klienta. Liczby liczy serwer
+ * (`profil-klienta.ts`) — tu tylko rysunek.
+ */
+let zakladkaProfilu = "teraz";
+function pokazZakladke(nazwa) {
+  zakladkaProfilu = nazwa;
+  for (const b of document.querySelectorAll("#zakladki-profilu button")) {
+    const ta = b.dataset.zakladka === nazwa;
+    b.classList.toggle("aktywny", ta);
+    b.setAttribute("aria-selected", String(ta));
+  }
+  for (const z of ["teraz", "dziennik", "historia"]) {
+    $(`#zakladka-${z}`).classList.toggle("ukryty", z !== nazwa);
+  }
+}
+for (const b of document.querySelectorAll("#zakladki-profilu button")) {
+  b.onclick = () => pokazZakladke(b.dataset.zakladka);
+}
+
+const dataKrotko = (iso) => {
+  const d = new Date(iso);
+  return `${DNI_TYGODNIA[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+};
+
+/** Zakładka „Teraz”: bieżący cykl — realizacja, ciężary i 1RM, oceny, stres, uwagi. */
+function rysujTeraz(t) {
+  const puste = (id, tekst) => $(id).replaceChildren(el("p", "wskazowka", tekst));
+  if (!t) {
+    $("#teraz-tytul").textContent = "Bieżący cykl";
+    for (const id of ["#teraz-realizacja", "#teraz-ciezary", "#teraz-oceny", "#teraz-stres", "#teraz-uwagi"]) {
+      puste(id, "Klient nie ma jeszcze wysłanego planu ani wpisów z treningu.");
+    }
+    return;
+  }
+  const nazwa = t.nazwaPlanu ?? `${kartoteka.klient.nazwa} ${t.wersja}.0`;
+  const tydzienCyklu = t.cykl?.tydzien ? ` · T${t.cykl.tydzien} z ${t.cykl.tygodni}`
+    : t.cykl?.doStartu ? ` · start za ${t.cykl.doStartu} dni` : "";
+  $("#teraz-tytul").textContent = `Bieżący cykl: ${nazwa}${tydzienCyklu}${t.aktywny ? "" : " (nie u klienta)"}`;
+
+  // Realizacja — ta sama karta co przy planie, plus wejście do planu.
+  const realizacja = $("#teraz-realizacja");
+  rysujRealizacje(t.realizacja, realizacja, t.stres.plan);
+  const otworz = el("button", "", "Otwórz plan");
+  otworz.type = "button";
+  otworz.onclick = () => otworzPlan(t.planId);
+  realizacja.append(otworz);
+
+  // Ciężary względem planu i zmiany 1RM w cyklu.
+  const ciezary = $("#teraz-ciezary");
+  ciezary.replaceChildren();
+  if (t.ciezaryCwiczen.length === 0 && t.zmiany1RM.length === 0) {
+    ciezary.append(el("p", "wskazowka", "Klient robi ciężary z planu — bez wyraźnych odchyleń i bez zmian 1RM w tym cyklu."));
+  }
+  if (t.ciezaryCwiczen.length > 0) {
+    ciezary.append(el("p", "etykieta-sekcji", "Inny ciężar niż w planie (ponad 2%)"));
+    for (const c of t.ciezaryCwiczen) {
+      const w = el("div", "wiersz-miary");
+      w.append(el("span", "etykieta etykieta-szeroka", c.nazwa));
+      w.append(el("span", "tresc", [c.lzej ? `${c.lzej}× lżej` : null, c.ciezej ? `${c.ciezej}× ciężej` : null]
+        .filter(Boolean).join(" · ")));
+      w.append(el("span", "wartosc", `z ${c.wpisow}`));
+      w.title = "Ile treningów z wpisanymi seriami było lżej lub ciężej niż plan tego tygodnia";
+      ciezary.append(w);
+    }
+  }
+  if (t.zmiany1RM.length > 0) {
+    ciezary.append(el("p", "etykieta-sekcji", "1RM zmienione serią z treningu"));
+    for (const z of t.zmiany1RM) {
+      const w = el("div", "wiersz-miary");
+      w.append(el("span", "etykieta etykieta-szeroka", z.nazwa));
+      w.append(el("span", "tresc", `T${z.tydzien}: ${liczba(z.seria.ciezar)} × ${z.seria.powtorzenia}`));
+      w.append(el("span", "wartosc", z.przed && z.po ? `${liczba(z.przed, 1)} → ${liczba(z.po, 1)} kg`
+        : z.po ? `${liczba(z.po, 1)} kg` : "—"));
+      ciezary.append(w);
+    }
+  }
+
+  // Oceny: razem i ćwiczenia, przy których się powtarzają.
+  const oceny = $("#teraz-oceny");
+  oceny.replaceChildren();
+  const { trudne, ok, latwe } = t.oceny;
+  if (trudne + ok + latwe === 0) oceny.append(el("p", "wskazowka", "Brak ocen w tym cyklu."));
+  else {
+    oceny.append(el("p", "poziom-modulu", `${trudne}× za trudne · ${ok}× OK · ${latwe}× za łatwe`));
+    for (const c of t.ocenyCwiczen.slice(0, 8)) {
+      const w = el("div", "wiersz-miary");
+      w.append(el("span", "etykieta etykieta-szeroka", c.nazwa));
+      w.append(el("span", "wartosc", [c.trudne ? `${c.trudne}× trudne` : null, c.latwe ? `${c.latwe}× łatwe` : null]
+        .filter(Boolean).join(" · ")));
+      oceny.append(w);
+    }
+  }
+
+  // Stres — ten sam wykres co przy planie.
+  $("#teraz-stres").replaceChildren(wykresStresu({
+    wynik: t.stres.wynik, plan: t.stres.plan, normy: kartoteka.normy, biezacy: null,
+  }));
+
+  // Uwagi do ćwiczeń, które klient widzi.
+  const uwagi = $("#teraz-uwagi");
+  uwagi.replaceChildren();
+  if (t.uwagi.length === 0) uwagi.append(el("p", "wskazowka", "Brak uwag w planie."));
+  for (const u of t.uwagi) {
+    const p = el("p", "uwaga-profilu");
+    p.append(el("b", "", `D${u.dzien} ${u.lp} ${u.nazwa}: `), document.createTextNode(u.uwaga));
+    uwagi.append(p);
+  }
+}
+
+/** Zakładka „Dziennik treningów”: trening po treningu, od najnowszego, rozwijany. */
+function rysujDziennik(treningi) {
+  const kontener = $("#dziennik-treningow");
+  kontener.replaceChildren();
+  if (treningi.length === 0) {
+    kontener.append(el("p", "wskazowka", "Klient nie wpisał jeszcze żadnego treningu."));
+    return;
+  }
+  kontener.append(el("p", "wskazowka", "Dotknij treningu, żeby zobaczyć serie. Plan — tak, jak stoi teraz "
+    + "(po ocenach i zmianach). „lżej / ciężej” — najcięższa seria różni się od planu o ponad 2%."));
+  for (const tr of treningi) {
+    const blok = el("details", "trening-dziennika");
+    const nazwa = tr.nazwaPlanu ?? `${tr.wersja}.0`;
+    const trudne = tr.cwiczenia.filter((c) => c.feedback === "za trudne").length;
+    const latwe = tr.cwiczenia.filter((c) => c.feedback === "za łatwe").length;
+    const inne = tr.cwiczenia.filter((c) => c.roznica).length;
+    const naglowek = el("summary", "");
+    naglowek.append(
+      el("span", "data", dataKrotko(tr.data)),
+      el("span", "gdzie", `${nazwa} · T${tr.tydzien}${tr.rodzaj ? ` ${tr.rodzaj}` : ""} · dzień ${RZYMSKIE[tr.dzien - 1] ?? tr.dzien}`),
+      el("span", `stan ${tr.domkniety ? "domkniety" : "zaczety"}`, tr.domkniety ? "✓ domknięty" : "◐ zaczęty"),
+      el("span", "meta", [`${tr.cwiczenia.length} ćw.`, trudne ? `${trudne}× za trudne` : null,
+        latwe ? `${latwe}× za łatwe` : null, inne ? `${inne}× inny ciężar` : null].filter(Boolean).join(" · ")),
+    );
+    blok.append(naglowek);
+    const tabela = el("table", "tabela-dziennika");
+    const gl = el("tr");
+    for (const n of ["", "Ćwiczenie", "Zrobione", "Plan", "Ocena"]) gl.append(el("th", "", n));
+    tabela.append(gl);
+    for (const c of tr.cwiczenia) {
+      const w = el("tr");
+      const zrobione = el("td", "mono", opisSerii(c.serie) || "—");
+      if (c.roznica) zrobione.append(el("span", `znacznik-roznicy ${c.roznica === "lżej" ? "lzej" : "ciezej"}`, c.roznica));
+      if (c.topSet) {
+        zrobione.append(el("div", "drobne-ts", `TOP SET ${c.topSet.kg ? `${liczba(c.topSet.kg)} kg` : "jak w planie"}`
+          + `${c.topSet.plan ? ` (plan ${liczba(c.topSet.plan)})` : ""}${c.topSet.feedback ? ` · ${c.topSet.feedback}` : ""}`));
+      }
+      w.append(el("td", "lp", c.lp), el("td", "", c.nazwa), zrobione,
+        el("td", "mono", c.plan ? `${c.plan.serie} × ${c.plan.powtorzenia}${c.plan.ciezar ? ` · ${liczba(c.plan.ciezar)} kg` : ""}` : "—"),
+        el("td", `ocena-dziennika ${c.feedback === "za trudne" ? "trudne" : c.feedback === "za łatwe" ? "latwe" : ""}`, c.feedback ?? "—"));
+      tabela.append(w);
+    }
+    if (tr.cwiczenia.length === 0) {
+      const w = el("tr");
+      const td = el("td", "wskazowka", "Trening domknięty bez wpisów przy ćwiczeniach.");
+      td.colSpan = 5;
+      w.append(td);
+      tabela.append(w);
+    }
+    const przewijanie = el("div", "przewijanie-tabeli");
+    przewijanie.append(tabela);
+    blok.append(przewijanie);
+    kontener.append(blok);
+  }
 }
 
 function rysujCykle(plany) {
@@ -407,6 +580,27 @@ function zeZnakiemProc(procent) {
  * z serii roboczych. W kolejnych tygodniach ciężar rusza się mnożnikiem
  * adaptacji i przestaje być tą samą miarą.
  */
+/** Mała linia 1RM cykl po cyklu (profil klienta, 20.11.2026) — kształt trendu obok liczb. */
+function linia1RM(wartosci) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 64 20");
+  svg.setAttribute("class", "linia-1rm");
+  svg.setAttribute("aria-hidden", "true");
+  const min = Math.min(...wartosci), max = Math.max(...wartosci);
+  const y = (v) => (max === min ? 10 : 17 - ((v - min) / (max - min)) * 14);
+  const x = (i) => (wartosci.length === 1 ? 32 : 3 + (i * 58) / (wartosci.length - 1));
+  const linia = document.createElementNS(NS, "polyline");
+  linia.setAttribute("points", wartosci.map((v, i) => `${x(i)},${y(v)}`).join(" "));
+  svg.append(linia);
+  const koniec = document.createElementNS(NS, "circle");
+  koniec.setAttribute("cx", String(x(wartosci.length - 1)));
+  koniec.setAttribute("cy", String(y(wartosci.at(-1))));
+  koniec.setAttribute("r", "2");
+  svg.append(koniec);
+  return svg;
+}
+
 function rysujSciezki1RM(cwiczeniaHistorii) {
   const kontener = $("#sciezki-1rm");
   kontener.replaceChildren();
@@ -425,6 +619,7 @@ function rysujSciezki1RM(cwiczeniaHistorii) {
     const wiersz = el("div", "wiersz-sciezki");
     wiersz.append(el("span", "etykieta-szeroka", c.nazwa));
     wiersz.append(el("span", "tresc mono", ciag(c.punkty.map((p) => p.oneRM), "kg")));
+    wiersz.append(linia1RM(c.punkty.map((p) => p.oneRM)));
     const klasa = c.zmianaKg > 0 ? "wzrost" : c.zmianaKg < 0 ? "spadek" : "";
     wiersz.append(el("span", `wartosc ${klasa}`, zeZnakiemProc(c.zmianaProc)));
     wiersz.title = `Cykle ${c.punkty.map((p) => `${p.wersja}.0`).join(", ")}`;
@@ -1239,10 +1434,8 @@ function rysujPropozycje1RM() {
   }
 }
 
-function rysujRealizacje() {
-  const kontener = $("#realizacja");
+function rysujRealizacje(r = obraz.realizacja, kontener = $("#realizacja"), plan = obraz.zapisany.plan) {
   kontener.replaceChildren();
-  const r = obraz.realizacja;
 
   if (!r.maDostep) {
     kontener.append(el("p", "wskazowka",
@@ -1262,7 +1455,7 @@ function rysujRealizacje() {
   for (const t of r.tygodnie) {
     const wiersz = el("div", "wiersz-miary");
     wiersz.append(el("span", "etykieta", t.rodzaj
-      ? etykietaTygodnia(obraz.zapisany.plan, t.tydzien) : `T${t.tydzien}`));
+      ? etykietaTygodnia(plan, t.tydzien) : `T${t.tydzien}`));
     const kropki = el("span", "pasek");
     for (let i = 0; i < t.zDnia; i++) {
       const stan = i < t.ukonczonych ? "zrobiona"
@@ -2781,15 +2974,15 @@ function rysujAnalize() {
  */
 const WZORCE_WYKRESU = [["", "całość"], ["s", "przysiad"], ["d", "m. ciąg"], ["b", "wycisk."], ["r", "wiosł."], ["c", "core"]];
 let wzorzecWykresu = "";
-function wykresStresu() {
+function wykresStresu(zrodlo = { wynik: obraz.wynik, plan: obraz.zapisany.plan, normy: obraz.normy, biezacy: tydzien }) {
   const blok = el("div", "wykres-stresu");
-  const tygodnie = [...obraz.wynik.tygodnie, ...(obraz.wynik.tygodnieDodatkowe ?? [])];
+  const tygodnie = [...zrodlo.wynik.tygodnie, ...(zrodlo.wynik.tygodnieDodatkowe ?? [])];
   const wartosc = (t) => {
     const b = t.bilans;
     const w = wzorzecWykresu ? b.wzorce.find((x) => x.part === wzorzecWykresu) : b;
     return { razem: w?.calkowity ?? w?.razem ?? 0, centralny: w?.centralny ?? 0, obwodowy: w?.obwodowy ?? 0 };
   };
-  const dane = tygodnie.map((t) => ({ t, etykieta: `T${numerTygodnia(obraz.zapisany.plan, t.tydzien)}`,
+  const dane = tygodnie.map((t) => ({ t, etykieta: `T${numerTygodnia(zrodlo.plan, t.tydzien)}`,
     dodatkowy: Boolean(t.rodzaj), ...wartosc(t) }));
 
   const wybor = el("div", "wykres-wzorce");
@@ -2797,7 +2990,7 @@ function wykresStresu() {
     const b = el("button", `mikro ${wzorzecWykresu === part ? "wlaczony" : ""}`, nazwa);
     b.type = "button";
     b.setAttribute("aria-pressed", String(wzorzecWykresu === part));
-    b.onclick = () => { wzorzecWykresu = part; blok.replaceWith(wykresStresu()); };
+    b.onclick = () => { wzorzecWykresu = part; blok.replaceWith(wykresStresu(zrodlo)); };
     wybor.append(b);
   }
   blok.append(wybor);
@@ -2806,8 +2999,8 @@ function wykresStresu() {
     return blok;
   }
 
-  const dni = obraz.wynik.dniTreningowe;
-  const norma = !wzorzecWykresu && dni > 0 ? obraz.normy.stresTygodniowy.map((x) => x * dni) : null;
+  const dni = zrodlo.wynik.dniTreningowe;
+  const norma = !wzorzecWykresu && dni > 0 ? zrodlo.normy.stresTygodniowy.map((x) => x * dni) : null;
   const gora = Math.max(...dane.map((d) => d.razem), norma?.[1] ?? 0) * 1.12 || 1;
   const W = 300, H = 150, L = 26, D = 18, G = 16;
   const szer = (W - L - 4) / dane.length;
@@ -2831,7 +3024,7 @@ function wykresStresu() {
   s("line", { x1: L, x2: W - 4, y1: y(0), y2: y(0), class: "zero" });
   dane.forEach((d, i) => {
     const x = L + i * szer + szer * 0.18, w = szer * 0.64;
-    const g = s("g", { class: `tydzien ${d.dodatkowy ? "dodatkowy" : ""} ${d.t.tydzien === tydzien ? "biezacy" : ""}` });
+    const g = s("g", { class: `tydzien ${d.dodatkowy ? "dodatkowy" : ""} ${d.t.tydzien === zrodlo.biezacy ? "biezacy" : ""}` });
     const kawalek = (od, ile, klasa) => {
       const r = document.createElementNS(NS, "rect");
       for (const [k, v] of Object.entries({ x, y: y(od + ile), width: w, height: Math.max(0, y(od) - y(od + ile)), class: klasa })) {
@@ -2842,7 +3035,7 @@ function wykresStresu() {
     kawalek(0, d.centralny, "centralny");
     kawalek(d.centralny, Math.max(0, d.razem - d.centralny), "obwodowy");
     const tytul = document.createElementNS(NS, "title");
-    tytul.textContent = `${etykietaTygodnia(obraz.zapisany.plan, d.t.tydzien)}: stres ${liczba(d.razem)}`
+    tytul.textContent = `${etykietaTygodnia(zrodlo.plan, d.t.tydzien)}: stres ${liczba(d.razem)}`
       + ` (centralny ${liczba(d.centralny)}, obwodowy ${liczba(d.obwodowy)})`;
     g.append(tytul);
     s("text", { x: x + w / 2, y: H - 5, class: "os", "text-anchor": "middle" }, d.etykieta);

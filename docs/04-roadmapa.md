@@ -1482,6 +1482,16 @@ Trener (zrzuty): „popraw to, że tutaj te przyciski nachodzą na siebie” (ok
 * **Konsola:** „Zamknij” pod przyciskami okna z odstępem; przyciski okna zawijają się zamiast nachodzić.
 * Testy: przegląd klienta (+1, razem 288: rampa zwinięta, dotknięcie rozwija), przegląd ekranów bez zmian (271).
 
+**137. Profil klienta — zakładki Teraz · Dziennik treningów · Historia — 20.11.2026.**
+
+Trener: „lepiej, żeby analiza każdego klienta była osobno po wejściu w niego w konsoli trenera — klienci mają swoje panele/profile, gdzie widoczne są ich plany treningowe, analiza dotychczasowych planów i treningów, zebrane w przejrzystej i spójnej formie” — „tak, zrób to z zakładkami”.
+
+* **Teraz:** cykle (Otwórz, Nowa wersja); bieżący cykl (nazwa, tydzień cyklu, realizacja tydzień po tygodniu, „Otwórz plan”); ciężary inne niż w planie (ponad 2%, po ćwiczeniu) i 1RM zmienione serią z treningu (przed → po); oceny klienta razem i przy ćwiczeniach; wykres stresu (ten sam co przy planie); uwagi do ćwiczeń. Bez aktywnego planu — najnowszy cykl z wpisami.
+* **Dziennik treningów:** trening = cykl × tydzień × dzień, od najnowszego, przez wszystkie cykle (do 80); domknięty / zaczęty, liczba ocen „za trudne / za łatwe” i innych ciężarów; po rozwinięciu każde ćwiczenie: serie klienta, plan tego tygodnia, ocena, TOP SET, znacznik „lżej / ciężej”.
+* **Historia:** 1RM przez cykle (z małą linią trendu), obciążenie, wzorce ruchu, frekwencja, waga.
+* **Kod:** `konsola/profil-klienta.ts` (`dziennikTreningow`, `terazKlienta`, `roznicaCiezaru`) — w kartotece (`/api/klienci/:id`) pola `teraz`, `dziennik`, `normy`. `wykresStresu` i `rysujRealizacje` w konsoli przyjmują dane z zewnątrz (plan albo profil).
+* Testy: `profil-klienta.test.ts` (3), przegląd ekranów (+1, razem 272; telefon i iPad z nowym ekranem bez wystających elementów).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
