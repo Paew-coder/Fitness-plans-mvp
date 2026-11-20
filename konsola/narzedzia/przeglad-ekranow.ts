@@ -2559,23 +2559,25 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   {
     await s.locator("#lista-klientow .pozycja", { hasText: KLIENT_PO_ZMIANIE }).getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-klient:not(.ukryty)");
-    // Profil klienta (20.11.2026): zakładki Teraz · Dziennik treningów · Historia.
+    // Profil klienta (20.11.2026): Plany (cykle, jak dotąd) i Analiza
+    // (bieżący cykl, dziennik treningów, historia) — dwie zakładki.
     const zakladka = (n: string) => s.locator(`#zakladki-profilu button[data-zakladka="${n}"]`);
-    const naTeraz = await zakladka("teraz").getAttribute("aria-selected") === "true"
-      && await s.locator("#zakladka-teraz #lista-cykli").isVisible()
+    const naPlanach = await zakladka("plany").getAttribute("aria-selected") === "true"
+      && await s.locator("#zakladka-plany #lista-cykli").isVisible()
+      && !(await s.locator("#zakladka-analiza").isVisible());
+    await zakladka("analiza").click();
+    const analiza = !(await s.locator("#lista-cykli").isVisible())
       && /^Bieżący cykl/.test(await s.locator("#teraz-tytul").textContent() ?? "")
-      && await s.locator("#teraz-stres .wykres-stresu svg").count() === 1;
-    await zakladka("dziennik").click();
+      && await s.locator("#teraz-stres .wykres-stresu svg").count() === 1
+      && await s.locator("#zakladka-analiza #sciezki-1rm").isVisible()
+      && await s.locator("#zakladka-analiza #historia-frekwencji").isVisible();
     const treningow = await s.locator("#dziennik-treningow details.trening-dziennika").count();
     await s.locator("#dziennik-treningow details.trening-dziennika summary").first().click();
     const wierszy = await s.locator("#dziennik-treningow details.trening-dziennika[open] table tr").count();
-    await zakladka("historia").click();
-    const historia = await s.locator("#zakladka-historia #sciezki-1rm").isVisible()
-      && !(await s.locator("#zakladka-teraz").isVisible());
-    sprawdz("profil klienta: Teraz (cykle, bieżący cykl, wykres stresu), Dziennik (treningi z seriami), Historia",
-      naTeraz && treningow > 0 && wierszy > 1 && historia,
-      `teraz ${naTeraz} · ${treningow} treningów · ${wierszy} wierszy · historia ${historia}`);
-    await zakladka("teraz").click();
+    sprawdz("profil klienta: „Plany” — cykle jak dotąd; „Analiza” — bieżący cykl, stres, dziennik treningów, historia",
+      naPlanach && analiza && treningow > 0 && wierszy > 1,
+      `plany ${naPlanach} · analiza ${analiza} · ${treningow} treningów · ${wierszy} wierszy`);
+    await zakladka("plany").click();
     await s.locator("#lista-cykli").getByRole("button", { name: "Otwórz" }).first().click();
     await s.waitForSelector("#ekran-plan:not(.ukryty)");
     await s.waitForTimeout(400);

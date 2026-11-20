@@ -335,12 +335,13 @@ function rysujKartoteke() {
 /*
  * Profil klienta (20.11.2026). Trener: „klienci mają swoje panele/profile,
  * gdzie widoczne są ich plany treningowe, analiza dotychczasowych planów
- * i treningów, zebrane w przejrzystej i spójnej formie”. Zakładki: Teraz
- * (cykle i bieżący cykl), Dziennik treningów, Historia. Wybrana zakładka
- * zostaje przy przejściu do innego klienta. Liczby liczy serwer
- * (`profil-klienta.ts`) — tu tylko rysunek.
+ * i treningów, zebrane w przejrzystej i spójnej formie”, potem: „oddzielmy
+ * bieżący cykl, gdzie je rozpisuję, od całej analizy”. Dwie zakładki: Plany
+ * (cykle — jak dotąd) i Analiza (bieżący cykl, dziennik treningów, historia).
+ * Wybrana zakładka zostaje przy przejściu do innego klienta. Liczby liczy
+ * serwer (`profil-klienta.ts`) — tu tylko rysunek.
  */
-let zakladkaProfilu = "teraz";
+let zakladkaProfilu = "plany";
 function pokazZakladke(nazwa) {
   zakladkaProfilu = nazwa;
   for (const b of document.querySelectorAll("#zakladki-profilu button")) {
@@ -348,7 +349,7 @@ function pokazZakladke(nazwa) {
     b.classList.toggle("aktywny", ta);
     b.setAttribute("aria-selected", String(ta));
   }
-  for (const z of ["teraz", "dziennik", "historia"]) {
+  for (const z of ["plany", "analiza"]) {
     $(`#zakladka-${z}`).classList.toggle("ukryty", z !== nazwa);
   }
 }
@@ -361,7 +362,7 @@ const dataKrotko = (iso) => {
   return `${DNI_TYGODNIA[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 };
 
-/** Zakładka „Teraz”: bieżący cykl — realizacja, ciężary i 1RM, oceny, stres, uwagi. */
+/** Analiza, bieżący cykl: realizacja, ciężary i 1RM, oceny, stres, uwagi. */
 function rysujTeraz(t) {
   const puste = (id, tekst) => $(id).replaceChildren(el("p", "wskazowka", tekst));
   if (!t) {
@@ -446,7 +447,7 @@ function rysujTeraz(t) {
   }
 }
 
-/** Zakładka „Dziennik treningów”: trening po treningu, od najnowszego, rozwijany. */
+/** Analiza, dziennik treningów: trening po treningu, od najnowszego, rozwijany. */
 function rysujDziennik(treningi) {
   const kontener = $("#dziennik-treningow");
   kontener.replaceChildren();

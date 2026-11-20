@@ -1492,6 +1492,14 @@ Trener: „lepiej, żeby analiza każdego klienta była osobno po wejściu w nie
 * **Kod:** `konsola/profil-klienta.ts` (`dziennikTreningow`, `terazKlienta`, `roznicaCiezaru`) — w kartotece (`/api/klienci/:id`) pola `teraz`, `dziennik`, `normy`. `wykresStresu` i `rysujRealizacje` w konsoli przyjmują dane z zewnątrz (plan albo profil).
 * Testy: `profil-klienta.test.ts` (3), przegląd ekranów (+1, razem 272; telefon i iPad z nowym ekranem bez wystających elementów).
 
+**138. Profil klienta: dwie zakładki — Plany i Analiza — 20.11.2026.**
+
+Trener: „oddzielmy jednak te panele, gdzie jest bieżący cykl treningowy, od tego, gdzie jest cała analiza — Dziennik treningów / Historia / Analiza to wszystko ma być jedną zakładką, a drugą jest ten bieżący plan, to miejsce, gdzie je rozpisuję, tak jak do tej pory”.
+
+* **Plany** (domyślna): lista cykli — Otwórz, Nowa wersja, usuń — jak przed profilem.
+* **Analiza:** bieżący cykl (realizacja, ciężary i 1RM), dziennik treningów, 1RM przez cykle; z boku oceny, stres w bieżącym cyklu, uwagi do ćwiczeń, obciążenie, wzorce ruchu, frekwencja, waga.
+* Przegląd ekranów: kontrola profilu przepisana na dwie zakładki (razem 272).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

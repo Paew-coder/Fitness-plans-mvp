@@ -420,8 +420,9 @@ table.sloty.bieg tr.odciazenie td { color: var(--tekst-blady); }
 .zakladki-profilu { margin: .2rem 0 1rem; }
 .zakladki-profilu button { font-family: var(--sans); font-size: .9rem; padding: .45rem .9rem; }
 .wiersz-miary .etykieta.etykieta-szeroka { width: auto; flex: 1 1 auto; min-width: 0; color: var(--tekst); }
-#zakladka-teraz .wiersz-miary .wartosc, #zakladka-teraz .wiersz-miary .tresc { width: auto; flex: none; white-space: nowrap; }
-#zakladka-teraz .wiersz-miary { gap: .8rem; }
+#panel-teraz-ciezary .wiersz-miary .wartosc, #panel-teraz-ciezary .wiersz-miary .tresc,
+#teraz-oceny .wiersz-miary .wartosc { width: auto; flex: none; white-space: nowrap; }
+#panel-teraz-ciezary .wiersz-miary, #teraz-oceny .wiersz-miary { gap: .8rem; }
 table.tabela-dziennika td.lp, table.tabela-dziennika th:first-child { width: 2.5rem; white-space: nowrap; }
 .etykieta-sekcji { margin: .8rem 0 .3rem; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--tekst-blady); }
 .uwaga-profilu { margin: 0 0 .5rem; font-size: .85rem; line-height: 1.4; overflow-wrap: anywhere; }

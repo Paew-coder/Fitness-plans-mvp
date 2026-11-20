@@ -73,29 +73,41 @@
 
   <p class="podsumowanie-klienta" id="podsumowanie-klienta"></p>
 
-  <!-- Profil klienta (20.11.2026): Teraz · Dziennik treningów · Historia. -->
+  <!-- Profil klienta (20.11.2026): dwie zakładki — Plany (rozpisywanie, jak
+       dotąd) i Analiza (bieżący cykl, dziennik treningów, historia). -->
   <nav class="taby zakladki-profilu" id="zakladki-profilu" role="tablist">
-    <button type="button" role="tab" data-zakladka="teraz">Teraz</button>
-    <button type="button" role="tab" data-zakladka="dziennik">Dziennik treningów</button>
-    <button type="button" role="tab" data-zakladka="historia">Historia</button>
+    <button type="button" role="tab" data-zakladka="plany">Plany</button>
+    <button type="button" role="tab" data-zakladka="analiza">Analiza</button>
   </nav>
 
-  <div id="zakladka-teraz" class="zakladka-profilu">
+  <div id="zakladka-plany" class="zakladka-profilu">
+    <section class="panel">
+      <h2>Cykle</h2>
+      <div id="lista-cykli" class="lista"></div>
+    </section>
+  </div>
+
+  <div id="zakladka-analiza" class="zakladka-profilu ukryty">
     <div class="uklad">
       <main class="dni">
-        <section class="panel">
-          <h2>Cykle</h2>
-          <div id="lista-cykli" class="lista"></div>
-        </section>
-
         <section class="panel" id="panel-teraz-realizacja">
           <h2 id="teraz-tytul">Bieżący cykl</h2>
           <div id="teraz-realizacja"></div>
         </section>
 
         <section class="panel" id="panel-teraz-ciezary">
-          <h2>Ciężary i 1RM</h2>
+          <h2>Ciężary i 1RM w bieżącym cyklu</h2>
           <div id="teraz-ciezary"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Dziennik treningów</h2>
+          <div id="dziennik-treningow"></div>
+        </section>
+
+        <section class="panel">
+          <h2>1RM przez cykle</h2>
+          <div id="sciezki-1rm"></div>
         </section>
       </main>
 
@@ -106,7 +118,7 @@
         </section>
 
         <section class="karta">
-          <h3>Stres w cyklu</h3>
+          <h3>Stres w bieżącym cyklu</h3>
           <div id="teraz-stres"></div>
         </section>
 
@@ -114,27 +126,7 @@
           <h3>Uwagi do ćwiczeń</h3>
           <div id="teraz-uwagi"></div>
         </section>
-      </aside>
-    </div>
-  </div>
 
-  <div id="zakladka-dziennik" class="zakladka-profilu ukryty">
-    <section class="panel">
-      <h2>Dziennik treningów</h2>
-      <div id="dziennik-treningow"></div>
-    </section>
-  </div>
-
-  <div id="zakladka-historia" class="zakladka-profilu ukryty">
-    <div class="uklad">
-      <main class="dni">
-        <section class="panel">
-          <h2>1RM przez cykle</h2>
-          <div id="sciezki-1rm"></div>
-        </section>
-      </main>
-
-      <aside class="bok">
         <section class="karta">
           <h3>Obciążenie cykl po cyklu</h3>
           <div id="historia-obciazenia"></div>

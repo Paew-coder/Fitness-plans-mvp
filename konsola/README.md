@@ -485,17 +485,16 @@ tak jak rozgrzewka, a nagłówek to „Coach's note”.
 
 ## Profil klienta (od 20.11.2026)
 
-Po wejściu w klienta trzy zakładki:
+Po wejściu w klienta dwie zakładki:
 
-- **Teraz** — cykle (Otwórz / Nowa wersja), bieżący cykl: realizacja
-  tydzień po tygodniu, ciężary inne niż w planie i zmiany 1RM z treningów,
-  oceny klienta (razem i przy których ćwiczeniach), wykres stresu, uwagi do
-  ćwiczeń.
-- **Dziennik treningów** — każdy trening (data, cykl, tydzień, dzień),
-  od najnowszego; po rozwinięciu serie klienta obok planu, ocena, TOP SET
-  i znacznik „lżej / ciężej” (najcięższa seria inna niż plan o ponad 2%).
-- **Historia** — 1RM przez cykle z linią trendu, obciążenie, wzorce ruchu,
-  frekwencja, waga.
+- **Plany** — cykle klienta: Otwórz, Nowa wersja, usuń. Tu rozpisujesz plany,
+  jak dotąd.
+- **Analiza** — wszystko o tym, jak klient trenuje: bieżący cykl
+  (realizacja tydzień po tygodniu, ciężary inne niż w planie, zmiany 1RM
+  z treningów), **dziennik treningów** (każdy trening od najnowszego; po
+  rozwinięciu serie klienta obok planu, ocena, TOP SET, „lżej / ciężej”),
+  1RM przez cykle z linią trendu, a z boku oceny klienta, stres w bieżącym
+  cyklu, uwagi do ćwiczeń, obciążenie, wzorce ruchu, frekwencja i waga.
 
 ## Wykres stresu w cyklu (od 30.10.2026)
 
