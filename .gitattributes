@@ -1,0 +1,3 @@
+# Plik uruchamiający dla Windows musi mieć końce linii CRLF — cmd.exe
+# potrafi się wywrócić na etykietach i goto w pliku z samymi LF-ami.
+*.bat text eol=crlf
