@@ -391,27 +391,37 @@ function rysujTeraz(t) {
   if (t.ciezaryCwiczen.length === 0 && t.zmiany1RM.length === 0) {
     ciezary.append(el("p", "wskazowka", "Klient robi ciężary z planu — bez wyraźnych odchyleń i bez zmian 1RM w tym cyklu."));
   }
+  // Słowami (22.11.2026, trener: „wytłumacz mi, co tu widzę — ten zapis cyfr”):
+  // nazwa w pierwszej linijce, co się stało — w drugiej.
+  const wpis = (nazwa, opis, tytul = "") => {
+    const w = el("div", "wiersz-zmiany");
+    w.append(el("div", "nazwa-zmiany", nazwa), el("div", "opis-zmiany", opis));
+    if (tytul) w.title = tytul;
+    return w;
+  };
   if (t.ciezaryCwiczen.length > 0) {
     ciezary.append(el("p", "etykieta-sekcji", "Inny ciężar niż w planie (ponad 2%)"));
     for (const c of t.ciezaryCwiczen) {
-      const w = el("div", "wiersz-miary");
-      w.append(el("span", "etykieta etykieta-szeroka", c.nazwa));
-      w.append(el("span", "tresc", [c.lzej ? `${c.lzej}× lżej` : null, c.ciezej ? `${c.ciezej}× ciężej` : null]
-        .filter(Boolean).join(" · ")));
-      w.append(el("span", "wartosc", `z ${c.wpisow}`));
-      w.title = "Ile treningów z wpisanymi seriami było lżej lub ciężej niż plan tego tygodnia";
-      ciezary.append(w);
+      const treningow = odmiana(c.wpisow, ["treningu", "treningów", "treningów"]);
+      const czesci = [c.lzej ? `${c.lzej} z ${c.wpisow} ${treningow} lżej niż plan` : null,
+        c.ciezej ? `${c.ciezej} z ${c.wpisow} ${treningow} ciężej niż plan` : null].filter(Boolean);
+      ciezary.append(wpis(c.nazwa, czesci.join(" · "),
+        "Najcięższa seria treningu porównana z ciężarem z planu tego tygodnia"));
     }
   }
   if (t.zmiany1RM.length > 0) {
     ciezary.append(el("p", "etykieta-sekcji", "1RM zmienione serią z treningu"));
     for (const z of t.zmiany1RM) {
-      const w = el("div", "wiersz-miary");
-      w.append(el("span", "etykieta etykieta-szeroka", z.nazwa));
-      w.append(el("span", "tresc", `T${z.tydzien}: ${liczba(z.seria.ciezar)} × ${z.seria.powtorzenia}`));
-      w.append(el("span", "wartosc", z.przed && z.po ? `${liczba(z.przed, 1)} → ${liczba(z.po, 1)} kg`
-        : z.po ? `${liczba(z.po, 1)} kg` : "—"));
-      ciezary.append(w);
+      const seria = `${liczba(z.seria.ciezar)} kg × ${z.seria.powtorzenia}`;
+      let opis;
+      if (z.przed && z.po) {
+        const proc = Math.round((z.po / z.przed - 1) * 1000) / 10;
+        opis = `T${z.tydzien}: zrobione ${seria} → 1RM ${liczba(z.przed, 1)} → ${liczba(z.po, 1)} kg `
+          + `(${proc > 0 ? "+" : "−"}${liczba(Math.abs(proc), 1)}%), od T${z.tydzien} do końca cyklu`;
+      } else {
+        opis = `T${z.tydzien}: ćwiczenie bez 1RM — z serii ${seria} ustalone 1RM ${z.po ? `${liczba(z.po, 1)} kg` : "—"}`;
+      }
+      ciezary.append(wpis(z.nazwa, opis));
     }
   }
 

@@ -1500,6 +1500,12 @@ Trener: „oddzielmy jednak te panele, gdzie jest bieżący cykl treningowy, od 
 * **Analiza:** bieżący cykl (realizacja, ciężary i 1RM), dziennik treningów, 1RM przez cykle; z boku oceny, stres w bieżącym cyklu, uwagi do ćwiczeń, obciążenie, wzorce ruchu, frekwencja, waga.
 * Przegląd ekranów: kontrola profilu przepisana na dwie zakładki (razem 272).
 
+**139. Analiza klienta: ciężary i 1RM opisane słowami — 22.11.2026.**
+
+Trener (zrzut „T5: 105,0 × 3 · 126,0 → 120,3 kg”): „wytłumacz mi, co tu widzę — ten zapis cyfr”, potem „możesz zmienić”.
+
+* Karta „Ciężary i 1RM w bieżącym cyklu”: nazwa w pierwszej linijce, opis w drugiej — „1 z 5 treningów lżej niż plan”, „T5: zrobione 105 kg × 3 → 1RM 126,0 → 120,3 kg (−4,5%), od T5 do końca cyklu”, „T1: ćwiczenie bez 1RM — z serii 35 kg × 12 ustalone 1RM 56 kg”. Mieści się na telefonie.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
