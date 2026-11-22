@@ -40,6 +40,12 @@
           <option value="">— brak —</option>
         </select>
       </label>
+      <label>Tygodnie
+        <select name="tygodni" id="nowy-tygodni">
+          <option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option>
+          <option>9</option><option>10</option><option>11</option><option>12</option>
+        </select>
+      </label>
       <button type="submit" class="glowny">Utwórz</button>
     </form>
     <p class="wskazowka">
@@ -225,6 +231,11 @@
          jego kontrolkę, czyli pierwszy przycisk w środku — przez co kliknięcie
          w „T4" wracało natychmiast na „T1" i przełączanie tygodni nie działało
          wcale. <label> zostaje tam, gdzie opisuje jedno pole formularza. -->
+    <label class="pole">
+      <span class="etykieta-pola">Liczba tygodni</span>
+      <select id="liczba-tygodni" title="Długość cyklu — od 4 do 12 tygodni roboczych"></select>
+      <small class="podpowiedz-pola">progresja blokami po 3 tyg.: T7–T9 jak T4–T6 z RPE +0,5, T10–T12 z +1,0 · arkusz tylko przy 6 tyg.</small>
+    </label>
     <div class="pole">
       <span class="etykieta-pola">Tydzień</span>
       <span id="taby-tygodni" class="taby"></span>
@@ -236,7 +247,7 @@
       </span>
       <!-- Objaśnienia pod polami, nie w dymkach: na iPadzie dymków nie ma,
            a trener pracuje na zmianę na laptopie i na iPadzie. -->
-      <small class="podpowiedz-pola">serie, powtórzenia i RPE z „Części planu” do wszystkich 6 tygodni</small>
+      <small class="podpowiedz-pola">serie, powtórzenia i RPE z „Części planu” do wszystkich tygodni planu</small>
     </div>
     <div class="pole">
       <span class="etykieta-pola">Po cyklu</span>
@@ -244,7 +255,7 @@
         <button type="button" id="przelacz-deload">+ deload</button>
         <button type="button" id="przelacz-maksy">+ maksy</button>
       </span>
-      <small class="podpowiedz-pola">deload: jak T6, RPE o 1 niżej, bez TOP SETU (masa ciała: powtórzenia jak w T1) · maksy: 1 × 1 @ RPE 10, jeden dzień</small>
+      <small class="podpowiedz-pola">deload: jak ostatni tydzień, RPE o 1 niżej, bez TOP SETU (masa ciała: powtórzenia jak w T1) · maksy: 1 × 1 @ RPE 10, jeden dzień</small>
     </div>
     <label>Wybierz szablon
       <select id="szablon-planu"></select>

@@ -17,8 +17,11 @@ import { fileURLToPath } from "node:url";
 
 import {
   przeliczPlan, porownajLiczenieJednostronnych, tydzienWyliczony, tygodniePlanu,
-  numerTygodniaNaEkranie, TYDZIEN_MAKSOW, type Plan, type SlotPlanu,
+  numerTygodniaNaEkranie, TYDZIEN_DELOADU, TYDZIEN_MAKSOW, type Plan, type SlotPlanu,
 } from "../silnik/src/plan.ts";
+import {
+  kolejnosc, liczbaTygodni, numerRoboczy, tygodnieRobocze, wczesniejszeRobocze, TYGODNI_MAX, TYGODNI_MIN,
+} from "../silnik/src/tygodnie.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
@@ -329,8 +332,9 @@ function nazwaKlienta(wartosc: unknown): { nazwa: string } | { blad: string } {
  * prawdziwe, a nie zgadywać, co klient miał na myśli.
  */
 const GRANICE = {
-  // 7 — deload, 8 — maksy. Czy plan dany tydzień ma, sprawdza `tygodniePlanu`.
-  tydzien: [1, 8],
+  // 7 — deload, 8 — maksy, 9–14 — T7–T12 (plany do 12 tygodni, 22.11.2026).
+  // Czy plan dany tydzień ma, sprawdza `tygodniePlanu`.
+  tydzien: [1, 14],
   dzien: [1, 5],
   /** Rekord świata w martwym ciągu to około 500 kg. */
   ciezar: [0, 1000],
@@ -429,7 +433,7 @@ function tygodnieRealizacji(plan: Plan, dniWPlanie: number) {
     .map((tydzien) => ({
       tydzien,
       numer: numerTygodniaNaEkranie(plan, tydzien),
-      rodzaj: tydzien === 7 ? "deload" : tydzien === TYDZIEN_MAKSOW ? "maksy" : null,
+      rodzaj: tydzien === TYDZIEN_DELOADU ? "deload" : tydzien === TYDZIEN_MAKSOW ? "maksy" : null,
       zDnia: tydzien === TYDZIEN_MAKSOW ? 1 : dniWPlanie,
     }));
 }
@@ -470,7 +474,7 @@ function propozycje1RM(
   for (const w of wykonania) {
     // Tylko sześć tygodni pracy: deload idzie celowo lżej, a wynik z tygodnia
     // maksów wchodzi do nowego cyklu wprost (`serieZTygodniaMaksow`).
-    const slot = wynik.tygodnie[w.tydzien - 1]?.sloty.find((s) => s.positionId === w.positionId);
+    const slot = wynik.tygodnie.find((t) => t.tydzien === w.tydzien)?.sloty.find((s) => s.positionId === w.positionId);
     if (!slot?.cwiczenie || typeof slot.rpe !== "number") continue;
     // Dwubój (16.10.2026) nie: seria techniczna na 70 % nic nie mówi o maksimum,
     // a jego RPE to tylko odpowiednik procentu. 1RM daje próba pojedynczego.
@@ -481,7 +485,7 @@ function propozycje1RM(
     // Stare wpisy nie mają tej informacji; dla nich slot to nadal najlepsze,
     // co mamy.
     const cwiczenieWykonane = w.cwiczenieId ?? slot.cwiczenie.id;
-    if (w.tydzien <= (ustaloneDoTygodnia.get(cwiczenieWykonane) ?? 0)) continue;
+    if (kolejnosc(w.tydzien) <= kolejnosc(ustaloneDoTygodnia.get(cwiczenieWykonane) ?? 0)) continue;
     const lista = wgCwiczenia.get(cwiczenieWykonane) ?? [];
     lista.push({
       ciezar: w.ciezarWykonany!,
@@ -535,6 +539,16 @@ function propozycjeZPoprzedniegoCyklu(zapisany: magazyn.ZapisanyPlan) {
     .filter((p) => zapisany.plan.sloty.some((s) => s.cwiczenieId === p.cwiczenieId))
     .filter((p) => !zMaksow.has(p.cwiczenieId))
     .map((p) => ({ ...p, zPoprzedniegoCyklu: poprzedni.wersja }));
+}
+
+/**
+ * Dlaczego plan innej długości niż 6 tygodni nie ma arkusza (22.11.2026).
+ * Konsola pokazuje to samo zdanie zamiast przycisku pobierania.
+ */
+function bezArkuszaPowod(plan: Plan): string {
+  return `Arkusz jest tylko dla planów sześciotygodniowych: szablon trenera ma zakładki T1–T6, `
+    + `a ten plan ma ${liczbaTygodni(plan)} tygodni — część z nich by się nie zmieściła albo zostałaby pusta. `
+    + `Plan działa normalnie w konsoli i w telefonie klienta.`;
 }
 
 /**
@@ -709,7 +723,7 @@ function postepKlienta(zapisany: magazyn.ZapisanyPlan, wynik: ReturnType<typeof 
 
   const cwiczenia = [...wgCwiczenia]
     .map(([cwiczenieId, w]) => {
-      const punkty = w.punkty.sort((a, b) => a.tydzien - b.tydzien);
+      const punkty = w.punkty.sort((a, b) => kolejnosc(a.tydzien) - kolejnosc(b.tydzien));
       const pierwszy = punkty[0]!;
       const ostatni = punkty.at(-1)!;
       /*
@@ -936,6 +950,8 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     porownanie: porownanieZPoprzednim(zapisany, wynik),
     moduly: moduly(zapisany),
     normy: NORMY,
+    // Plan innej długości niż 6 tygodni nie ma arkusza — konsola mówi dlaczego.
+    bezArkusza: liczbaTygodni(zapisany.plan) !== 6 ? bezArkuszaPowod(zapisany.plan) : null,
   };
 }
 
@@ -1022,11 +1038,11 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
   const zSeriami = (w: magazyn.Wykonanie) =>
     serieWpisu(w).some((x) => x.ciezar || x.powtorzenia);
   const najnowszy = (wpisy: magazyn.Wykonanie[], positionId: string) =>
-    [...wpisy].sort((a, b) => b.tydzien - a.tydzien
+    [...wpisy].sort((a, b) => kolejnosc(b.tydzien) - kolejnosc(a.tydzien)
       || Number(b.positionId === positionId) - Number(a.positionId === positionId)
       || b.data.localeCompare(a.data))[0];
   const ostatnio = (cwiczenieId: string, positionId: string, tydzien: number) => {
-    const tutaj = najnowszy((zapisany.wykonania ?? []).filter((w) => w.tydzien < tydzien
+    const tutaj = najnowszy((zapisany.wykonania ?? []).filter((w) => kolejnosc(w.tydzien) < kolejnosc(tydzien)
       && cwiczenieWpisu(w, zapisany.plan) === cwiczenieId && zSeriami(w)), positionId);
     if (tutaj) {
       return { tydzien: numerTygodniaNaEkranie(zapisany.plan, tutaj.tydzien),
@@ -1049,10 +1065,10 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
    * TOP SECIE — z ciężarem klienta, a bez niego z planu.
    */
   const ostatniTopSet = (ts: { positionId: string; dzien: number; cwiczenie: { id: string } | null }, tydzien: number) => {
-    for (let w = Math.min(tydzien, 7) - 1; w >= 1; w--) {
-      const wtedy = wynik.tygodnie[w - 1]?.topSety.find((x) => x.positionId === ts.positionId);
+    for (const w of wczesniejszeRobocze(tydzien, zapisany.plan)) {
+      const wtedy = wynik.tygodnie.find((t) => t.tydzien === w)?.topSety.find((x) => x.positionId === ts.positionId);
       if (!wtedy?.cwiczenie || wtedy.cwiczenie.id !== ts.cwiczenie?.id) continue;
-      const klient = zapisany.plan.sloty.find((x) => x.positionId === ts.positionId)?.tygodnie?.[w as 1]?.topSetKlienta;
+      const klient = zapisany.plan.sloty.find((x) => x.positionId === ts.positionId)?.tygodnie?.[w]?.topSetKlienta;
       const zrobiony = klient || ukonczone.some((u) => u.dzien === ts.dzien && u.tydzien === w);
       if (!zrobiony) continue;
       const kg = klient?.kg || (typeof wtedy.ciezar === "number" ? wtedy.ciezar : null);
@@ -1229,7 +1245,7 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
             progresja: s.cwiczenie!.progresja,
             // Ręczny ciężar przeniesiony z wcześniejszego tygodnia — telefon
             // dopisuje „jak w T1", żeby było wiadomo, skąd ta liczba.
-            ciezarZTygodnia: s.ciezarZrodlo && s.ciezarZrodlo.tydzien < t.tydzien
+            ciezarZTygodnia: s.ciezarZrodlo && kolejnosc(s.ciezarZrodlo.tydzien) < kolejnosc(t.tydzien)
               ? numerTygodniaNaEkranie(zapisany.plan, s.ciezarZrodlo.tydzien) : null,
             // Próba maksymalna: jedno powtórzenie na RPE 10. Ciężar w planie to
             // obecne 1RM — punkt odniesienia, nie polecenie; wynik wpisuje klient.
@@ -1702,6 +1718,11 @@ const serwer = createServer(async (req, res) => {
       const wersja = Math.trunc(liczbaZadania(c.wersja) ?? 1);
       if (!(wersja >= 1 && wersja <= 999)) return blad(res, "Numer cyklu musi być z zakresu 1–999");
       const poprzedniId = tekst(c.poprzedniId) || undefined;
+      // Liczba tygodni nowego planu (22.11.2026) — pusto = 6.
+      const tygodni = c.tygodni == null || c.tygodni === "" ? null : liczbaZadania(c.tygodni);
+      if (tygodni !== null && !(Number.isInteger(tygodni) && tygodni >= TYGODNI_MIN && tygodni <= TYGODNI_MAX)) {
+        return blad(res, `Liczba tygodni musi być od ${TYGODNI_MIN} do ${TYGODNI_MAX}`);
+      }
       const id = magazyn.nowyId(klient, wersja);
       if (magazyn.wczytaj(trenerId, id)) return blad(res, `Plan „${id}" już istnieje`);
 
@@ -1712,7 +1733,7 @@ const serwer = createServer(async (req, res) => {
         id, trenerId, klientId: osoba.id, klient: osoba.nazwa, wersja, status: "szkic",
         dataStartu: null, utworzony: "", zmieniony: "",
         poprzedniId,
-        plan: magazyn.pustyPlan(osoba.nazwa),
+        plan: { ...magazyn.pustyPlan(osoba.nazwa), ...(tygodni !== null && tygodni !== 6 ? { tygodni } : {}) },
       });
       return json(res, obrazPlanu(zapisany), 201);
     }
@@ -2017,6 +2038,11 @@ const serwer = createServer(async (req, res) => {
        * zostaje jak dotąd (sprawdza ją `sprawdz-wdrozenie`).
        */
       if (akcja === "/eksport" && req.method === "GET") {
+        // Szablon trenera (MasterTemplate) ma zakładki T1–T6 — innej długości
+        // nie da się w nim zapisać bez gubienia tygodni (decyzja z 22.11.2026).
+        if (liczbaTygodni(zapisany.plan) !== 6) {
+          return blad(res, bezArkuszaPowod(zapisany.plan), 409);
+        }
         let plik: string;
         try {
           plik = await eksportujDoArkusza(zapisany);
@@ -2059,7 +2085,9 @@ const serwer = createServer(async (req, res) => {
         }
         if (tryb === "kopiuj") {
           const tydzien = Number(zrodlo);
-          if (!(tydzien >= 1 && tydzien <= 6)) return blad(res, "Podaj tydzień od 1 do 6");
+          if (numerRoboczy(tydzien) === null || !tygodnieRobocze(zapisany.plan).includes(tydzien as 1)) {
+            return blad(res, `Podaj tydzień od 1 do ${liczbaTygodni(zapisany.plan)}`);
+          }
           // Bez wskazanego ćwiczenia kopiowanie objęłoby cały plan — czyli
           // zrobiłoby sześć identycznych tygodni. To nie jest coś, co komuś
           // wychodzi przez przypadek, więc wymagamy wskazania wprost.
@@ -2306,7 +2334,7 @@ const serwer = createServer(async (req, res) => {
         const cialoZadania = await cialo(req);
         const { positionId } = cialoZadania;
         const tydzien = wZakresie(cialoZadania.tydzien, GRANICE.tydzien);
-        if (tydzien === null) return blad(res, "Numer tygodnia musi być z zakresu 1–6");
+        if (tydzien === null) return blad(res, "Tego tygodnia nie ma w planie");
         const cel = doZapisu(cialoZadania);
         if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
         if (sprzedResetu(cialoZadania, cel)) return blad(res, ZAPIS_SPRZED_RESETU, 409);

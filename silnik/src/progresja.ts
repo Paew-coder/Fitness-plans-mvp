@@ -16,10 +16,10 @@
  * kiedyś inne ciężary niż konsola.
  */
 import type { ParametryTygodnia, Plan, SlotPlanu } from "./plan.ts";
-import { TYGODNIE } from "./plan.ts";
+import { tygodnieRobocze } from "./tygodnie.ts";
 import { PROGRESJE_Z_TABELI, type Tydzien } from "./typy.ts";
 import { Katalog, katalog as katalogDomyslny } from "./katalog.ts";
-import { bojGlownySlotu, dwubojSlotu, parametrySzablonu, pauzaSlotu } from "./szablon-boju.ts";
+import { bojGlownySlotu, dwubojSlotu, parametrySzablonuTygodnia, pauzaSlotu } from "./szablon-boju.ts";
 import { POWT_MAX_BEZ_TABELI, powtorzeniaAkcesorium } from "./powtorzenia.ts";
 import { CZAS_MAKS_S, naCzas } from "./czas.ts";
 import { POWT_MAX, POWT_MIN } from "./rpe.ts";
@@ -79,9 +79,9 @@ export function zastosujProgresje(
         && !pauzaSlotu(slot, slot.cwiczenieId, plan.czescPlanu)
         && !dwubojSlotu(slot, slot.cwiczenieId)) return { ...slot };
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
-      for (const t of TYGODNIE) {
+      for (const t of tygodnieRobocze(plan)) {
         tygodnie[t] = {
-          ...parametrySzablonu(slot, t, cwiczenie, plan.czescPlanu),
+          ...parametrySzablonuTygodnia(slot, t, cwiczenie, plan.czescPlanu),
           ...wlasneTygodnia(tygodnie[t]),
         };
       }
@@ -115,7 +115,7 @@ export function skopiujTydzien(plan: Plan, zrodlo: Tydzien, positionId?: string)
         ...doSkopiowania } = wzorzec;
 
       const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
-      for (const t of TYGODNIE) {
+      for (const t of tygodnieRobocze(plan)) {
         if (t === zrodlo) continue;
         tygodnie[t] = { ...doSkopiowania, ...wlasneTygodnia(tygodnie[t]) };
       }
@@ -156,7 +156,8 @@ export function powtorzeniaOdT1(
   const bezTabeli = !PROGRESJE_Z_TABELI.includes(cwiczenie.progresja);
   // Na czas (27.10.2026) — sekundy, do `CZAS_MAKS_S`.
   const czas = naCzas(cwiczenie.progresja);
-  const automat = TYGODNIE.map((t) => powtorzeniaAkcesorium({
+  const robocze = tygodnieRobocze(plan);
+  const automat = robocze.map((t) => powtorzeniaAkcesorium({
     coeff: cwiczenie.coeff, czesc: plan.czescPlanu, tydzien: t,
     przezCalyCykl: cwiczenie.progresja === "masa ciała", bezTabeli, czas,
   }));
@@ -177,7 +178,7 @@ export function powtorzeniaOdT1(
 
   const stale = slot.przedRpeRosnacym ? structuredClone(slot.przedRpeRosnacym) : undefined;
   const tygodnie: SlotPlanu["tygodnie"] = { ...(slot.tygodnie ?? {}) };
-  for (const t of TYGODNIE) {
+  for (const t of robocze) {
     if (!tygodnie[t] && !(stale && t1 !== null)) continue;
     const { powtorzenia: _p, ...reszta } = tygodnie[t] ?? {};
     tygodnie[t] = stale && t1 !== null ? { ...reszta, powtorzenia: t1 } : reszta;

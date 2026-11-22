@@ -1,4 +1,5 @@
 import type { Coeff, CzescPlanu, Tydzien } from "./typy.ts";
+import { numerRoboczy } from "./tygodnie.ts";
 import { ogranicz } from "./pomocnicze.ts";
 import { POWT_MAX, POWT_MIN } from "./rpe.ts";
 import { CZAS_MAKS_S } from "./czas.ts";
@@ -14,8 +15,8 @@ export const POWT_MAX_BEZ_TABELI = 30;
  * Przesunięcie powtórzeń w obrębie bloku. Blok pierwszy to T1–T3, drugi T4–T6 —
  * objętość rośnie wewnątrz bloku, a T4 restartuje.
  */
-export function offsetTygodnia(tydzien: Tydzien): 0 | 1 | 2 {
-  return ((tydzien - 1) % 3) as 0 | 1 | 2;
+export function offsetTygodnia(tydzien: number): 0 | 1 | 2 {
+  return (((numerRoboczy(tydzien) ?? tydzien) - 1) % 3) as 0 | 1 | 2;
 }
 
 /**
@@ -46,8 +47,9 @@ export function powtorzeniaBazowe(coeff: Coeff, czesc: CzescPlanu): number {
  * tylko powtórzenia, więc rosną przez cały cykl. Deload (T7) wraca do T1 —
  * patrz `przeliczPlan`.
  */
-export function offsetCyklu(tydzien: Tydzien): number {
-  return Math.min(tydzien, 6) - 1;
+export function offsetCyklu(tydzien: number): number {
+  // Klucz tygodnia — T7–T12 to 9–14 (`tygodnie.ts`); poza cyklem jak ostatni z sześciu.
+  return (numerRoboczy(tydzien) ?? 6) - 1;
 }
 
 /**

@@ -483,6 +483,21 @@ między listą a panelem. W wysłanym planie nowa albo zmieniona uwaga czeka na
 po angielsku linie uwagi są w okienku „Link dla klienta” do przetłumaczenia,
 tak jak rozgrzewka, a nagłówek to „Coach's note”.
 
+## Liczba tygodni planu (od 22.11.2026)
+
+Plan ma od 4 do 12 tygodni roboczych (domyślnie 6). Ustawiasz to w polu
+„Tygodnie” przy zakładaniu planu albo w „Liczba tygodni” na pasku ustawień
+otwartego planu — u wysłanego planu zmiana czeka na „Zatwierdź”.
+
+- Progresja idzie blokami po 3 tygodnie: T1–T3 jak dotąd, każdy następny
+  blok jak T4–T6, a od T7 z RPE o 0,5 wyżej na blok (T7–T9 +0,5,
+  T10–T12 +1,0). Krótszy plan po prostu się kończy.
+- Deload i maksy stoją zaraz po ostatnim tygodniu.
+- Skrócenie planu nic nie kasuje — wpisy klienta z uciętych tygodni wracają
+  po wydłużeniu.
+- Arkusz do pobrania jest tylko przy 6 tygodniach (szablon ma zakładki
+  T1–T6); przy innej długości konsola wyjaśnia, dlaczego go nie ma.
+
 ## Profil klienta (od 20.11.2026)
 
 Po wejściu w klienta dwie zakładki:

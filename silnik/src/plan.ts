@@ -17,9 +17,13 @@ import { mround } from "./pomocnicze.ts";
 import { korektaPowtorzen, mnoznikNaTydzien } from "./adaptacja.ts";
 import { parzystePowtorzenia, powtorzeniaAkcesorium } from "./powtorzenia.ts";
 import {
-  bojGlownySlotu, czescBoju, DELOAD_DWUBOJU, DWUBOJ, dwubojSlotu, parametrySzablonu, pauzaSlotu,
+  bojGlownySlotu, czescBoju, DELOAD_DWUBOJU, DWUBOJ, dwubojSlotu, parametrySzablonuTygodnia, pauzaSlotu,
   procentTopSetuDwuboju, type RodzajPauzy,
 } from "./szablon-boju.ts";
+import {
+  liczbaTygodni, numerNaEkranie, numerRoboczy, ostatniRoboczy, PREMIA_PROCENTU_BLOKU, PREMIA_RPE_BLOKU,
+  poprzedniRoboczy, szablonTygodnia, TYDZIEN_DELOADU, TYDZIEN_MAKSOW, tygodnieRobocze, wczesniejszeRobocze, zPremiaRpe,
+} from "./tygodnie.ts";
 import { rpeTopSetu, zwyczajowyTopSet } from "./top-set.ts";
 import {
   bilansTygodnia,
@@ -34,11 +38,14 @@ import {
 } from "./stres.ts";
 import { POWT_MAX, procent1RM, rozwiaz1RM, rpeDlaProcentu, type SeriaMaksymalna } from "./rpe.ts";
 
+/**
+ * Sześć tygodni planu domyślnego. Plan może mieć od 4 do 12 (22.11.2026) —
+ * jego tygodnie daje `tygodnieRobocze(plan)` z `tygodnie.ts`.
+ */
 export const TYGODNIE: readonly Tydzien[] = [1, 2, 3, 4, 5, 6];
 
 /** Tygodnie po cyklu mają stałe numery — patrz `numerTygodniaNaEkranie`. */
-export const TYDZIEN_DELOADU = 7;
-export const TYDZIEN_MAKSOW = 8;
+export { TYDZIEN_DELOADU, TYDZIEN_MAKSOW, liczbaTygodni, tygodnieRobocze };
 /**
  * O ile RPE deloadu jest niżej niż w T6 — w skali planu, nie periodyzacji.
  *
@@ -184,6 +191,11 @@ export type Plan = {
   sloty: readonly SlotPlanu[];
   topSety?: readonly TopSet[];
   /**
+   * Liczba tygodni roboczych, 4–12 (22.11.2026). Pusto = 6. Progresja idzie
+   * blokami po 3 tygodnie — patrz `tygodnie.ts` (tam też klucze T7–T12).
+   */
+  tygodni?: number;
+  /**
    * Jak liczyć serie ćwiczeń jednostronnych. Domyślnie `"jak w arkuszu"` —
    * zmiana rozjeżdża wynik z MasterTemplate i z normami z zakładki Analiza.
    */
@@ -311,6 +323,9 @@ export function dniTreningowe(plan: Plan): number {
  */
 export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): PlanWyliczony {
   const dni = dniTreningowe(plan);
+  // Tygodnie robocze tego planu (4–12) — deload i maksy idą od ostatniego.
+  const robocze = tygodnieRobocze(plan);
+  const ostatni = ostatniRoboczy(plan);
   const wyliczone = new Map<Tydzien, TydzienWyliczony>();
   /**
    * Zamierzony ułamek 1RM slotu w tygodniu — przed zaokrągleniem do skoku.
@@ -327,8 +342,8 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     slot: SlotPlanu, tydzien: TydzienCyklu, wzor?: SlotWyliczony, wzorT1?: SlotWyliczony,
   ): SlotWyliczony => {
     const p = parametry(slot, tydzien);
-    // Deload bierze ćwiczenie z T6: podmiana z T4–T6 trwa do końca cyklu.
-    const p6: ParametryTygodnia = wzor ? parametry(slot, 6) : {};
+    // Deload bierze ćwiczenie z T6 (ostatniego tygodnia): podmiana z T4–T6 trwa do końca cyklu.
+    const p6: ParametryTygodnia = wzor ? parametry(slot, ostatni) : {};
     const cwiczenieIdOverride = p.cwiczenieIdOverride ?? p6.cwiczenieIdOverride;
     const cwiczenieId = cwiczenieIdOverride ?? slot.cwiczenieId;
     const cwiczenie = cwiczenieId ? (katalog.poId(cwiczenieId) ?? null) : null;
@@ -354,9 +369,9 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
 
     const bojGlowny = bojGlownySlotu(slot, cwiczenie);
     const odczucia = Object.fromEntries(
-      TYGODNIE.map((t) => [t, parametry(slot, t).feedback]),
+      robocze.map((t) => [t, parametry(slot, t).feedback]),
     ) as Partial<Record<Tydzien, Feedback | undefined>>;
-    const mnoznik = mnoznikNaTydzien(tydzien as Tydzien, odczucia);
+    const mnoznik = mnoznikNaTydzien(tydzien, odczucia);
 
     /*
      * Czego trener nie wpisał, to bierze się z szablonu 5.18 — z tych samych
@@ -387,7 +402,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     const szablon: ParametryTygodnia = wzor
       ? (dwuboj ? { ...DELOAD_DWUBOJU }
         : { serie: wzor.serie, powtorzenia: powtorzeniaDeloadu(wzor), rpe: rpeDeloadu(wzor.rpe) })
-      : parametrySzablonu(slot, tydzien as Tydzien, cwiczenie, plan.czescPlanu);
+      : parametrySzablonuTygodnia(slot, tydzien, cwiczenie, plan.czescPlanu);
 
     const serie = p.serie ?? szablon.serie!;
     const efektywne = serieEfektywne(
@@ -450,7 +465,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
      * przy tym samym ćwiczeniu — po podmianie cudze kilogramy nie przechodzą.
      */
     const przeniesiony = cwiczenie.progresja === "ręczne ustawienie"
-      ? ciezarRecznyZWczesniej(slot, tydzien, cwiczenie.id, p) : undefined;
+      ? ciezarRecznyZWczesniej(slot, tydzien, cwiczenie.id, p, wczesniejszeRobocze(tydzien, plan)) : undefined;
 
     const kontekst = {
       tydzien: tydzien as Tydzien,
@@ -485,17 +500,18 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
      * trenera i dwubój bez zmian.
      */
     const dziedziczy = !kontekst.jestBojemGlownym && kontekst.trybAkcesoriow === "trzymaj z bloku"
-      && [2, 3, 5, 6].includes(tydzien) && !zmienione;
+      && bazowy !== null && !zmienione;
     const zamierzonyBazowy = bazowy ? zamierzone.get(`${bazowy}|${slot.positionId}`) : undefined;
     const procentTygodnia = procentDwuboju ?? procent1RM(powtorzenia, rpe);
     const zamierzony = dziedziczy
       ? (zamierzonyBazowy !== undefined ? zamierzonyBazowy * mnoznik / Math.max(slotBazowy?.mnoznik ?? 1, 0.0001) : undefined)
       : (procentTygodnia !== null ? procentTygodnia * mnoznik : undefined);
-    if (zamierzony !== undefined && tydzien <= 6) zamierzone.set(`${tydzien}|${slot.positionId}`, zamierzony);
-    const poprzedni = tydzien >= 2 && tydzien <= 6
-      ? wyliczone.get((tydzien - 1) as Tydzien)?.sloty.find((s) => s.positionId === slot.positionId)
+    if (zamierzony !== undefined && numerRoboczy(tydzien) !== null) zamierzone.set(`${tydzien}|${slot.positionId}`, zamierzony);
+    const kluczPoprzedni = poprzedniRoboczy(tydzien);
+    const poprzedni = kluczPoprzedni !== null
+      ? wyliczone.get(kluczPoprzedni)?.sloty.find((s) => s.positionId === slot.positionId)
       : undefined;
-    const zamierzonyPoprzedni = zamierzone.get(`${tydzien - 1}|${slot.positionId}`);
+    const zamierzonyPoprzedni = kluczPoprzedni !== null ? zamierzone.get(`${kluczPoprzedni}|${slot.positionId}`) : undefined;
     const skok = Math.max(cwiczenie.skokKg, SKOK_MINIMALNY);
     const podbity = typeof policzonyZSilnika === "number" && !dwuboj && poprzedni?.cwiczenie?.id === cwiczenie.id
       && typeof poprzedni.ciezar === "number" && !poprzedni.ciezarNadpisany && !poprzedni.ciezarZrodlo
@@ -533,8 +549,10 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     };
   };
 
-  for (const tydzien of TYGODNIE) {
+  for (const tydzien of robocze) {
     const sloty: SlotWyliczony[] = [];
+    // Tydzień szablonu i premia bloku (T7–T12: jak blok II, RPE wyżej).
+    const wzorSzablonu = szablonTygodnia(tydzien);
 
     for (const slot of plan.sloty) sloty.push(wyliczSlot(slot, tydzien));
 
@@ -576,13 +594,16 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         const silowy = !!slotZrodla?.bojSilowy && !!zrodlo?.cwiczenie
           && bojGlownySlotu(slotZrodla, zrodlo.cwiczenie);
         // Dwubój (16.10.2026): TOP SET w % 1RM — w bloku intensyfikującym od T4.
+        const procentSzablonu = procentTopSetuDwuboju(plan.czescPlanu, wzorSzablonu.tydzien, slotZrodla?.bojSilowy);
         const procent = zrodlo?.dwuboj
           ? t.procentTygodni?.[tydzien]
-            ?? procentTopSetuDwuboju(plan.czescPlanu, tydzien, slotZrodla?.bojSilowy)
+            ?? (procentSzablonu === null ? null
+              : Math.min(100, procentSzablonu + PREMIA_PROCENTU_BLOKU * wzorSzablonu.premiaRpe / PREMIA_RPE_BLOKU))
           : undefined;
+        const rpeSzablonu = rpeTopSetu(czescBoju(plan.czescPlanu, silowy), wzorSzablonu.tydzien);
         const rpe = procent !== undefined
           ? (procent === null ? null : rpeDlaProcentu(1, procent))
-          : t.rpeTygodni?.[tydzien] ?? rpeTopSetu(czescBoju(plan.czescPlanu, silowy), tydzien);
+          : t.rpeTygodni?.[tydzien] ?? (rpeSzablonu === null ? null : zPremiaRpe(rpeSzablonu, wzorSzablonu.premiaRpe));
         const cwiczenie = rpe === null ? null : (zrodlo?.cwiczenie ?? null);
         const zPlanu = cwiczenie
           ? obliczCiezarTopSetu({
@@ -606,9 +627,9 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
         let zTopSetuKlienta: TopSetWyliczony["zTopSetuKlienta"];
         if (cwiczenie && typeof zPlanu === "number") {
           const procentTeraz = procent ?? procent1RM(1, rpe!);
-          for (let w = tydzien - 1; w >= 1 && procentTeraz; w--) {
-            const kg = slotZrodla?.tygodnie?.[w as Tydzien]?.topSetKlienta?.kg;
-            const wtedy = wyliczone.get(w as Tydzien)?.topSety.find((x) => x.positionId === t.slotPositionId);
+          for (const w of procentTeraz ? wczesniejszeRobocze(tydzien, plan) : []) {
+            const kg = slotZrodla?.tygodnie?.[w]?.topSetKlienta?.kg;
+            const wtedy = wyliczone.get(w)?.topSety.find((x) => x.positionId === t.slotPositionId);
             if (!kg || !wtedy?.cwiczenie || wtedy.cwiczenie.id !== cwiczenie.id || wtedy.rpe === null) continue;
             const procentWtedy = wtedy.procent ?? procent1RM(1, wtedy.rpe);
             if (!procentWtedy) break;
@@ -640,12 +661,13 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     });
   }
 
-  const tygodnie = TYGODNIE.map((t) => wyliczone.get(t)!);
+  const tygodnie = robocze.map((t) => wyliczone.get(t)!);
 
   // Tygodnie po cyklu. Osobno od sześciu roboczych: średnie, normy objętości
   // i porównania cykli liczą się z pracy, a deload z definicji jej nie ma.
   const tygodnieDodatkowe: TydzienWyliczony[] = [];
-  const t6 = wyliczone.get(6)!;
+  // „T6” = ostatni tydzień roboczy planu (przy 6 tygodniach — T6).
+  const t6 = wyliczone.get(ostatni)!;
   const t1 = wyliczone.get(1)!;
   if (plan.deload) {
     const sloty = plan.sloty.map((slot) =>
@@ -662,7 +684,7 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
     });
   }
   if (plan.tydzienMaksow) {
-    const sloty = slotyMaksow(plan, t6, katalog);
+    const sloty = slotyMaksow(plan, t6, katalog, ostatni);
     tygodnieDodatkowe.push({
       tydzien: TYDZIEN_MAKSOW,
       rodzaj: "maksy",
@@ -693,14 +715,16 @@ export function przeliczPlan(plan: Plan, katalog: Katalog = katalogDomyslny): Pl
  */
 function ciezarRecznyZWczesniej(
   slot: SlotPlanu, tydzien: TydzienCyklu, cwiczenieId: string, p: ParametryTygodnia,
+  /** Tygodnie robocze przed tym, od najbliższego (`wczesniejszeRobocze`). */
+  wczesniej: readonly Tydzien[],
 ): { kg: number; tydzien: number; kto: "trener" | "klient" } | undefined {
   const tegoCwiczenia = (x: ParametryTygodnia) =>
     x.ciezarKlienta && x.ciezarKlienta.cwiczenieId === cwiczenieId && x.ciezarKlienta.kg > 0
       ? x.ciezarKlienta.kg : undefined;
   const swoj = tegoCwiczenia(p);
   if (swoj !== undefined) return { kg: swoj, tydzien, kto: "klient" };
-  for (let w = tydzien - 1; w >= 1; w--) {
-    const pw = parametry(slot, w as TydzienCyklu);
+  for (const w of wczesniej) {
+    const pw = parametry(slot, w);
     if ((pw.cwiczenieIdOverride ?? slot.cwiczenieId) !== cwiczenieId) break;
     const klient = tegoCwiczenia(pw);
     if (klient !== undefined) return { kg: klient, tydzien: w, kto: "klient" };
@@ -748,7 +772,7 @@ function podsumujDni(
  * nie polecenie. `positionId` zostaje z miejsca, w którym bój stoi w planie,
  * więc wpis klienta ląduje przy tym samym ćwiczeniu co reszta jego historii.
  */
-function slotyMaksow(plan: Plan, t6: TydzienWyliczony, katalog: Katalog): SlotWyliczony[] {
+function slotyMaksow(plan: Plan, t6: TydzienWyliczony, katalog: Katalog, ostatni: Tydzien): SlotWyliczony[] {
   const wybrane = plan.cwiczeniaMaksow ?? domyslneCwiczeniaMaksow(t6);
   const sloty: SlotWyliczony[] = [];
   for (const id of wybrane) {
@@ -757,7 +781,7 @@ function slotyMaksow(plan: Plan, t6: TydzienWyliczony, katalog: Katalog): SlotWy
     if (!zrodlo || !cwiczenie || !katalog.poId(id)) continue;
     const slotPlanu = plan.sloty.find((s) => s.positionId === zrodlo.positionId);
     const oneRM = rozwiaz1RM(id, plan.serieMaksymalne)
-      || (slotPlanu ? parametry(slotPlanu, 6).oneRMReczny ?? 0 : 0);
+      || (slotPlanu ? parametry(slotPlanu, ostatni).oneRMReczny ?? 0 : 0);
     sloty.push({
       positionId: zrodlo.positionId,
       dzien: 1,
@@ -804,23 +828,24 @@ export function tydzienWyliczony(
 }
 
 /** Numery tygodni, które plan faktycznie ma — w tej kolejności widzi je klient. */
-export function tygodniePlanu(plan: Pick<Plan, "deload" | "tydzienMaksow">): TydzienCyklu[] {
+export function tygodniePlanu(plan: Pick<Plan, "deload" | "tydzienMaksow" | "tygodni">): TydzienCyklu[] {
   return [
-    ...TYGODNIE,
+    ...tygodnieRobocze(plan),
     ...(plan.deload ? [TYDZIEN_DELOADU] : []),
     ...(plan.tydzienMaksow ? [TYDZIEN_MAKSOW] : []),
   ];
 }
 
 /**
- * Numer tygodnia na ekranie. Klucze są stałe (7 deload, 8 maksy), żeby
- * włączenie deloadu po fakcie nie przenosiło wpisów klienta między
- * tygodniami — ale bez deloadu maksy są po prostu tygodniem siódmym.
+ * Numer tygodnia na ekranie. Klucze są stałe (7 deload, 8 maksy, T7–T12 to
+ * 9–14), żeby włączenie deloadu albo zmiana długości po fakcie nie
+ * przenosiły wpisów klienta między tygodniami — ale na ekranie deload stoi
+ * zaraz po ostatnim tygodniu roboczym, a bez deloadu maksy też.
  */
 export function numerTygodniaNaEkranie(
-  plan: Pick<Plan, "deload" | "tydzienMaksow">, tydzien: number,
+  plan: Pick<Plan, "deload" | "tydzienMaksow" | "tygodni">, tydzien: number,
 ): number {
-  return tydzien === TYDZIEN_MAKSOW && !plan.deload ? TYDZIEN_DELOADU : tydzien;
+  return numerNaEkranie(plan, tydzien);
 }
 
 /** RPE w deloadzie: o 1 niżej niż w T6 (skala planu), nie niżej niż 6 — tam zaczyna się tabela. */

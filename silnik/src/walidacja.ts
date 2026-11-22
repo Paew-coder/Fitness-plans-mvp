@@ -4,6 +4,7 @@ import { numerLp, pozycjaBoju } from "./szablon-boju.ts";
 import { konfliktSeriiMaksymalnych } from "./rpe.ts";
 import { filmyCwiczenia } from "./wideo.ts";
 import { POWT_MAX } from "./rpe.ts";
+import { numerRoboczy } from "./tygodnie.ts";
 import type { Plan, PlanWyliczony } from "./plan.ts";
 
 /**
@@ -73,7 +74,7 @@ export function sprawdzPlan(
   // jeden tydzień naraz — a nadpisanie z T5 działa przez cały cykl.
   const reczne = wynik.tygodnie.flatMap((t) =>
     t.sloty.filter((s) => s.cwiczenie && s.ciezarNadpisany)
-      .map((s) => `T${t.tydzien} ${s.positionId}`));
+      .map((s) => `T${numerRoboczy(t.tydzien) ?? t.tydzien} ${s.positionId}`));
   dodaj("CIEZAR_RECZNY", "info", "Ciężary wpisane ręcznie", reczne.length ? reczne : ["0"]);
 
   // Arkusz nie potrzebował tej kontroli: plik z planem zawsze miał treść, bo
@@ -162,7 +163,7 @@ export function sprawdzPlan(
       .flatMap((t) =>
         t.sloty
           .filter((s) => s.ciezar === "— ustaw ręcznie")
-          .map((s) => `T${t.tydzien} ${s.positionId}`),
+          .map((s) => `T${numerRoboczy(t.tydzien) ?? t.tydzien} ${s.positionId}`),
       ),
   );
 
@@ -177,7 +178,7 @@ export function sprawdzPlan(
       t.sloty
         .filter((s) => s.cwiczenie && PROGRESJE_Z_TABELI.includes(s.cwiczenie.progresja)
           && s.powtorzenia > POWT_MAX)
-        .map((s) => `T${t.tydzien} ${s.positionId}`),
+        .map((s) => `T${numerRoboczy(t.tydzien) ?? t.tydzien} ${s.positionId}`),
     ),
   );
 

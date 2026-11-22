@@ -1,4 +1,5 @@
 import type { Progresja, TrybAkcesoriow, Tydzien, WynikCiezaru } from "./typy.ts";
+import { bazaBloku } from "./tygodnie.ts";
 import { PROGRESJE_BEZ_CIEZARU } from "./typy.ts";
 import { mround } from "./pomocnicze.ts";
 import { procent1RM } from "./rpe.ts";
@@ -71,14 +72,13 @@ export type KontekstCiezaru = {
   procent?: number;
 };
 
-/** Tygodnie, w których akcesoria mogą dziedziczyć ciężar z tygodnia bazowego bloku. */
-const TYGODNIE_DZIEDZICZACE: readonly Tydzien[] = [2, 3, 5, 6];
-
-/** Tydzień, z którego dziedziczy ciężar dany tydzień w trybie "trzymaj z bloku". */
-export function tydzienBazowyBloku(tydzien: Tydzien): Tydzien | null {
-  if (tydzien === 2 || tydzien === 3) return 1;
-  if (tydzien === 5 || tydzien === 6) return 4;
-  return null;
+/**
+ * Tydzień, z którego dziedziczy ciężar dany tydzień w trybie "trzymaj z bloku":
+ * T2/T3 z T1, T5/T6 z T4 — a w planach dłuższych (22.11.2026) każdy blok po 3,
+ * T8/T9 z T7 itd. Pierwszy tydzień bloku liczy się z 1RM — `null`.
+ */
+export function tydzienBazowyBloku(tydzien: number): Tydzien | null {
+  return bazaBloku(tydzien);
 }
 
 /**
@@ -100,7 +100,7 @@ export function obliczCiezar(k: KontekstCiezaru): WynikCiezaru {
   const dziedziczy =
     !k.jestBojemGlownym &&
     k.trybAkcesoriow === "trzymaj z bloku" &&
-    TYGODNIE_DZIEDZICZACE.includes(k.tydzien) &&
+    bazaBloku(k.tydzien) !== null &&
     !zmienione;
 
   if (dziedziczy) {

@@ -23,6 +23,8 @@
  * Czysta logika, bez bazy — testy w `testy/wersja-robocza.test.ts`.
  */
 import type { Plan } from "../silnik/src/plan.ts";
+import { numerTygodniaNaEkranie } from "../silnik/src/plan.ts";
+import { kolejnosc } from "../silnik/src/tygodnie.ts";
 
 /** Pola, które w tygodniu slotu wpisuje klient, nie trener. */
 export const POLA_KLIENTA = ["feedback", "ciezarKlienta", "topSetKlienta"] as const;
@@ -138,6 +140,7 @@ const ETYKIETY_PLANU: Record<string, string> = {
   liczenieJednostronnych: "liczenie jednostronnych",
   nazwa: "nazwa planu",
   tytul: "nazwa planu",
+  tygodni: "liczba tygodni",
 };
 
 /**
@@ -169,7 +172,8 @@ export function podsumujZmiany(
     }
     const tygodnie = [...new Set([...Object.keys(s.tygodnie ?? {}), ...Object.keys(k?.tygodnie ?? {})])]
       .filter((t) => parametryTrenera((s.tygodnie as any)?.[t]) !== parametryTrenera((k?.tygodnie as any)?.[t]))
-      .map(Number).sort((a, b) => a - b);
+      .map(Number).sort((a, b) => kolejnosc(a) - kolejnosc(b))
+      .map((t) => numerTygodniaNaEkranie(trenera, t));
     const ustawienia = ["bojGlowny", "bojSilowy", "trybCiezaru", "przesunieciePowtorzen"]
       .some((p) => kanonicznie((s as any)[p]) !== kanonicznie((k as any)?.[p]));
     // Uwaga trenera do ćwiczenia (30.10.2026) — klient ją czyta, więc osobno.

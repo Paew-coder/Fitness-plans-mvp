@@ -433,8 +433,8 @@ const WZORY = [
     "I don't know your weights for $1 exercises yet. Choose how to set them."],
   [/^Cykl (\d+)$/, "Cycle $1"],
   [/^(\d+) z (\d+) treningów za Tobą$/, "$1 of $2 workouts done"],
-  [/^Sześć tygodni, (\d+) treningów(?:, (\d+) zapisanych serii)?\. Trener widzi, że skończyłeś, i przygotuje kolejny cykl — ten sam link pokaże go, gdy będzie gotowy\.$/,
-    (_, n, serie) => `Six weeks, ${n} workouts${serie ? `, ${serie} sets logged` : ""}. Your coach can see you've finished `
+  [/^(Sześć|\d+) tygod(?:ni|nie), (\d+) treningów(?:, (\d+) zapisanych serii)?\. Trener widzi, że skończyłeś, i przygotuje kolejny cykl — ten sam link pokaże go, gdy będzie gotowy\.$/,
+    (_, ile, n, serie) => `${ile === "Sześć" ? "Six" : ile} weeks, ${n} workouts${serie ? `, ${serie} sets logged` : ""}. Your coach can see you've finished `
       + "and will prepare the next cycle — the same link will show it when it's ready."],
   [/^(\d+) cykle$/, "$1 cycles"],
   [/^(\d+) (miesiąc|miesięcy)$/, (_, n) => liczbaMnoga(n, "month", "months")],

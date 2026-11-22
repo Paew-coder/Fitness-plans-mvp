@@ -1506,6 +1506,18 @@ Trener (zrzut „T5: 105,0 × 3 · 126,0 → 120,3 kg”): „wytłumacz mi, co 
 
 * Karta „Ciężary i 1RM w bieżącym cyklu”: nazwa w pierwszej linijce, opis w drugiej — „1 z 5 treningów lżej niż plan”, „T5: zrobione 105 kg × 3 → 1RM 126,0 → 120,3 kg (−4,5%), od T5 do końca cyklu”, „T1: ćwiczenie bez 1RM — z serii 35 kg × 12 ustalone 1RM 56 kg”. Mieści się na telefonie.
 
+**140. Liczba tygodni planu: od 4 do 12 — 22.11.2026.**
+
+Trener: „dodaj mi możliwość zmiany ilości tygodni w planie w konsoli trenera — zarówno nowe plany, jak i edytowanie aktualnych”. Decyzje: 4–12 tygodni; progresja w blokach po 3 tygodnie; arkusz tylko przy 6 tygodniach.
+
+* **Gdzie:** pole „Tygodnie” w formularzu nowego planu i „Liczba tygodni” na pasku ustawień planu (obok zakładek tygodni). U wysłanego planu zmiana czeka na „Zatwierdź” jak każda inna („Plan: liczba tygodni”).
+* **Progresja:** blok I (T1–T3) jak T1–T3 szablonu, każdy następny blok jak T4–T6: T7–T9 z RPE o 0,5 wyżej, T10–T12 o 1,0 (najwyżej 10; dwubój +2 % 1RM na blok). Krótszy cykl ucina (4 tygodnie = T1–T4 jak dotąd). „Trzymaj z bloku” niesie ciężar z pierwszego tygodnia bloku (T8/T9 z T7). Oceny klienta i TOP SET klienta liczą się przez cały cykl. „Wpisz progresję”, „»”, „±”, „↗” (RPE 7,5 → 10 rozłożone równo na wszystkie tygodnie) i podmiana ćwiczenia obejmują wszystkie tygodnie planu.
+* **Deload i maksy:** po ostatnim tygodniu roboczym — deload „jak ostatni tydzień, RPE o 1 niżej”; na ekranie T(N+1) i T(N+2).
+* **Skrócenie niczego nie kasuje:** wpisy z ucinanych tygodni zostają w bazie i wracają po wydłużeniu; konsola pyta, gdy klient już coś w nich wpisał.
+* **Arkusz:** szablon trenera ma zakładki T1–T6, więc przy innej długości „Eksportuj arkusz” pokazuje wyjaśnienie zamiast pliku (serwer: 409).
+* **Dane:** pole planu `tygodni` (pusto = 6). Klucze tygodni bez zmian dla T1–T6, deloadu (7) i maksów (8); T7–T12 to klucze 9–14 — stare wpisy klientów niczego nie tracą. Mapowanie w `silnik/src/tygodnie.ts`.
+* Testy: silnik `liczba-tygodni.test.ts` (14), konsola `liczba-tygodni.test.ts` (8), przegląd ekranów (+4). Aplikacja klienta: napis na koniec cyklu z liczbą tygodni (po angielsku też), SW `trening-v103`.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

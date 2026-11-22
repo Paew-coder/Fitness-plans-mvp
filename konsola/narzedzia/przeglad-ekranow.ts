@@ -182,6 +182,39 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     `T1 ${tygodnie["1"].rpe} · T3 ${tygodnie["3"].rpe}`);
   await s.locator("#taby-tygodni button", { hasText: /^T1$/ }).click();
 
+  // ── 5a. liczba tygodni (22.11.2026) ───────────────────────────────
+  // Trener: „możliwość zmiany ilości tygodni w planie — nowe plany
+  // i edytowanie aktualnych”. 9 tygodni: zakładki T1–T9, T7 to klucz 9.
+  await Promise.all([
+    s.waitForResponse((r: any) => r.request().method() === "PUT" && /\/api\/plany\/[^/]+$/.test(r.url())),
+    s.locator("#liczba-tygodni").selectOption("9"),
+  ]);
+  await zapisano();
+  const taby9 = await s.locator("#taby-tygodni button").allInnerTexts();
+  sprawdz("„Liczba tygodni” 9 — zakładki T1–T9 i zapis w planie",
+    taby9.join(" ") === "T1 T2 T3 T4 T5 T6 T7 T8 T9" && (await zBazy()).zapisany.plan.tygodni === 9,
+    taby9.join(" "));
+  await s.locator("#taby-tygodni button", { hasText: /^T7$/ }).click();
+  await s.waitForTimeout(300);
+  const rpeT7 = (await zBazy()).wynik.tygodnie.find((t: any) => t.tydzien === 9)?.sloty[0];
+  const rpeT4 = (await zBazy()).wynik.tygodnie.find((t: any) => t.tydzien === 4)?.sloty[0];
+  sprawdz("T7 liczy się jak T4 z RPE o 0,5 wyżej",
+    rpeT7 && rpeT4 && rpeT7.rpe === rpeT4.rpe + 0.5 && rpeT7.serie === rpeT4.serie,
+    `T4 ${rpeT4?.serie}×${rpeT4?.powtorzenia}@${rpeT4?.rpe} · T7 ${rpeT7?.serie}×${rpeT7?.powtorzenia}@${rpeT7?.rpe}`);
+  await s.click("#eksportuj");
+  await s.waitForSelector("#modal:not(.ukryty)");
+  sprawdz("eksport przy 9 tygodniach — wyjaśnienie zamiast pliku",
+    /tylko dla planów sześciotygodniowych/.test(await s.locator("#modal-body").innerText()));
+  await s.click("#modal-zamknij");
+  await Promise.all([
+    s.waitForResponse((r: any) => r.request().method() === "PUT" && /\/api\/plany\/[^/]+$/.test(r.url())),
+    s.locator("#liczba-tygodni").selectOption("6"),
+  ]);
+  await zapisano();
+  sprawdz("powrót do 6 tygodni — zakładki T1–T6, pole w planie znika",
+    (await s.locator("#taby-tygodni button").count()) === 6 && (await zBazy()).zapisany.plan.tygodni === undefined);
+  await s.locator("#taby-tygodni button", { hasText: /^T1$/ }).click();
+
   // ── 6. drugie ćwiczenie i przenoszenie slotów ─────────────────────
   await wiersz(1).locator("td.cwiczenie select").selectOption({ label: "Barbell row" });
   await zapisano();

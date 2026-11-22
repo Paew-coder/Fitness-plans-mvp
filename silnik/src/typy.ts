@@ -173,7 +173,12 @@ export type Cwiczenie = {
 export const ODCZUCIA = ["OK", "za łatwe", "za trudne"] as const;
 export type Feedback = (typeof ODCZUCIA)[number];
 
-export type Tydzien = 1 | 2 | 3 | 4 | 5 | 6;
+/**
+ * Klucz tygodnia roboczego: T1–T6 to 1–6, T7–T12 to 9–14 (22.11.2026 —
+ * plany od 4 do 12 tygodni, `tygodnie.ts`). 7 i 8 zostały przy deloadzie
+ * i maksach, bo tak stoją wpisy klientów.
+ */
+export type Tydzien = 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 11 | 12 | 13 | 14;
 /** Tygodnie po cyklu: 7 — deload, 8 — maksy. Oba opcjonalne, numery stałe. */
 export type TydzienDodatkowy = 7 | 8;
 export type TydzienCyklu = Tydzien | TydzienDodatkowy;

@@ -1,6 +1,7 @@
 import type { Feedback, Progresja, Tydzien } from "./typy.ts";
 import { PROGRESJE_BEZ_CIEZARU } from "./typy.ts";
 import { ogranicz, zaokraglij, zaokraglijJakArkusz } from "./pomocnicze.ts";
+import { kolejnosc, WSZYSTKIE_ROBOCZE } from "./tygodnie.ts";
 
 /** Krok korekty na jedno zgłoszenie odczucia. */
 export const KROK_ADAPTACJI = 0.05;
@@ -24,11 +25,13 @@ export function mnoznikAdaptacji(historia: readonly Feedback[]): number {
   return zaokraglij(ogranicz(mnoznik, MNOZNIK_MIN, MNOZNIK_MAX), 4);
 }
 
-/** Tygodnie, z których liczy się mnożnik dla zadanego tygodnia. T1 nie ma historii. */
-export function tygodnieHistorii(tydzien: Tydzien): Tydzien[] {
-  const wynik: Tydzien[] = [];
-  for (let t = 1; t < tydzien; t++) wynik.push(t as Tydzien);
-  return wynik;
+/**
+ * Tygodnie, z których liczy się mnożnik dla zadanego tygodnia — robocze
+ * wcześniejsze w czasie (T7 = klucz 9 widzi T1–T6; deload — wszystkie).
+ * T1 nie ma historii.
+ */
+export function tygodnieHistorii(tydzien: number): Tydzien[] {
+  return WSZYSTKIE_ROBOCZE.filter((t) => kolejnosc(t) < kolejnosc(tydzien));
 }
 
 /**
@@ -36,7 +39,7 @@ export function tygodnieHistorii(tydzien: Tydzien): Tydzien[] {
  * Wygodniejsze wejście niż gotowa lista, bo tak wyglądają dane z bazy.
  */
 export function mnoznikNaTydzien(
-  tydzien: Tydzien,
+  tydzien: number,
   odczucia: Partial<Record<Tydzien, Feedback | undefined>>,
 ): number {
   const historia = tygodnieHistorii(tydzien)

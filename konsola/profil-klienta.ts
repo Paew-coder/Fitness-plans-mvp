@@ -27,7 +27,7 @@ type SlotWyniku = Wynik["tygodnie"][number]["sloty"][number];
 
 const nazwaCwiczenia = (id: string | undefined | null) => (id ? katalog.poId(id)?.nazwa ?? id : "—");
 
-/** Tydzień wyniku — roboczy (1–6) albo po cyklu (deload, maksy). */
+/** Tydzień wyniku — roboczy (1–6, 9–14) albo po cyklu (deload, maksy). */
 function tydzienWyniku(wynik: Wynik, tydzien: number) {
   return wynik.tygodnie.find((t) => t.tydzien === tydzien)
     ?? (wynik.tygodnieDodatkowe ?? []).find((t) => t.tydzien === tydzien);
@@ -171,7 +171,8 @@ export function terazKlienta(z: ZapisanyPlan) {
       .map((s) => ({ dzien: s.dzien, lp: (s.lp ?? "").replace(/\.$/, ""), nazwa: nazwaCwiczenia(s.cwiczenieId), uwaga: s.uwaga!.trim() })),
     // Do wykresu stresu w konsoli (`wykresStresu`) — bez slotów.
     stres: {
-      plan: { deload: !!z.plan.deload, tydzienMaksow: !!z.plan.tydzienMaksow },
+      plan: { deload: !!z.plan.deload, tydzienMaksow: !!z.plan.tydzienMaksow,
+        ...(z.plan.tygodni ? { tygodni: z.plan.tygodni } : {}) },
       wynik: {
         dniTreningowe: wynik.dniTreningowe,
         tygodnie: wynik.tygodnie.map((t) => ({ tydzien: t.tydzien, bilans: t.bilans, ocenaStresu: t.ocenaStresu })),

@@ -68,16 +68,30 @@ const POWODY_BEZ_SERII = {
 };
 const POWOD_GUMY = "Ćwiczenie z gumą — opór dobiera się gumą, nie kilogramami.";
 /**
- * Tygodnie po cyklu — te same stałe co w silniku (`plan.ts`). Klucze są
- * stałe: 7 to deload, 8 to maksy; bez deloadu maksy są na ekranie siódme.
+ * Tygodnie planu — te same reguły co w silniku (`tygodnie.ts`). Plan ma od 4
+ * do 12 tygodni roboczych (22.11.2026, pusto = 6). Klucze są stałe: T1–T6
+ * to 1–6, T7–T12 to 9–14, 7 to deload, 8 to maksy — na ekranie deload
+ * i maksy stoją zaraz po ostatnim tygodniu roboczym.
  */
 const TYDZIEN_DELOADU = 7;
 const TYDZIEN_MAKSOW = 8;
-const tygodniePlanu = (plan) => [1, 2, 3, 4, 5, 6,
+const TYGODNI_MIN = 4;
+const TYGODNI_MAX = 12;
+const liczbaTygodni = (plan) => (Number.isInteger(plan?.tygodni)
+  && plan.tygodni >= TYGODNI_MIN && plan.tygodni <= TYGODNI_MAX ? plan.tygodni : 6);
+const kluczTygodnia = (n) => (n <= 6 ? n : n + 2);
+const numerRoboczy = (t) => (t >= 1 && t <= 6 ? t : t >= 9 && t <= TYGODNI_MAX + 2 ? t - 2 : null);
+const jestRoboczy = (t) => numerRoboczy(t) !== null;
+const tygodnieRobocze = (plan) => Array.from({ length: liczbaTygodni(plan) }, (_, i) => kluczTygodnia(i + 1));
+const ostatniRoboczy = (plan) => kluczTygodnia(liczbaTygodni(plan));
+const tygodniePlanu = (plan) => [...tygodnieRobocze(plan),
   ...(plan.deload ? [TYDZIEN_DELOADU] : []), ...(plan.tydzienMaksow ? [TYDZIEN_MAKSOW] : [])];
-const numerTygodnia = (plan, t) => (t === TYDZIEN_MAKSOW && !plan.deload ? TYDZIEN_DELOADU : t);
-const etykietaTygodnia = (plan, t) => t === TYDZIEN_DELOADU ? "T7 deload"
-  : t === TYDZIEN_MAKSOW ? `T${numerTygodnia(plan, t)} maksy` : `T${t}`;
+const numerTygodnia = (plan, t) => t === TYDZIEN_DELOADU ? liczbaTygodni(plan) + 1
+  : t === TYDZIEN_MAKSOW ? liczbaTygodni(plan) + (plan.deload ? 2 : 1) : numerRoboczy(t) ?? t;
+const etykietaTygodnia = (plan, t) => t === TYDZIEN_DELOADU ? `T${numerTygodnia(plan, t)} deload`
+  : t === TYDZIEN_MAKSOW ? `T${numerTygodnia(plan, t)} maksy` : `T${numerTygodnia(plan, t)}`;
+/** „T7” dla klucza 9 — numer tygodnia w otwartym planie. */
+const tNr = (t) => `T${numerTygodnia(obraz?.zapisany?.plan ?? {}, t)}`;
 /** Tydzień z wyniku — roboczy albo dodatkowy. `undefined`, gdy serwer jeszcze nie przeliczył. */
 const wyliczonyTydzienNr = (t) => obraz.wynik.tygodnie.find((x) => x.tydzien === t)
   ?? (obraz.wynik.tygodnieDodatkowe ?? []).find((x) => x.tydzien === t);
@@ -223,6 +237,8 @@ $("#form-nowy").onsubmit = async (e) => {
         klient: f.get("klient"),
         wersja: Number(f.get("wersja")),
         poprzedniId: f.get("poprzedniId") || undefined,
+        // Liczba tygodni (22.11.2026) — 6 to domyślne, więc nie trzeba go wysyłać.
+        ...(Number(f.get("tygodni")) && Number(f.get("tygodni")) !== 6 ? { tygodni: Number(f.get("tygodni")) } : {}),
       },
     });
     e.target.reset();
@@ -874,7 +890,8 @@ function przepiszWpisyKlienta(mojPlan, swiezyPlan) {
     if (!swiezy) continue;
     // Z T7 i T8 też, i razem z ciężarem, który klient sam wybrał przy
     // „ręcznym ustawieniu", i z jego TOP SETEM — to też jego zapis, nie trenera.
-    for (const t of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
+    // Plany do 12 tygodni (22.11.2026): T7–T12 to klucze 9–14.
+    for (const t of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]) {
       for (const pole of ["feedback", "ciezarKlienta", "topSetKlienta"]) {
         const wartosc = swiezy.tygodnie?.[t]?.[pole];
         if (wartosc === undefined) continue;
@@ -1135,11 +1152,11 @@ function rysujPlan() {
  */
 function rysujTaby() {
   const plan = obraz.zapisany.plan;
-  if (!tygodniePlanu(plan).includes(tydzien)) tydzien = 6;
+  if (!tygodniePlanu(plan).includes(tydzien)) tydzien = ostatniRoboczy(plan);
   const taby = $("#taby-tygodni");
   taby.replaceChildren();
   for (const t of tygodniePlanu(plan)) {
-    const b = el("button", `${t === tydzien ? "aktywny" : ""} ${t > 6 ? "po-cyklu" : ""}`,
+    const b = el("button", `${t === tydzien ? "aktywny" : ""} ${jestRoboczy(t) ? "" : "po-cyklu"}`,
       etykietaTygodnia(plan, t));
     // Bez `type` przycisk jest przyciskiem wysyłki formularza. Poza formularzem
     // nic to nie robi, ale zostawianie tego przypadkowi nie ma sensu.
@@ -1147,6 +1164,16 @@ function rysujTaby() {
     b.onclick = () => { tydzien = t; rysujPlan(); };
     taby.append(b);
   }
+  // Liczba tygodni (22.11.2026) — od 4 do 12, pusto = 6.
+  const wybor = $("#liczba-tygodni");
+  if (wybor.options.length === 0) {
+    for (let n = TYGODNI_MIN; n <= TYGODNI_MAX; n++) {
+      const o = el("option", "", `${n} ${n < 5 ? "tygodnie" : "tygodni"}`);
+      o.value = String(n);
+      wybor.append(o);
+    }
+  }
+  wybor.value = String(liczbaTygodni(plan));
   for (const [id, pole, nazwa] of [
     ["#przelacz-deload", "deload", "deload"], ["#przelacz-maksy", "tydzienMaksow", "maksy"],
   ]) {
@@ -1179,6 +1206,35 @@ function przelaczTydzienPoCyklu(pole, numer) {
   zapiszPozniej();
 }
 $("#przelacz-deload").onclick = () => przelaczTydzienPoCyklu("deload", TYDZIEN_DELOADU);
+
+/**
+ * Zmiana liczby tygodni (22.11.2026). Trener: „możliwość zmiany ilości
+ * tygodni w planie — zarówno nowe plany, jak i edytowanie aktualnych”.
+ * Skrócenie niczego nie kasuje: wpisy z ucinanych tygodni zostają w bazie
+ * i wracają po wydłużeniu — ale klient i trener przestają je widzieć,
+ * więc wtedy pytamy.
+ */
+$("#liczba-tygodni").onchange = (e) => {
+  const plan = obraz.zapisany.plan;
+  const n = Number(e.target.value);
+  const przed = liczbaTygodni(plan);
+  if (!(n >= TYGODNI_MIN && n <= TYGODNI_MAX) || n === przed) return;
+  if (n < przed) {
+    const ucinane = new Set(tygodnieRobocze(plan).slice(n));
+    const wpisy = (obraz.zapisany.wykonania ?? []).filter((w) => ucinane.has(w.tydzien)).length;
+    if (wpisy > 0 && !confirm(`Klient ma już ${wpisy} ${wpisy === 1 ? "wpis" : "wpisów"} w T${n + 1}–T${przed}. `
+      + "Po skróceniu zostaną w bazie (wrócą po wydłużeniu planu), ale nie będzie ich widać. Skrócić?")) {
+      e.target.value = String(przed);
+      return;
+    }
+  }
+  if (n === 6) delete plan.tygodni;
+  else plan.tygodni = n;
+  rysujTaby();
+  pokazKoniecCyklu();
+  poZapisie = () => rysujPlan();
+  zapiszPozniej(`liczba tygodni: ${n}`);
+};
 $("#przelacz-maksy").onclick = () => przelaczTydzienPoCyklu("tydzienMaksow", TYDZIEN_MAKSOW);
 
 /**
@@ -1465,8 +1521,7 @@ function rysujRealizacje(r = obraz.realizacja, kontener = $("#realizacja"), plan
 
   for (const t of r.tygodnie) {
     const wiersz = el("div", "wiersz-miary");
-    wiersz.append(el("span", "etykieta", t.rodzaj
-      ? etykietaTygodnia(plan, t.tydzien) : `T${t.tydzien}`));
+    wiersz.append(el("span", "etykieta", etykietaTygodnia(plan, t.tydzien)));
     const kropki = el("span", "pasek");
     for (let i = 0; i < t.zDnia; i++) {
       const stan = i < t.ukonczonych ? "zrobiona"
@@ -1523,7 +1578,7 @@ function bojeZWpisanymiLiczbami() {
   // Dwubój też (16.10.2026) — jego tabela zależy od części.
   return obraz.zapisany.plan.sloty.some((s) => s.cwiczenieId
     && (bojGlowny(s) || liczonyPauza(s) || liczonyDwuboj(s))
-    && [1, 2, 3, 4, 5, 6].some((t) => {
+    && tygodnieRobocze(obraz.zapisany.plan).some((t) => {
       const p = s.tygodnie?.[t];
       return p && (p.serie != null || p.powtorzenia != null || p.rpe != null || p.procent != null);
     }));
@@ -1620,7 +1675,7 @@ function legendaPlanu() {
     ["G", "bój główny — podświetlone, gdy ćwiczenie liczy się jak bój; klik zmienia rolę"],
     ["S", "bój siłowy w hipertrofii — progresja i TOP SET jak w części siłowej"],
     ["R", "licz ciężar akcesorium z RPE"],
-    ["↗", "RPE 7,5 → 10 (T1–T6) przy stałych powtórzeniach — ciężar rośnie z RPE"],
+    ["↗", "RPE 7,5 → 10 (od T1 do ostatniego tygodnia) przy stałych powtórzeniach — ciężar rośnie z RPE"],
     ["±", "przesuń powtórzenia — wpisujesz T1, pozostałe tygodnie idą o tyle samo (nie przy bojach)"],
     ["TS", "przy numerze: ćwiczenie ma TOP SET"],
     ["RPE", "przy numerze: ciężar liczony z RPE"],
@@ -1877,7 +1932,7 @@ function rysujDniBezFokusu() {
         && wszystkie.findIndex((x) => x.wlaczony && x.slotPositionId === t.slotPositionId) === i)
       .sort((a, b) => (kolejnosc.get(a.slotPositionId) ?? 999) - (kolejnosc.get(b.slotPositionId) ?? 999));
     // W deloadzie TOP SETU nie ma — pasek z polem RPE sugerowałby, że jest.
-    for (const top of (maCwiczenia && tydzien <= 6 ? topyDnia : [])) {
+    for (const top of (maCwiczenia && jestRoboczy(tydzien) ? topyDnia : [])) {
       const wyliczony = wyliczonyTydzien.topSety.find((t) => t.positionId === top.slotPositionId);
       // Nazwa wprost z planu, nie z wyniku — po kliknięciu „T" ma być widać
       // od razu, a wynik z serwera dojdzie chwilę później razem z ciężarem.
@@ -1909,8 +1964,8 @@ function rysujDniBezFokusu() {
       rpe.placeholder = zSzablonu != null ? String(zSzablonu) : "—";
       rpe.value = top[polePlanu]?.[tydzien] ?? "";
       rpe.title = wyliczony?.rpe == null
-        ? `W T${tydzien} szablon nie przewiduje TOP SETU. Wpisz ${wProcentach ? "% 1RM" : "RPE"}, jeśli mimo to ma tu być.`
-        : `${wProcentach ? "% 1RM" : "RPE"} w T${tydzien}. Puste = z szablonu (${zSzablonu}).`;
+        ? `W ${tNr(tydzien)} szablon nie przewiduje TOP SETU. Wpisz ${wProcentach ? "% 1RM" : "RPE"}, jeśli mimo to ma tu być.`
+        : `${wProcentach ? "% 1RM" : "RPE"} w ${tNr(tydzien)}. Puste = z szablonu (${zSzablonu}).`;
       rpe.onchange = () => {
         top[polePlanu] = top[polePlanu] ?? {};
         if (rpe.value === "") delete top[polePlanu][tydzien];
@@ -1935,7 +1990,7 @@ function rysujDniBezFokusu() {
         el("span", "", wProcentach ? "% 1RM" : "RPE"), rpe, klient,
         el("span", "wynik", typeof wyliczony?.ciezar === "number"
           ? `${liczba(wyliczony.ciezar)} kg`
-          : (wyliczony?.rpe == null ? `w T${tydzien} bez TOP SETU` : (wyliczony?.ciezar || "—"))),
+          : (wyliczony?.rpe == null ? `w ${tNr(tydzien)} bez TOP SETU` : (wyliczony?.ciezar || "—"))),
         usun);
       if (wyliczony?.rpe == null) pasek.classList.add("bez-top-setu");
       blok.append(pasek);
@@ -1993,7 +2048,7 @@ function rysujTydzienMaksow(kontener, t8) {
   const wybrane = t8.sloty.map((s) => s.cwiczenie.id);
   // Kandydaci: ćwiczenia z T6 (po podmianach), po razie, tylko na kilogramy.
   const kandydaci = [];
-  for (const s of wyliczonyTydzienNr(6).sloty) {
+  for (const s of wyliczonyTydzienNr(ostatniRoboczy(obraz.zapisany.plan)).sloty) {
     const c = s.cwiczenie;
     if (!c || c.progresja in POWODY_BEZ_SERII || s.ciezar === "guma"
       || kandydaci.some((k) => k.id === c.id)) continue;
@@ -2190,18 +2245,25 @@ const liczonyDwuboj = (slot) => dwubojowe(slot) && slot.bojGlowny === undefined;
  * (`przedRpeRosnacym`): RPE trenera, tryb ciężaru, a powtórzenia wpisane przez
  * przycisk znikają — chyba że trener je potem zmienił.
  */
-const RPE_ROSNACE = [7.5, 8, 8.5, 9, 9.5, 10];
+/**
+ * RPE „↗” na tygodnie tego planu (22.11.2026, plany 4–12 tygodni): od 7,5
+ * w T1 do 10 w ostatnim, równo, zaokrąglone do 0,5. Przy sześciu — 7,5 → 10 co 0,5.
+ */
+const rpeRosnace = (plan) => {
+  const n = liczbaTygodni(plan);
+  return tygodnieRobocze(plan).map((t, i) => [t, Math.round((7.5 + 2.5 * i / (n - 1)) * 2) / 2]);
+};
 function rpeRosnaceMozliwe(slot) {
   const c = cwiczenie(slot.cwiczenieId);
   return !!c && ["kg", "dodatkowy ciężar"].includes(c.progresja) && !liczonyDwuboj(slot);
 }
-const maRpeRosnace = (slot) => RPE_ROSNACE.every((rpe, i) => slot.tygodnie?.[i + 1]?.rpe === rpe);
+const maRpeRosnace = (slot) => rpeRosnace(obraz.zapisany.plan).every(([t, rpe]) => slot.tygodnie?.[t]?.rpe === rpe);
 function przelaczRpeRosnace(slot) {
   const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
   slot.tygodnie ??= {};
   if (maRpeRosnace(slot)) {
     const przed = slot.przedRpeRosnacym;
-    for (let t = 1; t <= 6; t++) {
+    for (const t of tygodnieRobocze(obraz.zapisany.plan)) {
       const p = slot.tygodnie[t];
       if (!p) continue;
       const rpe = przed?.rpe?.[t];
@@ -2218,15 +2280,15 @@ function przelaczRpeRosnace(slot) {
     const t1 = wyliczonyTydzienNr(1)?.sloty.find((s) => s.positionId === slot.positionId);
     const powtorzenia = slot.tygodnie[1]?.powtorzenia ?? t1?.powtorzenia;
     const przed = { rpe: {}, powtorzenia: {}, trybCiezaru: slot.trybCiezaru ?? null };
-    RPE_ROSNACE.forEach((rpe, i) => {
-      const p = (slot.tygodnie[i + 1] ??= {});
-      przed.rpe[i + 1] = p.rpe ?? null;
+    for (const [t, rpe] of rpeRosnace(obraz.zapisany.plan)) {
+      const p = (slot.tygodnie[t] ??= {});
+      przed.rpe[t] = p.rpe ?? null;
       p.rpe = rpe;
       if (powtorzenia && p.powtorzenia === undefined) {
         p.powtorzenia = powtorzenia;
-        przed.powtorzenia[i + 1] = powtorzenia;
+        przed.powtorzenia[t] = powtorzenia;
       }
-    });
+    }
     slot.przedRpeRosnacym = przed;
     if (!bojGlowny(slot) && !liczonyPauza(slot)) slot.trybCiezaru = "licz z RPE";
     zapiszPozniej(`${lp} · RPE 7,5 → 10`);
@@ -2256,16 +2318,16 @@ function przesuniecieMozliwe(slot) {
 const zeZnakiemPowt = (n) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 function przesunPowtorzenia(slot) {
   const lp = slot.lp?.replace(/\.$/, "") || "ćwiczenie";
-  const teraz = [1, 2, 3, 4, 5, 6].map((t) => slot.tygodnie?.[t]?.powtorzenia
+  const teraz = tygodnieRobocze(obraz.zapisany.plan).map((t) => slot.tygodnie?.[t]?.powtorzenia
     ?? wyliczonyTydzienNr(t)?.sloty.find((s) => s.positionId === slot.positionId)?.powtorzenia);
   if (teraz.some((x) => typeof x !== "number")) return;
   // Na czas (27.10.2026) — te same liczby to sekundy utrzymania.
   const czas = cwiczenie(slot.cwiczenieId)?.progresja === "czas";
   const odpowiedz = prompt(czas
-    ? `${lp}: czas T1–T6 teraz ${teraz.join(" · ")} s.\n`
+    ? `${lp}: czas T1–T${teraz.length} teraz ${teraz.join(" · ")} s.\n`
       + "Ile sekund w T1? Pozostałe tygodnie ułożą się od tej liczby według progresji ćwiczenia.\n"
       + "Puste pole — powrót do progresji z planu."
-    : `${lp}: powtórzenia T1–T6 teraz ${teraz.join(" · ")}.\n`
+    : `${lp}: powtórzenia T1–T${teraz.length} teraz ${teraz.join(" · ")}.\n`
       + "Ile powtórzeń w T1? Pozostałe tygodnie ułożą się od tej liczby według progresji ćwiczenia.\n"
       + "Puste pole — powrót do progresji z planu.",
   String(teraz[0]));
@@ -2473,9 +2535,9 @@ function rysujSlot(slot, pusty) {
      */
     // Po cyklu (deload) », T i R nic nie znaczą: kopiowałyby deload na
     // tygodnie pracy, a TOP SETU i trybu ciężaru deload nie ma.
-    const poCyklu = tydzien > 6;
+    const poCyklu = !jestRoboczy(tydzien);
     const rozniesc = el("button", "mikro", "»");
-    rozniesc.title = `Skopiuj parametry tego ćwiczenia z T${tydzien} na pozostałe tygodnie`;
+    rozniesc.title = `Skopiuj parametry tego ćwiczenia z ${tNr(tydzien)} na pozostałe tygodnie`;
     rozniesc.onclick = () => wypelnijTygodnie("kopiuj", slot.positionId);
     if (!poCyklu) strzalki.append(rozniesc);
 
@@ -2565,7 +2627,7 @@ function rysujSlot(slot, pusty) {
       const rosnace = el("button", `mikro ${wlaczone ? "wlaczony" : ""}`, "↗");
       rosnace.title = wlaczone
         ? "Zdejmij RPE 7,5 → 10 — RPE, powtórzenia i tryb ciężaru wracają do stanu sprzed ↗"
-        : "RPE 7,5 → 10 od T1 do T6 (co 0,5), ciężar liczony z RPE, powtórzenia stałe — progresja ciężarem";
+        : `RPE 7,5 → 10 od T1 do T${liczbaTygodni(obraz.zapisany.plan)}, ciężar liczony z RPE, powtórzenia stałe — progresja ciężarem`;
       rosnace.setAttribute("aria-label", rosnace.title);
       rosnace.onclick = () => przelaczRpeRosnace(slot);
       strzalki.append(rosnace);
@@ -2610,7 +2672,7 @@ function rysujSlot(slot, pusty) {
   }
   if (maRpeRosnace(slot)) {
     const znacznik = el("span", "znacznik-tryb", "RPE↗");
-    znacznik.title = "RPE 7,5 → 10 od T1 do T6, powtórzenia stałe — ciężar rośnie z RPE";
+    znacznik.title = `RPE 7,5 → 10 od T1 do T${liczbaTygodni(obraz.zapisany.plan)}, powtórzenia stałe — ciężar rośnie z RPE`;
     numer.append(znacznik);
   } else if (slot.trybCiezaru === "licz z RPE") {
     const znacznik = el("span", "znacznik-tryb", "RPE");
@@ -2934,7 +2996,7 @@ function rysujAnalize() {
     obciazenie.append(el("p", "wskazowka", `norma ${min * dni}–${max * dni} na tydzień`));
   }
   for (const t of obraz.wynik.tygodnie) {
-    obciazenie.append(wierszMiary(`T${t.tydzien}`, t.bilans.razem, maks, t.ocenaStresu));
+    obciazenie.append(wierszMiary(tNr(t.tydzien), t.bilans.razem, maks, t.ocenaStresu));
   }
   // Po cyklu bez oceny normą: lżej niż norma to cel deloadu, a maksy to
   // kilka pojedynczych powtórzeń.
@@ -3225,7 +3287,7 @@ function komorkaCiezaru(parametry, wyliczony) {
   if (zrodlo && parametry.ciezarOverride === undefined) {
     const kto = zrodlo.kto === "klient" ? "wybór klienta" : "Twój wpis";
     komorka.append(el("div", "komunikat-ciezaru zrodlo-ciezaru",
-      zrodlo.tydzien === tydzien ? kto : `z T${zrodlo.tydzien} · ${kto}`));
+      zrodlo.tydzien === tydzien ? kto : `z ${tNr(zrodlo.tydzien)} · ${kto}`));
   }
 
   if (parametry.ciezarOverride !== undefined) {
@@ -3338,13 +3400,15 @@ function zapytajOPodmiane(slot, poprzednieCwiczenie) {
   for (const w of obraz.zapisany.wykonania ?? []) {
     if (w.positionId === slot.positionId) zrobione.add(Number(w.tydzien));
   }
-  const ostatniZrobiony = zrobione.size ? Math.max(...zrobione) : 0;
+  // Numery tygodni roboczych (T7 = klucz 9) — deload i maksy idą z ostatniego.
+  const zrobioneNumery = [...zrobione].map(numerRoboczy).filter((n) => n !== null);
+  const ostatniZrobiony = zrobioneNumery.length ? Math.max(...zrobioneNumery) : 0;
 
   // Nic się jeszcze nie odbyło — podmiana dotyczy całego cyklu i nie ma o co pytać.
   if (ostatniZrobiony === 0) return;
 
-  const odTygodnia = Math.min(ostatniZrobiony + 1, 6);
-  const przerobione = [...zrobione].sort((a, b) => a - b).map((t) => `T${t}`).join(", ");
+  const odTygodnia = Math.min(ostatniZrobiony + 1, liczbaTygodni(obraz.zapisany.plan));
+  const przerobione = zrobioneNumery.sort((a, b) => a - b).map((t) => `T${t}`).join(", ");
 
   /**
    * Podmiana od wybranego tygodnia — mechanika z arkusza (`cwiczenieIdOverride`).
@@ -3364,7 +3428,7 @@ function zapytajOPodmiane(slot, poprzednieCwiczenie) {
       ? (await api(`/api/1rm?ciezar=${seria.ciezar}&powt=${seria.powtorzenia}`)).oneRM
       : null;
 
-    for (let t = odTygodnia; t <= 6; t++) {
+    for (const t of tygodnieRobocze(obraz.zapisany.plan).filter((k) => numerRoboczy(k) >= odTygodnia)) {
       slot.tygodnie ??= {};
       slot.tygodnie[t] ??= {};
       slot.tygodnie[t].cwiczenieIdOverride = nowe;
@@ -3512,11 +3576,11 @@ function rysujSerieMax(pelne = false) {
       const bezZera = (n) => liczba(n).replace(",0", "");
       wiersz.append(el("div", "kalibracja-zrodlo",
         `z serii roboczej klienta: ${bezZera(k.ciezar)} kg × ${k.powtorzenia} `
-        + `przy RPE ${bezZera(k.rpe)} · T${k.tydzien}, dzień ${RZYMSKIE[k.dzien - 1] ?? k.dzien}`
+        + `przy RPE ${bezZera(k.rpe)} · ${tNr(k.tydzien)}, dzień ${RZYMSKIE[k.dzien - 1] ?? k.dzien}`
         // Inny ciężar niż w planie w środku cyklu (17.10.2026) — od tego
         // tygodnia; wcześniejsze zostały przy starym 1RM.
         + (k.oneRMPrzed != null && k.ciezarPlanu != null
-          ? ` (w planie było ${bezZera(k.ciezarPlanu)} kg) · od T${k.tydzien} do końca planu, `
+          ? ` (w planie było ${bezZera(k.ciezarPlanu)} kg) · od ${tNr(k.tydzien)} do końca planu, `
             + `wcześniej 1RM ${bezZera(k.oneRMPrzed)} kg`
           : "")));
     }
@@ -3845,6 +3909,11 @@ $("#status-wybor").onchange = async (e) => {
  */
 let ostatniArkusz = null;   // adres pobranego pliku w pamięci przeglądarki
 $("#eksportuj").onclick = async () => {
+  // Arkusz tylko przy sześciu tygodniach (22.11.2026) — inaczej powód zamiast pliku.
+  if (obraz.bezArkusza) {
+    pokazModal("Arkusz niedostępny", el("p", "", obraz.bezArkusza));
+    return;
+  }
   const przycisk = $("#eksportuj");
   przycisk.disabled = true;
   przycisk.textContent = "Eksportuję…";

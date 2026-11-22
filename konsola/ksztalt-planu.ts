@@ -20,6 +20,7 @@
  * pytanie, zadawane po wczytaniu.
  */
 import { TRYBY_AKCESORIOW, CZESCI_PLANU } from "../silnik/src/typy.ts";
+import { TYGODNI_MAX, TYGODNI_MIN } from "../silnik/src/tygodnie.ts";
 
 /** Szkielet to 5 dni po 12 pozycji; zapas na wypadek zmiany układu. */
 const MAX_SLOTOW = 100;
@@ -255,6 +256,12 @@ export function bladKsztaltuPlanu(plan: unknown): string | null {
         return `Rozgrzewka dnia ${r.dzien}: link do filmu musi zaczynać się od https://`;
       }
     }
+  }
+
+  // ── liczba tygodni (22.11.2026) ───────────────────────────────────
+  if (plan.tygodni != null && !(Number.isInteger(plan.tygodni)
+      && (plan.tygodni as number) >= TYGODNI_MIN && (plan.tygodni as number) <= TYGODNI_MAX)) {
+    return `Liczba tygodni planu musi być liczbą całkowitą od ${TYGODNI_MIN} do ${TYGODNI_MAX}`;
   }
 
   // ── tygodnie po cyklu ─────────────────────────────────────────────

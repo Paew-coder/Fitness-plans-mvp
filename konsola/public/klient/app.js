@@ -351,8 +351,10 @@ function rysuj({ pomiary = true } = {}) {
     const serie = widok.tygodnie
       .flatMap((t) => t.dni).flatMap((d) => d.cwiczenia)
       .filter((c) => c.ciezarWykonany != null).length;
+    // Długość cyklu (22.11.2026): plan może mieć od 4 do 12 tygodni roboczych.
+    const robocze = widok.tygodnie.filter((t) => !t.rodzaj).length;
     $("#koniec-tresc").textContent =
-      `Sześć tygodni, ${wszystkie} treningów`
+      `${robocze === 6 ? "Sześć tygodni" : `${robocze} ${odmiana(robocze, ["tydzień", "tygodnie", "tygodni"])}`}, ${wszystkie} treningów`
       + (serie ? `, ${serie} zapisanych serii` : "")
       + ". Trener widzi, że skończyłeś, i przygotuje kolejny cykl — "
       + "ten sam link pokaże go, gdy będzie gotowy.";

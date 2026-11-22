@@ -22,6 +22,7 @@ import { przeliczPlan, type Plan, type SlotWyliczony } from "../silnik/src/plan.
 import { oneRMzKalibracji } from "../silnik/src/odczyt-1rm.ts";
 import { procent1RM, rozwiaz1RM, type SeriaMaksymalna } from "../silnik/src/rpe.ts";
 import { zaokraglij } from "../silnik/src/pomocnicze.ts";
+import { kolejnosc, numerRoboczy, tygodnieRobocze } from "../silnik/src/tygodnie.ts";
 
 export type SeriaDoKalibracji = {
   positionId: string;
@@ -67,7 +68,7 @@ export function skalibruj(
   if (!ciezar || !powtorzenia) return null;
 
   const wynik = przeliczPlan(plan);
-  const slot = wynik.tygodnie[seria.tydzien - 1]?.sloty
+  const slot = wynik.tygodnie.find((t) => t.tydzien === seria.tydzien)?.sloty
     .find((s) => s.positionId === seria.positionId);
   if (!slot?.cwiczenie || !(slot.rpe > 0)) return null;
   // Dwubój (16.10.2026) nie liczy 1RM z serii roboczej — jego RPE to tylko
@@ -109,11 +110,11 @@ export function skalibruj(
   // ── zmiana w środku cyklu ──────────────────────────────────────────
   // Tylko ciężar liczony z 1RM: bez wpisu trenera na sztywno, bez ciężaru
   // ręcznego niesionego z tygodnia do tygodnia, w cyklu (nie deload, nie maksy).
-  if (seria.tydzien > 6 || typeof slot.ciezar !== "number" || ciezar === slot.ciezar) return null;
+  if (numerRoboczy(seria.tydzien) === null || typeof slot.ciezar !== "number" || ciezar === slot.ciezar) return null;
   if (slot.ciezarNadpisany || slot.ciezarZrodlo) return null;
   // Seria z tygodnia wcześniejszego niż ostatnia zmiana (klient uzupełnia
   // zaległy trening) nie cofa nowszej.
-  if (wpisy.some((s) => (s.kalibracja?.tydzien ?? 0) > seria.tydzien && s.kalibracja?.oneRMPrzed)) {
+  if (wpisy.some((s) => kolejnosc(s.kalibracja?.tydzien ?? 0) > kolejnosc(seria.tydzien) && s.kalibracja?.oneRMPrzed)) {
     return null;
   }
   const oneRMPrzed = rozwiaz1RM(id, wpisy, seria.tydzien);
@@ -121,7 +122,8 @@ export function skalibruj(
 
   // Tygodnie przed tą serią — 1RM, które w nich obowiązywało, odcinkami.
   const wczesniej: { doTygodnia: number; oneRM: number }[] = [];
-  for (let t = 1; t < seria.tydzien; t++) {
+  // Klucze tygodni (T7 = 9) po kolei w czasie — `tygodnie.ts`.
+  for (const t of tygodnieRobocze(plan).filter((x) => kolejnosc(x) < kolejnosc(seria.tydzien))) {
     const w = rozwiaz1RM(id, wpisy, t);
     const ostatni = wczesniej.at(-1);
     if (ostatni && ostatni.oneRM === w) ostatni.doTygodnia = t;
@@ -183,6 +185,6 @@ function zalezyOd1RM(plan: Plan, slot: SlotWyliczony, tydzien: number, oneRM: nu
       { cwiczenieId: id, ciezar: oneRM * 2, powtorzenia: 1 },
     ],
   });
-  const poProbie = proba.tygodnie[tydzien - 1]?.sloty.find((s) => s.positionId === slot.positionId);
+  const poProbie = proba.tygodnie.find((t) => t.tydzien === tydzien)?.sloty.find((s) => s.positionId === slot.positionId);
   return typeof poProbie?.ciezar === "number" && poProbie.ciezar !== slot.ciezar;
 }

@@ -20,6 +20,7 @@
  */
 import type { ParametryTygodnia } from "./plan.ts";
 import type { Coeff, CzescPlanu, Progresja, Tydzien } from "./typy.ts";
+import { PREMIA_PROCENTU_BLOKU, PREMIA_RPE_BLOKU, szablonTygodnia, zPremiaRpe } from "./tygodnie.ts";
 import { jestHipertrofia } from "./typy.ts";
 
 export type ParametryBoju = { serie: number; powtorzenia: number; rpe: number };
@@ -398,6 +399,29 @@ export function parametrySzablonu(
   }
   return progresjaSlotu(slot.lp, tydzien, cwiczenie,
     czescBoju(czescPlanu, slot.bojSilowy), slot.bojGlowny);
+}
+
+/**
+ * Parametry szablonu dla tygodnia o dowolnym kluczu (22.11.2026, plany 4–12
+ * tygodni): tydzień szablonu z `szablonTygodnia` i premia bloku — RPE o 0,5
+ * wyżej w każdym bloku po drugim, a przy dwuboju o 2 % 1RM. Przy T1–T6
+ * to dokładnie `parametrySzablonu`.
+ */
+export function parametrySzablonuTygodnia(
+  slot: { lp: string; bojGlowny?: boolean; bojSilowy?: boolean },
+  klucz: number,
+  cwiczenie: { id: string; coeff?: Coeff; progresja?: Progresja } | null | undefined,
+  czescPlanu: CzescPlanu,
+): ParametryTygodnia {
+  const { tydzien, premiaRpe } = szablonTygodnia(klucz);
+  const p = parametrySzablonu(slot, tydzien, cwiczenie, czescPlanu);
+  if (!premiaRpe) return p;
+  return {
+    ...p,
+    ...(p.rpe !== undefined ? { rpe: zPremiaRpe(p.rpe, premiaRpe) } : {}),
+    ...(p.procent !== undefined
+      ? { procent: Math.min(100, p.procent + PREMIA_PROCENTU_BLOKU * premiaRpe / PREMIA_RPE_BLOKU) } : {}),
+  };
 }
 
 /**

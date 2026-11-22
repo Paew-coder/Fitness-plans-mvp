@@ -15,6 +15,7 @@
  */
 import type { PlanWyliczony } from "../../silnik/src/plan.ts";
 import { NORMY } from "../../silnik/src/stres.ts";
+import { numerRoboczy } from "../../silnik/src/tygodnie.ts";
 import { jako, zapytaj, type BlokSystemowy, type Uzycie } from "./klient.ts";
 
 export type WejscieAnalizy = {
@@ -83,7 +84,7 @@ const ZASADY = `Jesteś asystentem trenera w aplikacji CraftMyPlan. Piszesz po p
 zwięźle, w drugiej osobie, do zawodowego trenera. Bez wstępów i bez zachęt.
 
 CO DOSTAJESZ
-Gotowy raport liczbowy z sześciu tygodni cyklu. Liczby policzył silnik aplikacji
+Gotowy raport liczbowy z tygodni roboczych cyklu (zwykle sześciu, plan może mieć od 4 do 12). Liczby policzył silnik aplikacji
 i są prawdziwe co do drugiego miejsca po przecinku.
 
 CO ROBISZ
@@ -136,14 +137,14 @@ export function raportLiczbowy(wejscie: WejscieAnalizy): string {
   linie.push("", "STRES TYGODNIOWY (całkowity · centralny · obwodowy · ocena)");
   for (const t of wynik.tygodnie) {
     linie.push(
-      `T${t.tydzien}: ${liczba(t.bilans.razem)} · ${liczba(t.bilans.centralny)} · `
+      `T${numerRoboczy(t.tydzien) ?? t.tydzien}: ${liczba(t.bilans.razem)} · ${liczba(t.bilans.centralny)} · `
       + `${liczba(t.bilans.obwodowy)} · ${t.ocenaStresu} | `
       + `dolne ${liczba(t.bilans.dolne)}, górne ${liczba(t.bilans.gorne)}, core ${liczba(t.bilans.core)} | `
       + `${t.bilans.serieRazem} serii, ${t.bilans.powtorzeniaRazem} powt.`,
     );
   }
 
-  linie.push("", "SERIE PER WZORZEC (T1…T6, potem średnia cyklu i jej ocena)");
+  linie.push("", `SERIE PER WZORZEC (T1…T${wynik.tygodnie.length}, potem średnia cyklu i jej ocena)`);
   for (const [part, ocena] of Object.entries(wynik.ocenaObjetosci)) {
     const poTygodniach = wynik.tygodnie
       .map((t) => t.bilans.wzorce.find((w) => w.part === part)?.serie ?? 0)

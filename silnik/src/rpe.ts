@@ -1,5 +1,6 @@
 import { TABELA_RPE } from "./dane/tabele.ts";
 import { klucz, zaokraglij } from "./pomocnicze.ts";
+import { kolejnosc } from "./tygodnie.ts";
 
 /** Najniższe i najwyższe powtórzenia obsługiwane przez tabelę RPE. */
 export const POWT_MIN = 1;
@@ -129,7 +130,7 @@ export function rozwiaz1RM(
     // Bez tygodnia — obecne 1RM (maksy, propozycje); z tygodniem — to, które
     // w nim obowiązywało (patrz `wczesniej`).
     const wczesniejsze = tydzien === undefined ? undefined
-      : s.wczesniej?.find((w) => tydzien <= w.doTygodnia)?.oneRM;
+      : s.wczesniej?.find((w) => kolejnosc(tydzien) <= kolejnosc(w.doTygodnia))?.oneRM;
     const wynik = wczesniejsze ?? oblicz1RM(s.ciezar, s.powtorzenia);
     if (wynik !== null && wynik > max) max = wynik;
   }
