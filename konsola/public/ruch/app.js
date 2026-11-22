@@ -2008,7 +2008,38 @@ function rysujZapis() {
 
 /* ── nagrywanie kamerą ──────────────────────────────────────────── */
 
-const nagrywanie = { strumien: null, rekorder: null, kawalki: [], kamera: "environment", start: 0, zegar: null };
+const nagrywanie = {
+  strumien: null, rekorder: null, kawalki: [], kamera: "environment", start: 0, zegar: null,
+  /** Wybrana kamera wprost (deviceId) — po „Przełącz kamerę”. Pusto = wg `kamera`. */
+  urzadzenie: null,
+};
+
+/*
+ * „Przełącz kamerę” (22.11.2026). Trener: „opcja »Przełącz kamerę« nie działa,
+ * bo mam cały czas tylko przednią kamerkę i nie da się włączyć tylnej”.
+ * Samo `facingMode` to tylko życzenie — część przeglądarek (Chrome na
+ * Androidzie przy kilku obiektywach, iPad, laptopy) je pomija i daje zawsze tę
+ * samą kamerę. Teraz przełączamy po konkretnym urządzeniu z listy kamer:
+ * z przedniej na tylną (po nazwie), a gdy nazwy nic nie mówią — na następną.
+ */
+const TYLNA = /back|rear|environment|tyl|tył|główn|world/i;
+const PRZEDNIA = /front|user|przed|selfie|facetime|face time/i;
+const ROZDZIELCZOSC = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
+
+async function listaKamer() {
+  try {
+    return (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput" && d.deviceId);
+  } catch { return []; }
+}
+
+/** Czy ścieżka wideo to kamera przednia — z ustawień, a bez nich z nazwy. */
+function przednia(sciezka) {
+  const kierunek = sciezka?.getSettings?.().facingMode;
+  if (kierunek) return kierunek === "user";
+  if (PRZEDNIA.test(sciezka?.label ?? "")) return true;
+  if (TYLNA.test(sciezka?.label ?? "")) return false;
+  return null;
+}
 
 function typNagrania() {
   const kandydaci = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
@@ -2022,10 +2053,27 @@ async function wlaczKamere() {
       ? "Ta przeglądarka nie daje dostępu do kamery."
       : "Kamera działa tylko przez https (albo na tym samym komputerze, localhost).");
   }
-  nagrywanie.strumien = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: nagrywanie.kamera, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-    audio: false,
-  });
+  // Najpierw wybrana kamera wprost, potem kierunek „na pewno”, na końcu „jeśli się da”.
+  const proby = [
+    ...(nagrywanie.urzadzenie ? [{ deviceId: { exact: nagrywanie.urzadzenie } }] : []),
+    { facingMode: { exact: nagrywanie.kamera } },
+    { facingMode: nagrywanie.kamera },
+  ];
+  let ostatniBlad = null;
+  for (const proba of proby) {
+    try {
+      nagrywanie.strumien = await navigator.mediaDevices.getUserMedia({ video: { ...proba, ...ROZDZIELCZOSC }, audio: false });
+      break;
+    } catch (blad) {
+      ostatniBlad = blad;
+      if (blad.name === "NotAllowedError" || blad.name === "SecurityError") throw blad;
+    }
+  }
+  if (!nagrywanie.strumien) throw ostatniBlad ?? new Error("brak kamery");
+  const sciezka = nagrywanie.strumien.getVideoTracks()[0];
+  nagrywanie.urzadzenie = sciezka?.getSettings?.().deviceId || nagrywanie.urzadzenie;
+  const czyPrzednia = przednia(sciezka);
+  if (czyPrzednia !== null) nagrywanie.kamera = czyPrzednia ? "user" : "environment";
   $("#podglad-kamery").srcObject = nagrywanie.strumien;
 }
 
@@ -2053,8 +2101,29 @@ $("#nagraj").addEventListener("click", async () => {
 
 $("#zmien-kamere").addEventListener("click", async () => {
   if (nagrywanie.rekorder?.state === "recording") return;
-  nagrywanie.kamera = nagrywanie.kamera === "environment" ? "user" : "environment";
-  try { await wlaczKamere(); } catch (blad) { komunikat(`Nie udało się przełączyć kamery: ${blad.message}`); }
+  const teraz = nagrywanie.strumien?.getVideoTracks()[0];
+  const bylaPrzednia = przednia(teraz) ?? nagrywanie.kamera === "user";
+  const kamery = await listaKamer();
+  const obecna = teraz?.getSettings?.().deviceId ?? nagrywanie.urzadzenie;
+  const inne = kamery.filter((k) => k.deviceId !== obecna);
+  if (kamery.length > 0 && inne.length === 0) {
+    komunikat("To urządzenie udostępnia przeglądarce tylko jedną kamerę.");
+    return;
+  }
+  // Z przedniej — tylna (pierwsza z nazwą „back”, to zwykle główny obiektyw);
+  // z tylnej — przednia; nazwy nic nie mówią — następna na liście.
+  const docelowa = inne.find((k) => (bylaPrzednia ? TYLNA : PRZEDNIA).test(k.label))
+    ?? inne.find((k) => !(bylaPrzednia ? PRZEDNIA : TYLNA).test(k.label))
+    ?? kamery[(kamery.findIndex((k) => k.deviceId === obecna) + 1) % kamery.length];
+  nagrywanie.kamera = bylaPrzednia ? "environment" : "user";
+  nagrywanie.urzadzenie = docelowa?.deviceId ?? null;
+  try {
+    await wlaczKamere();
+  } catch (blad) {
+    // Wybrana kamera nie wstała — jeszcze raz samym kierunkiem.
+    nagrywanie.urzadzenie = null;
+    try { await wlaczKamere(); } catch (b2) { komunikat(`Nie udało się przełączyć kamery: ${b2.message ?? blad.message}`); }
+  }
 });
 
 $("#start-nagrywania").addEventListener("click", () => {

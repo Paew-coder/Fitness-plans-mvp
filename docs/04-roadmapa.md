@@ -1518,6 +1518,15 @@ Trener: „dodaj mi możliwość zmiany ilości tygodni w planie w konsoli trene
 * **Dane:** pole planu `tygodni` (pusto = 6). Klucze tygodni bez zmian dla T1–T6, deloadu (7) i maksów (8); T7–T12 to klucze 9–14 — stare wpisy klientów niczego nie tracą. Mapowanie w `silnik/src/tygodnie.ts`.
 * Testy: silnik `liczba-tygodni.test.ts` (14), konsola `liczba-tygodni.test.ts` (8), przegląd ekranów (+4). Aplikacja klienta: napis na koniec cyklu z liczbą tygodni (po angielsku też), SW `trening-v103`.
 
+**141. Analiza ruchu: „Przełącz kamerę” naprawdę przełącza — 22.11.2026.**
+
+Trener: „jak wejdę w »Nagraj kamerą«, to opcja »Przełącz kamerę« nie działa, bo mam cały czas tylko przednią kamerkę pokazaną i nie da się włączyć tylnej”.
+
+* Przyczyna: przełącznik prosił przeglądarkę tylko o kierunek (`facingMode`), a część telefonów i iPadów to pomija i daje zawsze tę samą kamerę.
+* Teraz: przełączenie wybiera konkretną kamerę z listy urządzeń — z przedniej tylną (po nazwie, pierwszą — zwykle główny obiektyw), z tylnej przednią; gdy nazwy nic nie mówią, następną. Wybrana kamera zostaje przy kolejnym „Nagraj kamerą”. Gdy przeglądarka widzi tylko jedną kamerę — komunikat zamiast cichego braku zmiany.
+* Przegląd ruchu: telefon z dwiema kamerami, który pomija `facingMode` — przednia → tylna → przednia (+1).
+* Liczba tygodni (pkt 140): trener zostawia przy dwuboju +2 % 1RM na blok.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

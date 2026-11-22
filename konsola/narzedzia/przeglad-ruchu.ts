@@ -1276,6 +1276,42 @@ await zSerwerem(4231, async ({ adres }) => {
       return v.videoWidth > 0;
     }, null, { timeout: 10_000 }).then(() => true).catch(() => false);
     sprawdz("kamera: podgląd na żywo", podglad);
+
+    // „Przełącz kamerę” (22.11.2026, trener: „mam cały czas tylko przednią
+    // kamerkę i nie da się włączyć tylnej”). Udajemy telefon z dwiema
+    // kamerami, który pomija `facingMode` i bez wskazania urządzenia zawsze
+    // daje przednią — przełączenie ma iść po konkretnej kamerze z listy.
+    const przelaczenia = await s.evaluate(async () => {
+      const md = navigator.mediaDevices;
+      const prawdziweGUM = md.getUserMedia.bind(md);
+      const prawdziweEnum = md.enumerateDevices.bind(md);
+      const kamery = [{ deviceId: "przod", label: "Front Camera" }, { deviceId: "tyl", label: "Back Camera" }];
+      md.enumerateDevices = async () => kamery.map((k) => ({ ...k, kind: "videoinput", groupId: "" }) as any);
+      md.getUserMedia = async (c: any) => {
+        const id = c.video?.deviceId?.exact ?? "przod";
+        const strumien = await prawdziweGUM({ video: true });
+        const sciezka = strumien.getVideoTracks()[0]!;
+        Object.defineProperty(sciezka, "label", { value: kamery.find((k) => k.deviceId === id)!.label });
+        (sciezka as any).getSettings = () => ({ deviceId: id });
+        return strumien;
+      };
+      const przycisk = document.querySelector("#zmien-kamere") as HTMLButtonElement;
+      const etykieta = () => (document.querySelector("#podglad-kamery") as HTMLVideoElement)
+        .srcObject && ((document.querySelector("#podglad-kamery") as any).srcObject as MediaStream).getVideoTracks()[0]!.label;
+      const wynik: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        przycisk.click();
+        await new Promise((g) => setTimeout(g, 1200));
+        wynik.push(etykieta());
+      }
+      md.getUserMedia = prawdziweGUM;
+      md.enumerateDevices = prawdziweEnum;
+      return wynik;
+    });
+    sprawdz("„Przełącz kamerę” przechodzi przednia ↔ tylna, także gdy przeglądarka pomija facingMode",
+      przelaczenia.join(" → ") === "Front Camera → Back Camera → Front Camera", przelaczenia.join(" → "));
+    await s.click("#nagraj");
+    await s.waitForTimeout(800);
     await s.click("#start-nagrywania");
     await s.waitForTimeout(KAMERA ? 4000 : 2000);
     await s.click("#stop-nagrywania");
