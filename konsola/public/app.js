@@ -153,7 +153,8 @@ async function api(sciezka, opcje = {}) {
   const ja = await api("/api/ja");
   if (ja.tryb !== "hasło") return;
   const przycisk = $("#wyloguj");
-  przycisk.textContent = `Wyloguj (${ja.email ?? ja.nazwa})`;
+  // Konto w dymku, nie w podpisie — „Wyloguj (adres)” rozpychało nagłówek.
+  przycisk.title = `Zalogowano: ${ja.email ?? ja.nazwa}`;
   przycisk.classList.remove("ukryty");
   przycisk.onclick = async () => {
     await fetch("/api/wylogowanie", { method: "POST" });

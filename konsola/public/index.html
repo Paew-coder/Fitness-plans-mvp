@@ -16,9 +16,22 @@
       <h1>Konsola trenera</h1>
       <p class="podtytul">Plany powstają tutaj, klient ćwiczy z nich w aplikacji na telefonie.</p>
     </div>
-    <button type="button" class="link link-naglowka" id="otworz-baze">Baza ćwiczeń</button>
-    <a class="link-naglowka" href="/ruch/">Analiza ruchu</a>
-    <button id="wyloguj" class="link ukryty">Wyloguj</button>
+    <!-- Narzędzia trenera (22.11.2026): „przyciski Baza ćwiczeń, Analiza ruchu
+         i Wyloguj — bardziej widoczne i profesjonalne”. Ikona + podpis. -->
+    <nav class="narzedzia-naglowka" aria-label="Narzędzia">
+      <button type="button" class="przycisk-naglowka" id="otworz-baze">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8 7.5h8M8 11h6"/></svg>
+        <span>Baza ćwiczeń</span>
+      </button>
+      <a class="przycisk-naglowka" href="/ruch/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6.5M12 13.5l-4 6.5M12 13.5l4 6.5M6.5 9.5l5.5-1 5.5 1"/></svg>
+        <span>Analiza ruchu</span>
+      </a>
+      <button type="button" id="wyloguj" class="przycisk-naglowka wyloguj ukryty">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
+        <span>Wyloguj</span>
+      </button>
+    </nav>
   </header>
 
   <section class="panel ukryty" id="panel-uwaga">

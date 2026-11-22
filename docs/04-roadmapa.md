@@ -1527,6 +1527,13 @@ Trener: „jak wejdę w »Nagraj kamerą«, to opcja »Przełącz kamerę« nie 
 * Przegląd ruchu: telefon z dwiema kamerami, który pomija `facingMode` — przednia → tylna → przednia (+1).
 * Liczba tygodni (pkt 140): trener zostawia przy dwuboju +2 % 1RM na blok.
 
+**142. Nagłówek konsoli: Baza ćwiczeń, Analiza ruchu i Wyloguj jako wyraźne przyciski — 22.11.2026.**
+
+Trener: „popraw mi przyciski Baza ćwiczeń, Analiza ruchu i Wyloguj, tak żeby były bardziej widoczne i wyglądały profesjonalnie”.
+
+* Zamiast bladych linków — przyciski z ikoną i ramką (42 px wysokości), po najechaniu w kolorze akcentu; „Wyloguj” spokojniejszy, osobno, po najechaniu na czerwono. Adres konta w dymku zamiast w podpisie („Wyloguj (adres)” rozpychało nagłówek).
+* Telefon: Baza ćwiczeń i Analiza ruchu obok siebie, równej szerokości, „Wyloguj” pod nimi na całą szerokość.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
