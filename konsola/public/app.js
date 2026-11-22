@@ -90,6 +90,11 @@ const numerTygodnia = (plan, t) => t === TYDZIEN_DELOADU ? liczbaTygodni(plan) +
   : t === TYDZIEN_MAKSOW ? liczbaTygodni(plan) + (plan.deload ? 2 : 1) : numerRoboczy(t) ?? t;
 const etykietaTygodnia = (plan, t) => t === TYDZIEN_DELOADU ? `T${numerTygodnia(plan, t)} deload`
   : t === TYDZIEN_MAKSOW ? `T${numerTygodnia(plan, t)} maksy` : `T${numerTygodnia(plan, t)}`;
+/** „sześciu tygodniach” albo „9 tygodniach” — długość otwartego planu w zdaniu. */
+const wszystkichTygodni = () => {
+  const n = liczbaTygodni(obraz?.zapisany?.plan);
+  return n === 6 ? "sześciu tygodniach" : `${n} tygodniach`;
+};
 /** „T7” dla klucza 9 — numer tygodnia w otwartym planie. */
 const tNr = (t) => `T${numerTygodnia(obraz?.zapisany?.plan ?? {}, t)}`;
 /** Tydzień z wyniku — roboczy albo dodatkowy. `undefined`, gdy serwer jeszcze nie przeliczył. */
@@ -1596,7 +1601,7 @@ $("#czesc-planu").onchange = (e) => {
   if (bojeZWpisanymiLiczbami() && confirm(
     "Bój główny (albo ćwiczenie pauzowane) ma wpisane liczby (z „wpisz progresję” albo ręcznie) i nowa część planu ich nie zmieni.\n\n"
     + `Przepisać serie, powtórzenia i RPE boju i pauzowanych progresją „${CZESC_NA_EKRANIE[e.target.value] ?? e.target.value}” `
-    + "we wszystkich sześciu tygodniach?\n\nOK — przepisz. Anuluj — zostaw wpisane.")) {
+    + `we wszystkich ${wszystkichTygodni()}?\n\nOK — przepisz. Anuluj — zostaw wpisane.`)) {
     poZapisie = async () => {
       try {
         opiszZmianeSerwera("progresja bojów");
@@ -3840,8 +3845,10 @@ async function wypelnijTygodnie(tryb, positionId) {
     // ostatni arkusz, ale dziwnie to tam wygląda"). Liczby i tak bierze
     // z „Części planu", więc pytanie mówi, z której.
     ? `Progresja „${CZESC_NA_EKRANIE[obraz.zapisany.plan.czescPlanu] ?? obraz.zapisany.plan.czescPlanu}” `
-      + "nadpisze serie, powtórzenia i RPE we wszystkich sześciu tygodniach."
-    : `Parametry tego ćwiczenia z tygodnia ${tydzien} nadpiszą pozostałe pięć tygodni.`;
+      + `nadpisze serie, powtórzenia i RPE we wszystkich ${wszystkichTygodni()}.`
+    : `Parametry tego ćwiczenia z tygodnia ${numerTygodnia(obraz.zapisany.plan, tydzien)} nadpiszą pozostałe `
+      + `${liczbaTygodni(obraz.zapisany.plan) === 6 ? "pięć" : liczbaTygodni(obraz.zapisany.plan) - 1} `
+      + `${liczbaTygodni(obraz.zapisany.plan) <= 5 ? "tygodnie" : "tygodni"}.`;
   if (!confirm(`${opis}\n\nOceny klienta i ręcznie ustawione ciężary zostają. Na pewno?`)) return;
 
   try {
