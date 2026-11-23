@@ -405,6 +405,8 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
     zaplanowanych: tygodnie.reduce((a, t) => a + t.zDnia, 0),
     ukonczonych: domkniete.size,
     rozpoczetych: rozpoczete.size,
+    // Cykl zakończony przez trenera przed czasem (23.11.2026) — reszta to pominięte.
+    zakonczony: zapisany.status === "zakończony",
     ostatniaAktywnosc,
     dniOdOstatniej,
     odczucia: {
@@ -1315,6 +1317,9 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
     planId: zapisany.id,
     // Znacznik „↺ Resetuj plan”: telefon porzuca postęp treningu sprzed niego.
     resetOd: zapisany.resetOd ?? null,
+    // „Zakończ cykl” w konsoli (23.11.2026): telefon pokazuje cykl jako
+    // zakończony, a niezrobione treningi jako pominięte — bez „Następnego treningu”.
+    zakonczony: zapisany.status === "zakończony",
     klient: zapisany.klient,
     wersja: zapisany.wersja,
     dataStartu: zapisany.dataStartu,

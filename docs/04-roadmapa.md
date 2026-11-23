@@ -1534,6 +1534,14 @@ Trener: „popraw mi przyciski Baza ćwiczeń, Analiza ruchu i Wyloguj, tak żeb
 * Zamiast bladych linków — przyciski z ikoną i ramką (42 px wysokości), po najechaniu w kolorze akcentu; „Wyloguj” spokojniejszy, osobno, po najechaniu na czerwono. Adres konta w dymku zamiast w podpisie („Wyloguj (adres)” rozpychało nagłówek).
 * Telefon: Baza ćwiczeń i Analiza ruchu obok siebie, równej szerokości, „Wyloguj” pod nimi na całą szerokość.
 
+**143. „⏹ Zakończ cykl” — zakończenie cyklu z pominiętym treningiem — 23.11.2026.**
+
+Trener: „zrobiłem wszystkie treningi poza drugim w 5. tygodniu i już go nie zrobię — chciałbym mieć opcję, żeby zakończyć cały cykl bez wypełniania tego ostatniego treningu; zdarza się, że jeden trening zostanie pominięty, a mimo to chciałbym zakończyć cykl”.
+
+* Konsola: przycisk „⏹ Zakończ cykl” w nagłówku wysłanego planu (to samo co status „zakończony”, który dotąd prawie nic nie zmieniał). Pyta, mówiąc, ile treningów jest za klientem i ile zostanie pominiętych. Realizacja: „… · cykl zakończony, 1 pominięty”. Klient z zakończonym cyklem nie woła o uwagę. Cofnięcie: status „wysłany”.
+* Telefon: zamiast „Następnego treningu” baner „Cykl zakończony — Trener zakończył ten cykl. Za Tobą 9 z 10 treningów, 1 pominięty…”, niezrobione treningi z przerywaną ramką i znaczkiem „pominięty”. Wpisy zostają; zaległy zapis z kolejki telefonu dalej dochodzi. Po angielsku też. SW `trening-v104`.
+* Testy: `zakonczenie-cyklu.test.ts` (3).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

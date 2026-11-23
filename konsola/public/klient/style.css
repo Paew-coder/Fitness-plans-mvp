@@ -309,6 +309,12 @@ a.akcja { text-decoration: none; }
 }
 .dzien-kafel.zrobiony { opacity: .75; }
 .dzien-kafel.zrobiony .sklad { color: var(--tekst-blady); }
+/* Cykl zakończony przez trenera (23.11.2026) — niezrobiony trening jest pominięty. */
+.dzien-kafel.pominiety { opacity: .6; border-style: dashed; }
+.dzien-kafel .znacznik-pominiety {
+  font-size: .75rem; color: var(--tekst-blady); border: 1px solid var(--linia);
+  border-radius: 999px; padding: .1rem .5rem; white-space: nowrap;
+}
 /* Ten, do którego prowadzi „Następny trening" — żeby było go widać też na liście. */
 .dzien-kafel.nastepny { border-color: var(--akcent); box-shadow: 0 0 0 1px var(--akcent); }
 

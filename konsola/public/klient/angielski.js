@@ -27,6 +27,8 @@ const SLOWNIK = new Map([
   ["Twój plan treningowy", "Your training plan"],
   ["Postęp cyklu", "Cycle progress"],
   ["Cykl zrobiony — wszystkie treningi za Tobą", "Cycle complete — all workouts done"],
+  ["Cykl zakończony", "Cycle finished"],
+  ["pominięty", "skipped"],
   ["Jak korzystać z aplikacji", "How to use the app"],
   ["Usuń podpowiedź o instrukcji", "Remove the guide tip"],
   ["Usuń", "Remove"],
@@ -436,6 +438,9 @@ const WZORY = [
   [/^(Sześć|\d+) tygod(?:ni|nie), (\d+) treningów(?:, (\d+) zapisanych serii)?\. Trener widzi, że skończyłeś, i przygotuje kolejny cykl — ten sam link pokaże go, gdy będzie gotowy\.$/,
     (_, ile, n, serie) => `${ile === "Sześć" ? "Six" : ile} weeks, ${n} workouts${serie ? `, ${serie} sets logged` : ""}. Your coach can see you've finished `
       + "and will prepare the next cycle — the same link will show it when it's ready."],
+  [/^Trener zakończył ten cykl\. Za Tobą (\d+) z (\d+) treningów, (\d+) (?:pominięty|pominięte|pominiętych)\. Kolejny plan pokaże ten sam link, gdy będzie gotowy\.$/,
+    (_, z, w, p) => `Your coach has finished this cycle. You did ${z} of ${w} workouts, ${p} skipped. `
+      + "The same link will show your next plan when it's ready."],
   [/^(\d+) cykle$/, "$1 cycles"],
   [/^(\d+) (miesiąc|miesięcy)$/, (_, n) => liczbaMnoga(n, "month", "months")],
   [/^(\d+) z (\d+) treningów$/, "$1 of $2 workouts"],

@@ -1123,6 +1123,8 @@ function rysujPlan() {
   $("#status-planu").textContent = z.status;
   $("#status-planu").className = `odznaka ${z.status.replace(/[łą]/g, "l")}`;
   $("#status-wybor").value = z.status;
+  // „Zakończ cykl” tylko przy planie, który klient ma teraz (23.11.2026).
+  $("#zakoncz-cykl").classList.toggle("ukryty", z.status !== "wysłany");
   $("#tryb-akcesoriow").value = z.plan.trybAkcesoriow;
   $("#czesc-planu").value = z.plan.czescPlanu;
   $("#data-startu").value = z.dataStartu ?? "";
@@ -1523,7 +1525,10 @@ function rysujRealizacje(r = obraz.realizacja, kontener = $("#realizacja"), plan
   const opisCzasu = r.dniOdOstatniej === 0 ? "dziś"
     : r.dniOdOstatniej === 1 ? "wczoraj" : `${r.dniOdOstatniej} dni temu`;
   kontener.append(el("p", "wskazowka",
-    `${r.ukonczonych} z ${r.zaplanowanych} treningów domkniętych · ostatnia aktywność ${opisCzasu}`));
+    `${r.ukonczonych} z ${r.zaplanowanych} treningów domkniętych · ostatnia aktywność ${opisCzasu}`
+    + (r.zakonczony && r.ukonczonych < r.zaplanowanych
+      ? ` · cykl zakończony, ${r.zaplanowanych - r.ukonczonych} `
+        + `${odmianaPominietych(r.zaplanowanych - r.ukonczonych)}` : "")));
 
   for (const t of r.tygodnie) {
     const wiersz = el("div", "wiersz-miary");
@@ -1794,6 +1799,17 @@ const dzisISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 const dataPL = (iso) => iso ? iso.split("-").reverse().join(".") : "";
+
+/** „1 pominięty”, „2 pominięte”, „5 pominiętych” — bez liczby. */
+const odmianaPominietych = (n) => (n === 1 ? "pominięty"
+  : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "pominięte" : "pominiętych");
+
+/** „⏹ Zakończ cykl” (23.11.2026) — to samo co status „zakończony”, z pytaniem. */
+$("#zakoncz-cykl").onclick = () => {
+  const wybor = $("#status-wybor");
+  wybor.value = "zakończony";
+  wybor.onchange({ target: wybor });
+};
 
 $("#resetuj-plan").onclick = () => {
   const z = obraz.zapisany;
@@ -3876,6 +3892,21 @@ $("#progresja-szablonu").onclick = () => wypelnijTygodnie("progresja");
 $("#status-wybor").onchange = async (e) => {
   const nowy = e.target.value;
   const poprzedni = obraz.zapisany.status;
+
+  // Zakończenie cyklu przed ostatnim treningiem (23.11.2026). Trener:
+  // „zdarza się, że jeden trening zostanie pominięty, a mimo to chciałbym,
+  // żeby była możliwość zakończenia cyklu”. Pytamy, mówiąc, co zobaczy klient.
+  if (nowy === "zakończony" && poprzedni !== "zakończony") {
+    const r = obraz.realizacja;
+    const brakuje = Math.max(0, (r?.zaplanowanych ?? 0) - (r?.ukonczonych ?? 0));
+    if (!confirm(`Zakończyć cykl?\n\nKlient ma za sobą ${r?.ukonczonych ?? 0} z ${r?.zaplanowanych ?? 0} treningów`
+      + (brakuje ? ` — ${brakuje} ${odmianaPominietych(brakuje)}.` : ".")
+      + "\n\nNa telefonie zniknie „Następny trening”, pojawi się „Cykl zakończony”, a niezrobione "
+      + "treningi będą oznaczone jako pominięte. Wpisy klienta zostają. Cofniesz to, zmieniając status na „wysłany”.")) {
+      e.target.value = poprzedni;
+      return;
+    }
+  }
 
   // Kontrola planu nie blokuje wysyłki — to decyzja trenera. Ale musi paść
   // wprost, bo klient zobaczy plan dokładnie takim, jaki jest.

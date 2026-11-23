@@ -346,7 +346,18 @@ function rysuj({ pomiary = true } = {}) {
   // inny — lista samych ptaszków i cisza. To jest ta chwila, w której klient
   // ma prawo wiedzieć, że skończył i że trener już o tym wie.
   const domkniety = wszystkie > 0 && zrobione >= wszystkie;
-  $("#baner-koniec").classList.toggle("ukryty", !domkniety);
+  // Trener zakończył cykl wcześniej (23.11.2026, „jeden trening zostanie
+  // pominięty, a mimo to chcę zakończyć cykl”) — ten sam baner, inne słowa.
+  const zakonczonyWczesniej = !domkniety && !!widok.zakonczony;
+  $("#baner-koniec").classList.toggle("ukryty", !domkniety && !zakonczonyWczesniej);
+  $("#koniec-tytul").textContent = zakonczonyWczesniej
+    ? "Cykl zakończony" : "Cykl zrobiony — wszystkie treningi za Tobą";
+  if (zakonczonyWczesniej) {
+    const pominiete = wszystkie - zrobione;
+    $("#koniec-tresc").textContent = `Trener zakończył ten cykl. Za Tobą ${zrobione} z ${wszystkie} treningów, `
+      + `${pominiete} ${odmiana(pominiete, ["pominięty", "pominięte", "pominiętych"])}. `
+      + "Kolejny plan pokaże ten sam link, gdy będzie gotowy.";
+  }
   if (domkniety) {
     const serie = widok.tygodnie
       .flatMap((t) => t.dni).flatMap((d) => d.cwiczenia)
@@ -1034,7 +1045,8 @@ function rysujTygodnie() {
 
   // Przycisk do następnego treningu — pierwszego niedomkniętego. Zaczęty,
   // a niedomknięty (klient wyszedł w połowie) to „wróć", nie „następny".
-  const cel = pierwszyNiezrobiony();
+  // Cykl zakończony przez trenera — nie ma już „następnego treningu”.
+  const cel = widok.zakonczony ? null : pierwszyNiezrobiony();
   const nastepny = $("#nastepny-trening");
   nastepny.classList.toggle("ukryty", !cel);
   if (cel) {
@@ -1058,11 +1070,13 @@ function rysujTygodnie() {
   // linijki (26.09.2026). Osiemnaście jednakowych kafelków „Dzień I · 7 ćwiczeń"
   // trzeba było przewijać, żeby znaleźć, gdzie się jest. Po całym cyklu —
   // ostatni tydzień.
-  const biezacyTydzien = cel?.tydzien ?? widok.tygodnie.at(-1)?.tydzien;
+  const biezacyTydzien = cel?.tydzien
+    ?? (widok.zakonczony ? widok.tygodnie.findLast((t) => t.dni.some((d) => d.ukonczony))?.tydzien : undefined)
+    ?? widok.tygodnie.at(-1)?.tydzien;
   for (const t of widok.tygodnie) {
     const zrobioneDni = t.dni.filter((d) => d.ukonczony).length;
     const caly = t.dni.length > 0 && zrobioneDni === t.dni.length;
-    const teraz = t.tydzien === biezacyTydzien && !caly;
+    const teraz = t.tydzien === biezacyTydzien && !caly && !widok.zakonczony;
     const blok = el("details", `tydzien ${t.rodzaj ? `po-cyklu ${t.rodzaj}` : ""}`
       + `${caly ? " zrobiony" : ""}${teraz ? " biezacy" : ""}`);
     blok.open = rozwinieteTygodnie.get(t.tydzien) ?? t.tydzien === biezacyTydzien;
@@ -1097,8 +1111,9 @@ function rysujTygodnie() {
 
     for (const d of t.dni) {
       const nastepny = cel && cel.tydzien === t.tydzien && cel.dzien === d.dzien;
+      const pominiety = !!widok.zakonczony && !d.ukonczony;
       const kafel = el("button",
-        `dzien-kafel${d.ukonczony ? " zrobiony" : ""}${nastepny ? " nastepny" : ""}`);
+        `dzien-kafel${d.ukonczony ? " zrobiony" : ""}${nastepny ? " nastepny" : ""}${pominiety ? " pominiety" : ""}`);
       const n = d.cwiczenia.length;
       const gora = el("span", "kafel-gora");
       gora.append(el("span", "nazwa", nazwaDnia(t, d)));
@@ -1106,6 +1121,7 @@ function rysujTygodnie() {
         ? `${n} ${odmiana(n, ["bój", "boje", "bojów"])}`
         : `${n} ${odmiana(n, ["ćwiczenie", "ćwiczenia", "ćwiczeń"])}`));
       if (d.ukonczony) gora.append(el("span", "ptaszek", "✓"));
+      if (pominiety) gora.append(el("span", "znacznik-pominiety", "pominięty"));
       kafel.append(gora);
       // Co to za dzień — pierwsze ćwiczenia jedną linijką. „Dzień II" nic nie
       // mówi, „Barbell back squat · Barbell row…" od razu.
@@ -3605,7 +3621,7 @@ $("#pomiary-usun").addEventListener("click", (e) => {
 // Prosto w prowadzenie — tam każda seria ma własny panel z objaśnieniem, jak
 // dobrać ciężar, a tego właśnie potrzebuje ktoś, kto zaczyna bez 1RM.
 function zacznijOdRazu() {
-  const cel = pierwszyNiezrobiony();
+  const cel = widok.zakonczony ? null : pierwszyNiezrobiony();
   if (!cel) return;
   biezacy = cel;
   otworz("#ekran-seria");
