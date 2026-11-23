@@ -2611,7 +2611,9 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
     sprawdz("Analiza: panele wyjściowo zwinięte; tytuł „Progress 1RM w bieżącym cyklu” rozwija, Enter zwija",
       paneli >= 10 && zwinietych === paneli && ciezaryUkryte && poKliknieciu && enterZwija,
       `${zwinietych}/${paneli} zwiniętych · klik ${poKliknieciu} · Enter ${enterZwija}`);
-    for (const naglowek of await s.locator("#zakladka-analiza .zwijany.zwiniety > :is(h2, h3)").all()) await naglowek.click();
+    // Rozwinięcie wszystkich — lista zwiniętych kurczy się z każdym kliknięciem.
+    const zwiniete = s.locator("#zakladka-analiza .zwijany.zwiniety > :is(h2, h3)");
+    for (let i = 0; i < 20 && await zwiniete.count() > 0; i++) await zwiniete.first().click();
     const analiza = !(await s.locator("#lista-cykli").isVisible())
       && /^Bieżący cykl/.test(await s.locator("#teraz-tytul").textContent() ?? "")
       && await s.locator("#teraz-stres .wykres-stresu svg").count() === 1
