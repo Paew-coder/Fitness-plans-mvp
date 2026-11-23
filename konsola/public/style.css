@@ -429,6 +429,7 @@ table.tabela-dziennika td.lp, table.tabela-dziennika th:first-child { width: 2.5
 .wiersz-zmiany:last-child { border-bottom: none; }
 .nazwa-zmiany { font-weight: 600; font-size: .88rem; }
 .opis-zmiany { font-size: .82rem; color: var(--tekst-slaby); overflow-wrap: anywhere; }
+.zrodlo-zmiany { font-size: .76rem; color: var(--tekst-blady); overflow-wrap: anywhere; margin-top: .1rem; }
 .uwaga-profilu { margin: 0 0 .5rem; font-size: .85rem; line-height: 1.4; overflow-wrap: anywhere; }
 #teraz-realizacja > button { margin-top: .8rem; }
 .linia-1rm { width: 4rem; height: 1.25rem; flex: none; }

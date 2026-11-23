@@ -64,5 +64,29 @@ test("teraz: oceny razem i przy ćwiczeniach, inny ciężar niż w planie, uwagi
   assert.deepEqual(t.uwagi, [{ dzien: 1, lp: "B1", nazwa: "Barbell row", uwaga: "Plecy proste." }]);
   assert.equal(t.stres.wynik.tygodnie.length, 6);
   assert.ok(!("sloty" in t.stres.wynik.tygodnie[0]!), "do konsoli idzie sam bilans");
-  assert.deepEqual(t.zmiany1RM, []);
+});
+
+test("1RM: na starcie → najwyższy szacowany z serii i TOP SETÓW, ze źródłem; plan po zmianie w środku cyklu", () => {
+  const z = zapisany();
+  // Bench z 1RM 100 kg; T1 seria 80 × 5, T2 TOP SET 95 kg × 1 („za łatwe”).
+  (z.plan as any).serieMaksymalne = [
+    { cwiczenieId: "EX-0016", ciezar: 90, powtorzenia: 1 },
+    { cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
+  ];
+  (z.plan as any).sloty.push({ positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: "EX-0011",
+    tygodnie: { 2: { topSetKlienta: { kg: 95, feedback: "za łatwe" } } } });
+  (z.plan as any).topSety = [{ dzien: 3, wlaczony: true, slotPositionId: "D3-S01" }];
+  (z.wykonania as any[]).push({ positionId: "D3-S01", tydzien: 1, data: "2026-11-06T10:00:00.000Z", feedback: "OK",
+    serie: [{ ciezar: 80, powtorzenia: 5 }, { ciezar: 70, powtorzenia: 5 }] });
+  const t = terazKlienta(z);
+  const bench = t.oneRMCwiczen.find((c) => c.nazwa === "Barbell bench press")!;
+  assert.equal(bench.start, 100);
+  assert.equal(bench.zrodlo.rodzaj, "top set");
+  assert.deepEqual([bench.zrodlo.tydzien, bench.zrodlo.ciezar, bench.zrodlo.powtorzenia, bench.zrodlo.feedback], [2, 95, 1, "za łatwe"]);
+  assert.ok(bench.najwyzszy > 100, String(bench.najwyzszy));
+  const wiosla = t.oneRMCwiczen.find((c) => c.nazwa === "Barbell row")!;
+  assert.equal(wiosla.zrodlo.rodzaj, "seria");
+  assert.equal(wiosla.start, 90);
+  // Bez serii z ciężarem (sama ocena) ćwiczenia tu nie ma.
+  assert.ok(!t.oneRMCwiczen.some((c) => c.nazwa === "Alt. Drop Lunge - Low Impact"));
 });

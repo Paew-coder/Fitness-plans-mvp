@@ -1551,6 +1551,15 @@ Trener: „czy klient może sam zakończyć cykl bez wypełnionych wszystkich tr
 * Konsola: na liście „Wymaga uwagi” na samej górze „sam zakończył cykl dziś (9 z 10 treningów) — czas na nowy plan” (aż trener wyśle kolejny plan); w Realizacji „cykl zakończył klient, 1 pominięty”. Cofnięcie: status „wysłany”.
 * Testy: `zakonczenie-cyklu.test.ts` (+4, razem 7), migracja (+1).
 
+**145. Analiza klienta: 1RM na starcie planu → najwyższy szacowany z treningów — 23.11.2026.**
+
+Trener (o linijce „T5: zrobione 105,0 kg × 3 → 1RM 126,0 → 120,3 kg”): „wolałbym, żeby w tamtym miejscu był zapis, który porównuje, jaki miałem 1RM w danym ćwiczeniu na początku planu, a jaki mam aktualnie, i z czego to zostało wyliczone — z której serii z którego tygodnia albo np. z top setu — po prostu najwyższy szacowany wynik”.
+
+* Karta „Ciężary i 1RM w bieżącym cyklu”, w miejsce „1RM zmienione serią z treningu”: przy każdym ćwiczeniu „126,0 kg → 131,5 kg (+4,4%)” i pod spodem źródło — „z TOP SETU T3: 122,5 kg × 1 @ RPE 8”, „z serii T3: 70 kg × 10 @ RPE 8, ocena „za łatwe””, „z tygodnia maksów (T8): 130 kg × 1”; gdy plan liczy już od innego 1RM (zmiana w środku cyklu) — „· plan liczy teraz od 120,3 kg”.
+* Szacunek z każdej serii z ciężarem (RPE z planu tego tygodnia, ocena przesuwa je o 1 — jak w propozycjach 1RM), z TOP SETU z ciężarem klienta i z tygodnia maksów (1 × 1 = 1RM). Dwubój nie (RPE to tam tylko odpowiednik %). Na starcie: 1RM obowiązujące w T1; ćwiczenie, któremu 1RM ustaliła dopiero seria — „bez 1RM na starcie”.
+* Najwyższy szacunek nie zmienia planu — plan dalej liczy się jak dotąd (kalibracja, propozycje 1RM z mediany).
+* Kod: `terazKlienta` → `oneRMCwiczen` (zamiast `zmiany1RM`). Test: `profil-klienta.test.ts` (+1).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

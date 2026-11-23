@@ -15,6 +15,8 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { numerTygodniaNaEkranie, przeliczPlan, TYDZIEN_MAKSOW, type Plan } from "../silnik/src/plan.ts";
 import type { SeriaWykonana } from "./serie-wykonane.ts";
 import { najciezsza, serieWpisu } from "./serie-wykonane.ts";
+import { oneRMzSerii } from "../silnik/src/odczyt-1rm.ts";
+import { rozwiaz1RM } from "../silnik/src/rpe.ts";
 import type { Wykonanie, ZapisanyPlan } from "./magazyn.ts";
 
 /** Ciężar różny od planu o więcej niż tyle (ułamek) — „lżej” albo „ciężej”. */
@@ -137,18 +139,69 @@ export function terazKlienta(z: ZapisanyPlan) {
   }
   const lista = [...poCwiczeniu.values()];
 
-  // 1RM zmienione serią z treningu w tym cyklu (kalibracja albo inny ciężar w środku).
-  const zmiany1RM = z.plan.serieMaksymalne
-    .filter((s) => s.kalibracja && !s.zTygodniaMaksow)
-    .map((s) => ({
-      nazwa: nazwaCwiczenia(s.cwiczenieId),
-      tydzien: numerTygodniaNaEkranie(z.plan, s.kalibracja!.tydzien),
-      seria: { ciezar: s.kalibracja!.ciezar, powtorzenia: s.kalibracja!.powtorzenia },
-      przed: s.kalibracja!.oneRMPrzed ?? null,
-      po: s.powtorzenia === 1 ? s.ciezar : null,
-      data: s.kalibracja!.data,
-    }))
-    .sort((a, b) => a.tydzien - b.tydzien);
+  /*
+   * 1RM: na starcie planu i najwyższy szacowany z treningów (23.11.2026).
+   * Trener: „wolałbym zapis, który porównuje, jaki miałem 1RM w danym
+   * ćwiczeniu na początku planu, a jaki mam aktualnie, i z czego to zostało
+   * wyliczone — z której serii z którego tygodnia albo z TOP SETU — po prostu
+   * najwyższy szacowany wynik”. Szacunek z każdej serii (`oneRMzSerii`: RPE
+   * z planu, przesunięte oceną), z TOP SETU z ciężarem klienta i z tygodnia
+   * maksów (1 × 1 to 1RM wprost). Dwubój nie — jego RPE to tylko odpowiednik.
+   */
+  type Zrodlo1RM = { rodzaj: "seria" | "top set" | "maksy"; tydzien: number; ciezar: number;
+    powtorzenia: number; rpe: number | null; feedback: string | null };
+  const najlepsze = new Map<string, { oneRM: number; zrodlo: Zrodlo1RM }>();
+  const dopisz = (id: string, oneRM: number, zrodlo: Zrodlo1RM) => {
+    const b = najlepsze.get(id);
+    if (!b || oneRM > b.oneRM) najlepsze.set(id, { oneRM, zrodlo });
+  };
+  for (const w of wykonania) {
+    const s = tydzienWyniku(wynik, w.tydzien)?.sloty.find((x) => x.positionId === w.positionId);
+    const id = w.cwiczenieId ?? s?.cwiczenie?.id;
+    if (!id || !s || s.dwuboj) continue;
+    const maksy = w.tydzien === TYDZIEN_MAKSOW;
+    for (const seria of serieWpisu(w)) {
+      if (!seria.ciezar || !seria.powtorzenia) continue;
+      const e = maksy && seria.powtorzenia === 1 ? { oneRM: seria.ciezar }
+        : oneRMzSerii({ ciezar: seria.ciezar, powtorzenia: seria.powtorzenia,
+          rpePlanowane: maksy ? 10 : s.rpe, feedback: maksy ? null : w.feedback ?? null });
+      if (e) {
+        dopisz(id, e.oneRM, { rodzaj: maksy ? "maksy" : "seria", tydzien: numerTygodniaNaEkranie(z.plan, w.tydzien),
+          ciezar: seria.ciezar, powtorzenia: seria.powtorzenia, rpe: maksy ? 10 : s.rpe,
+          feedback: maksy ? null : w.feedback ?? null });
+      }
+    }
+  }
+  for (const slot of z.plan.sloty) {
+    for (const [klucz, p] of Object.entries(slot.tygodnie ?? {})) {
+      const kg = p?.topSetKlienta?.kg;
+      if (!kg) continue;
+      const ts = tydzienWyniku(wynik, Number(klucz))?.topSety?.find((x) => x.positionId === slot.positionId);
+      if (!ts?.cwiczenie || ts.rpe == null || ts.procent != null) continue;
+      const feedback = p.topSetKlienta?.feedback ?? null;
+      const e = oneRMzSerii({ ciezar: kg, powtorzenia: 1, rpePlanowane: ts.rpe, feedback });
+      if (e) {
+        dopisz(ts.cwiczenie.id, e.oneRM, { rodzaj: "top set", tydzien: numerTygodniaNaEkranie(z.plan, Number(klucz)),
+          ciezar: kg, powtorzenia: 1, rpe: ts.rpe, feedback });
+      }
+    }
+  }
+  const kolejnoscCwiczen = (id: string) => {
+    const i = z.plan.sloty.findIndex((s) => s.cwiczenieId === id);
+    return i < 0 ? 999 : i;
+  };
+  // 1RM na starcie: obowiązujące w T1. 1RM ustalone dopiero serią z treningu
+  // (ćwiczenie bez 1RM) startu nie ma.
+  const naStarcie = z.plan.serieMaksymalne.filter((s) => !(s.kalibracja && s.kalibracja.oneRMPrzed === undefined));
+  const oneRMCwiczen = [...najlepsze]
+    .sort(([a], [b]) => kolejnoscCwiczen(a) - kolejnoscCwiczen(b))
+    .map(([id, { oneRM, zrodlo }]) => ({
+      nazwa: nazwaCwiczenia(id),
+      start: rozwiaz1RM(id, naStarcie, 1) || null,
+      wPlanie: rozwiaz1RM(id, z.plan.serieMaksymalne) || null,
+      najwyzszy: oneRM,
+      zrodlo,
+    }));
 
   return {
     planId: z.id,
@@ -166,7 +219,7 @@ export function terazKlienta(z: ZapisanyPlan) {
     ciezaryCwiczen: lista.filter((r) => r.lzej || r.ciezej)
       .sort((a, b) => b.lzej + b.ciezej - a.lzej - a.ciezej)
       .map(({ nazwa, lzej, ciezej, wpisow }) => ({ nazwa, lzej, ciezej, wpisow })),
-    zmiany1RM,
+    oneRMCwiczen,
     uwagi: z.plan.sloty.filter((s) => s.cwiczenieId && s.uwaga?.trim())
       .map((s) => ({ dzien: s.dzien, lp: (s.lp ?? "").replace(/\.$/, ""), nazwa: nazwaCwiczenia(s.cwiczenieId), uwaga: s.uwaga!.trim() })),
     // Do wykresu stresu w konsoli (`wykresStresu`) — bez slotów.

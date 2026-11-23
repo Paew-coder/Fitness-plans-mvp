@@ -413,14 +413,15 @@ function rysujTeraz(t) {
   // Ciężary względem planu i zmiany 1RM w cyklu.
   const ciezary = $("#teraz-ciezary");
   ciezary.replaceChildren();
-  if (t.ciezaryCwiczen.length === 0 && t.zmiany1RM.length === 0) {
-    ciezary.append(el("p", "wskazowka", "Klient robi ciężary z planu — bez wyraźnych odchyleń i bez zmian 1RM w tym cyklu."));
+  if (t.ciezaryCwiczen.length === 0 && t.oneRMCwiczen.length === 0) {
+    ciezary.append(el("p", "wskazowka", "W tym cyklu nie ma jeszcze serii z ciężarem, z których dałoby się policzyć 1RM."));
   }
   // Słowami (22.11.2026, trener: „wytłumacz mi, co tu widzę — ten zapis cyfr”):
   // nazwa w pierwszej linijce, co się stało — w drugiej.
-  const wpis = (nazwa, opis, tytul = "") => {
+  const wpis = (nazwa, opis, tytul = "", dopisek = "") => {
     const w = el("div", "wiersz-zmiany");
     w.append(el("div", "nazwa-zmiany", nazwa), el("div", "opis-zmiany", opis));
+    if (dopisek) w.append(el("div", "zrodlo-zmiany", dopisek));
     if (tytul) w.title = tytul;
     return w;
   };
@@ -434,19 +435,26 @@ function rysujTeraz(t) {
         "Najcięższa seria treningu porównana z ciężarem z planu tego tygodnia"));
     }
   }
-  if (t.zmiany1RM.length > 0) {
-    ciezary.append(el("p", "etykieta-sekcji", "1RM zmienione serią z treningu"));
-    for (const z of t.zmiany1RM) {
-      const seria = `${liczba(z.seria.ciezar)} kg × ${z.seria.powtorzenia}`;
-      let opis;
-      if (z.przed && z.po) {
-        const proc = Math.round((z.po / z.przed - 1) * 1000) / 10;
-        opis = `T${z.tydzien}: zrobione ${seria} → 1RM ${liczba(z.przed, 1)} → ${liczba(z.po, 1)} kg `
-          + `(${proc > 0 ? "+" : "−"}${liczba(Math.abs(proc), 1)}%), od T${z.tydzien} do końca cyklu`;
-      } else {
-        opis = `T${z.tydzien}: ćwiczenie bez 1RM — z serii ${seria} ustalone 1RM ${z.po ? `${liczba(z.po, 1)} kg` : "—"}`;
-      }
-      ciezary.append(wpis(z.nazwa, opis));
+  // 1RM: na starcie planu → najwyższy szacowany z treningów, i z czego
+  // (23.11.2026, trener: „po prostu najwyższy szacowany wynik”).
+  if (t.oneRMCwiczen.length > 0) {
+    ciezary.append(el("p", "etykieta-sekcji", "1RM: na starcie planu → najwyższy szacowany z treningów"));
+    const kg = (n) => `${liczba(n, 1)} kg`;
+    for (const c of t.oneRMCwiczen) {
+      const proc = c.start ? Math.round((c.najwyzszy / c.start - 1) * 1000) / 10 : null;
+      const opis = `${c.start ? kg(c.start) : "bez 1RM na starcie"} → ${kg(c.najwyzszy)}`
+        + (proc !== null ? ` (${proc > 0 ? "+" : proc < 0 ? "−" : "±"}${liczba(Math.abs(proc), 1)}%)` : "");
+      const z = c.zrodlo;
+      const seria = `${liczba(z.ciezar)} kg × ${z.powtorzenia}${z.rpe != null && z.rodzaj !== "maksy" ? ` @ RPE ${liczba(z.rpe).replace(",0", "")}` : ""}`;
+      const skad = z.rodzaj === "top set" ? `z TOP SETU T${z.tydzien}: ${seria}`
+        : z.rodzaj === "maksy" ? `z tygodnia maksów (T${z.tydzien}): ${seria}`
+          : `z serii T${z.tydzien}: ${seria}`;
+      const ocena = z.feedback && z.feedback !== "OK" ? `, ocena „${z.feedback}”` : "";
+      const wPlanie = c.wPlanie && c.start && Math.abs(c.wPlanie - c.start) >= 0.05
+        ? ` · plan liczy teraz od ${kg(c.wPlanie)}` : "";
+      ciezary.append(wpis(c.nazwa, opis,
+        "Najwyższy 1RM oszacowany z serii klienta (RPE z planu, przesunięte oceną), TOP SETÓW i tygodnia maksów",
+        `${skad}${ocena}${wPlanie}`));
     }
   }
 
