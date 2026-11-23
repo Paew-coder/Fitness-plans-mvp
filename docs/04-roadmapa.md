@@ -1542,6 +1542,15 @@ Trener: „zrobiłem wszystkie treningi poza drugim w 5. tygodniu i już go nie 
 * Telefon: zamiast „Następnego treningu” baner „Cykl zakończony — Trener zakończył ten cykl. Za Tobą 9 z 10 treningów, 1 pominięty…”, niezrobione treningi z przerywaną ramką i znaczkiem „pominięty”. Wpisy zostają; zaległy zapis z kolejki telefonu dalej dochodzi. Po angielsku też. SW `trening-v104`.
 * Testy: `zakonczenie-cyklu.test.ts` (3).
 
+**144. Klient sam kończy cykl w aplikacji — 23.11.2026.**
+
+Trener: „czy klient może sam zakończyć cykl bez wypełnionych wszystkich treningów?” — po dwóch wariantach do wyboru: „dodajmy drugi sposób [klient kończy sam], ale przy kończeniu musi wyskakiwać pytanie o potwierdzenie, żeby ktoś nie zrobił tego przypadkiem”.
+
+* Telefon: pod listą tygodni „Nie zrobisz już pozostałych treningów? — Zakończ cykl” (tylko gdy cykl trwa i coś zostało). Okienko „Zakończyć cykl?” — ile za klientem, ile będzie pominiętych, że trener zobaczy, że cofnąć może tylko trener; „Tak, zakończ cykl” / „Nie, wracam do planu”. Potem baner „Zakończyłeś ten cykl…” i treningi „pominięty”, jak po zakończeniu przez trenera. Działa z kolejką bez zasięgu. Po angielsku też. SW `trening-v105`.
+* Serwer: `POST /api/klient/:token/koniec` — tylko wysłany plan; drugi raz bez zmian. Baza w wersji 15: `plan.zakonczony_przez_klienta` (kiedy); powrót do „wysłany” gasi znacznik.
+* Konsola: na liście „Wymaga uwagi” na samej górze „sam zakończył cykl dziś (9 z 10 treningów) — czas na nowy plan” (aż trener wyśle kolejny plan); w Realizacji „cykl zakończył klient, 1 pominięty”. Cofnięcie: status „wysłany”.
+* Testy: `zakonczenie-cyklu.test.ts` (+4, razem 7), migracja (+1).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

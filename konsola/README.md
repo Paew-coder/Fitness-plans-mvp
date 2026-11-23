@@ -483,6 +483,20 @@ między listą a panelem. W wysłanym planie nowa albo zmieniona uwaga czeka na
 po angielsku linie uwagi są w okienku „Link dla klienta” do przetłumaczenia,
 tak jak rozgrzewka, a nagłówek to „Coach's note”.
 
+## Zakończenie cyklu przed ostatnim treningiem (od 23.11.2026)
+
+Gdy treningu nie da się już zrobić, a cykl ma się skończyć:
+
+- **Trener:** „⏹ Zakończ cykl” w nagłówku wysłanego planu (to samo co status
+  „zakończony”) — z pytaniem, ile treningów zostanie pominiętych.
+- **Klient:** „Zakończ cykl” pod listą tygodni w aplikacji — zawsze
+  z okienkiem potwierdzenia. Trener widzi to na liście „Wymaga uwagi”
+  („sam zakończył cykl … — czas na nowy plan”) i w Realizacji.
+
+Telefon pokazuje wtedy „Cykl zakończony” zamiast następnego treningu,
+a niezrobione treningi jako pominięte. Wpisy klienta zostają. Cofnięcie:
+status planu z powrotem na „wysłany”.
+
 ## Liczba tygodni planu (od 22.11.2026)
 
 Plan ma od 4 do 12 tygodni roboczych (domyślnie 6). Ustawiasz to w polu

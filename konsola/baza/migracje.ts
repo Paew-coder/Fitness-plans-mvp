@@ -527,6 +527,19 @@ function doWersji14(d: DatabaseSync): void {
   if (!maKolumne(d, "plan", "tlumaczenia_json")) d.exec("ALTER TABLE plan ADD COLUMN tlumaczenia_json TEXT");
 }
 
+/**
+ * Wersja 15 — klient sam kończy cykl (23.11.2026). Trener: „dodajmy, żeby
+ * klient mógł sam zakończyć cykl bez wypełnionych wszystkich treningów —
+ * z pytaniem o potwierdzenie”. `zakonczony_przez_klienta` — kiedy to zrobił;
+ * konsola pokazuje „zakończył klient” i woła o kolejny plan. Pusto = cykl
+ * trwa albo zakończył go trener.
+ */
+function doWersji15(d: DatabaseSync): void {
+  if (!maKolumne(d, "plan", "zakonczony_przez_klienta")) {
+    d.exec("ALTER TABLE plan ADD COLUMN zakonczony_przez_klienta TEXT");
+  }
+}
+
 export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 2, opis: "klient jako osobna encja; stały link i waga przy kliencie", wykonaj: doWersji2 },
   { doWersji: 3, opis: "wykonanie pamięta, które ćwiczenie klient robił", wykonaj: doWersji3 },
@@ -541,4 +554,5 @@ export const MIGRACJE: readonly Migracja[] = [
   { doWersji: 12, opis: "S/l clean z progresją dwuboju — bez liczb akcesorium", wykonaj: doWersji12 },
   { doWersji: 13, opis: "poprawki trenera do ćwiczeń z bazy", wykonaj: doWersji13 },
   { doWersji: 14, opis: "plan po angielsku — język i tłumaczenia tekstów trenera", wykonaj: doWersji14 },
+  { doWersji: 15, opis: "klient sam kończy cykl — kiedy to zrobił", wykonaj: doWersji15 },
 ];

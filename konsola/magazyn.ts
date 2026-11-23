@@ -125,6 +125,8 @@ export type ZapisanyPlan = {
    * postęp treningu sprzed tej chwili, serwer — zaległe zapisy sprzed niej.
    */
   resetOd?: string;
+  /** Kiedy klient sam zakończył cykl w aplikacji (23.11.2026). Pusto = nie on. */
+  zakonczonyPrzezKlienta?: string;
   /**
    * Plan po angielsku (27.10.2026, schemat v14) — telefon klienta pokazuje
    * cały plan po angielsku. Brak = po polsku. Ustawia się przy linku dla
@@ -325,6 +327,7 @@ type WierszPlanu = {
   pozycje_klienta_json: string | null;
   zmiany_od: string | null;
   reset_od: string | null;
+  zakonczony_przez_klienta: string | null;
   jezyk: string | null;
   tlumaczenia_json: string | null;
 };
@@ -409,6 +412,7 @@ function zWiersza(w: WierszPlanu, widok: Widok = "trener"): ZapisanyPlan {
     bieg: w.bieg_json ? JSON.parse(w.bieg_json) : undefined,
     plan: dlaKlienta && wersjaKlienta ? wersjaKlienta.plan : JSON.parse(w.plan_json) as Plan,
     ...(w.reset_od ? { resetOd: w.reset_od } : {}),
+    ...(w.zakonczony_przez_klienta ? { zakonczonyPrzezKlienta: w.zakonczony_przez_klienta } : {}),
     ...(w.jezyk === "en" ? { jezyk: "en" as const } : {}),
     ...(w.tlumaczenia_json ? { tlumaczenia: JSON.parse(w.tlumaczenia_json) as Record<string, string> } : {}),
     ...(dlaKlienta ? { widok: "klient" as const } : wersjaKlienta ? { wersjaKlienta } : {}),
@@ -568,8 +572,8 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
                         utworzony, zmieniony, poprzedni_id,
                         oddech_json, bieg_json, plan_json,
                         plan_klienta_json, pozycje_klienta_json, zmiany_od, reset_od,
-                        jezyk, tlumaczenia_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        jezyk, tlumaczenia_json, zakonczony_przez_klienta)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (trener_id, id) DO UPDATE SET
         klient_id = excluded.klient_id, wersja = excluded.wersja, status = excluded.status,
         data_startu = excluded.data_startu, zmieniony = excluded.zmieniony,
@@ -580,7 +584,10 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
         pozycje_klienta_json = excluded.pozycje_klienta_json,
         zmiany_od = excluded.zmiany_od,
         -- Obiekt bez znacznika (zbudowany od nowa) nie gasi resetu z bazy.
-        reset_od = COALESCE(excluded.reset_od, plan.reset_od)
+        reset_od = COALESCE(excluded.reset_od, plan.reset_od),
+        -- Tylko przy zakończonym: powrót do „wysłany” albo „szkic” gasi znacznik.
+        zakonczony_przez_klienta = CASE WHEN excluded.status = 'zakończony'
+          THEN COALESCE(excluded.zakonczony_przez_klienta, plan.zakonczony_przez_klienta) ELSE NULL END
         -- Język i tłumaczenia tylko przy nowym planie (np. kopia na nowy cykl);
         -- potem zmienia je wyłącznie ustawJezyk.
     `).run(
@@ -596,6 +603,7 @@ export function zapisz(zapisany: ZapisanyPlan, opcje: OpcjeZapisu = {}): Zapisan
       pelny.resetOd ?? null,
       pelny.jezyk ?? null,
       pelny.tlumaczenia ? JSON.stringify(pelny.tlumaczenia) : null,
+      pelny.status === "zakończony" ? pelny.zakonczonyPrzezKlienta ?? null : null,
     );
 
     // Wpisy klienta podmieniamy w całości — lista w obiekcie jest źródłem prawdy.

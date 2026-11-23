@@ -349,12 +349,15 @@ function rysuj({ pomiary = true } = {}) {
   // Trener zakończył cykl wcześniej (23.11.2026, „jeden trening zostanie
   // pominięty, a mimo to chcę zakończyć cykl”) — ten sam baner, inne słowa.
   const zakonczonyWczesniej = !domkniety && !!widok.zakonczony;
+  // „Zakończ cykl” u klienta — tylko gdy cykl trwa i coś jeszcze zostało.
+  $("#koniec-cyklu-klienta").classList.toggle("ukryty", domkniety || !!widok.zakonczony || wszystkie === 0);
   $("#baner-koniec").classList.toggle("ukryty", !domkniety && !zakonczonyWczesniej);
   $("#koniec-tytul").textContent = zakonczonyWczesniej
     ? "Cykl zakończony" : "Cykl zrobiony — wszystkie treningi za Tobą";
   if (zakonczonyWczesniej) {
     const pominiete = wszystkie - zrobione;
-    $("#koniec-tresc").textContent = `Trener zakończył ten cykl. Za Tobą ${zrobione} z ${wszystkie} treningów, `
+    $("#koniec-tresc").textContent = `${widok.zakonczonyPrzez === "klient" ? "Zakończyłeś ten cykl" : "Trener zakończył ten cykl"}. `
+      + `Za Tobą ${zrobione} z ${wszystkie} treningów, `
       + `${pominiete} ${odmiana(pominiete, ["pominięty", "pominięte", "pominiętych"])}. `
       + "Kolejny plan pokaże ten sam link, gdy będzie gotowy.";
   }
@@ -3627,6 +3630,33 @@ function zacznijOdRazu() {
   otworz("#ekran-seria");
 }
 $("#od-razu").onclick = zacznijOdRazu;
+
+/**
+ * Klient sam kończy cykl (23.11.2026). Trener: „klient może sam zakończyć
+ * cykl bez wypełnionych wszystkich treningów, ale przy kończeniu musi
+ * wyskakiwać pytanie o potwierdzenie, żeby ktoś nie zrobił tego przypadkiem”.
+ * Domyślny przycisk okienka to „Nie, wracam do planu”.
+ */
+$("#zakoncz-cykl").onclick = async () => {
+  const dni = widok.tygodnie.flatMap((t) => t.dni);
+  const zrobione = dni.filter((d) => d.ukonczony).length;
+  const zostalo = dni.length - zrobione;
+  const tak = await okienko({
+    tytul: "Zakończyć cykl?",
+    akapity: [
+      `Za Tobą ${zrobione} z ${dni.length} treningów. Pozostałe (${zostalo}) zostaną oznaczone jako pominięte.`,
+      "Trener zobaczy, że zakończyłeś cykl, i przygotuje kolejny plan. Twoje wpisy zostają.",
+      "Tego nie cofniesz sam — tylko trener może przywrócić cykl.",
+    ],
+    tak: "Tak, zakończ cykl",
+    nie: "Nie, wracam do planu",
+  });
+  if (!tak) return;
+  wyslij("/koniec", {}, () => {
+    widok.zakonczony = true;
+    widok.zakonczonyPrzez = "klient";
+  });
+};
 // Te same dwie drogi na stałe w „Więcej” (19.10.2026).
 $("#info-od-razu").onclick = zacznijOdRazu;
 $("#info-do-pomiarow").onclick = () => otworz("#ekran-pomiary");

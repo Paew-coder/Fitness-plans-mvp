@@ -85,10 +85,42 @@ describe("zakończenie cyklu — trasy serwera", () => {
       { positionId: "D1-S01", tydzien: 3, feedback: "OK" })).kod, 200);
   });
 
+  test("zakończony przez trenera: telefon wie, że to trener", async () => {
+    assert.equal((await zapytaj(`/api/klient/${token}`)).tresc.zakonczonyPrzez, "trener");
+  });
+
   test("zakończony cykl nie woła o uwagę; „wysłany” cofa zakończenie", async () => {
     const uwaga = (await zapytaj("/api/uwaga")).tresc;
     assert.ok(!JSON.stringify(uwaga).includes(planId), JSON.stringify(uwaga));
     assert.equal((await zapytaj(`/api/plany/${planId}`, "PUT", { status: "wysłany" })).kod, 200);
     assert.equal((await zapytaj(`/api/klient/${token}`)).tresc.zakonczony, false);
+  });
+
+  test("klient sam kończy cykl: status „zakończony”, data, „zakończył klient” w konsoli i na liście uwagi", async () => {
+    const { kod, tresc } = await zapytaj(`/api/klient/${token}/koniec`, "POST", { planId });
+    assert.equal(kod, 200, JSON.stringify(tresc));
+    assert.deepEqual([tresc.zakonczony, tresc.zakonczonyPrzez], [true, "klient"]);
+    const obraz = (await zapytaj(`/api/plany/${planId}`)).tresc;
+    assert.equal(obraz.zapisany.status, "zakończony");
+    assert.match(obraz.zapisany.zakonczonyPrzezKlienta, /^\d{4}-\d{2}-\d{2}T/);
+    assert.ok(obraz.realizacja.zakonczonyPrzezKlienta);
+    const uwaga = (await zapytaj("/api/uwaga")).tresc;
+    const wpis = uwaga.find((u: any) => u.id === planId);
+    assert.deepEqual(wpis?.powody, [{ rodzaj: "zakonczyl klient", ukonczonych: 3, zaplanowanych: 4, dni: 0 }]);
+    // Drugi raz (kolejka offline) — bez zmian, bez błędu.
+    assert.equal((await zapytaj(`/api/klient/${token}/koniec`, "POST", { planId })).kod, 200);
+  });
+
+  test("trener cofa zakończenie klienta („wysłany”) — znacznik znika, lista uwagi też", async () => {
+    assert.equal((await zapytaj(`/api/plany/${planId}`, "PUT", { status: "wysłany" })).kod, 200);
+    const obraz = (await zapytaj(`/api/plany/${planId}`)).tresc;
+    assert.equal(obraz.zapisany.zakonczonyPrzezKlienta, undefined);
+    assert.equal((await zapytaj(`/api/klient/${token}`)).tresc.zakonczonyPrzez, null);
+    assert.ok(!(await zapytaj("/api/uwaga")).tresc.some((u: any) => u.id === planId && u.powody[0].rodzaj === "zakonczyl klient"));
+  });
+
+  test("szkicu klient nie zakończy", async () => {
+    assert.equal((await zapytaj(`/api/plany/${planId}`, "PUT", { status: "szkic" })).kod, 200);
+    assert.notEqual((await zapytaj(`/api/klient/${token}/koniec`, "POST", { planId })).kod, 200);
   });
 });

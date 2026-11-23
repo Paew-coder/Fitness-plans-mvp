@@ -162,7 +162,15 @@ describe("migracja v1 → v2", () => {
     // 12: S/l clean z progresją dwuboju (17.10.2026).
     // 13: poprawki trenera do ćwiczeń z bazy — ekran „Baza ćwiczeń” (27.10.2026).
     // 14: plan po angielsku — język i tłumaczenia przy planie (27.10.2026).
-    assert.equal(w, 14);
+    // 15: klient sam kończy cykl — kiedy to zrobił (23.11.2026).
+    assert.equal(w, 15);
+  });
+
+  test("v15: żaden stary plan nie jest „zakończony przez klienta”", () => {
+    const kolumny = (polaczenie.baza().prepare("PRAGMA table_info(plan)").all() as { name: string }[]).map((k) => k.name);
+    assert.ok(kolumny.includes("zakonczony_przez_klienta"));
+    const n = polaczenie.baza().prepare("SELECT COUNT(*) AS n FROM plan WHERE zakonczony_przez_klienta IS NOT NULL").get() as { n: number };
+    assert.equal(n.n, 0);
   });
 
   test("v14: plany bez języka — klienci dalej widzą plan po polsku", () => {

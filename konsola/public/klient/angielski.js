@@ -28,6 +28,14 @@ const SLOWNIK = new Map([
   ["Postęp cyklu", "Cycle progress"],
   ["Cykl zrobiony — wszystkie treningi za Tobą", "Cycle complete — all workouts done"],
   ["Cykl zakończony", "Cycle finished"],
+  ["Nie zrobisz już pozostałych treningów?", "Won't do the remaining workouts?"],
+  ["Zakończ cykl", "Finish cycle"],
+  ["Zakończyć cykl?", "Finish this cycle?"],
+  ["Trener zobaczy, że zakończyłeś cykl, i przygotuje kolejny plan. Twoje wpisy zostają.",
+    "Your coach will see that you finished the cycle and will prepare the next plan. Your entries stay."],
+  ["Tego nie cofniesz sam — tylko trener może przywrócić cykl.", "You can't undo this yourself — only your coach can restore the cycle."],
+  ["Tak, zakończ cykl", "Yes, finish the cycle"],
+  ["Nie, wracam do planu", "No, back to the plan"],
   ["pominięty", "skipped"],
   ["Jak korzystać z aplikacji", "How to use the app"],
   ["Usuń podpowiedź o instrukcji", "Remove the guide tip"],
@@ -438,9 +446,11 @@ const WZORY = [
   [/^(Sześć|\d+) tygod(?:ni|nie), (\d+) treningów(?:, (\d+) zapisanych serii)?\. Trener widzi, że skończyłeś, i przygotuje kolejny cykl — ten sam link pokaże go, gdy będzie gotowy\.$/,
     (_, ile, n, serie) => `${ile === "Sześć" ? "Six" : ile} weeks, ${n} workouts${serie ? `, ${serie} sets logged` : ""}. Your coach can see you've finished `
       + "and will prepare the next cycle — the same link will show it when it's ready."],
-  [/^Trener zakończył ten cykl\. Za Tobą (\d+) z (\d+) treningów, (\d+) (?:pominięty|pominięte|pominiętych)\. Kolejny plan pokaże ten sam link, gdy będzie gotowy\.$/,
-    (_, z, w, p) => `Your coach has finished this cycle. You did ${z} of ${w} workouts, ${p} skipped. `
+  [/^(Trener zakończył|Zakończyłeś) ten cykl\. Za Tobą (\d+) z (\d+) treningów, (\d+) (?:pominięty|pominięte|pominiętych)\. Kolejny plan pokaże ten sam link, gdy będzie gotowy\.$/,
+    (_, kto, z, w, p) => `${kto === "Zakończyłeś" ? "You have" : "Your coach has"} finished this cycle. You did ${z} of ${w} workouts, ${p} skipped. `
       + "The same link will show your next plan when it's ready."],
+  [/^Za Tobą (\d+) z (\d+) treningów\. Pozostałe \((\d+)\) zostaną oznaczone jako pominięte\.$/,
+    (_, z, w, p) => `You've done ${z} of ${w} workouts. The remaining ${p} will be marked as skipped.`],
   [/^(\d+) cykle$/, "$1 cycles"],
   [/^(\d+) (miesiąc|miesięcy)$/, (_, n) => liczbaMnoga(n, "month", "months")],
   [/^(\d+) z (\d+) treningów$/, "$1 of $2 workouts"],

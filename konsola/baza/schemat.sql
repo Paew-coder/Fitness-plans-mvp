@@ -82,6 +82,8 @@ CREATE TABLE IF NOT EXISTS plan (
   zmiany_od            TEXT,
   -- Kiedy trener zresetował plan (od wersji 8) — telefon porzuca postęp sprzed.
   reset_od             TEXT,
+  -- Kiedy klient sam zakończył cykl w aplikacji (23.11.2026). Pusto = nie on.
+  zakonczony_przez_klienta TEXT,
   -- Plan po angielsku (od wersji 14): 'en' albo pusto (po polsku) i
   -- tłumaczenia tekstów trenera {polski: angielski}. Osobno od plan_json —
   -- zmiana języka nie jest zmianą planu.

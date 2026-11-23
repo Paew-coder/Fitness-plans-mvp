@@ -405,8 +405,10 @@ function realizacja(zapisany: magazyn.ZapisanyPlan, klient?: magazyn.Klient | nu
     zaplanowanych: tygodnie.reduce((a, t) => a + t.zDnia, 0),
     ukonczonych: domkniete.size,
     rozpoczetych: rozpoczete.size,
-    // Cykl zakończony przez trenera przed czasem (23.11.2026) — reszta to pominięte.
+    // Cykl zakończony przed czasem (23.11.2026) — reszta to pominięte. Kto:
+    // trener (przycisk w konsoli) albo klient (w aplikacji, z datą).
     zakonczony: zapisany.status === "zakończony",
+    zakonczonyPrzezKlienta: zapisany.status === "zakończony" ? zapisany.zakonczonyPrzezKlienta ?? null : null,
     ostatniaAktywnosc,
     dniOdOstatniej,
     odczucia: {
@@ -586,7 +588,8 @@ export type Powod =
   | { rodzaj: "koniec cyklu"; doKonca: number }
   | { rodzaj: "po cyklu"; dni: number }
   | { rodzaj: "bez linku" }
-  | { rodzaj: "nie zaczal"; dni: number };
+  | { rodzaj: "nie zaczal"; dni: number }
+  | { rodzaj: "zakonczyl klient"; ukonczonych: number; zaplanowanych: number; dni: number };
 
 /**
  * Kto dziś wymaga uwagi trenera.
@@ -618,6 +621,18 @@ function wymagajaUwagi(trenerId: number) {
 
   for (const klient of magazyn.listaKlientow(trenerId)) {
     const zapisany = magazyn.aktywnyPlan(trenerId, klient.id);
+    // Klient sam zakończył cykl w aplikacji (23.11.2026) — czas na kolejny plan.
+    // Woła, dopóki trener nie wyśle następnego (wtedy aktywny jest nowy).
+    if (zapisany?.status === "zakończony" && zapisany.zakonczonyPrzezKlienta) {
+      const r = realizacja(zapisany, klient);
+      wynik.push({
+        id: zapisany.id, klientId: klient.id, klient: klient.nazwa, wersja: zapisany.wersja,
+        nazwaPlanu: nazwaPlanu(zapisany),
+        powody: [{ rodzaj: "zakonczyl klient", ukonczonych: r.ukonczonych, zaplanowanych: r.zaplanowanych,
+          dni: Math.max(0, dniOd(zapisany.zakonczonyPrzezKlienta) ?? 0) }],
+      });
+      continue;
+    }
     if (!zapisany || zapisany.status !== "wysłany") continue;
 
     const r = realizacja(zapisany, klient);
@@ -663,7 +678,7 @@ function wymagajaUwagi(trenerId: number) {
   // Najpierw ci, którzy skończyli — bo nie mają już czego robić. Potem ci,
   // którzy zniknęli. Reszta poczeka.
   const waga = (p: Powod) =>
-    p.rodzaj === "zrobiony" ? 0 : p.rodzaj === "stanal" ? 1
+    p.rodzaj === "zrobiony" || p.rodzaj === "zakonczyl klient" ? 0 : p.rodzaj === "stanal" ? 1
       : p.rodzaj === "nie zaczal" ? 2 : p.rodzaj === "bez linku" ? 3
         : p.rodzaj === "po cyklu" ? 4 : 5;
   return wynik.sort((a, b) => Math.min(...a.powody.map(waga)) - Math.min(...b.powody.map(waga)));
@@ -1320,6 +1335,7 @@ function widokKlientaPoPolsku(zapisany: magazyn.ZapisanyPlan) {
     // „Zakończ cykl” w konsoli (23.11.2026): telefon pokazuje cykl jako
     // zakończony, a niezrobione treningi jako pominięte — bez „Następnego treningu”.
     zakonczony: zapisany.status === "zakończony",
+    zakonczonyPrzez: zapisany.status !== "zakończony" ? null : zapisany.zakonczonyPrzezKlienta ? "klient" : "trener",
     klient: zapisany.klient,
     wersja: zapisany.wersja,
     dataStartu: zapisany.dataStartu,
@@ -2495,6 +2511,24 @@ const serwer = createServer(async (req, res) => {
           delete tu.topSetKlienta;
         }
         return json(res, naEkran(magazyn.zapisz(cel)));
+      }
+
+      /**
+       * Klient sam kończy cykl (23.11.2026). Trener: „dodajmy, żeby klient mógł
+       * sam zakończyć cykl bez wypełnionych wszystkich treningów — przy
+       * kończeniu musi wyskakiwać pytanie o potwierdzenie”. Pytanie zadaje
+       * telefon; tu: tylko plan, który klient ma teraz (wysłany), a drugi raz
+       * — bez zmian. Konsola widzi „zakończył klient” i woła o kolejny plan.
+       */
+      if (akcja === "/koniec" && req.method === "POST") {
+        const cialoZadania = await cialo(req);
+        const cel = doZapisu(cialoZadania);
+        if (!cel) return blad(res, "Ten plan już nie istnieje.", 404);
+        if (cel.status === "zakończony") return json(res, naEkran(cel));
+        if (cel.status !== "wysłany") return blad(res, "Tego planu nie da się teraz zakończyć.", 409);
+        return json(res, naEkran(magazyn.zapisz({
+          ...cel, status: "zakończony", zakonczonyPrzezKlienta: new Date().toISOString(),
+        })));
       }
 
       if (akcja === "/dzien" && req.method === "POST") {

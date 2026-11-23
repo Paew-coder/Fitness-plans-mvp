@@ -311,6 +311,8 @@ a.akcja { text-decoration: none; }
 .dzien-kafel.zrobiony .sklad { color: var(--tekst-blady); }
 /* Cykl zakończony przez trenera (23.11.2026) — niezrobiony trening jest pominięty. */
 .dzien-kafel.pominiety { opacity: .6; border-style: dashed; }
+.koniec-cyklu-klienta { margin: .4rem 0 1.4rem; text-align: center; }
+.koniec-cyklu-klienta .drobne { margin: 0 0 .5rem; color: var(--tekst-slaby); }
 .dzien-kafel .znacznik-pominiety {
   font-size: .75rem; color: var(--tekst-blady); border: 1px solid var(--linia);
   border-radius: 999px; padding: .1rem .5rem; white-space: nowrap;

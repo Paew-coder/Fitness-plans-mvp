@@ -270,6 +270,9 @@ function rysujUwage(pozycje) {
   const opisPowodu = (p) => ({
     // Najpilniejszy powód na tej liście: klient nie ma już czego trenować.
     "zrobiony": `przerobił cały cykl (${p.ukonczonych} treningów) — czas na nowy`,
+    // Klient sam zakończył cykl w aplikacji (23.11.2026).
+    "zakonczyl klient": `sam zakończył cykl ${p.dni === 0 ? "dziś" : p.dni === 1 ? "wczoraj" : `${p.dni} dni temu`} `
+      + `(${p.ukonczonych} z ${p.zaplanowanych} treningów) — czas na nowy plan`,
     "stanal": `${p.dni} dni bez treningu`,
     "nie zaczal": `plan wysłany ${p.dni} dni temu, klient jeszcze nie zaczął`,
     "bez linku": "wysłany, ale klient nie ma linku",
@@ -1526,9 +1529,9 @@ function rysujRealizacje(r = obraz.realizacja, kontener = $("#realizacja"), plan
     : r.dniOdOstatniej === 1 ? "wczoraj" : `${r.dniOdOstatniej} dni temu`;
   kontener.append(el("p", "wskazowka",
     `${r.ukonczonych} z ${r.zaplanowanych} treningów domkniętych · ostatnia aktywność ${opisCzasu}`
+    + (r.zakonczony && r.zakonczonyPrzezKlienta ? " · cykl zakończył klient" : r.zakonczony ? " · cykl zakończony" : "")
     + (r.zakonczony && r.ukonczonych < r.zaplanowanych
-      ? ` · cykl zakończony, ${r.zaplanowanych - r.ukonczonych} `
-        + `${odmianaPominietych(r.zaplanowanych - r.ukonczonych)}` : "")));
+      ? `, ${r.zaplanowanych - r.ukonczonych} ${odmianaPominietych(r.zaplanowanych - r.ukonczonych)}` : "")));
 
   for (const t of r.tygodnie) {
     const wiersz = el("div", "wiersz-miary");
