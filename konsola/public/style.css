@@ -430,6 +430,23 @@ table.tabela-dziennika td.lp, table.tabela-dziennika th:first-child { width: 2.5
 .nazwa-zmiany { font-weight: 600; font-size: .88rem; }
 .opis-zmiany { font-size: .82rem; color: var(--tekst-slaby); overflow-wrap: anywhere; }
 .zrodlo-zmiany { font-size: .76rem; color: var(--tekst-blady); overflow-wrap: anywhere; margin-top: .1rem; }
+/* Zwijane panele w Analizie (23.11.2026) — wyjściowo zwinięte, tytuł przełącza. */
+.zwijany > h2, .zwijany > h3 {
+  display: flex; align-items: center; justify-content: space-between; gap: .7rem;
+  min-height: 28px; cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+.zwijany > h2::after, .zwijany > h3::after {
+  content: ""; flex: none; width: .5rem; height: .5rem; margin-right: .2rem;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg); transition: transform .15s; opacity: .7;
+}
+.zwijany:not(.zwiniety) > h2::after, .zwijany:not(.zwiniety) > h3::after { transform: translateY(2px) rotate(-135deg); }
+.zwijany.zwiniety > h2, .zwijany.zwiniety > h3 { margin-bottom: 0; }
+.zwijany.zwiniety > :not(h2):not(h3) { display: none !important; }
+.zwijany > h2:focus-visible, .zwijany > h3:focus-visible { outline: 2px solid var(--akcent); outline-offset: 3px; border-radius: 4px; }
+@media (hover: hover) {
+  .zwijany > h2:hover, .zwijany > h3:hover { color: var(--akcent); }
+}
 /* „Ciężary i 1RM w bieżącym cyklu” — dwa osobne bloki (23.11.2026). */
 .blok-ciezarow + .blok-ciezarow { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 2px solid var(--linia-mocna); }
 .tytul-bloku {

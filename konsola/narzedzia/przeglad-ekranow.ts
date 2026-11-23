@@ -2599,6 +2599,19 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
       && await s.locator("#zakladka-plany #lista-cykli").isVisible()
       && !(await s.locator("#zakladka-analiza").isVisible());
     await zakladka("analiza").click();
+    // Zwijane panele (23.11.2026): wyjściowo wszystkie zwinięte, tytuł rozwija.
+    const paneli = await s.locator("#zakladka-analiza .zwijany").count();
+    const zwinietych = await s.locator("#zakladka-analiza .zwijany.zwiniety").count();
+    const ciezaryUkryte = !(await s.locator("#teraz-ciezary").isVisible());
+    await s.locator("#panel-teraz-ciezary > h2", { hasText: "Progress 1RM w bieżącym cyklu" }).click();
+    const poKliknieciu = await s.locator("#teraz-ciezary").isVisible()
+      && await s.locator("#panel-teraz-ciezary > h2").getAttribute("aria-expanded") === "true";
+    await s.locator("#panel-teraz-ciezary > h2").press("Enter");
+    const enterZwija = !(await s.locator("#teraz-ciezary").isVisible());
+    sprawdz("Analiza: panele wyjściowo zwinięte; tytuł „Progress 1RM w bieżącym cyklu” rozwija, Enter zwija",
+      paneli >= 10 && zwinietych === paneli && ciezaryUkryte && poKliknieciu && enterZwija,
+      `${zwinietych}/${paneli} zwiniętych · klik ${poKliknieciu} · Enter ${enterZwija}`);
+    for (const naglowek of await s.locator("#zakladka-analiza .zwijany.zwiniety > :is(h2, h3)").all()) await naglowek.click();
     const analiza = !(await s.locator("#lista-cykli").isVisible())
       && /^Bieżący cykl/.test(await s.locator("#teraz-tytul").textContent() ?? "")
       && await s.locator("#teraz-stres .wykres-stresu svg").count() === 1

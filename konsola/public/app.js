@@ -382,6 +382,31 @@ for (const b of document.querySelectorAll("#zakladki-profilu button")) {
   b.onclick = () => pokazZakladke(b.dataset.zakladka);
 }
 
+/**
+ * Zwijane panele w Analizie (23.11.2026). Trener: „dodaj możliwość zwijania
+ * poszczególnych paneli w analizie — wyjściowo wszystkie mają być zwinięte
+ * i pokazują się dopiero, jak kliknę np. »Progress 1RM w bieżącym cyklu«”.
+ * Tytuł jest przyciskiem (klik, Enter, spacja); strzałka rysuje się w CSS,
+ * więc tytuł, który konsola przepisuje („Bieżący cykl: …”), jej nie gubi.
+ * Rozwinięte zostają rozwinięte przy kolejnym kliencie — do odświeżenia strony.
+ */
+for (const sekcja of document.querySelectorAll("#zakladka-analiza .panel, #zakladka-analiza .karta")) {
+  const naglowek = sekcja.querySelector(":scope > h2, :scope > h3");
+  if (!naglowek) continue;
+  sekcja.classList.add("zwijany", "zwiniety");
+  naglowek.setAttribute("role", "button");
+  naglowek.tabIndex = 0;
+  naglowek.setAttribute("aria-expanded", "false");
+  const przelacz = () => {
+    const zwiniety = sekcja.classList.toggle("zwiniety");
+    naglowek.setAttribute("aria-expanded", String(!zwiniety));
+  };
+  naglowek.addEventListener("click", przelacz);
+  naglowek.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); przelacz(); }
+  });
+}
+
 const dataKrotko = (iso) => {
   const d = new Date(iso);
   return `${DNI_TYGODNIA[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;

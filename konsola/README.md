@@ -518,7 +518,7 @@ Po wejściu w klienta dwie zakładki:
 
 - **Plany** — cykle klienta: Otwórz, Nowa wersja, usuń. Tu rozpisujesz plany,
   jak dotąd.
-- **Analiza** — wszystko o tym, jak klient trenuje: bieżący cykl
+- **Analiza** — panele zwinięte na start, klik w tytuł rozwija. Wszystko o tym, jak klient trenuje: bieżący cykl
   (realizacja tydzień po tygodniu, ciężary inne niż w planie, zmiany 1RM
   z treningów), **dziennik treningów** (każdy trening od najnowszego; po
   rozwinięciu serie klienta obok planu, ocena, TOP SET, „lżej / ciężej”),

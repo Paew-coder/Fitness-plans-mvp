@@ -1576,6 +1576,14 @@ Trener: „te dwie sekcje bardzo zlewają się ze sobą i są mało przejrzyste 
 * **1RM z treningów:** wiersz na tle — nazwa, „NA POCZĄTKU 109,3 kg / T2: 100 kg × 4” → „NAJWYŻSZY 115,0 kg / TOP SET T5: 115 kg × 1” i zmiana w kolorowym znaczniku (zielony w górę, czerwony w dół). Telefon: nazwa nad liczbami.
 * **Inny ciężar niż w planie:** nazwa i znaczniki „lżej · 1 z 5” (bursztynowy) / „ciężej · 2 z 5” (niebieski).
 
+**148. Analiza: panele zwijane, wyjściowo zwinięte; „Progress 1RM w bieżącym cyklu” — 23.11.2026.**
+
+Trener: „dodaj możliwość zwijania poszczególnych paneli w analizie — wyjściowo wszystkie mają być zwinięte i pokazują się dopiero, jak kliknę np. »Ciężary i 1RM w bieżącym cyklu« — swoją drogą zmieńmy ten tytuł na »Progress 1RM w bieżącym cyklu«”.
+
+* Wszystkie panele zakładki Analiza (bieżący cykl, Progress 1RM, dziennik, 1RM przez cykle i karty z boku) startują zwinięte — widać same tytuły ze strzałką. Klik w tytuł (albo Enter / spacja) rozwija i zwija. Rozwinięte zostają rozwinięte przy kolejnym kliencie, do odświeżenia strony.
+* „Ciężary i 1RM w bieżącym cyklu” → „Progress 1RM w bieżącym cyklu”.
+* Przegląd ekranów: +1 (zwinięte na start, klik rozwija, Enter zwija).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
