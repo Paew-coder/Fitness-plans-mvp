@@ -349,7 +349,7 @@ function rysujKartoteke() {
   rysujCykle(plany);
   rysujTeraz(kartoteka.teraz);
   rysujDziennik(kartoteka.dziennik ?? []);
-  rysujSciezki1RM(historia.cwiczenia);
+  rysujSciezki1RM(kartoteka.sciezki1RM ?? historia.cwiczenia);
   rysujHistorieObciazenia(historia.cykle);
   rysujHistorieWzorcow(historia.wzorce);
   rysujHistorieFrekwencji(historia.cykle);
@@ -757,6 +757,10 @@ function rysujSciezki1RM(cwiczeniaHistorii) {
 
   const zTrendem = cwiczeniaHistorii.filter((c) => c.wCyklach >= 2);
   const jednorazowe = cwiczeniaHistorii.filter((c) => c.wCyklach < 2);
+  // Ta sama miara co „Progress 1RM” (23.11.2026): najwyższy szacunek
+  // z treningów w cyklu, bez RPE — nie 1RM z planu.
+  kontener.append(el("p", "opis-bloku",
+    "W każdym cyklu najwyższy 1RM z treningów — z ciężaru i powtórzeń, bez RPE (TOP SET i maksy — ciężar wprost)."));
 
   if (zTrendem.length === 0) {
     kontener.append(el("p", "wskazowka",
@@ -772,7 +776,9 @@ function rysujSciezki1RM(cwiczeniaHistorii) {
     wiersz.append(linia1RM(c.punkty.map((p) => p.oneRM)));
     const klasa = c.zmianaKg > 0 ? "wzrost" : c.zmianaKg < 0 ? "spadek" : "";
     wiersz.append(el("span", `wartosc ${klasa}`, zeZnakiemProc(c.zmianaProc)));
-    wiersz.title = `Cykle ${c.punkty.map((p) => `${p.wersja}.0`).join(", ")}`;
+    wiersz.title = c.punkty.map((p) => `${p.wersja}.0: ${liczba(p.oneRM, 1)} kg`
+      + (p.zrodlo ? ` (${p.zrodlo.rodzaj === "top set" ? "TOP SET " : p.zrodlo.rodzaj === "maksy" ? "maksy " : ""}`
+        + `T${p.zrodlo.tydzien}: ${liczba(p.zrodlo.ciezar)} kg × ${p.zrodlo.powtorzenia})` : "")).join("\n");
     kontener.append(wiersz);
   }
 

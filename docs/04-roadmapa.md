@@ -1605,6 +1605,14 @@ Trener (zrzut paska): „uporządkuj mi ten panel i popraw na bardziej profesjon
 
 Trener: „tę zakładkę możemy usunąć z analizy”. Panel zdjęty; stres zrobiony liczy się dalej (`stresZrobiony`) — do kolumny „Zrobione” w „Skokach obciążenia”.
 
+**152. „1RM przez cykle” z treningów, bez RPE — 23.11.2026.**
+
+Trener (zrzut „Barbell bench press 129 → 120,3 kg, −6,7%”): „to chyba jest nieaktualne, bo jest ten problem z RM w bench press, o którym pisaliśmy”.
+
+* Dotąd panel brał 1RM z planu na wejściu w cykl (T1), więc obniżka 1RM serią w środku cyklu (126 → 120,3) przeszła do kolejnego cyklu i wyglądała jak spadek siły; ćwiczenia z 1RM wpisanym raz stały na „0%”.
+* Teraz ta sama miara co „Progress 1RM”: w każdym cyklu najwyższy szacunek z treningów — z ciężaru i powtórzeń, bez RPE; TOP SET i maksy ciężarem wprost. Cykl bez serii ćwiczenia nie ma punktu. W dymku przy wierszu: cykl po cyklu, wynik i z której serii.
+* Kod: `szacunki1RM` (wspólne z „Progress 1RM”) i `oneRMPrzezCykle` w `konsola/profil-klienta.ts`; kartoteka — pole `sciezki1RM`. Test: `profil-klienta.test.ts` (+1). Ekran postępu klienta w telefonie bez zmian.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

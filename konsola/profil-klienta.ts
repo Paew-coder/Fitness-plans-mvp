@@ -49,6 +49,73 @@ export function roznicaCiezaru(serie: readonly SeriaWykonana[], planowany: unkno
 const dzienWpisu = (plan: Plan, w: Wykonanie) =>
   w.tydzien === TYDZIEN_MAKSOW ? 1 : plan.sloty.find((s) => s.positionId === w.positionId)?.dzien;
 
+type Zrodlo1RM = { rodzaj: "seria" | "top set" | "maksy"; tydzien: number; ciezar: number; powtorzenia: number };
+
+/**
+ * Szacunki 1RM z treningów jednego cyklu, bez RPE (23.11.2026): seria jak do
+ * upadku (tabela przy RPE 10), TOP SET i maksy (1 powtórzenie) — ciężar wprost.
+ * Na ćwiczenie: lista szacunków z kluczem tygodnia i źródłem.
+ */
+export function szacunki1RM(z: ZapisanyPlan, wynik: Wynik = przeliczPlan(z.plan)) {
+  const wykonania = z.wykonania ?? [];
+  const szacunki = new Map<string, { klucz: number; oneRM: number; zrodlo: Zrodlo1RM }[]>();
+  const dopisz = (id: string, klucz: number, ciezar: number, powtorzenia: number, rodzaj: Zrodlo1RM["rodzaj"]) => {
+    const procent = procent1RM(powtorzenia, 10);
+    if (!(ciezar > 0) || !procent) return;
+    const lista = szacunki.get(id) ?? [];
+    lista.push({ klucz, oneRM: Math.round(ciezar / (procent / 100) * 10) / 10,
+      zrodlo: { rodzaj, tydzien: numerTygodniaNaEkranie(z.plan, klucz), ciezar, powtorzenia } });
+    szacunki.set(id, lista);
+  };
+  for (const w of wykonania) {
+    const s = tydzienWyniku(wynik, w.tydzien)?.sloty.find((x) => x.positionId === w.positionId);
+    const id = w.cwiczenieId ?? s?.cwiczenie?.id;
+    if (!id) continue;
+    for (const seria of serieWpisu(w)) {
+      if (seria.ciezar && seria.powtorzenia) {
+        dopisz(id, w.tydzien, seria.ciezar, seria.powtorzenia, w.tydzien === TYDZIEN_MAKSOW ? "maksy" : "seria");
+      }
+    }
+  }
+  for (const slot of z.plan.sloty) {
+    for (const [klucz, p] of Object.entries(slot.tygodnie ?? {})) {
+      const kg = p?.topSetKlienta?.kg;
+      const ts = kg ? tydzienWyniku(wynik, Number(klucz))?.topSety?.find((x) => x.positionId === slot.positionId) : null;
+      if (kg && ts?.cwiczenie) dopisz(ts.cwiczenie.id, Number(klucz), kg, 1, "top set");
+    }
+  }
+  return szacunki;
+}
+
+/**
+ * 1RM przez cykle (23.11.2026): w każdym cyklu najwyższy szacunek z treningów
+ * — ta sama miara co „Progress 1RM”, bez RPE. Trener: „to chyba jest
+ * nieaktualne, bo jest ten problem z RM w bench press” — dotąd panel brał
+ * 1RM z planu na wejściu w cykl, więc obniżka 1RM serią w środku cyklu
+ * (126 → 120,3) wyglądała jak spadek siły. Cykl bez serii ćwiczenia — bez punktu.
+ */
+export function oneRMPrzezCykle(plany: readonly ZapisanyPlan[]) {
+  const wgCwiczenia = new Map<string, { nazwa: string; punkty: { wersja: number; oneRM: number; zrodlo: Zrodlo1RM }[] }>();
+  for (const z of [...plany].sort((a, b) => a.wersja - b.wersja)) {
+    for (const [id, lista] of szacunki1RM(z)) {
+      const max = lista.reduce((a, b) => (b.oneRM > a.oneRM ? b : a));
+      const wpis = wgCwiczenia.get(id) ?? { nazwa: nazwaCwiczenia(id), punkty: [] };
+      wpis.punkty.push({ wersja: z.wersja, oneRM: max.oneRM, zrodlo: max.zrodlo });
+      wgCwiczenia.set(id, wpis);
+    }
+  }
+  return [...wgCwiczenia].map(([cwiczenieId, w]) => {
+    const pierwszy = w.punkty[0]!.oneRM;
+    const ostatni = w.punkty.at(-1)!.oneRM;
+    return {
+      cwiczenieId, nazwa: w.nazwa, punkty: w.punkty, pierwszy, ostatni,
+      zmianaKg: Math.round((ostatni - pierwszy) * 10) / 10,
+      zmianaProc: pierwszy > 0 ? Math.round(((ostatni - pierwszy) / pierwszy) * 1000) / 10 : null,
+      wCyklach: w.punkty.length,
+    };
+  }).sort((a, b) => Math.abs(b.zmianaKg) - Math.abs(a.zmianaKg) || a.nazwa.localeCompare(b.nazwa, "pl"));
+}
+
 /**
  * Dziennik treningów: trening = cykl × tydzień × dzień, od najnowszego.
  * Przy każdym ćwiczeniu serie klienta, ocena, TOP SET i plan tego tygodnia
@@ -240,33 +307,7 @@ export function terazKlienta(z: ZapisanyPlan) {
    * z pierwszego tygodnia, w którym ćwiczenie ma serie; potem najwyższy
    * z całego cyklu. Dwubój też — tu liczą się kilogramy, nie RPE.
    */
-  type Zrodlo1RM = { rodzaj: "seria" | "top set" | "maksy"; tydzien: number; ciezar: number; powtorzenia: number };
-  const szacunki = new Map<string, { klucz: number; oneRM: number; zrodlo: Zrodlo1RM }[]>();
-  const dopisz = (id: string, klucz: number, ciezar: number, powtorzenia: number, rodzaj: Zrodlo1RM["rodzaj"]) => {
-    const procent = procent1RM(powtorzenia, 10);
-    if (!(ciezar > 0) || !procent) return;
-    const lista = szacunki.get(id) ?? [];
-    lista.push({ klucz, oneRM: Math.round(ciezar / (procent / 100) * 10) / 10,
-      zrodlo: { rodzaj, tydzien: numerTygodniaNaEkranie(z.plan, klucz), ciezar, powtorzenia } });
-    szacunki.set(id, lista);
-  };
-  for (const w of wykonania) {
-    const s = tydzienWyniku(wynik, w.tydzien)?.sloty.find((x) => x.positionId === w.positionId);
-    const id = w.cwiczenieId ?? s?.cwiczenie?.id;
-    if (!id) continue;
-    for (const seria of serieWpisu(w)) {
-      if (seria.ciezar && seria.powtorzenia) {
-        dopisz(id, w.tydzien, seria.ciezar, seria.powtorzenia, w.tydzien === TYDZIEN_MAKSOW ? "maksy" : "seria");
-      }
-    }
-  }
-  for (const slot of z.plan.sloty) {
-    for (const [klucz, p] of Object.entries(slot.tygodnie ?? {})) {
-      const kg = p?.topSetKlienta?.kg;
-      const ts = kg ? tydzienWyniku(wynik, Number(klucz))?.topSety?.find((x) => x.positionId === slot.positionId) : null;
-      if (kg && ts?.cwiczenie) dopisz(ts.cwiczenie.id, Number(klucz), kg, 1, "top set");
-    }
-  }
+  const szacunki = szacunki1RM(z, wynik);
   const kolejnoscCwiczen = (id: string) => {
     const i = z.plan.sloty.findIndex((s) => s.cwiczenieId === id);
     return i < 0 ? 999 : i;

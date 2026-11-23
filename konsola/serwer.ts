@@ -60,7 +60,7 @@ import { zaokraglij } from "../silnik/src/pomocnicze.ts";
 import { PRZECIWWSKAZANIA, dawkaOddechowa, OBJASNIENIA_ODDECHU } from "../silnik/src/oddech.ts";
 import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
-import { dziennikTreningow, terazKlienta } from "./profil-klienta.ts";
+import { dziennikTreningow, terazKlienta, oneRMPrzezCykle } from "./profil-klienta.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import { porownajCykle, podsumujPorownanie } from "../silnik/src/porownanie-cykli.ts";
 import { historiaKlienta, podsumujHistorie } from "../silnik/src/historia-klienta.ts";
@@ -894,6 +894,8 @@ function kartotekaKlienta(trenerId: number, klientId: string) {
       realizacja: realizacja(biezacy, klient),
     } : null,
     dziennik: dziennikTreningow(plany),
+    // 1RM przez cykle z treningów, bez RPE — jak „Progress 1RM” (23.11.2026).
+    sciezki1RM: oneRMPrzezCykle(plany),
     normy: NORMY,
     waga: magazyn.wagaKlienta(trenerId, klientId),
     aktywnyPlanId: aktywny?.id ?? null,

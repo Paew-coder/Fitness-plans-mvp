@@ -116,3 +116,22 @@ test("Analiza: ranking stresu ćwiczeń i skoki obciążenia (plan; zrobione tam
   assert.equal(t.skoki[0]!.plan.zmiana, null);
   assert.ok(t.skoki[0]!.zrobiony && t.skoki[1]!.zrobiony && t.skoki[2]!.zrobiony === null);
 });
+
+test("1RM przez cykle: w każdym cyklu najwyższy szacunek z treningów (bez RPE), nie 1RM z planu", async () => {
+  const { oneRMPrzezCykle } = await import("../profil-klienta.ts");
+  const cykl1 = zapisany();
+  const cykl2 = zapisany();
+  (cykl2 as any).id = "kt-2";
+  (cykl2 as any).wersja = 2;
+  // Cykl 2: 1RM w planie niższe (jak po obniżce serią), ale klient podniósł więcej.
+  (cykl2.plan as any).serieMaksymalne = [{ cwiczenieId: "EX-0016", ciezar: 60, powtorzenia: 1 }];
+  (cykl2 as any).wykonania = [{ positionId: "D1-S01", tydzien: 1, data: "2026-12-01T10:00:00.000Z", feedback: "OK",
+    serie: [{ ciezar: 80, powtorzenia: 5 }] }];
+  const r = oneRMPrzezCykle([cykl2, cykl1]);
+  const wioslo = r.find((c) => c.nazwa === "Barbell row")!;
+  assert.deepEqual(wioslo.punkty.map((p) => p.wersja), [1, 2]);
+  assert.equal(wioslo.punkty[1]!.oneRM, Math.round(80 / 0.885 * 10) / 10, "80 × 5 → 90,4 kg, nie 60 z planu");
+  assert.equal(wioslo.wCyklach, 2);
+  // Wykrok bez serii z ciężarem — nie ma go w ogóle.
+  assert.ok(!r.some((c) => c.nazwa === "Alt. Drop Lunge - Low Impact"));
+});
