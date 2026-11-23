@@ -416,45 +416,57 @@ function rysujTeraz(t) {
   if (t.ciezaryCwiczen.length === 0 && t.oneRMCwiczen.length === 0) {
     ciezary.append(el("p", "wskazowka", "W tym cyklu nie ma jeszcze serii z ciężarem, z których dałoby się policzyć 1RM."));
   }
-  // Słowami (22.11.2026, trener: „wytłumacz mi, co tu widzę — ten zapis cyfr”):
-  // nazwa w pierwszej linijce, co się stało — w drugiej.
-  const wpis = (nazwa, opis, tytul = "", dopisek = "") => {
-    const w = el("div", "wiersz-zmiany");
-    w.append(el("div", "nazwa-zmiany", nazwa), el("div", "opis-zmiany", opis));
-    if (dopisek) w.append(el("div", "zrodlo-zmiany", dopisek));
-    if (tytul) w.title = tytul;
-    return w;
+  // Dwa osobne bloki (23.11.2026, trener: „te dwie sekcje bardzo zlewają się
+  // ze sobą i są mało przejrzyste”): każdy z nagłówkiem i jednym zdaniem,
+  // 1RM w kolumnach „na początku → najwyższy” ze zmianą w kolorze,
+  // inne ciężary — znacznikami „lżej” / „ciężej”.
+  const blok = (tytul, opis) => {
+    const b = el("section", "blok-ciezarow");
+    b.append(el("h3", "tytul-bloku", tytul), el("p", "opis-bloku", opis));
+    ciezary.append(b);
+    return b;
   };
-  if (t.ciezaryCwiczen.length > 0) {
-    ciezary.append(el("p", "etykieta-sekcji", "Inny ciężar niż w planie (ponad 2%)"));
-    for (const c of t.ciezaryCwiczen) {
-      const treningow = odmiana(c.wpisow, ["treningu", "treningów", "treningów"]);
-      const czesci = [c.lzej ? `${c.lzej} z ${c.wpisow} ${treningow} lżej niż plan` : null,
-        c.ciezej ? `${c.ciezej} z ${c.wpisow} ${treningow} ciężej niż plan` : null].filter(Boolean);
-      ciezary.append(wpis(c.nazwa, czesci.join(" · "),
-        "Najcięższa seria treningu porównana z ciężarem z planu tego tygodnia"));
-    }
-  }
   // 1RM z treningów bez RPE: pierwszy trening → najwyższy w cyklu (23.11.2026,
   // trener: „jeżeli na początku robiłem 100 × 4, a na końcu 105 × 3, to z tego
   // porównuj maxa, chyba że z top setu wyszło więcej — wtedy top set”).
   if (t.oneRMCwiczen.length > 0) {
-    ciezary.append(el("p", "etykieta-sekcji", "1RM z treningów: na początku cyklu → najwyższy"));
+    const b = blok("1RM z treningów",
+      "Na początku cyklu → najwyższy w cyklu. Z ciężaru i powtórzeń, bez RPE (seria liczona jak do upadku); TOP SET i maksy — ciężar wprost.");
     const kg = (n) => `${liczba(n, 1)} kg`;
     const skad = (z) => `${z.rodzaj === "top set" ? "TOP SET " : z.rodzaj === "maksy" ? "maksy " : ""}`
       + `T${z.tydzien}: ${liczba(z.ciezar)} kg × ${z.powtorzenia}`;
+    const komorka = (etykieta, wartosc, zrodlo) => {
+      const k = el("div", "komorka-1rm");
+      k.append(el("span", "etykieta-1rm", etykieta), el("strong", "wartosc-1rm", wartosc), el("span", "zrodlo-1rm", zrodlo));
+      return k;
+    };
     for (const c of t.oneRMCwiczen) {
-      const p = c.poczatek.oneRM;
-      const n = c.najwyzszy.oneRM;
-      const proc = Math.round((n / p - 1) * 1000) / 10;
-      const tenSam = c.poczatek.zrodlo.tydzien === c.najwyzszy.zrodlo.tydzien
-        && c.poczatek.zrodlo.ciezar === c.najwyzszy.zrodlo.ciezar && c.poczatek.zrodlo.powtorzenia === c.najwyzszy.zrodlo.powtorzenia;
-      ciezary.append(wpis(c.nazwa,
-        `${kg(p)} → ${kg(n)} (${proc > 0 ? "+" : proc < 0 ? "−" : "±"}${liczba(Math.abs(proc), 1)}%)`,
-        "1RM liczone z ciężaru i powtórzeń, bez RPE — tak, jakby seria szła do upadku (4 powtórzenia = 91,5% 1RM). "
-          + "TOP SET i maksy (1 powtórzenie) — ciężar wprost.",
-        tenSam ? `najwyższy już na początku — ${skad(c.najwyzszy.zrodlo)}`
-          : `na początku ${skad(c.poczatek.zrodlo)} · najwyższy ${skad(c.najwyzszy.zrodlo)}`));
+      const proc = Math.round((c.najwyzszy.oneRM / c.poczatek.oneRM - 1) * 1000) / 10;
+      const w = el("div", "wiersz-1rm");
+      const strzalka = el("span", "strzalka-1rm", "→");
+      strzalka.setAttribute("aria-hidden", "true");
+      w.append(
+        el("div", "nazwa-1rm", c.nazwa),
+        komorka("na początku", kg(c.poczatek.oneRM), skad(c.poczatek.zrodlo)),
+        strzalka,
+        komorka("najwyższy", kg(c.najwyzszy.oneRM), skad(c.najwyzszy.zrodlo)),
+        el("span", `zmiana-1rm ${proc > 0 ? "plus" : proc < 0 ? "minus" : "zero"}`,
+          `${proc > 0 ? "+" : proc < 0 ? "−" : "±"}${liczba(Math.abs(proc), 1)}%`),
+      );
+      b.append(w);
+    }
+  }
+  if (t.ciezaryCwiczen.length > 0) {
+    const b = blok("Inny ciężar niż w planie",
+      "Najcięższa seria treningu różniła się od ciężaru z planu tego tygodnia o ponad 2%.");
+    for (const c of t.ciezaryCwiczen) {
+      const w = el("div", "wiersz-odchylen");
+      const znaczniki = el("div", "znaczniki-odchylen");
+      if (c.lzej) znaczniki.append(el("span", "znacznik-odchylenia lzej", `lżej · ${c.lzej} z ${c.wpisow}`));
+      if (c.ciezej) znaczniki.append(el("span", "znacznik-odchylenia ciezej", `ciężej · ${c.ciezej} z ${c.wpisow}`));
+      w.title = `${c.wpisow} ${odmiana(c.wpisow, ["trening", "treningi", "treningów"])} z tym ćwiczeniem w cyklu`;
+      w.append(el("div", "nazwa-1rm", c.nazwa), znaczniki);
+      b.append(w);
     }
   }
 

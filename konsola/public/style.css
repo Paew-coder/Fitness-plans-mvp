@@ -430,6 +430,43 @@ table.tabela-dziennika td.lp, table.tabela-dziennika th:first-child { width: 2.5
 .nazwa-zmiany { font-weight: 600; font-size: .88rem; }
 .opis-zmiany { font-size: .82rem; color: var(--tekst-slaby); overflow-wrap: anywhere; }
 .zrodlo-zmiany { font-size: .76rem; color: var(--tekst-blady); overflow-wrap: anywhere; margin-top: .1rem; }
+/* „Ciężary i 1RM w bieżącym cyklu” — dwa osobne bloki (23.11.2026). */
+.blok-ciezarow + .blok-ciezarow { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 2px solid var(--linia-mocna); }
+.tytul-bloku {
+  margin: 0; font: 600 .95rem/1.3 var(--sans); text-transform: none; letter-spacing: 0; color: var(--tekst);
+}
+.opis-bloku { margin: .2rem 0 .6rem; font-size: .78rem; color: var(--tekst-blady); }
+.wiersz-1rm {
+  display: grid; grid-template-columns: minmax(9rem, 1.3fr) minmax(0, 1fr) auto minmax(0, 1fr) 4.6rem;
+  align-items: center; gap: .4rem .9rem; padding: .6rem .7rem; border-radius: 6px; background: var(--panel);
+}
+.wiersz-1rm + .wiersz-1rm, .wiersz-odchylen + .wiersz-odchylen { margin-top: .4rem; }
+.nazwa-1rm { font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
+.komorka-1rm { display: flex; flex-direction: column; min-width: 0; }
+.etykieta-1rm { font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--tekst-blady); }
+.wartosc-1rm { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.zrodlo-1rm { font-size: .74rem; color: var(--tekst-slaby); overflow-wrap: anywhere; }
+.strzalka-1rm { color: var(--tekst-blady); font-size: 1.1rem; }
+.zmiana-1rm {
+  justify-self: end; padding: .2rem .55rem; border-radius: 999px; font-weight: 600; font-size: .82rem;
+  font-variant-numeric: tabular-nums; border: 1px solid currentColor; white-space: nowrap;
+}
+.zmiana-1rm.plus { color: var(--dobrze); background: color-mix(in srgb, var(--dobrze) 12%, transparent); }
+.zmiana-1rm.minus { color: var(--zle); background: var(--zle-tlo); }
+.zmiana-1rm.zero { color: var(--tekst-slaby); }
+.wiersz-odchylen {
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem .8rem; flex-wrap: wrap;
+  padding: .55rem .7rem; border-radius: 6px; background: var(--panel);
+}
+.znaczniki-odchylen { display: flex; gap: .4rem; flex-wrap: wrap; }
+.znacznik-odchylenia { padding: .15rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.znacznik-odchylenia.lzej { color: var(--uwaga); background: var(--uwaga-tlo); }
+.znacznik-odchylenia.ciezej { color: var(--akcent); background: var(--akcent-tlo); }
+@media (max-width: 760px) {
+  /* Telefon: nazwa na całą szerokość, pod nią początek → najwyższy i zmiana. */
+  .wiersz-1rm { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; }
+  .wiersz-1rm .nazwa-1rm { grid-column: 1 / -1; }
+}
 .uwaga-profilu { margin: 0 0 .5rem; font-size: .85rem; line-height: 1.4; overflow-wrap: anywhere; }
 #teraz-realizacja > button { margin-top: .8rem; }
 .linia-1rm { width: 4rem; height: 1.25rem; flex: none; }

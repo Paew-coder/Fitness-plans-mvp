@@ -1568,6 +1568,14 @@ Trener (o „129,0 kg → 129,0 kg (±0,0%)”, gdzie oba 129 wyszły z RPE): �
 * „na początku” — najlepszy wynik z pierwszego tygodnia, w którym ćwiczenie ma serie; „najwyższy” — z całego cyklu. Pod spodem: „na początku T1: 100 kg × 4 · najwyższy T5: 105 kg × 3” (albo „TOP SET T3: …”, „maksy T8: …”; „najwyższy już na początku — …”, gdy to ta sama seria). 1RM z planu (serie maksymalne, zmiany w środku cyklu) nie miesza się już z tym porównaniem.
 * Test: `profil-klienta.test.ts` (przepisany).
 
+**147. Karta „Ciężary i 1RM w bieżącym cyklu” — dwa osobne bloki — 23.11.2026.**
+
+Trener: „te dwie sekcje bardzo zlewają się ze sobą i są mało przejrzyste — popraw”.
+
+* Dwa bloki z własnym nagłówkiem i jednym zdaniem opisu, rozdzielone grubszą linią; 1RM najpierw.
+* **1RM z treningów:** wiersz na tle — nazwa, „NA POCZĄTKU 109,3 kg / T2: 100 kg × 4” → „NAJWYŻSZY 115,0 kg / TOP SET T5: 115 kg × 1” i zmiana w kolorowym znaczniku (zielony w górę, czerwony w dół). Telefon: nazwa nad liczbami.
+* **Inny ciężar niż w planie:** nazwa i znaczniki „lżej · 1 z 5” (bursztynowy) / „ciężej · 2 z 5” (niebieski).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
