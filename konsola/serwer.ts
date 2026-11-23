@@ -23,6 +23,7 @@ import {
   kolejnosc, liczbaTygodni, numerRoboczy, tygodnieRobocze, wczesniejszeRobocze, TYGODNI_MAX, TYGODNI_MIN,
 } from "../silnik/src/tygodnie.ts";
 import { sprawdzPlan, planGotowyDoWyslania } from "../silnik/src/walidacja.ts";
+import { skokiStresu, stresCwiczen } from "../silnik/src/analiza-stresu.ts";
 import { kopiaJesliTrzeba } from "./baza/kopie.ts";
 import { SCIEZKA_BAZY } from "./baza/sciezka.ts";
 import { powodNieuruchomienia, usunSlad, zapiszSlad } from "./baza/slad-pracy.ts";
@@ -967,6 +968,9 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     porownanie: porownanieZPoprzednim(zapisany, wynik),
     moduly: moduly(zapisany),
     normy: NORMY,
+    // Ranking ćwiczeń po stresie i skoki stresu planu (23.11.2026).
+    stresCwiczen: stresCwiczen(wynik),
+    skokiPlanu: skokiStresu(wynik.tygodnie.map((t) => Math.round(t.bilans.razem * 100) / 100)),
     // Plan innej długości niż 6 tygodni nie ma arkusza — konsola mówi dlaczego.
     bezArkusza: liczbaTygodni(zapisany.plan) !== 6 ? bezArkuszaPowod(zapisany.plan) : null,
   };

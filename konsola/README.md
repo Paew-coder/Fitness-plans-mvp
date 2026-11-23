@@ -522,7 +522,8 @@ Po wejściu w klienta dwie zakładki:
   (realizacja tydzień po tygodniu, ciężary inne niż w planie, zmiany 1RM
   z treningów), **dziennik treningów** (każdy trening od najnowszego; po
   rozwinięciu serie klienta obok planu, ocena, TOP SET, „lżej / ciężej”),
-  1RM przez cykle z linią trendu, a z boku oceny klienta, stres w bieżącym
+  stres ćwiczeń (kto „robi” stres cyklu), stres zaplanowany a zrobiony
+  (z serii klienta), skoki obciążenia tydzień do tygodnia, 1RM przez cykle z linią trendu, a z boku oceny klienta, stres w bieżącym
   cyklu, uwagi do ćwiczeń, obciążenie, wzorce ruchu, frekwencja i waga.
 
 ## Wykres stresu w cyklu (od 30.10.2026)

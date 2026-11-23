@@ -407,6 +407,95 @@ for (const sekcja of document.querySelectorAll("#zakladka-analiza .panel, #zakla
   });
 }
 
+/**
+ * Więcej z liczenia stresu (23.11.2026). Trener: „czy możemy jakieś sensowne
+ * dane jeszcze wyciągnąć z naszego systemu liczenia stresu? może jakieś
+ * poszczególne o ćwiczeniach?”, potem „zrób punkty 1, 2 i 3”. Liczby —
+ * `silnik/src/analiza-stresu.ts` i `konsola/profil-klienta.ts`.
+ */
+const procentZnak = (u) => `${u > 0 ? "+" : u < 0 ? "−" : "±"}${liczba(Math.abs(u) * 100, 0)}%`;
+
+/** 1. Które ćwiczenia „robią” stres cyklu — pasek udziału, centralny / obwodowy. */
+function rysujStresCwiczen(kontener, lista, { ile = Infinity } = {}) {
+  kontener.replaceChildren();
+  if (!lista?.length) {
+    kontener.append(el("p", "wskazowka", "W planie nie ma jeszcze ćwiczeń ze stresem."));
+    return;
+  }
+  kontener.append(el("p", "opis-bloku",
+    "Udział ćwiczenia w stresie całkowitym tygodni roboczych; pod spodem, ile z jego stresu to centralny (układ nerwowy), a ile obwodowy (mięśnie)."));
+  const maks = lista[0].udzial || 1;
+  for (const c of lista.slice(0, ile)) {
+    const w = el("div", "wiersz-stresu-cwiczenia");
+    const pasek = el("span", "pasek-udzialu");
+    const wypelnienie = el("span", "wypelnienie-udzialu");
+    wypelnienie.style.width = `${Math.round((c.udzial / maks) * 100)}%`;
+    pasek.append(wypelnienie);
+    const suma = c.centralny + c.obwodowy || 1;
+    w.append(el("span", "nazwa-1rm", c.nazwa), el("strong", "udzial-stresu", `${liczba(c.udzial * 100, 0)}%`), pasek,
+      el("span", "zrodlo-1rm", `${NAZWY_WZORCA[c.part] ?? c.part} · centralny ${liczba(c.centralny / suma * 100, 0)}% · obwodowy ${liczba(c.obwodowy / suma * 100, 0)}%`));
+    kontener.append(w);
+  }
+  if (lista.length > ile) kontener.append(el("p", "wskazowka", `… i ${lista.length - ile} więcej — całość w profilu klienta, w Analizie.`));
+}
+const NAZWY_WZORCA = { s: "przysiad", d: "martwy ciąg", b: "wyciskanie", r: "wiosłowanie", c: "core" };
+
+/** 2. Stres zaplanowany a zrobiony — tydzień po tygodniu i ćwiczenie po ćwiczeniu. */
+function rysujStresZrobiony(kontener, z) {
+  kontener.replaceChildren();
+  if (!z?.tygodnie.length) {
+    kontener.append(el("p", "wskazowka", "Klient nie zrobił jeszcze żadnego treningu w tym cyklu."));
+    return;
+  }
+  kontener.append(el("p", "opis-bloku",
+    "Ten sam wzór co w planie, liczony z serii klienta (jego powtórzenia, RPE z planu przesunięte oceną). Tylko odbyte treningi; ocena bez serii — jak w planie."));
+  const odznaka = (p) => el("span", `zmiana-1rm ${p == null ? "zero" : p < 85 ? "minus" : p > 115 ? "ponad" : "plus"}`, p == null ? "—" : `${p}%`);
+  const wiersz = (etykieta, plan, zrobiony, procent, dopisek = "") => {
+    const w = el("div", "wiersz-dawki");
+    w.append(el("span", "nazwa-1rm", etykieta),
+      el("span", "liczby-dawki", `plan ${liczba(plan, 1)} · zrobione ${liczba(zrobiony, 1)}`),
+      odznaka(procent));
+    if (dopisek) w.append(el("span", "zrodlo-1rm dopisek-dawki", dopisek));
+    return w;
+  };
+  kontener.append(wiersz("Cały cykl dotąd", z.razem.plan, z.razem.zrobiony, z.razem.procent));
+  kontener.append(el("p", "etykieta-sekcji", "Tydzień po tygodniu"));
+  for (const t of z.tygodnie) {
+    kontener.append(wiersz(`T${t.tydzien}${t.rodzaj ? ` ${t.rodzaj}` : ""}`, t.plan, t.zrobiony, t.procent,
+      `${t.treningow} ${odmiana(t.treningow, ["trening", "treningi", "treningów"])}`));
+  }
+  kontener.append(el("p", "etykieta-sekcji", "Ćwiczenie po ćwiczeniu"));
+  for (const c of z.cwiczenia) kontener.append(wiersz(c.nazwa, c.plan, c.zrobiony, c.procent));
+}
+
+/** 3. Skoki obciążenia — plan i (gdzie klient trenował) zrobione. */
+function rysujSkoki(kontener, skoki) {
+  kontener.replaceChildren();
+  if (!skoki?.length) return;
+  kontener.append(el("p", "opis-bloku",
+    "Stres tygodnia względem poprzedniego i względem średniej z 3 poprzednich. ⚠ — wzrost o ponad 20% albo ponad 1,3× średniej "
+      + "(jak stosunek obciążenia ostrego do przewlekłego: sygnał do spojrzenia, nie norma)."));
+  const tabela = el("table", "tabela-skokow");
+  const glowa = el("tr");
+  for (const n of ["", "Plan", "zmiana", "do śr. 3 tyg.", "Zrobione", "zmiana"]) glowa.append(el("th", "", n));
+  tabela.append(glowa);
+  const komorki = (s) => s ? [
+    el("td", "liczba", liczba(s.stres, 1)),
+    el("td", `liczba ${s.skok && s.zmiana > 0.2 ? "skok" : ""}`, s.zmiana == null ? "—" : procentZnak(s.zmiana)),
+    el("td", `liczba ${s.skok && s.doSredniej > 1.3 ? "skok" : ""}`, s.doSredniej == null ? "—" : `${liczba(s.doSredniej, 2)}×`),
+  ] : [el("td", "liczba pusta", "—"), el("td", "liczba pusta", ""), el("td", "liczba pusta", "")];
+  for (const t of skoki) {
+    const w = el("tr", t.plan.skok || t.zrobiony?.skok ? "wiersz-skoku" : "");
+    w.append(el("td", "", `${t.plan.skok || t.zrobiony?.skok ? "⚠ " : ""}T${t.tydzien}`), ...komorki(t.plan));
+    const z = komorki(t.zrobiony);
+    w.append(z[0], z[1]);
+    tabela.append(w);
+  }
+  const zawijka = el("div", "przewijana-tabela");
+  zawijka.append(tabela);
+  kontener.append(zawijka);
+}
+
 const dataKrotko = (iso) => {
   const d = new Date(iso);
   return `${DNI_TYGODNIA[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
@@ -494,6 +583,11 @@ function rysujTeraz(t) {
       b.append(w);
     }
   }
+
+  // Więcej z liczenia stresu (23.11.2026): ranking, zaplanowany a zrobiony, skoki.
+  rysujStresCwiczen($("#teraz-stres-cwiczen"), t.stresCwiczen);
+  rysujStresZrobiony($("#teraz-stres-zrobiony"), t.stresZrobiony);
+  rysujSkoki($("#teraz-skoki"), t.skoki);
 
   // Oceny: razem i ćwiczenia, przy których się powtarzają.
   const oceny = $("#teraz-oceny");
@@ -3074,11 +3168,21 @@ function rysujAnalize() {
     obciazenie.append(wierszMiary(etykietaTygodnia(obraz.zapisany.plan, t.tydzien),
       t.bilans.razem, maks, ""));
   }
+  // Skoki stresu planu (23.11.2026) — ostrzeżenie pod wykresem.
+  (obraz.skokiPlanu ?? []).forEach((s, i) => {
+    if (!s.skok) return;
+    const t = obraz.wynik.tygodnie[i];
+    obciazenie.append(el("p", "ostrzezenie-skoku",
+      `⚠ ${tNr(t.tydzien)}: ${s.zmiana > 0.2 ? `${procentZnak(s.zmiana)} względem poprzedniego tygodnia` : ""}`
+      + `${s.zmiana > 0.2 && s.doSredniej > 1.3 ? " · " : ""}`
+      + `${s.doSredniej > 1.3 ? `${liczba(s.doSredniej, 2)}× średniej z poprzednich` : ""}`));
+  });
+  rysujStresCwiczen($("#stres-cwiczen"), obraz.stresCwiczen, { ile: 8 });
 
   // wzorce ruchu
   const wzorce = $("#wzorce");
   wzorce.replaceChildren();
-  const biezacy = wyliczonyTydzienNr(tydzien) ?? obraz.wynik.tygodnie[5];
+  const biezacy = wyliczonyTydzienNr(tydzien) ?? obraz.wynik.tygodnie.at(-1);
   const bilans = biezacy.bilans;
   const maksWzorca = Math.max(...bilans.wzorce.map((w) => w.calkowity), 0.001);
   const SKROT_WZORCA = { s: "przysiad", d: "m. ciąg", b: "wycisk.", r: "wiosł.", c: "core" };

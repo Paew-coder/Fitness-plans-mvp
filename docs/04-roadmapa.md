@@ -1584,6 +1584,15 @@ Trener: „dodaj możliwość zwijania poszczególnych paneli w analizie — wyj
 * „Ciężary i 1RM w bieżącym cyklu” → „Progress 1RM w bieżącym cyklu”.
 * Przegląd ekranów: +1 (zwinięte na start, klik rozwija, Enter zwija).
 
+**149. Więcej z liczenia stresu: ranking ćwiczeń, zaplanowany a zrobiony, skoki obciążenia — 23.11.2026.**
+
+Trener: „czy możemy jakieś sensowne dane jeszcze wyciągnąć z naszego systemu liczenia stresu? może jakieś poszczególne o ćwiczeniach?”, potem „zrób punkty 1, 2 i 3”.
+
+* **Stres ćwiczeń w cyklu** (Analiza, panel; przy planie karta „Stres ćwiczeń”, 8 pierwszych): udział każdego ćwiczenia w stresie całkowitym tygodni roboczych (pasek), wzorzec i ile z jego stresu to centralny, a ile obwodowy. `stresCwiczen` w `silnik/src/analiza-stresu.ts`.
+* **Stres zaplanowany a zrobiony** (Analiza): ten sam `stresSlotu`, ale z serii klienta — każda seria z jego powtórzeniami, RPE z planu tego tygodnia przesunięte oceną (±1, jak przy 1RM); ocena bez serii albo domknięty dzień — jak w planie. Tylko odbyte treningi (tydzień w toku nie wygląda na niewykonany); deload tak, maksy nie. Cały cykl, tydzień po tygodniu (z liczbą treningów), ćwiczenie po ćwiczeniu; procent w znaczniku (< 85 % czerwony, > 115 % niebieski). `stresZrobiony` w `konsola/profil-klienta.ts`.
+* **Skoki obciążenia** (Analiza; przy planie ostrzeżenie pod wykresem w „Obciążeniu”): stres tygodnia względem poprzedniego i względem średniej z 3 poprzednich — ⚠ przy wzroście o ponad 20 % albo ponad 1,3× średniej (jak stosunek obciążenia ostrego do przewlekłego — sygnał, nie norma); plan i — gdzie klient trenował — zrobione. `skokiStresu`.
+* Nic z tego nie zmienia planu. Testy: silnik `analiza-stresu.test.ts` (2), konsola `profil-klienta.test.ts` (+2).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

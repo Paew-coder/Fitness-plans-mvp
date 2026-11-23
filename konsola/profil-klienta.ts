@@ -12,10 +12,13 @@
  * tu tylko zestawienie. Testy: `testy/profil-klienta.test.ts`.
  */
 import { katalog } from "../silnik/src/katalog.ts";
-import { numerTygodniaNaEkranie, przeliczPlan, TYDZIEN_MAKSOW, type Plan } from "../silnik/src/plan.ts";
+import { numerTygodniaNaEkranie, przeliczPlan, TYDZIEN_MAKSOW, tygodniePlanu, type Plan } from "../silnik/src/plan.ts";
 import type { SeriaWykonana } from "./serie-wykonane.ts";
 import { najciezsza, serieWpisu } from "./serie-wykonane.ts";
 import { procent1RM } from "../silnik/src/rpe.ts";
+import { serieEfektywne, stresSlotu } from "../silnik/src/stres.ts";
+import { PRZESUNIECIE_RPE } from "../silnik/src/odczyt-1rm.ts";
+import { skokiStresu, stresCwiczen } from "../silnik/src/analiza-stresu.ts";
 import { kolejnosc } from "../silnik/src/tygodnie.ts";
 import type { Wykonanie, ZapisanyPlan } from "./magazyn.ts";
 
@@ -112,6 +115,89 @@ export function dziennikTreningow(plany: readonly ZapisanyPlan[]) {
   return treningi.sort((a, b) => b.data.localeCompare(a.data)).slice(0, MAKS_TRENINGOW);
 }
 
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Stres zaplanowany a zrobiony (23.11.2026, trener: „zrób punkty 1, 2 i 3”).
+ *
+ * Ten sam `stresSlotu` co w planie, tylko z tego, co klient wpisał: każda
+ * seria osobno (jej powtórzenia), RPE z planu tego tygodnia przesunięte oceną
+ * (jak przy szacowaniu 1RM). Ocena bez serii albo domknięty dzień bez wpisu —
+ * „zrobione jak w planie”. Liczą się tylko treningi, które się odbyły (dzień
+ * z jakimkolwiek wpisem albo domknięty) — inaczej tydzień w toku wyglądałby
+ * jak niewykonany. Tygodnie robocze i deload; maksów nie (to próby, nie dawka).
+ */
+export function stresZrobiony(z: ZapisanyPlan, wynik: Wynik = przeliczPlan(z.plan)) {
+  const wykonania = z.wykonania ?? [];
+  const ukonczone = z.ukonczoneDni ?? [];
+  const jednostronne = z.plan.liczenieJednostronnych ?? "jak w arkuszu";
+  const tygodnie = [];
+  const cwiczenia = new Map<string, { nazwa: string; plan: number; zrobiony: number }>();
+  for (const klucz of tygodniePlanu(z.plan)) {
+    if (klucz === TYDZIEN_MAKSOW) continue;
+    const t = tydzienWyniku(wynik, klucz);
+    if (!t) continue;
+    const odbyte = new Set([
+      ...ukonczone.filter((u) => u.tydzien === klucz).map((u) => u.dzien),
+      ...wykonania.filter((w) => w.tydzien === klucz)
+        .map((w) => z.plan.sloty.find((s) => s.positionId === w.positionId)?.dzien)
+        .filter((d): d is number => d !== undefined),
+    ]);
+    if (odbyte.size === 0) continue;
+    let plan = 0;
+    let zrobiony = 0;
+    for (const s of t.sloty) {
+      if (!s.cwiczenie || !odbyte.has(s.dzien)) continue;
+      const w = wykonania.find((x) => x.positionId === s.positionId && x.tydzien === klucz);
+      const cw = (w?.cwiczenieId ? katalog.poId(w.cwiczenieId) : null) ?? s.cwiczenie;
+      const serie = serieWpisu(w).filter((x) => x.powtorzenia && x.powtorzenia > 0);
+      const rpe = s.rpe + PRZESUNIECIE_RPE[w?.feedback ?? "OK"];
+      const zTreningu = serie.length > 0
+        ? serie.reduce((a, x) => a + stresSlotu({ coeff: cw.coeff,
+          serie: serieEfektywne(1, cw.jednostronne, jednostronne), rpe, powtorzenia: x.powtorzenia! }).calkowity, 0)
+        : s.stres.calkowity;   // ocena bez serii albo domknięty dzień — jak w planie
+      plan += s.stres.calkowity;
+      zrobiony += zTreningu;
+      const c = cwiczenia.get(cw.id) ?? { nazwa: cw.nazwa, plan: 0, zrobiony: 0 };
+      c.plan += s.stres.calkowity;
+      c.zrobiony += zTreningu;
+      cwiczenia.set(cw.id, c);
+    }
+    tygodnie.push({
+      tydzien: numerTygodniaNaEkranie(z.plan, klucz),
+      rodzaj: "rodzaj" in t ? t.rodzaj ?? null : null,
+      treningow: odbyte.size,
+      plan: r2(plan), zrobiony: r2(zrobiony), procent: plan > 0 ? Math.round(zrobiony / plan * 100) : null,
+    });
+  }
+  const plan = tygodnie.reduce((a, t) => a + t.plan, 0);
+  const zrobiony = tygodnie.reduce((a, t) => a + t.zrobiony, 0);
+  return {
+    tygodnie,
+    razem: { plan: r2(plan), zrobiony: r2(zrobiony), procent: plan > 0 ? Math.round(zrobiony / plan * 100) : null },
+    cwiczenia: [...cwiczenia.values()]
+      .filter((c) => c.plan > 0)
+      .sort((a, b) => b.plan - a.plan)
+      .map((c) => ({ nazwa: c.nazwa, plan: r2(c.plan), zrobiony: r2(c.zrobiony), procent: Math.round(c.zrobiony / c.plan * 100) })),
+  };
+}
+
+/**
+ * Skoki obciążenia (23.11.2026): stres planu tydzień po tygodniu (tygodnie
+ * robocze) i — gdzie klient trenował — stres zrobiony, każdy względem
+ * poprzedniego tygodnia i średniej z trzech poprzednich (`skokiStresu`).
+ */
+export function skokiObciazenia(z: ZapisanyPlan, wynik: Wynik, zrobiony: ReturnType<typeof stresZrobiony>) {
+  const plan = skokiStresu(wynik.tygodnie.map((t) => r2(t.bilans.razem)));
+  const robocze = zrobiony.tygodnie.filter((t) => !t.rodzaj);
+  const zTreningow = skokiStresu(robocze.map((t) => t.zrobiony));
+  return wynik.tygodnie.map((t, i) => {
+    const numer = numerTygodniaNaEkranie(z.plan, t.tydzien);
+    const j = robocze.findIndex((x) => x.tydzien === numer);
+    return { tydzien: numer, plan: plan[i]!, zrobiony: j >= 0 ? zTreningow[j]! : null };
+  });
+}
+
 /**
  * Bieżący cykl w skrócie: oceny (razem i ćwiczenia, przy których się
  * powtarzają), ciężary inne niż w planie, zmiany 1RM w trakcie cyklu, uwagi
@@ -200,6 +286,7 @@ export function terazKlienta(z: ZapisanyPlan) {
       };
     });
 
+  const zrobionyStres = stresZrobiony(z, wynik);
   return {
     planId: z.id,
     wersja: z.wersja,
@@ -217,6 +304,11 @@ export function terazKlienta(z: ZapisanyPlan) {
       .sort((a, b) => b.lzej + b.ciezej - a.lzej - a.ciezej)
       .map(({ nazwa, lzej, ciezej, wpisow }) => ({ nazwa, lzej, ciezej, wpisow })),
     oneRMCwiczen,
+    // Więcej z liczenia stresu (23.11.2026): ranking ćwiczeń, zaplanowany
+    // a zrobiony, skoki obciążenia.
+    stresCwiczen: stresCwiczen(wynik),
+    stresZrobiony: zrobionyStres,
+    skoki: skokiObciazenia(z, wynik, zrobionyStres),
     uwagi: z.plan.sloty.filter((s) => s.cwiczenieId && s.uwaga?.trim())
       .map((s) => ({ dzien: s.dzien, lp: (s.lp ?? "").replace(/\.$/, ""), nazwa: nazwaCwiczenia(s.cwiczenieId), uwaga: s.uwaga!.trim() })),
     // Do wykresu stresu w konsoli (`wykresStresu`) — bez slotów.

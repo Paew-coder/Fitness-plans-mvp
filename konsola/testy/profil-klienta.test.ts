@@ -87,3 +87,32 @@ test("1RM bez RPE: pierwszy trening → najwyższy w cyklu; TOP SET ciężarem w
   // Bez serii z ciężarem (sama ocena) ćwiczenia tu nie ma.
   assert.ok(!terazKlienta(z).oneRMCwiczen.some((c) => c.nazwa === "Alt. Drop Lunge - Low Impact"));
 });
+
+test("stres zrobiony: z serii klienta (RPE z planu ± ocena), ocena bez serii — jak w planie; tylko odbyte treningi", async () => {
+  const { stresSlotu } = await import("../../silnik/src/stres.ts");
+  const { stresZrobiony } = await import("../profil-klienta.ts");
+  const z = zapisany();
+  const wynik = przeliczPlan(z.plan);
+  const slot = (t: number, id: string) => wynik.tygodnie[t - 1]!.sloty.find((s) => s.positionId === id)!;
+  const r = stresZrobiony(z, wynik);
+  assert.deepEqual(r.tygodnie.map((t) => [t.tydzien, t.treningow]), [[1, 2], [2, 1]]);
+  // T1: wiosło 2 serie × 8 przy RPE planu + 1 („za trudne”), wykrok sama ocena — jak w planie.
+  const wioslo = slot(1, "D1-S01");
+  const zrobioneWioslo = 2 * stresSlotu({ coeff: wioslo.cwiczenie!.coeff, serie: 1, rpe: wioslo.rpe + 1, powtorzenia: 8 }).calkowity;
+  const wykrok = slot(1, "D2-S01").stres.calkowity;
+  assert.ok(Math.abs(r.tygodnie[0]!.zrobiony - (zrobioneWioslo + wykrok)) < 0.02, JSON.stringify(r.tygodnie[0]));
+  assert.ok(Math.abs(r.tygodnie[0]!.plan - (wioslo.stres.calkowity + wykrok)) < 0.02);
+  // T2: tylko dzień 1 (jedna seria z planowanych) — mniej niż plan; dzień 2 się nie odbył, więc nie wchodzi.
+  assert.ok(Math.abs(r.tygodnie[1]!.plan - slot(2, "D1-S01").stres.calkowity) < 0.02);
+  assert.ok(r.tygodnie[1]!.procent! < 100);
+  assert.equal(r.cwiczenia[0]!.nazwa, "Barbell row");
+});
+
+test("Analiza: ranking stresu ćwiczeń i skoki obciążenia (plan; zrobione tam, gdzie klient trenował)", () => {
+  const t = terazKlienta(zapisany());
+  assert.deepEqual(t.stresCwiczen.map((c) => c.nazwa).sort(), ["Alt. Drop Lunge - Low Impact", "Barbell row"]);
+  assert.equal(t.skoki.length, 6);
+  assert.deepEqual(t.skoki.map((s) => s.tydzien), [1, 2, 3, 4, 5, 6]);
+  assert.equal(t.skoki[0]!.plan.zmiana, null);
+  assert.ok(t.skoki[0]!.zrobiony && t.skoki[1]!.zrobiony && t.skoki[2]!.zrobiony === null);
+});
