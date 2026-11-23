@@ -256,76 +256,101 @@
     </div>
   </section>
 
+  <!-- Pasek ustawień planu (23.11.2026, trener: „uporządkuj mi ten panel
+       i popraw na bardziej profesjonalny”): na górze tygodnie, pod nimi trzy
+       grupy — Cykl, Progresja, Ćwiczenia. Grupy przycisków NIE mogą stać
+       w <label>: kliknięcie w label uruchamia pierwszy przycisk w środku
+       (kliknięcie w „T4" wracało na „T1"). <label> tylko przy jednym polu. -->
   <div class="pasek-ustawien">
-    <!-- Grupy przycisków NIE mogą stać w <label>. Kliknięcie w label uruchamia
-         jego kontrolkę, czyli pierwszy przycisk w środku — przez co kliknięcie
-         w „T4" wracało natychmiast na „T1" i przełączanie tygodni nie działało
-         wcale. <label> zostaje tam, gdzie opisuje jedno pole formularza. -->
-    <label class="pole">
-      <span class="etykieta-pola">Liczba tygodni</span>
-      <select id="liczba-tygodni" title="Długość cyklu — od 4 do 12 tygodni roboczych"></select>
-      <small class="podpowiedz-pola">progresja blokami po 3 tyg.: T7–T9 jak T4–T6 z RPE +0,5, T10–T12 z +1,0 · arkusz tylko przy 6 tyg.</small>
-    </label>
-    <div class="pole">
+    <div class="pasek-tygodni">
       <span class="etykieta-pola">Tydzień</span>
       <span id="taby-tygodni" class="taby"></span>
     </div>
-    <div class="pole">
-      <span class="etykieta-pola">Wypełnij tygodnie</span>
-      <span class="taby">
-        <button type="button" id="progresja-szablonu">wpisz progresję</button>
-      </span>
-      <!-- Objaśnienia pod polami, nie w dymkach: na iPadzie dymków nie ma,
-           a trener pracuje na zmianę na laptopie i na iPadzie. -->
-      <small class="podpowiedz-pola">serie, powtórzenia i RPE z „Części planu” do wszystkich tygodni planu</small>
+
+    <div class="grupy-ustawien">
+      <section class="grupa-ustawien" aria-label="Cykl">
+        <h4 class="tytul-grupy">Cykl</h4>
+        <div class="pola-grupy">
+          <label class="pole">
+            <span class="etykieta-pola">Liczba tygodni</span>
+            <select id="liczba-tygodni" title="Długość cyklu — od 4 do 12 tygodni roboczych"></select>
+            <small class="podpowiedz-pola">bloki po 3 tyg. · T7–T12 jak T4–T6, RPE +0,5 na blok · arkusz tylko przy 6</small>
+          </label>
+          <label class="pole">
+            <span class="etykieta-pola">Start</span>
+            <input type="date" id="data-startu">
+            <small class="podpowiedz-pola" id="koniec-cyklu"></small>
+          </label>
+          <label class="pole">
+            <span class="etykieta-pola">Status</span>
+            <select id="status-wybor">
+              <option value="szkic">szkic</option>
+              <option value="wysłany">wysłany</option>
+              <option value="zakończony">zakończony</option>
+            </select>
+          </label>
+          <div class="pole">
+            <span class="etykieta-pola">Po cyklu</span>
+            <span class="taby przyciski-pola">
+              <button type="button" id="przelacz-deload">+ deload</button>
+              <button type="button" id="przelacz-maksy">+ maksy</button>
+            </span>
+            <small class="podpowiedz-pola" title="deload: jak ostatni tydzień, RPE o 1 niżej, bez TOP SETU (masa ciała: powtórzenia jak w T1) · maksy: 1 × 1 @ RPE 10, jeden dzień">deload: jak ostatni tydzień, RPE −1 · maksy: 1 × 1 @ RPE 10</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="grupa-ustawien" aria-label="Progresja">
+        <h4 class="tytul-grupy">Progresja</h4>
+        <div class="pola-grupy">
+          <label class="pole">
+            <span class="etykieta-pola">Część planu</span>
+            <select id="czesc-planu">
+              <option value="objętość">objętość (cz.1)</option>
+              <option value="intensywność">intensywność (cz.2)</option>
+              <option value="hipertrofia">hipertrofia (cz.1)</option>
+              <option value="hipertrofia 2">hipertrofia (cz.2)</option>
+            </select>
+            <small class="podpowiedz-pola">powtórzenia akcesoriów i progresja boju · cz.2 kontynuuje cz.1</small>
+          </label>
+          <label class="pole">
+            <span class="etykieta-pola">Akcesoria domyślnie</span>
+            <select id="tryb-akcesoriow">
+              <option value="trzymaj z bloku">trzymaj z bloku</option>
+              <option value="licz z RPE">licz z RPE</option>
+            </select>
+            <small class="podpowiedz-pola">pojedyncze ćwiczenie przestawia „R”</small>
+          </label>
+          <div class="pole">
+            <span class="etykieta-pola">Wypełnij tygodnie</span>
+            <span class="taby przyciski-pola">
+              <button type="button" id="progresja-szablonu">wpisz progresję</button>
+            </span>
+            <!-- Objaśnienia pod polami, nie w dymkach: na iPadzie dymków nie ma. -->
+            <small class="podpowiedz-pola">serie, powtórzenia i RPE z „Części planu” do wszystkich tygodni</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="grupa-ustawien" aria-label="Ćwiczenia">
+        <h4 class="tytul-grupy">Ćwiczenia</h4>
+        <div class="pola-grupy">
+          <label class="pole">
+            <span class="etykieta-pola">Szablon</span>
+            <select id="szablon-planu"></select>
+            <small class="podpowiedz-pola" id="szablon-info">układ dni, kategorie i TOP SET; ćwiczenia wybierasz sam albo losujesz obok</small>
+          </label>
+          <div class="pole">
+            <span class="etykieta-pola">Dobierz ćwiczenia</span>
+            <span class="taby przyciski-pola">
+              <button type="button" id="dobierz-puste">do pustych</button>
+              <button type="button" id="dobierz-od-nowa">wszystko od nowa</button>
+            </span>
+            <small class="podpowiedz-pola" id="dobor-info">według kategorii w „Szkielecie”: A — bój, B — złożone, C–E — akcesoria</small>
+          </div>
+        </div>
+      </section>
     </div>
-    <div class="pole">
-      <span class="etykieta-pola">Po cyklu</span>
-      <span class="taby">
-        <button type="button" id="przelacz-deload">+ deload</button>
-        <button type="button" id="przelacz-maksy">+ maksy</button>
-      </span>
-      <small class="podpowiedz-pola">deload: jak ostatni tydzień, RPE o 1 niżej, bez TOP SETU (masa ciała: powtórzenia jak w T1) · maksy: 1 × 1 @ RPE 10, jeden dzień</small>
-    </div>
-    <label>Wybierz szablon
-      <select id="szablon-planu"></select>
-      <small class="podpowiedz-pola" id="szablon-info">układ dni, kategorie i TOP SET; ćwiczenia wybierasz sam albo losujesz obok</small>
-    </label>
-    <div class="pole">
-      <span class="etykieta-pola">Dobierz ćwiczenia</span>
-      <span class="taby">
-        <button type="button" id="dobierz-puste">do pustych</button>
-        <button type="button" id="dobierz-od-nowa">wszystko od nowa</button>
-      </span>
-      <small class="podpowiedz-pola" id="dobor-info">według kategorii w „Szkielecie”: A — bój, B — złożone, C–E — akcesoria</small>
-    </div>
-    <label>Akcesoria domyślnie
-      <select id="tryb-akcesoriow">
-        <option value="trzymaj z bloku">trzymaj z bloku</option>
-        <option value="licz z RPE">licz z RPE</option>
-      </select>
-      <small class="podpowiedz-pola">dla wszystkich akcesoriów; pojedyncze przestawia „R” przy ćwiczeniu</small>
-    </label>
-    <label>Część planu
-      <select id="czesc-planu">
-        <option value="objętość">objętość (cz.1)</option>
-        <option value="intensywność">intensywność (cz.2)</option>
-        <option value="hipertrofia">hipertrofia (cz.1)</option>
-        <option value="hipertrofia 2">hipertrofia (cz.2)</option>
-      </select>
-      <small class="podpowiedz-pola">zmienia powtórzenia akcesoriów i progresję boju głównego; cz.2 to kontynuacja tego samego szablonu</small>
-    </label>
-    <label>Start
-      <input type="date" id="data-startu">
-      <small class="podpowiedz-pola" id="koniec-cyklu"></small>
-    </label>
-    <label>Status
-      <select id="status-wybor">
-        <option value="szkic">szkic</option>
-        <option value="wysłany">wysłany</option>
-        <option value="zakończony">zakończony</option>
-      </select>
-    </label>
   </div>
 
   <div class="uklad">

@@ -1593,6 +1593,14 @@ Trener: „czy możemy jakieś sensowne dane jeszcze wyciągnąć z naszego syst
 * **Skoki obciążenia** (Analiza; przy planie ostrzeżenie pod wykresem w „Obciążeniu”): stres tygodnia względem poprzedniego i względem średniej z 3 poprzednich — ⚠ przy wzroście o ponad 20 % albo ponad 1,3× średniej (jak stosunek obciążenia ostrego do przewlekłego — sygnał, nie norma); plan i — gdzie klient trenował — zrobione. `skokiStresu`.
 * Nic z tego nie zmienia planu. Testy: silnik `analiza-stresu.test.ts` (2), konsola `profil-klienta.test.ts` (+2).
 
+**150. Pasek ustawień planu uporządkowany — 23.11.2026.**
+
+Trener (zrzut paska): „uporządkuj mi ten panel i popraw na bardziej profesjonalny”.
+
+* Na górze osobny pasek z zakładkami tygodni (T1…, deload, maksy). Pod nim trzy grupy z nagłówkami: **Cykl** (liczba tygodni, start, status, po cyklu), **Progresja** (część planu, akcesoria domyślnie, wpisz progresję), **Ćwiczenia** (szablon, dobierz ćwiczenia).
+* Pola w siatce, równej wysokości (36 px), etykiety zwykłą czcionką zamiast wersalików, krótsze podpowiedzi (pełny opis deloadu w dymku). Grupy obok siebie od 1100 px; na iPadzie i telefonie jedna pod drugą, pola w grupie obok siebie.
+* Identyfikatory pól bez zmian — zachowanie konsoli to samo.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

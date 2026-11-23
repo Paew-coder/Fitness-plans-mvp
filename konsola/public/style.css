@@ -150,18 +150,47 @@ label { display: flex; flex-direction: column; gap: .3rem;
 .akcje { display: flex; align-items: center; gap: .8rem; }
 .zapis { font-family: var(--mono); font-size: .72rem; color: var(--tekst-blady); }
 
+/* Pasek ustawień planu (23.11.2026): tygodnie na górze, pod nimi trzy grupy. */
 .pasek-ustawien {
-  display: flex; gap: 1.4rem; align-items: flex-end; flex-wrap: wrap;
-  padding: .9rem 1rem; background: var(--panel);
-  border: 1px solid var(--linia); border-radius: 6px; margin-bottom: 1.2rem;
+  background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
+  margin-bottom: 1.2rem; overflow: hidden;
 }
+.pasek-tygodni {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  padding: .75rem 1rem; background: var(--plaszczyzna); border-bottom: 1px solid var(--linia);
+}
+.pasek-tygodni .taby { flex-wrap: wrap; gap: .3rem; }
+.pasek-tygodni .taby button { min-width: 2.6rem; min-height: 34px; font: 600 .85rem var(--sans); border-radius: 6px; }
+/* Linie między grupami to szczelina siatki na tle linii — same się układają,
+   gdy grupy przechodzą do kolejnego rzędu (iPad, telefon). */
+.grupy-ustawien { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--linia); }
+/* Trzy obok siebie dopiero na szerokim ekranie — na iPadzie dwie w rzędzie
+   zostawiały puste pole; jedna pod drugą, a pola w grupie obok siebie. */
+@media (min-width: 1100px) { .grupy-ustawien { grid-template-columns: 1fr 1fr 1fr; } }
+.grupa-ustawien { padding: .9rem 1rem 1rem; min-width: 0; background: var(--panel); }
+.tytul-grupy {
+  margin: 0 0 .75rem; font: 600 .7rem/1 var(--mono); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--akcent);
+}
+.pola-grupy { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .85rem 1rem; align-items: start; }
+.pasek-ustawien .pole { min-width: 0; gap: .35rem; }
+.pasek-ustawien .etykieta-pola {
+  font: 600 .78rem/1.2 var(--sans); text-transform: none; letter-spacing: 0; color: var(--tekst-slaby);
+}
+.pasek-ustawien select, .pasek-ustawien input[type="date"] {
+  width: 100%; min-height: 36px; box-sizing: border-box; border-radius: 6px; font: 500 .88rem var(--sans);
+}
+.przyciski-pola { flex-wrap: wrap; gap: .35rem; }
+.pasek-ustawien .przyciski-pola button {
+  min-height: 36px; padding: .35rem .75rem; border-radius: 6px; font: 500 .85rem var(--sans);
+}
+.pasek-ustawien .podpowiedz-pola { max-width: none; margin-top: 0; }
 .taby { display: flex; gap: .25rem; }
 .taby button { padding: .3rem .6rem; font-family: var(--mono); font-size: .8rem; }
 .taby button.aktywny { background: var(--akcent); border-color: var(--akcent); color: #fff; }
 /* Szablon z Base44: nazwy są długie, a lista rośnie do najdłuższej opcji —
    na telefonie wystawała poza ekran. */
 .pasek-ustawien label { min-width: 0; max-width: 100%; }
-#szablon-planu { max-width: min(22rem, 100%); }
 /* Tygodnie po cyklu — przerywana ramka odróżnia je od sześciu tygodni pracy. */
 .taby button.po-cyklu:not(.aktywny) { border-style: dashed; }
 .opis-po-cyklu { margin: .2rem 0 .6rem; }
@@ -795,7 +824,8 @@ table.tabela-dziennika td.lp { font-family: var(--mono); color: var(--tekst-blad
   /* Formularze: pole na całą szerokość, bo na 390 px trzy w rzędzie to nic. */
   .rzad-formularza { flex-direction: column; align-items: stretch; }
   .rzad-formularza label, .rzad-formularza button { width: 100%; }
-  .pasek-ustawien { gap: .8rem 1rem; padding: .8rem; }
+  .grupa-ustawien { padding: .8rem; }
+  .pasek-tygodni { padding: .7rem .8rem; }
 
   /* Panel boczny przestaje być przyklejony — na telefonie stoi po prostu
      pod planem, a `sticky` zamrażałby go w połowie przewijania. */
