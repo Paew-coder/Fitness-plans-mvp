@@ -435,26 +435,26 @@ function rysujTeraz(t) {
         "Najcięższa seria treningu porównana z ciężarem z planu tego tygodnia"));
     }
   }
-  // 1RM: na starcie planu → najwyższy szacowany z treningów, i z czego
-  // (23.11.2026, trener: „po prostu najwyższy szacowany wynik”).
+  // 1RM z treningów bez RPE: pierwszy trening → najwyższy w cyklu (23.11.2026,
+  // trener: „jeżeli na początku robiłem 100 × 4, a na końcu 105 × 3, to z tego
+  // porównuj maxa, chyba że z top setu wyszło więcej — wtedy top set”).
   if (t.oneRMCwiczen.length > 0) {
-    ciezary.append(el("p", "etykieta-sekcji", "1RM: na starcie planu → najwyższy szacowany z treningów"));
+    ciezary.append(el("p", "etykieta-sekcji", "1RM z treningów: na początku cyklu → najwyższy"));
     const kg = (n) => `${liczba(n, 1)} kg`;
+    const skad = (z) => `${z.rodzaj === "top set" ? "TOP SET " : z.rodzaj === "maksy" ? "maksy " : ""}`
+      + `T${z.tydzien}: ${liczba(z.ciezar)} kg × ${z.powtorzenia}`;
     for (const c of t.oneRMCwiczen) {
-      const proc = c.start ? Math.round((c.najwyzszy / c.start - 1) * 1000) / 10 : null;
-      const opis = `${c.start ? kg(c.start) : "bez 1RM na starcie"} → ${kg(c.najwyzszy)}`
-        + (proc !== null ? ` (${proc > 0 ? "+" : proc < 0 ? "−" : "±"}${liczba(Math.abs(proc), 1)}%)` : "");
-      const z = c.zrodlo;
-      const seria = `${liczba(z.ciezar)} kg × ${z.powtorzenia}${z.rpe != null && z.rodzaj !== "maksy" ? ` @ RPE ${liczba(z.rpe).replace(",0", "")}` : ""}`;
-      const skad = z.rodzaj === "top set" ? `z TOP SETU T${z.tydzien}: ${seria}`
-        : z.rodzaj === "maksy" ? `z tygodnia maksów (T${z.tydzien}): ${seria}`
-          : `z serii T${z.tydzien}: ${seria}`;
-      const ocena = z.feedback && z.feedback !== "OK" ? `, ocena „${z.feedback}”` : "";
-      const wPlanie = c.wPlanie && c.start && Math.abs(c.wPlanie - c.start) >= 0.05
-        ? ` · plan liczy teraz od ${kg(c.wPlanie)}` : "";
-      ciezary.append(wpis(c.nazwa, opis,
-        "Najwyższy 1RM oszacowany z serii klienta (RPE z planu, przesunięte oceną), TOP SETÓW i tygodnia maksów",
-        `${skad}${ocena}${wPlanie}`));
+      const p = c.poczatek.oneRM;
+      const n = c.najwyzszy.oneRM;
+      const proc = Math.round((n / p - 1) * 1000) / 10;
+      const tenSam = c.poczatek.zrodlo.tydzien === c.najwyzszy.zrodlo.tydzien
+        && c.poczatek.zrodlo.ciezar === c.najwyzszy.zrodlo.ciezar && c.poczatek.zrodlo.powtorzenia === c.najwyzszy.zrodlo.powtorzenia;
+      ciezary.append(wpis(c.nazwa,
+        `${kg(p)} → ${kg(n)} (${proc > 0 ? "+" : proc < 0 ? "−" : "±"}${liczba(Math.abs(proc), 1)}%)`,
+        "1RM liczone z ciężaru i powtórzeń, bez RPE — tak, jakby seria szła do upadku (4 powtórzenia = 91,5% 1RM). "
+          + "TOP SET i maksy (1 powtórzenie) — ciężar wprost.",
+        tenSam ? `najwyższy już na początku — ${skad(c.najwyzszy.zrodlo)}`
+          : `na początku ${skad(c.poczatek.zrodlo)} · najwyższy ${skad(c.najwyzszy.zrodlo)}`));
     }
   }
 

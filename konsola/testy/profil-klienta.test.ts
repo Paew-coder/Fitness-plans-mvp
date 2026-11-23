@@ -66,27 +66,24 @@ test("teraz: oceny razem i przy ćwiczeniach, inny ciężar niż w planie, uwagi
   assert.ok(!("sloty" in t.stres.wynik.tygodnie[0]!), "do konsoli idzie sam bilans");
 });
 
-test("1RM: na starcie → najwyższy szacowany z serii i TOP SETÓW, ze źródłem; plan po zmianie w środku cyklu", () => {
+test("1RM bez RPE: pierwszy trening → najwyższy w cyklu; TOP SET ciężarem wprost, gdy daje więcej", () => {
   const z = zapisany();
-  // Bench z 1RM 100 kg; T1 seria 80 × 5, T2 TOP SET 95 kg × 1 („za łatwe”).
-  (z.plan as any).serieMaksymalne = [
-    { cwiczenieId: "EX-0016", ciezar: 90, powtorzenia: 1 },
-    { cwiczenieId: "EX-0011", ciezar: 100, powtorzenia: 1 },
-  ];
+  // Bench: T1 100 × 4 (≈109,3), T3 105 × 3 (≈111,1); TOP SET w T2 108 kg × 1 — mniej niż 111,1.
   (z.plan as any).sloty.push({ positionId: "D3-S01", dzien: 3, lp: "A1.", cwiczenieId: "EX-0011",
-    tygodnie: { 2: { topSetKlienta: { kg: 95, feedback: "za łatwe" } } } });
+    tygodnie: { 2: { topSetKlienta: { kg: 108 } } } });
   (z.plan as any).topSety = [{ dzien: 3, wlaczony: true, slotPositionId: "D3-S01" }];
-  (z.wykonania as any[]).push({ positionId: "D3-S01", tydzien: 1, data: "2026-11-06T10:00:00.000Z", feedback: "OK",
-    serie: [{ ciezar: 80, powtorzenia: 5 }, { ciezar: 70, powtorzenia: 5 }] });
-  const t = terazKlienta(z);
-  const bench = t.oneRMCwiczen.find((c) => c.nazwa === "Barbell bench press")!;
-  assert.equal(bench.start, 100);
-  assert.equal(bench.zrodlo.rodzaj, "top set");
-  assert.deepEqual([bench.zrodlo.tydzien, bench.zrodlo.ciezar, bench.zrodlo.powtorzenia, bench.zrodlo.feedback], [2, 95, 1, "za łatwe"]);
-  assert.ok(bench.najwyzszy > 100, String(bench.najwyzszy));
-  const wiosla = t.oneRMCwiczen.find((c) => c.nazwa === "Barbell row")!;
-  assert.equal(wiosla.zrodlo.rodzaj, "seria");
-  assert.equal(wiosla.start, 90);
+  (z.wykonania as any[]).push(
+    { positionId: "D3-S01", tydzien: 1, data: "2026-11-06T10:00:00.000Z", feedback: "za łatwe",
+      serie: [{ ciezar: 100, powtorzenia: 4 }, { ciezar: 95, powtorzenia: 4 }] },
+    { positionId: "D3-S01", tydzien: 3, data: "2026-11-20T10:00:00.000Z", feedback: "OK",
+      serie: [{ ciezar: 105, powtorzenia: 3 }] },
+  );
+  const bench = () => terazKlienta(z).oneRMCwiczen.find((c) => c.nazwa === "Barbell bench press")!;
+  assert.deepEqual(bench().poczatek, { oneRM: 109.3, zrodlo: { rodzaj: "seria", tydzien: 1, ciezar: 100, powtorzenia: 4 } });
+  assert.deepEqual(bench().najwyzszy, { oneRM: 111.1, zrodlo: { rodzaj: "seria", tydzien: 3, ciezar: 105, powtorzenia: 3 } });
+  // Cięższy TOP SET wygrywa — 1 powtórzenie to ciężar wprost.
+  (z.plan as any).sloty.at(-1).tygodnie[2].topSetKlienta.kg = 115;
+  assert.deepEqual(bench().najwyzszy, { oneRM: 115, zrodlo: { rodzaj: "top set", tydzien: 2, ciezar: 115, powtorzenia: 1 } });
   // Bez serii z ciężarem (sama ocena) ćwiczenia tu nie ma.
-  assert.ok(!t.oneRMCwiczen.some((c) => c.nazwa === "Alt. Drop Lunge - Low Impact"));
+  assert.ok(!terazKlienta(z).oneRMCwiczen.some((c) => c.nazwa === "Alt. Drop Lunge - Low Impact"));
 });

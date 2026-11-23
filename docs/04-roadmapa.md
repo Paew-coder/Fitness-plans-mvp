@@ -1560,6 +1560,14 @@ Trener (o linijce „T5: zrobione 105,0 kg × 3 → 1RM 126,0 → 120,3 kg”): 
 * Najwyższy szacunek nie zmienia planu — plan dalej liczy się jak dotąd (kalibracja, propozycje 1RM z mediany).
 * Kod: `terazKlienta` → `oneRMCwiczen` (zamiast `zmiany1RM`). Test: `profil-klienta.test.ts` (+1).
 
+**146. Analiza klienta: 1RM z treningów bez RPE — pierwszy trening → najwyższy — 23.11.2026.**
+
+Trener (o „129,0 kg → 129,0 kg (±0,0%)”, gdzie oba 129 wyszły z RPE): „możemy zrobić tak, żeby do wyliczeń maxów w tych podsumowaniach nie uwzględniać RPE? Jeżeli na początku robiłem 100 × 4, a na końcu 105 × 3, to z tego porównuj maxa — chyba że z top setu wyszło więcej, to wtedy top set”.
+
+* Zamiast pkt 145: seria liczy się tak, jakby szła do upadku (tabela przy RPE 10: 3 powt. = 94,5 %, 4 = 91,5 %), oceny klienta nic nie zmieniają; TOP SET z ciężarem klienta i maksy (1 powtórzenie) — ciężar wprost. 100 × 4 → 109,3 kg, 105 × 3 → 111,1 kg.
+* „na początku” — najlepszy wynik z pierwszego tygodnia, w którym ćwiczenie ma serie; „najwyższy” — z całego cyklu. Pod spodem: „na początku T1: 100 kg × 4 · najwyższy T5: 105 kg × 3” (albo „TOP SET T3: …”, „maksy T8: …”; „najwyższy już na początku — …”, gdy to ta sama seria). 1RM z planu (serie maksymalne, zmiany w środku cyklu) nie miesza się już z tym porównaniem.
+* Test: `profil-klienta.test.ts` (przepisany).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
