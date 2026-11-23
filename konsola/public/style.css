@@ -314,7 +314,13 @@ td.szkielet select { width: 100%; min-width: 8rem; font-size: .8rem; }
 td.liczba input { width: 3.6rem; text-align: center; font-family: var(--mono); }
 td.ciezar { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
 td.ciezar.brak { color: var(--uwaga); font-weight: 400; font-size: .8rem; }
-td.stres { font-family: var(--mono); font-size: .76rem; color: var(--tekst-blady); white-space: nowrap; }
+td.stres { white-space: nowrap; text-align: right; }
+td.stres .stres-calkowity { display: block; font-weight: 600; font-size: .9rem; color: var(--tekst); font-variant-numeric: tabular-nums; }
+td.stres .stres-skladowe { display: block; font-size: .7rem; color: var(--tekst-blady); font-variant-numeric: tabular-nums; }
+th.stres { text-align: right; }
+/* Stres pod nazwą ćwiczenia — tylko tam, gdzie kolumny stresu nie ma (≤ 900 px). */
+.stres-pod-nazwa { display: none; font-size: .72rem; color: var(--tekst-blady); margin-top: .15rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) { .stres-pod-nazwa { display: block; } }
 .znacznik-jedn { color: var(--akcent); font-size: .8rem; }
 
 /* Ciężar liczony i ciężar wpisany ręcznie muszą się różnić na pierwszy rzut

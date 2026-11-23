@@ -1613,6 +1613,14 @@ Trener (zrzut „Barbell bench press 129 → 120,3 kg, −6,7%”): „to chyba 
 * Teraz ta sama miara co „Progress 1RM”: w każdym cyklu najwyższy szacunek z treningów — z ciężaru i powtórzeń, bez RPE; TOP SET i maksy ciężarem wprost. Cykl bez serii ćwiczenia nie ma punktu. W dymku przy wierszu: cykl po cyklu, wynik i z której serii.
 * Kod: `szacunki1RM` (wspólne z „Progress 1RM”) i `oneRMPrzezCykle` w `konsola/profil-klienta.ts`; kartoteka — pole `sciezki1RM`. Test: `profil-klienta.test.ts` (+1). Ekran postępu klienta w telefonie bez zmian.
 
+**153. Stres przy każdym ćwiczeniu w tabeli planu — 23.11.2026.**
+
+Trener: „pamiętam z Excela, że miałem cyferki stresu do każdego ćwiczenia i mogłem z nich coś wywnioskować przy rozpisywaniu — przy wyciskaniu ok. 5,0 to już dosyć dużo, 4,5 jeszcze znośnie”, potem „dodaj liczbę stresu przy każdym ćwiczeniu w tabeli planu”.
+
+* Kolumna „Stres” (była „stres t/c/p”, drobnym szarym pismem): stres całkowity ćwiczenia w wybranym tygodniu wyraźnie, pod nim centralny (c) i obwodowy (o). Ten sam wzór co w arkuszu; dymek z opisem przy nagłówku.
+* iPad w pionie i telefon (tam kolumny nie ma): „stres 3,00” pod nazwą ćwiczenia.
+* Stres na wzorzec ruchu w tygodniu — jak dotąd w karcie „Wzorce ruchu”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

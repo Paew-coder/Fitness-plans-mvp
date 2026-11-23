@@ -2147,8 +2147,10 @@ function rysujDniBezFokusu() {
     // Klasy nagłówków muszą zgadzać się z komórkami niżej — po nich telefon
     // chowa całe kolumny, których się tam nie czyta.
     for (const [tekst, klasa] of [["Lp.", "lp"], ["Ćwiczenie", ""], ["Szkielet", "szkielet"],
-      ["Serie", ""], ["Powt.", ""], ["RPE", "rpe"], ["Ciężar", ""], ["stres t/c/p", "stres"]]) {
-      wierszNaglowka.append(el("th", klasa, tekst));
+      ["Serie", ""], ["Powt.", ""], ["RPE", "rpe"], ["Ciężar", ""], ["Stres", "stres"]]) {
+      const th = el("th", klasa, tekst);
+      if (klasa === "stres") th.title = "Stres ćwiczenia w tym tygodniu — całkowity, pod nim centralny (c) i obwodowy (o). Ten sam wzór co w arkuszu.";
+      wierszNaglowka.append(th);
     }
     glowa.append(wierszNaglowka);
     tabela.append(glowa);
@@ -3004,6 +3006,10 @@ function rysujSlot(slot, pusty) {
     podglad.onclick = () => edytujUwage(slot);
     komorkaCwiczenia.append(podglad);
   }
+  // Na iPadzie w pionie i telefonie kolumny stresu nie ma — liczba pod nazwą.
+  if (wybrane && wyliczony?.cwiczenie && wyliczony.stres) {
+    komorkaCwiczenia.append(el("span", "stres-pod-nazwa", `stres ${liczba(wyliczony.stres.calkowity, 2)}`));
+  }
   wiersz.append(komorkaCwiczenia);
 
   // ── kategoria szkieletu ──
@@ -3102,10 +3108,19 @@ function rysujSlot(slot, pusty) {
   if (zrobione) komorkaC.append(zrobione);
   wiersz.append(komorkaC);
 
-  const s = wyliczony?.stres;
-  wiersz.append(el("td", "stres", s
-    ? `${liczba(s.calkowity, 2)} / ${liczba(s.centralny, 2)} / ${liczba(s.obwodowy, 2)}`
-    : ""));
+  // Stres ćwiczenia w tym tygodniu (23.11.2026, trener: „dodaj liczbę stresu
+  // przy każdym ćwiczeniu w tabeli planu” — jak cyferki w arkuszu): całkowity
+  // wyraźnie, centralny i obwodowy drobno pod nim.
+  const s = wyliczony?.cwiczenie ? wyliczony.stres : null;
+  const komorkaStresu = el("td", "stres");
+  if (s) {
+    komorkaStresu.append(el("span", "stres-calkowity", liczba(s.calkowity, 2)),
+      el("span", "stres-skladowe", `c ${liczba(s.centralny, 2)}`),
+      el("span", "stres-skladowe", `o ${liczba(s.obwodowy, 2)}`));
+    komorkaStresu.title = `Stres w ${tNr(tydzien)}: całkowity ${liczba(s.calkowity, 2)}, `
+      + `centralny ${liczba(s.centralny, 2)}, obwodowy ${liczba(s.obwodowy, 2)}`;
+  }
+  wiersz.append(komorkaStresu);
 
   return wiersz;
 }
