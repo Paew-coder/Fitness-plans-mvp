@@ -1601,6 +1601,10 @@ Trener (zrzut paska): „uporządkuj mi ten panel i popraw na bardziej profesjon
 * Pola w siatce, równej wysokości (36 px), etykiety zwykłą czcionką zamiast wersalików, krótsze podpowiedzi (pełny opis deloadu w dymku). Grupy obok siebie od 1100 px; na iPadzie i telefonie jedna pod drugą, pola w grupie obok siebie.
 * Identyfikatory pól bez zmian — zachowanie konsoli to samo.
 
+**151. Analiza: bez panelu „Stres zaplanowany a zrobiony” — 23.11.2026.**
+
+Trener: „tę zakładkę możemy usunąć z analizy”. Panel zdjęty; stres zrobiony liczy się dalej (`stresZrobiony`) — do kolumny „Zrobione” w „Skokach obciążenia”.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

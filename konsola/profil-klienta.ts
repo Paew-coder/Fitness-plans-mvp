@@ -307,7 +307,6 @@ export function terazKlienta(z: ZapisanyPlan) {
     // Więcej z liczenia stresu (23.11.2026): ranking ćwiczeń, zaplanowany
     // a zrobiony, skoki obciążenia.
     stresCwiczen: stresCwiczen(wynik),
-    stresZrobiony: zrobionyStres,
     skoki: skokiObciazenia(z, wynik, zrobionyStres),
     uwagi: z.plan.sloty.filter((s) => s.cwiczenieId && s.uwaga?.trim())
       .map((s) => ({ dzien: s.dzien, lp: (s.lp ?? "").replace(/\.$/, ""), nazwa: nazwaCwiczenia(s.cwiczenieId), uwaga: s.uwaga!.trim() })),

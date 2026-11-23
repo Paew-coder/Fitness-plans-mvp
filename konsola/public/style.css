@@ -469,15 +469,6 @@ table.tabela-dziennika td.lp, table.tabela-dziennika th:first-child { width: 2.5
 .pasek-udzialu { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--panel); overflow: hidden; }
 .wypelnienie-udzialu { display: block; height: 100%; background: var(--akcent); border-radius: 3px; }
 .wiersz-stresu-cwiczenia .zrodlo-1rm { grid-column: 1 / -1; }
-.wiersz-dawki {
-  display: grid; grid-template-columns: minmax(8rem, 1fr) auto auto; align-items: center; gap: .2rem .8rem;
-  padding: .45rem .7rem; border-radius: 6px; background: var(--panel);
-}
-.wiersz-dawki + .wiersz-dawki { margin-top: .35rem; }
-.liczby-dawki { font-size: .82rem; color: var(--tekst-slaby); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dopisek-dawki { grid-column: 1 / -1; }
-.zmiana-1rm.ponad { color: var(--akcent); background: var(--akcent-tlo); }
-#teraz-stres-zrobiony .etykieta-sekcji { margin-top: 1rem; }
 .przewijana-tabela { overflow-x: auto; }
 table.tabela-skokow { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .tabela-skokow th { text-align: right; font-weight: 500; color: var(--tekst-blady); font-size: .72rem; padding: .3rem .5rem; white-space: nowrap; }
@@ -488,12 +479,6 @@ table.tabela-skokow { border-collapse: collapse; width: 100%; font-size: .85rem;
 .tabela-skokow td.pusta { color: var(--tekst-blady); }
 .tabela-skokow tr.wiersz-skoku td:first-child { color: var(--uwaga); font-weight: 600; }
 .ostrzezenie-skoku { margin: .3rem 0 0; font-size: .8rem; color: var(--uwaga); }
-@media (max-width: 760px) {
-  .wiersz-dawki { grid-template-columns: minmax(0, 1fr) auto; }
-  .wiersz-dawki .liczby-dawki { grid-column: 1; grid-row: 2; }
-  .wiersz-dawki .zmiana-1rm { grid-row: 1 / span 2; grid-column: 2; }
-  .wiersz-dawki .dopisek-dawki { grid-row: 3; }
-}
 
 /* Zwijane panele w Analizie (23.11.2026) — wyjściowo zwinięte, tytuł przełącza. */
 .zwijany > h2, .zwijany > h3 {

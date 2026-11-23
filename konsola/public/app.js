@@ -440,33 +440,9 @@ function rysujStresCwiczen(kontener, lista, { ile = Infinity } = {}) {
 }
 const NAZWY_WZORCA = { s: "przysiad", d: "martwy ciąg", b: "wyciskanie", r: "wiosłowanie", c: "core" };
 
-/** 2. Stres zaplanowany a zrobiony — tydzień po tygodniu i ćwiczenie po ćwiczeniu. */
-function rysujStresZrobiony(kontener, z) {
-  kontener.replaceChildren();
-  if (!z?.tygodnie.length) {
-    kontener.append(el("p", "wskazowka", "Klient nie zrobił jeszcze żadnego treningu w tym cyklu."));
-    return;
-  }
-  kontener.append(el("p", "opis-bloku",
-    "Ten sam wzór co w planie, liczony z serii klienta (jego powtórzenia, RPE z planu przesunięte oceną). Tylko odbyte treningi; ocena bez serii — jak w planie."));
-  const odznaka = (p) => el("span", `zmiana-1rm ${p == null ? "zero" : p < 85 ? "minus" : p > 115 ? "ponad" : "plus"}`, p == null ? "—" : `${p}%`);
-  const wiersz = (etykieta, plan, zrobiony, procent, dopisek = "") => {
-    const w = el("div", "wiersz-dawki");
-    w.append(el("span", "nazwa-1rm", etykieta),
-      el("span", "liczby-dawki", `plan ${liczba(plan, 1)} · zrobione ${liczba(zrobiony, 1)}`),
-      odznaka(procent));
-    if (dopisek) w.append(el("span", "zrodlo-1rm dopisek-dawki", dopisek));
-    return w;
-  };
-  kontener.append(wiersz("Cały cykl dotąd", z.razem.plan, z.razem.zrobiony, z.razem.procent));
-  kontener.append(el("p", "etykieta-sekcji", "Tydzień po tygodniu"));
-  for (const t of z.tygodnie) {
-    kontener.append(wiersz(`T${t.tydzien}${t.rodzaj ? ` ${t.rodzaj}` : ""}`, t.plan, t.zrobiony, t.procent,
-      `${t.treningow} ${odmiana(t.treningow, ["trening", "treningi", "treningów"])}`));
-  }
-  kontener.append(el("p", "etykieta-sekcji", "Ćwiczenie po ćwiczeniu"));
-  for (const c of z.cwiczenia) kontener.append(wiersz(c.nazwa, c.plan, c.zrobiony, c.procent));
-}
+// Panel „Stres zaplanowany a zrobiony” zdjęty z Analizy (23.11.2026, trener:
+// „tę zakładkę możemy usunąć”). Stres zrobiony liczy się dalej — do kolumny
+// „Zrobione” w skokach obciążenia.
 
 /** 3. Skoki obciążenia — plan i (gdzie klient trenował) zrobione. */
 function rysujSkoki(kontener, skoki) {
@@ -586,7 +562,6 @@ function rysujTeraz(t) {
 
   // Więcej z liczenia stresu (23.11.2026): ranking, zaplanowany a zrobiony, skoki.
   rysujStresCwiczen($("#teraz-stres-cwiczen"), t.stresCwiczen);
-  rysujStresZrobiony($("#teraz-stres-zrobiony"), t.stresZrobiony);
   rysujSkoki($("#teraz-skoki"), t.skoki);
 
   // Oceny: razem i ćwiczenia, przy których się powtarzają.
