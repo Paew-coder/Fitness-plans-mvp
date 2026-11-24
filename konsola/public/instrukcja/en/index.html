@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F1117">
+  <title>How to use the app — CraftMyPlan</title>
+  <meta name="description" content="A short guide to the training app: how to open your plan, do a workout and let your coach know how it went.">
+  <meta property="og:title" content="How to use the training app">
+  <meta property="og:description" content="One minute on how to open your plan, do a workout and let your coach know how it went.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <!--
+    Wersja angielska (27.10.2026) — dla klientów z planem po angielsku;
+    zrzuty, film i PDF: `npm run instrukcja -- en` (do `instrukcja/en/`).
+    Treść to tłumaczenie polskiej strony `instrukcja/index.html` — po zmianie
+    tamtej przejrzyj i tę.
+
+    Instrukcja dla klienta (18.10.2026). Trener: „czy jesteś w stanie
+    przygotować mi jakieś wideo / prezentację / instrukcję używania tej
+    aplikacji, którą będę mógł wysyłać klientom przed ich pierwszym planem?”
+
+    Zrzuty, film i PDF robi `npm run instrukcja` z prawdziwej aplikacji
+    klienta i przykładowego planu („Jan Przykładowy”). Tekst tej strony jest
+    pisany ręcznie — po zmianie działania aplikacji trzeba go przejrzeć.
+    Kolory te same co w aplikacji klienta (`/klient/style.css`).
+  -->
+  <style>
+    :root {
+      --tlo: #0F1117; --karta: #171A22; --karta-2: #1C1F29;
+      --tekst: #E9EBF2; --tekst-slaby: #A6ADBF; --tekst-blady: #6E7688;
+      --linia: #2A2F3B; --rama: #262B38; --akcent: #7B93FF; --akcent-tlo: #1E2440;
+      --ok: #3FBE83; --latwe: #D19A3E; --trudne: #F2837B;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --tlo: #FAFAFC; --karta: #FFFFFF; --karta-2: #F1F3F8;
+        --tekst: #15171F; --tekst-slaby: #4E5466; --tekst-blady: #878DA0;
+        --linia: #DEE2EC; --rama: #1C1F29; --akcent: #1F3FD8; --akcent-tlo: #E8ECFD;
+        --ok: #0E7C4A; --latwe: #9A6100; --trudne: #B3261E;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--tlo); color: var(--tekst); font-family: var(--sans);
+      font-size: 1.0625rem; line-height: 1.55;
+      padding: 0 16px calc(3rem + env(safe-area-inset-bottom));
+    }
+    .strona { max-width: 60rem; margin-inline: auto; }
+    a { color: var(--akcent); }
+    h1, h2, h3 { letter-spacing: -.01em; line-height: 1.2; }
+    .nadtytul {
+      margin: 0; font-size: .75rem; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--akcent);
+    }
+    /* Powrót do planu (18.10.2026) — przyklejony u góry, bo z ikony na
+       ekranie głównym nie ma paska przeglądarki ani strzałki wstecz. */
+    .pasek-powrotu {
+      position: sticky; top: 0; z-index: 5; margin: 0 -16px;
+      padding: calc(.6rem + env(safe-area-inset-top)) 16px .6rem;
+      background: var(--tlo); border-bottom: 1px solid var(--linia);
+    }
+    .pasek-powrotu[hidden] { display: none; }
+    .wroc {
+      display: inline-flex; align-items: center; gap: .4rem; text-decoration: none;
+      background: var(--karta-2); color: var(--tekst); font-weight: 600;
+      font-size: 1rem; padding: .6rem 1rem; border-radius: 999px;
+    }
+    header { padding: calc(1.6rem + env(safe-area-inset-top)) 0 1rem; }
+    .pasek-powrotu:not([hidden]) + header { padding-top: 1.2rem; }
+    header h1 { font-size: clamp(1.9rem, 6vw, 2.8rem); margin: .4rem 0 .6rem; font-weight: 800; }
+    .wstep { font-size: 1.15rem; color: var(--tekst-slaby); margin: 0; max-width: 40rem; }
+
+    /* ── film ───────────────────────────────────────────────────── */
+    .film {
+      display: grid; gap: 1.5rem; align-items: center; margin: 1.8rem 0 2.4rem;
+      background: var(--karta); border: 1px solid var(--linia); border-radius: 20px; padding: 1.2rem;
+    }
+    .film video {
+      display: block; width: 100%; max-width: 330px; margin-inline: auto; aspect-ratio: 9 / 16;
+      border-radius: 16px; background: #0F1117;
+    }
+    .film h2 { font-size: 1.35rem; margin: 0 0 .6rem; }
+    .film ol { margin: 0; padding-left: 1.3rem; }
+    .film li { margin: .35rem 0; }
+    .pobierz { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.1rem; }
+    .pobierz a {
+      display: inline-block; text-decoration: none; color: var(--tekst); font-weight: 600; font-size: .95rem;
+      border: 1px solid var(--linia); border-radius: 10px; padding: .6rem .9rem; background: var(--karta-2);
+    }
+    @media (min-width: 760px) { .film { grid-template-columns: 330px 1fr; padding: 1.6rem; } }
+
+    /* ── kroki ──────────────────────────────────────────────────── */
+    .krok {
+      display: grid; gap: 1.2rem 2.5rem; align-items: start; padding: 2rem 0;
+      border-top: 1px solid var(--linia);
+    }
+    .krok h2 { font-size: 1.45rem; margin: .2rem 0 .7rem; }
+    .numer {
+      display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
+      background: var(--akcent-tlo); color: var(--akcent); font-weight: 800; font-size: .95rem;
+    }
+    .krok p { margin: .6rem 0; }
+    .krok ul { margin: .6rem 0; padding-left: 1.2rem; }
+    .krok li { margin: .4rem 0; }
+    .zrzuty { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    figure { margin: 0; text-align: center; }
+    figure img {
+      display: block; width: min(300px, 78vw); height: auto; border-radius: 30px;
+      border: 7px solid var(--rama); background: #0F1117;
+    }
+    .zrzuty.dwa figure img { width: min(240px, 42vw); border-radius: 24px; border-width: 5px; }
+    figcaption { font-size: .85rem; color: var(--tekst-blady); margin-top: .5rem; }
+    @media (min-width: 760px) {
+      .krok { grid-template-columns: 1fr auto; }
+      .krok .zrzuty { grid-column: 2; grid-row: 1; }
+      .zrzuty.dwa figure img { width: 210px; }
+    }
+    .przycisk {
+      display: inline-block; padding: .05rem .5rem; border-radius: 7px; border: 1px solid var(--linia);
+      background: var(--karta-2); font-size: .92em; font-weight: 600; white-space: nowrap;
+    }
+    .trudne { color: var(--trudne); } .latwe { color: var(--latwe); } .ok { color: var(--ok); }
+    .rada {
+      background: var(--akcent-tlo); border-radius: 12px; padding: .8rem 1rem; margin: .9rem 0;
+    }
+    .rpe { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1rem; margin: .8rem 0; }
+    .rpe b { color: var(--akcent); white-space: nowrap; }
+
+    /* ── pytania ────────────────────────────────────────────────── */
+    .pytania { border-top: 1px solid var(--linia); padding-top: 2rem; }
+    .pytania h2 { font-size: 1.45rem; margin: 0 0 1rem; }
+    details {
+      background: var(--karta); border: 1px solid var(--linia); border-radius: 14px;
+      padding: .2rem 1rem; margin: .6rem 0;
+    }
+    summary { cursor: pointer; font-weight: 650; padding: .75rem 0; }
+    details p { margin: 0 0 .9rem; color: var(--tekst-slaby); }
+    footer { margin-top: 2.4rem; text-align: center; color: var(--tekst-slaby); }
+    footer strong { display: block; color: var(--tekst); font-size: 1.15rem; margin-bottom: .2rem; }
+  </style>
+</head>
+<body>
+<div class="strona">
+
+<nav class="pasek-powrotu" id="pasek-powrotu" hidden>
+  <a class="wroc" id="wroc" href="/">← Back to your plan</a>
+</nav>
+
+<header>
+  <p class="nadtytul">CraftMyPlan</p>
+  <h1>How to use the training app</h1>
+  <p class="wstep">Your coach has prepared a plan that opens on your phone. In a few minutes
+    you'll see how to use it — just watch the video or scroll down.</p>
+</header>
+
+<section class="film" aria-label="Video guide">
+  <video controls playsinline preload="metadata" poster="/instrukcja/en/film-plakat.webp">
+    <source src="/instrukcja/en/film.mp4" type="video/mp4">
+  </video>
+  <div>
+    <h2>In short</h2>
+    <ol>
+      <li>Open the link from your coach and add it to your home screen.</li>
+      <li>Tap <span class="przycisk">Next workout</span>.</li>
+      <li>Train from the list or let the app guide you set by set.</li>
+      <li>Rate the exercises, and if the weight was different from the plan — enter it.</li>
+      <li>At the end, tap <span class="przycisk">Finish workout</span>.</li>
+    </ol>
+    <div class="pobierz">
+      <a href="/instrukcja/en/instrukcja.pdf" download="CraftMyPlan guide.pdf">Slides (PDF)</a>
+      <a href="/instrukcja/en/film.mp4" download="CraftMyPlan guide.mp4">Download the video (MP4)</a>
+    </div>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">1</span>
+    <h2>Open your plan</h2>
+    <p>Your coach will send you a link. It opens in your phone's browser — no account to create
+      and nothing to install from an app store.</p>
+    <ul>
+      <li>Your <strong>next workout</strong> is always waiting at the top — tap it to start.</li>
+      <li>Below are the weeks of the cycle. The dots show how many workouts of each week you've done.</li>
+      <li>The same link works for every cycle — a new plan from your coach will appear in it by itself.</li>
+      <li>You can collapse the tip cards at the top to a single line or remove them (✕).
+        All this information is also always in the “More” section at the bottom of the main page.</li>
+    </ul>
+    <p class="rada">The link is just for you: anyone who has it can see your plan. Don't pass it on.</p>
+  </div>
+  <div class="zrzuty">
+    <figure><img src="/instrukcja/en/ekrany/glowna.webp" alt="The app's main page: name, cycle, next workout and weeks" width="780" height="1688" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">2</span>
+    <h2>Add it to your home screen</h2>
+    <p>Once, the first time you open it. After that you open your workouts like a regular app —
+      full screen, with no hunting for the link in your messages.</p>
+    <ul>
+      <li><strong>iPhone (Safari):</strong> tap the share icon (the square with an arrow),
+        then <span class="przycisk">Add to Home Screen</span> and <span class="przycisk">Add</span>.</li>
+      <li><strong>Android (Chrome):</strong> menu <span class="przycisk">⋮</span>, then
+        <span class="przycisk">Add to Home screen</span> (or “Install app”).</li>
+    </ul>
+    <p>Removed the tip in the app with ✕? The same information is always in the “More” section
+      at the bottom of the main page — <span class="przycisk">Add to home screen</span>.</p>
+  </div>
+  <div class="zrzuty">
+    <figure><img src="/instrukcja/en/ekrany/instalacja.webp" alt="Tip in the app: how to add it to your home screen" width="780" height="1688" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">3</span>
+    <h2>Where your weights come from</h2>
+    <p>If your coach doesn't know your weights for some exercises yet, you'll see the card
+      <strong>“Where your weights come from”</strong>. There are two ways:</p>
+    <ul>
+      <li><strong>Start training right away.</strong> Such an exercise shows “choose” instead of
+        kilograms. Pick a weight by RPE (below) and log your first set — the weight and as many reps
+        as you actually did. The app will calculate the weights for the rest of the plan from it.</li>
+      <li><strong>Max sets first.</strong> A separate session: one set to failure for each exercise,
+        with good technique. You enter the weight and the number of reps.</li>
+    </ul>
+    <p class="rada"><strong>When choosing the weight, you don't have to stick to the planned number of reps.</strong>
+      The plan says: 8 reps at RPE 8 (2 in reserve). You picked a weight, got 10 reps and still feel
+      2 more would go? Enter 10. The app will treat the weight as lighter than the plan assumes and
+      raise the weights for the next sets and weeks — you'll see it straight away in the faded
+      suggestions for the next sets (e.g. 32.5 kg × 8 after 30 kg × 10). What matters is finishing
+      the set with as much in reserve as the plan says (RPE).</p>
+    <p>Max sets are also always at the bottom of the main page, in the “More” section.</p>
+  </div>
+  <div class="zrzuty dwa">
+    <figure><img src="/instrukcja/en/ekrany/ciezary.webp" alt="The Where your weights come from card with two ways" width="780" height="1688" loading="lazy"><figcaption>Two ways to your weights</figcaption></figure>
+    <figure><img src="/instrukcja/en/ekrany/maksy.webp" alt="The max sets screen" width="780" height="1688" loading="lazy"><figcaption>Max sets</figcaption></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">4</span>
+    <h2>What is RPE</h2>
+    <p>RPE tells you how hard a set should be. The easiest way is to count how many reps you have
+      left <strong>in reserve</strong> — how many more you could do cleanly if you didn't stop.</p>
+    <div class="rpe">
+      <b>RPE 10</b><span>nothing in reserve — you couldn't do another</span>
+      <b>RPE 9</b><span>1 in reserve</span>
+      <b>RPE 8</b><span>2 in reserve</span>
+      <b>RPE 7</b><span>3 in reserve</span>
+      <b>RPE 6</b><span>4 or more</span>
+    </div>
+    <p>Halves sit in between: RPE 7.5 means 2–3 in reserve. Example: “8 reps · RPE 8” is a weight
+      where after the eighth rep you feel two more would still go.</p>
+  </div>
+  <div class="zrzuty">
+    <figure><img src="/instrukcja/en/ekrany/rpe.webp" alt="RPE explained in the app" width="780" height="1688" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">5</span>
+    <h2>Training from the list</h2>
+    <p>After tapping “Next workout” you see all of the day's exercises: weight, sets,
+      reps and RPE.</p>
+    <ul>
+      <li><strong>A1, B1, B2…</strong> — exercises with the same letter are a <strong>superset</strong>:
+        you alternate them (a set of B1, a set of B2, rest, and again). A shared edge on the left links them.</li>
+      <li><strong>▶ video</strong> shows the exercise technique.</li>
+      <li><strong>Warm-up ramp</strong> — a few lighter sets before the first working set.
+        You don't log these sets.</li>
+      <li>You can change the order: <span class="przycisk">▶ Start this exercise</span> is next to each one.</li>
+    </ul>
+  </div>
+  <div class="zrzuty">
+    <figure><img src="/instrukcja/en/ekrany/superseria.webp" alt="The day's exercise list with the B1 and B2 superset marked" width="780" height="1688" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">6</span>
+    <h2>Rate the exercise and log what you did</h2>
+    <p>After the exercise, tap one of the ratings:</p>
+    <ul>
+      <li><strong class="trudne">Too hard</strong> — the coming weeks will be lighter.</li>
+      <li><strong class="ok">OK</strong> — stays as your coach planned.</li>
+      <li><strong class="latwe">Too easy</strong> — the coming weeks will be heavier.</li>
+    </ul>
+    <p>Exercises without a rating are saved as “OK”.</p>
+    <p><strong>You don't have to log the weights</strong> — a rating is enough. Log a set when the
+      weight was different from the plan (and always with “choose”): the app will recalculate the
+      rest of the plan from that set. <span class="przycisk">Log sets manually</span> under the
+      rating opens the set fields. Enter what you actually did — including a different number of
+      reps than planned (example next to this: planned 8, done 10).
+      The faded numbers in the next rows are a suggestion from the previous set — after the set,
+      tap <span class="przycisk">✓</span> or correct them.</p>
+  </div>
+  <div class="zrzuty dwa">
+    <figure><img src="/instrukcja/en/ekrany/ocena.webp" alt="Rating buttons: Too hard, OK, Too easy" width="780" height="1688" loading="lazy"><figcaption>Rating an exercise</figcaption></figure>
+    <figure><img src="/instrukcja/en/ekrany/dobor.webp" alt="Chosen weight: 8 reps at RPE 8 planned, 30 kg times 10 logged" width="780" height="1688" loading="lazy"><figcaption>Planned 8 — logged 10</figcaption></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">7</span>
+    <h2>Or: guided set by set</h2>
+    <p><span class="przycisk">▶ Guide me set by set</span> shows one set at a time:
+      weight, reps, RPE and warm-up. Handy at the gym — nothing to look for.</p>
+    <ul>
+      <li>Different weight or number of reps? Correct the numbers on the screen.</li>
+      <li>Too heavy or too light? Tap <strong class="trudne">Too hard</strong> or
+        <strong class="latwe">Too easy</strong>. If it was OK — don't tap anything.</li>
+      <li>Then <span class="przycisk">Finish set</span> — the rest timer starts by itself. You can
+        skip it or add 30 seconds.</li>
+      <li>The A1, B1… buttons at the top take you to any exercise, and “Whole day as a list”
+        takes you back to the list.</li>
+    </ul>
+  </div>
+  <div class="zrzuty dwa">
+    <figure><img src="/instrukcja/en/ekrany/prowadzenie.webp" alt="Guided mode: one set on the screen" width="780" height="1688" loading="lazy"><figcaption>Set</figcaption></figure>
+    <figure><img src="/instrukcja/en/ekrany/przerwa.webp" alt="Rest with a countdown" width="780" height="1688" loading="lazy"><figcaption>Rest</figcaption></figure>
+  </div>
+</section>
+
+<section class="krok">
+  <div>
+    <span class="numer">8</span>
+    <h2>Finish the workout</h2>
+    <p>At the bottom of the list, tap <span class="przycisk">Finish workout</span>. The progress bar on
+      the main page moves on, and the next workout appears at the top.</p>
+    <p>No signal at the gym? The app keeps working. At the top you'll see the bar “Offline — I'll save
+      when you're back online”, and your entries will be sent by themselves once your phone is back online.</p>
+  </div>
+  <div class="zrzuty dwa">
+    <figure><img src="/instrukcja/en/ekrany/zakoncz.webp" alt="The Finish workout button at the bottom of the list" width="780" height="1688" loading="lazy"><figcaption>End of the workout</figcaption></figure>
+    <figure><img src="/instrukcja/en/ekrany/koniec.webp" alt="Main page after the workout: 1 of 18 workouts" width="780" height="1688" loading="lazy"><figcaption>Progress saved</figcaption></figure>
+  </div>
+</section>
+
+<section class="pytania">
+  <h2>Frequently asked questions</h2>
+  <details>
+    <summary>Do I have to log every set?</summary>
+    <p>No. Rating the exercise is enough. Log a set when the weight was different from the plan, and
+      for exercises with “choose” — the coming weeks are then calculated from your set.</p>
+  </details>
+  <details>
+    <summary>I chose a weight and got more reps than planned. What do I enter?</summary>
+    <p>What you actually did. The plan says 8 reps at RPE 8, you got 10 and still had 2 in reserve —
+      enter the weight and 10. The app will recalculate the weights upwards. The same the other way:
+      you got 6 with the same reserve — enter 6, and the next weights will be lighter.</p>
+  </details>
+  <details>
+    <summary>Can I train on other days or do the exercises in a different order?</summary>
+    <p>Yes. The plan is a sequence of workouts, not calendar days — “Next workout” always shows the
+      first one you haven't done. Within a workout you can start with any exercise.</p>
+  </details>
+  <details>
+    <summary>I forgot to tap “Finish workout”.</summary>
+    <p>Nothing is lost — your ratings and logged sets are already saved. Open that workout from the
+      list of weeks and tap “Finish workout”.</p>
+  </details>
+  <details>
+    <summary>The video won't play.</summary>
+    <p>Technique videos play from the internet — you need a signal. The rest of the app also works
+      offline.</p>
+  </details>
+  <details>
+    <summary>I've lost the link.</summary>
+    <p>Message your coach — it's the same link as always and works for every cycle.</p>
+  </details>
+  <details>
+    <summary>When will I see my next plan?</summary>
+    <p>When your coach has prepared it — it will appear under the same link. Until then you see the
+      last plan you received.</p>
+  </details>
+</section>
+
+<footer>
+  <strong>Questions about your plan or the exercises?</strong>
+  Message your coach. Have a great workout!
+</footer>
+
+</div>
+<script>
+  // Otwarta z aplikacji klienta (18.10.2026; po angielsku od 27.10.2026). Z ikony na ekranie głównym nie
+  // ma paska przeglądarki ani strzałki wstecz, a nowe okno nie ma historii —
+  // dlatego aplikacja podaje w adresie, dokąd wrócić: `?wroc=/k/<token>`.
+  // Tylko adres planu na tej stronie, nic z zewnątrz.
+  const doPlanu = new URLSearchParams(location.search).get("wroc") ?? "";
+  if (/^\/k\/[\w-]+$/.test(doPlanu)) {
+    const wroc = document.getElementById("wroc");
+    wroc.href = doPlanu;
+    document.getElementById("pasek-powrotu").hidden = false;
+    // Przyszła z planu w tym samym oknie — cofamy, plan wraca tam, gdzie był.
+    wroc.onclick = (e) => {
+      if (history.length > 1 && document.referrer.startsWith(`${location.origin}/k/`)) {
+        e.preventDefault();
+        history.back();
+      }
+    };
+  }
+</script>
+</body>
+</html>
