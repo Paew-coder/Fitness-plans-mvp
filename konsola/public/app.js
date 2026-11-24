@@ -4252,6 +4252,35 @@ async function sekcjaJezyka(planId, naZmiane = () => {}) {
   return sekcja;
 }
 
+/**
+ * „👁 Otwórz plan” (24.11.2026). Trener: „żeby była opcja »otwórz plan«,
+ * żebym mógł od razu do niego zajrzeć, bo teraz wchodzę w niego przez link
+ * dla klienta”. Nowa karta z widokiem klienta (ten sam adres co link).
+ * Karta otwiera się od razu przy kliknięciu — inaczej przeglądarka uzna ją
+ * za wyskakujące okno — a adres dochodzi, gdy klient nie ma jeszcze linku.
+ */
+$("#otworz-plan-klienta").onclick = async () => {
+  const z = obraz.zapisany;
+  if (z.status === "szkic" && !confirm("Ten plan to szkic — klient go nie widzi, więc podgląd pokaże "
+    + "„Trener przygotowuje Twój plan” albo jego poprzedni plan. Otworzyć mimo to?")) return;
+  const token = obraz.klient?.token;
+  if (token) {
+    window.open(`/k/${token}`, "_blank", "noopener");
+    return;
+  }
+  const karta = window.open("about:blank", "_blank");
+  try {
+    const { sciezka, token: nowy } = await api(`/api/klienci/${z.klientId}/link`, { method: "POST", body: {} });
+    if (karta) karta.location.href = sciezka;
+    else window.open(sciezka, "_blank", "noopener");
+    // Link już jest — przy następnym kliknięciu od razu (planu nie ruszamy).
+    if (obraz.klient) obraz.klient.token = nowy;
+  } catch (err) {
+    karta?.close();
+    alert(err.message);
+  }
+};
+
 async function pokazLinkKlienta(klientId, planId = null) {
   try {
     const { sciezka, widocznyPlan } = await api(`/api/klienci/${klientId}/link`, {

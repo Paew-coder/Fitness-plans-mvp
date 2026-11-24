@@ -1255,6 +1255,15 @@ async function przejdz(przegladarka: any, { api }: Srodowisko): Promise<void> {
   const slotPoPoprawce = (await zBazy()).wynik.tygodnie[0].sloty.find((x: any) => x.cwiczenie?.id === poPoprawce[0]?.id);
   sprawdz("poprawka coeff liczy się w planie od razu", poPoprawce[0]?.coeff === 0.25
     && slotPoPoprawce?.cwiczenie?.coeff === 0.25, `${poPoprawce[0]?.coeff} / ${slotPoPoprawce?.cwiczenie?.coeff}`);
+  // „👁 Otwórz plan” (24.11.2026): plan oczami klienta w nowej karcie, bez okienka linku.
+  {
+    const [karta] = await Promise.all([s.waitForEvent("popup"), s.click("#otworz-plan-klienta")]);
+    await karta.waitForURL(/\/k\/[A-Za-z0-9_-]{16,}$/, { timeout: 10_000 }).catch(() => {});
+    await karta.waitForLoadState("domcontentloaded");
+    sprawdz("„👁 Otwórz plan” otwiera widok klienta w nowej karcie",
+      /\/k\/[A-Za-z0-9_-]{16,}$/.test(karta.url()) && !(await s.locator("#modal:not(.ukryty)").count()), karta.url());
+    await karta.close();
+  }
   // Plan po angielsku (27.10.2026). Trener: „dodaj opcję przed wysłaniem linku,
   // żeby oznaczyć plan na anglojęzyczny”. Pole w okienku linku; teksty trenera
   // (tu: polska nazwa własnego ćwiczenia, które właśnie stoi w planie) pod nim.

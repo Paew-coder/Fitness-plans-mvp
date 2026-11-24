@@ -1629,6 +1629,13 @@ Trener: „sprawdź, czy nasz licznik stresu w pojedynczym ćwiczeniu dobrze lic
 * Znaleziona pułapka: RPE spoza siatki (np. 7,3 wpisane ręcznie) dawało po cichu stres 0. Teraz stres bierze najbliższą połówkę (i całe powtórzenia), a konsola zapisuje wpisane RPE (ćwiczenie i TOP SET) zaokrąglone do 0,5. Tabela %1RM bez zmian — jak w arkuszu: spoza siatki „ustaw ręcznie”.
 * Test: `analiza-stresu.test.ts` (+1).
 
+**155. „👁 Otwórz plan” w nagłówku planu — 24.11.2026.**
+
+Trener: „jak wchodzę w plan danego klienta z konsoli, żeby była też opcja »otwórz plan«, żebym mógł od razu do niego zajrzeć — aktualnie wchodzę w niego przez link dla klienta”.
+
+* Przycisk obok „Link dla klienta”: nowa karta z planem tak, jak widzi go klient w telefonie (ten sam adres `/k/…`). Klient bez linku — link zakłada się w tle, karta otwiera się od razu (bez blokady wyskakujących okien). Przy szkicu pytanie, bo klient szkicu nie widzi.
+* Przegląd ekranów: +1.
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.
