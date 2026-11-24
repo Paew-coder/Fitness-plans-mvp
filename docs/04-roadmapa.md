@@ -1621,6 +1621,14 @@ Trener: „pamiętam z Excela, że miałem cyferki stresu do każdego ćwiczenia
 * iPad w pionie i telefon (tam kolumny nie ma): „stres 3,00” pod nazwą ćwiczenia.
 * Stres na wzorzec ruchu w tygodniu — jak dotąd w karcie „Wzorce ruchu”.
 
+**154. Stres przy połówkach RPE — sprawdzone; RPE spoza siatki nie daje już stresu 0 — 24.11.2026.**
+
+Trener: „sprawdź, czy nasz licznik stresu w pojedynczym ćwiczeniu dobrze liczy wartości RPE z połówkami — np. RPE 7,5 — czy liczy jako 7 albo 8”.
+
+* Sprawdzone: tabele stresu (całkowity, centralny, obwodowy) mają osobne wiersze co 0,5 RPE — 7,5 liczy się swoim wierszem (5 powt.: 7 → 0,6, 7,5 → 0,7, 8 → 0,8), nie jak 7 ani 8.
+* Znaleziona pułapka: RPE spoza siatki (np. 7,3 wpisane ręcznie) dawało po cichu stres 0. Teraz stres bierze najbliższą połówkę (i całe powtórzenia), a konsola zapisuje wpisane RPE (ćwiczenie i TOP SET) zaokrąglone do 0,5. Tabela %1RM bez zmian — jak w arkuszu: spoza siatki „ustaw ręcznie”.
+* Test: `analiza-stresu.test.ts` (+1).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

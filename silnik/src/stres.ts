@@ -22,8 +22,11 @@ export const NAZWY_WZORCOW: Record<Part, string> = {
 };
 
 function odczytaj(tabela: Record<number, Record<number, number>>, rpe: number, powt: number): number {
-  const r = klucz(ogranicz(rpe, RPE_STRES_MIN, RPE_STRES_MAX));
-  const p = klucz(ogranicz(powt, POWT_MIN, POWT_MAX));
+  // Tabela ma wiersze co 0,5 RPE (7, 7,5, 8…) i całe powtórzenia. Wartość
+  // spoza siatki (RPE 7,3 wpisane ręcznie) dawała po cichu stres 0 —
+  // teraz idzie do najbliższej połówki / całego powtórzenia (24.11.2026).
+  const r = klucz(Math.round(ogranicz(rpe, RPE_STRES_MIN, RPE_STRES_MAX) * 2) / 2);
+  const p = klucz(Math.round(ogranicz(powt, POWT_MIN, POWT_MAX)));
   return tabela[r]?.[p] ?? 0;
 }
 

@@ -2114,7 +2114,8 @@ function rysujDniBezFokusu() {
       rpe.onchange = () => {
         top[polePlanu] = top[polePlanu] ?? {};
         if (rpe.value === "") delete top[polePlanu][tydzien];
-        else top[polePlanu][tydzien] = Number(rpe.value);
+        // RPE TOP SETU co 0,5 jak w tabeli (24.11.2026); % 1RM przy dwuboju bez zmian.
+        else top[polePlanu][tydzien] = wProcentach ? Number(rpe.value) : Math.round(Number(rpe.value) * 2) / 2;
         zapiszPozniej();
         rysujDni();
       };
@@ -3094,7 +3095,9 @@ function rysujSlot(slot, pusty) {
   const komorkaRpe = dwuboj
     ? poleLiczbowe(parametry.procent, (v) => { parametry.procent = v; }, "1",
       String(wyliczony?.procent1RM ?? ""))
-    : poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v; }, "0.5", String(wyliczony?.rpe ?? ""));
+    // RPE co 0,5 (24.11.2026) — 7,3 zapisuje się jako 7,5, jak w tabeli.
+    : poleLiczbowe(parametry.rpe, (v) => { parametry.rpe = v === undefined ? v : Math.round(v * 2) / 2; },
+      "0.5", String(wyliczony?.rpe ?? ""));
   komorkaRpe.classList.add("rpe");
   if (dwuboj) {
     komorkaRpe.classList.add("procent");

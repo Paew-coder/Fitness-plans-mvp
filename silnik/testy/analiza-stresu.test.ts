@@ -41,3 +41,16 @@ test("skoki: zmiana do poprzedniego i do średniej z 3 poprzednich; progi 20 % i
   // Sama średnia też wystarczy: +18 % do poprzedniego, ale 1,35× średniej.
   assert.equal(skokiStresu([8, 8, 11, 13])[3]!.skok, true);
 });
+
+test("stres przy połówkach RPE: 7,5 ma własny wiersz (między 7 a 8); RPE spoza siatki — do najbliższej połówki, nie 0", async () => {
+  const { stresSlotu } = await import("../src/stres.ts");
+  const { procent1RM } = await import("../src/rpe.ts");
+  const s = (rpe: number) => stresSlotu({ coeff: 1, serie: 1, rpe, powtorzenia: 5 }).calkowity;
+  assert.deepEqual([s(7), s(7.5), s(8)], [0.6, 0.7, 0.8]);
+  assert.equal(s(7.3), s(7.5), "7,3 → 7,5 zamiast 0");
+  assert.equal(s(7.2), s(7));
+  assert.ok(s(7.3) > 0);
+  // Ciężar zostaje jak w arkuszu: spoza siatki — „ustaw ręcznie” (widać to), nie zgadujemy.
+  assert.equal(procent1RM(5, 7.3), null);
+  assert.equal(stresSlotu({ coeff: 1, serie: 1, rpe: 8, powtorzenia: 5.4 }).calkowity, s(8), "powtórzenia — całe");
+});
