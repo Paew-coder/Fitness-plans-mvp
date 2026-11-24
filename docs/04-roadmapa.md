@@ -1636,6 +1636,14 @@ Trener: „jak wchodzę w plan danego klienta z konsoli, żeby była też opcja 
 * Przycisk obok „Link dla klienta”: nowa karta z planem tak, jak widzi go klient w telefonie (ten sam adres `/k/…`). Klient bez linku — link zakłada się w tle, karta otwiera się od razu (bez blokady wyskakujących okien). Przy szkicu pytanie, bo klient szkicu nie widzi.
 * Przegląd ekranów: +1.
 
+**156. Ćwiczenia, które klient już robił — przy rozpisywaniu i w profilu — 24.11.2026.**
+
+Trener: „żeby w profilu klienta zapamiętywały się ćwiczenia, które już robił — jak robił Dumbbell row w jakimś cyklu, a ja mu wpiszę to do kolejnego w konsoli, to chcę, żeby mi się pokazywało, że już robił, i np. jakim ciężarem albo jaki 1RM”.
+
+* **Plan:** na liście wyboru ćwiczenia ↺ przy tych, które klient robił w innych cyklach; po wybraniu pod nazwą „↺ robił w 1.0 · ostatnio 67,5 kg × 10 (1.0 T3) · 1RM ~89,4 kg”, w dymku: liczba treningów, serie ostatniego treningu z oceną, skąd najwyższy 1RM, 1RM w planie.
+* **Profil → Analiza:** panel „Ćwiczenia, które robił” — wszystkie ćwiczenia z jego treningów, od ostatnio robionych: ostatni ciężar, 1RM z treningów, 1RM w planie, cykle.
+* Liczone z wpisów klienta (to ćwiczenie, które faktycznie robił), 1RM jak w „Progress 1RM” (bez RPE); rozpisywany plan pominięty. `cwiczeniaKlienta` w `konsola/profil-klienta.ts`. Test: `profil-klienta.test.ts` (+1).
+
 **Kopia bazy poza serwerem — odłożona 26.09.2026.**
 
 Propozycja: przycisk „Pobierz kopię" w konsoli z przypomnieniem po tygodniu. Automatyczne kopie (raz na dobę, 30 ostatnich) leżą na tym samym serwerze co baza, więc nie chronią przed utratą serwera. Trener: „nie zajmujmy się tym teraz, ryzyko faktycznie jest małe". Do tego czasu kopię poza serwer da się ściągnąć ręcznie (`WDROZENIE.md`, „Kopie zapasowe"). Wrócić, gdy klientów będzie więcej.

@@ -15,7 +15,7 @@ import { katalog } from "../silnik/src/katalog.ts";
 import { numerTygodniaNaEkranie, przeliczPlan, TYDZIEN_MAKSOW, tygodniePlanu, type Plan } from "../silnik/src/plan.ts";
 import type { SeriaWykonana } from "./serie-wykonane.ts";
 import { najciezsza, serieWpisu } from "./serie-wykonane.ts";
-import { procent1RM } from "../silnik/src/rpe.ts";
+import { procent1RM, rozwiaz1RM } from "../silnik/src/rpe.ts";
 import { serieEfektywne, stresSlotu } from "../silnik/src/stres.ts";
 import { PRZESUNIECIE_RPE } from "../silnik/src/odczyt-1rm.ts";
 import { skokiStresu, stresCwiczen } from "../silnik/src/analiza-stresu.ts";
@@ -114,6 +114,57 @@ export function oneRMPrzezCykle(plany: readonly ZapisanyPlan[]) {
       wCyklach: w.punkty.length,
     };
   }).sort((a, b) => Math.abs(b.zmianaKg) - Math.abs(a.zmianaKg) || a.nazwa.localeCompare(b.nazwa, "pl"));
+}
+
+/**
+ * Ćwiczenia, które klient już robił (24.11.2026). Trener: „żeby w profilu
+ * klienta zapamiętywały się ćwiczenia, które już robił — jak robił Dumbbell
+ * row w jakimś cyklu, a ja mu wpiszę to do kolejnego, to chcę, żeby mi się
+ * pokazywało, że już robił, i jakim ciężarem albo jaki 1RM”.
+ *
+ * Na ćwiczenie (to, które klient faktycznie robił — `cwiczenieId` wpisu):
+ * cykle, w których je robił; ostatni trening z seriami (cykl, tydzień,
+ * serie, ocena); najwyższy szacunek 1RM z treningów (bez RPE, jak „Progress
+ * 1RM”) i 1RM z planu najnowszego z tych cykli. `pomin` — plan, który trener
+ * właśnie rozpisuje (jego wpisy to nie „już robił”).
+ */
+export function cwiczeniaKlienta(plany: readonly ZapisanyPlan[], pomin?: string) {
+  const wynik = new Map<string, {
+    cwiczenieId: string; nazwa: string; cykle: number[]; treningow: number;
+    ostatnio: { wersja: number; tydzien: number; data: string; serie: SeriaWykonana[]; feedback: string | null } | null;
+    najwyzszy: { oneRM: number; wersja: number; zrodlo: Zrodlo1RM } | null;
+    oneRMPlanu: { oneRM: number; wersja: number } | null;
+  }>();
+  for (const z of [...plany].filter((p) => p.id !== pomin).sort((a, b) => a.wersja - b.wersja)) {
+    const wynikPlanu = przeliczPlan(z.plan);
+    for (const w of z.wykonania ?? []) {
+      const id = w.cwiczenieId ?? z.plan.sloty.find((s) => s.positionId === w.positionId)?.cwiczenieId;
+      if (!id) continue;
+      const c = wynik.get(id) ?? { cwiczenieId: id, nazwa: nazwaCwiczenia(id), cykle: [], treningow: 0,
+        ostatnio: null, najwyzszy: null, oneRMPlanu: null };
+      if (!c.cykle.includes(z.wersja)) c.cykle.push(z.wersja);
+      c.treningow++;
+      const serie = serieWpisu(w).filter((x) => x.ciezar || x.powtorzenia);
+      if (serie.length && (!c.ostatnio || w.data > c.ostatnio.data)) {
+        c.ostatnio = { wersja: z.wersja, tydzien: numerTygodniaNaEkranie(z.plan, w.tydzien), data: w.data,
+          serie, feedback: w.feedback ?? null };
+      }
+      wynik.set(id, c);
+    }
+    for (const [id, lista] of szacunki1RM(z, wynikPlanu)) {
+      const c = wynik.get(id);
+      if (!c) continue;
+      const max = lista.reduce((a, b) => (b.oneRM > a.oneRM ? b : a));
+      if (!c.najwyzszy || max.oneRM > c.najwyzszy.oneRM) c.najwyzszy = { oneRM: max.oneRM, wersja: z.wersja, zrodlo: max.zrodlo };
+    }
+    for (const c of wynik.values()) {
+      if (!c.cykle.includes(z.wersja)) continue;
+      const oneRM = rozwiaz1RM(c.cwiczenieId, z.plan.serieMaksymalne);
+      if (oneRM > 0) c.oneRMPlanu = { oneRM: Math.round(oneRM * 10) / 10, wersja: z.wersja };
+    }
+  }
+  return [...wynik.values()].sort((a, b) => (b.ostatnio?.data ?? "").localeCompare(a.ostatnio?.data ?? "")
+    || a.nazwa.localeCompare(b.nazwa, "pl"));
 }
 
 /**

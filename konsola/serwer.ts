@@ -60,7 +60,7 @@ import { zaokraglij } from "../silnik/src/pomocnicze.ts";
 import { PRZECIWWSKAZANIA, dawkaOddechowa, OBJASNIENIA_ODDECHU } from "../silnik/src/oddech.ts";
 import { planBiegowy, strefyTetna, tempaTreningowe, hrMax, tempoTestowe, tempoTekst } from "../silnik/src/bieg.ts";
 import { NORMY } from "../silnik/src/stres.ts";
-import { dziennikTreningow, terazKlienta, oneRMPrzezCykle } from "./profil-klienta.ts";
+import { cwiczeniaKlienta, dziennikTreningow, terazKlienta, oneRMPrzezCykle } from "./profil-klienta.ts";
 import { planZArkusza, nierozpoznaneCwiczenia, type ZrzutArkusza } from "../silnik/src/import-arkusza.ts";
 import { porownajCykle, podsumujPorownanie } from "../silnik/src/porownanie-cykli.ts";
 import { historiaKlienta, podsumujHistorie } from "../silnik/src/historia-klienta.ts";
@@ -894,6 +894,8 @@ function kartotekaKlienta(trenerId: number, klientId: string) {
       realizacja: realizacja(biezacy, klient),
     } : null,
     dziennik: dziennikTreningow(plany),
+    // Ćwiczenia, które klient robił — z ostatnim ciężarem i 1RM (24.11.2026).
+    cwiczeniaKlienta: cwiczeniaKlienta(plany),
     // 1RM przez cykle z treningów, bez RPE — jak „Progress 1RM” (23.11.2026).
     sciezki1RM: oneRMPrzezCykle(plany),
     normy: NORMY,
@@ -970,6 +972,11 @@ function obrazPlanu(zapisany: magazyn.ZapisanyPlan) {
     porownanie: porownanieZPoprzednim(zapisany, wynik),
     moduly: moduly(zapisany),
     normy: NORMY,
+    // Ćwiczenia, które klient robił w innych cyklach (24.11.2026) — konsola
+    // pokazuje przy ćwiczeniu „↺ robił…”, ostatni ciężar i 1RM.
+    historiaCwiczen: Object.fromEntries(
+      cwiczeniaKlienta(magazyn.planyKlienta(zapisany.trenerId, zapisany.klientId), zapisany.id)
+        .map((c) => [c.cwiczenieId, c])),
     // Ranking ćwiczeń po stresie i skoki stresu planu (23.11.2026).
     stresCwiczen: stresCwiczen(wynik),
     skokiPlanu: skokiStresu(wynik.tygodnie.map((t) => Math.round(t.bilans.razem * 100) / 100)),

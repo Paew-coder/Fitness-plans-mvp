@@ -135,3 +135,26 @@ test("1RM przez cykle: w każdym cyklu najwyższy szacunek z treningów (bez RPE
   // Wykrok bez serii z ciężarem — nie ma go w ogóle.
   assert.ok(!r.some((c) => c.nazwa === "Alt. Drop Lunge - Low Impact"));
 });
+
+test("ćwiczenia, które klient robił: cykle, ostatni trening z seriami, najwyższy 1RM, 1RM z planu; plan rozpisywany pominięty", async () => {
+  const { cwiczeniaKlienta } = await import("../profil-klienta.ts");
+  const cykl1 = zapisany();
+  const cykl2 = zapisany();
+  (cykl2 as any).id = "kt-2";
+  (cykl2 as any).wersja = 2;
+  (cykl2 as any).wykonania = [];
+  const r = cwiczeniaKlienta([cykl1, cykl2], "kt-2");
+  const wioslo = r.find((c) => c.cwiczenieId === "EX-0016")!;
+  assert.deepEqual(wioslo.cykle, [1]);
+  assert.equal(wioslo.treningow, 2);
+  assert.equal(wioslo.ostatnio!.tydzien, 2, "ostatni trening z seriami — T2");
+  assert.equal(wioslo.ostatnio!.serie.length, 1);
+  assert.ok(wioslo.najwyzszy!.oneRM > 0 && wioslo.najwyzszy!.wersja === 1);
+  assert.deepEqual(wioslo.oneRMPlanu, { oneRM: 90, wersja: 1 });
+  // Wykrok — sama ocena: jest (robił), ale bez serii i bez 1RM.
+  const wykrok = r.find((c) => c.cwiczenieId === "EX-0975")!;
+  assert.equal(wykrok.ostatnio, null);
+  assert.equal(wykrok.najwyzszy, null);
+  // Rozpisywany plan pominięty — jego wpisy to nie „już robił”.
+  assert.deepEqual(cwiczeniaKlienta([cykl1], "kt-1"), []);
+});

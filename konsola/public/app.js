@@ -350,6 +350,7 @@ function rysujKartoteke() {
   rysujTeraz(kartoteka.teraz);
   rysujDziennik(kartoteka.dziennik ?? []);
   rysujSciezki1RM(kartoteka.sciezki1RM ?? historia.cwiczenia);
+  rysujCwiczeniaKlienta(kartoteka.cwiczeniaKlienta);
   rysujHistorieObciazenia(historia.cykle);
   rysujHistorieWzorcow(historia.wzorce);
   rysujHistorieFrekwencji(historia.cykle);
@@ -2842,7 +2843,9 @@ function rysujSlot(slot, pusty) {
   const dostepne = cwiczenia.filter((c) => !c.biblioteka && !zInnegoPlanu(c)
     && (!slot.kategoriaSzkieletu || wKategorii(c, slot.kategoriaSzkieletu)));
   for (const c of dostepne) {
-    const o = el("option", "", c.nazwa + znakStron(c) + dopisekWlasnego(c));
+    // ↺ — klient robił to ćwiczenie w innym cyklu (24.11.2026).
+    const o = el("option", "", c.nazwa + znakStron(c) + dopisekWlasnego(c)
+      + (obraz.historiaCwiczen?.[c.id] ? " ↺" : ""));
     o.value = c.id;
     wybor.append(o);
   }
@@ -3006,6 +3009,14 @@ function rysujSlot(slot, pusty) {
     podglad.append(el("span", "ikona", "💬"), el("span", "tekst", slot.uwaga.replace(/\s*\n\s*/g, " · ")));
     podglad.onclick = () => edytujUwage(slot);
     komorkaCwiczenia.append(podglad);
+  }
+  // Klient robił to ćwiczenie w innym cyklu (24.11.2026): kiedy, ostatni
+  // ciężar i 1RM — pod nazwą, szczegóły w dymku.
+  const historiaCw = wybrane ? obraz.historiaCwiczen?.[slot.cwiczenieId] : null;
+  if (historiaCw) {
+    const h = el("div", "historia-cwiczenia", opisHistoriiCwiczenia(historiaCw));
+    h.title = szczegolyHistoriiCwiczenia(historiaCw);
+    komorkaCwiczenia.append(h);
   }
   // Na iPadzie w pionie i telefonie kolumny stresu nie ma — liczba pod nazwą.
   if (wybrane && wyliczony?.cwiczenie && wyliczony.stres) {
@@ -4250,6 +4261,61 @@ async function sekcjaJezyka(planId, naZmiane = () => {}) {
   naZmiane(stan.jezyk);
   sekcja.append(wiersz, teksty, komunikat);
   return sekcja;
+}
+
+/**
+ * Ćwiczenie, które klient już robił (24.11.2026) — jedna linijka pod nazwą
+ * w planie i w profilu: „↺ robił w 1.0 · ostatnio 30 kg × 10 (1.0 T6) · 1RM ~40 kg”.
+ */
+const cyklNazwa = (w) => `${w}.0`;
+function opisSerii1(serie) {
+  const najciezsza = [...serie].sort((a, b) => (b.ciezar ?? 0) - (a.ciezar ?? 0))[0];
+  if (!najciezsza) return "";
+  return najciezsza.ciezar ? `${liczba(najciezsza.ciezar)} kg × ${najciezsza.powtorzenia ?? "—"}`
+    : `× ${najciezsza.powtorzenia ?? "—"}`;
+}
+function opisHistoriiCwiczenia(h) {
+  const czesci = [`↺ robił w ${h.cykle.map(cyklNazwa).join(", ")}`];
+  if (h.ostatnio) czesci.push(`ostatnio ${opisSerii1(h.ostatnio.serie)} (${cyklNazwa(h.ostatnio.wersja)} T${h.ostatnio.tydzien})`);
+  if (h.najwyzszy) czesci.push(`1RM ~${liczba(h.najwyzszy.oneRM, 1)} kg`);
+  return czesci.join(" · ");
+}
+function szczegolyHistoriiCwiczenia(h) {
+  const linie = [`${h.nazwa}: ${h.treningow} ${odmiana(h.treningow, ["trening", "treningi", "treningów"])} w cyklach ${h.cykle.map(cyklNazwa).join(", ")}`];
+  if (h.ostatnio) {
+    linie.push(`Ostatnio (${cyklNazwa(h.ostatnio.wersja)} T${h.ostatnio.tydzien}, ${new Date(h.ostatnio.data).toLocaleDateString("pl-PL")}): `
+      + h.ostatnio.serie.map((x) => x.ciezar ? `${liczba(x.ciezar)} × ${x.powtorzenia ?? "—"}` : `× ${x.powtorzenia ?? "—"}`).join(", ")
+      + (h.ostatnio.feedback && h.ostatnio.feedback !== "OK" ? ` — ocena „${h.ostatnio.feedback}”` : ""));
+  }
+  if (h.najwyzszy) {
+    const z = h.najwyzszy.zrodlo;
+    linie.push(`Najwyższy 1RM z treningów (bez RPE): ${liczba(h.najwyzszy.oneRM, 1)} kg — ${cyklNazwa(h.najwyzszy.wersja)} `
+      + `${z.rodzaj === "top set" ? "TOP SET " : z.rodzaj === "maksy" ? "maksy " : ""}T${z.tydzien}: ${liczba(z.ciezar)} kg × ${z.powtorzenia}`);
+  }
+  if (h.oneRMPlanu) linie.push(`1RM w planie ${cyklNazwa(h.oneRMPlanu.wersja)}: ${liczba(h.oneRMPlanu.oneRM, 1)} kg`);
+  return linie.join("\n");
+}
+
+/** Profil klienta → Analiza: „Ćwiczenia, które robił” (24.11.2026). */
+function rysujCwiczeniaKlienta(lista) {
+  const kontener = $("#cwiczenia-klienta");
+  kontener.replaceChildren();
+  if (!lista?.length) {
+    kontener.append(el("p", "wskazowka", "Klient nie zrobił jeszcze żadnego ćwiczenia."));
+    return;
+  }
+  kontener.append(el("p", "opis-bloku",
+    "Wszystkie ćwiczenia z jego treningów, od ostatnio robionych. Przy rozpisywaniu planu te same ćwiczenia mają ↺ na liście i „↺ robił…” pod nazwą."));
+  for (const h of lista) {
+    const w = el("div", "wiersz-cwiczenia-klienta");
+    const opis = [h.ostatnio ? `ostatnio ${opisSerii1(h.ostatnio.serie)} (${cyklNazwa(h.ostatnio.wersja)} T${h.ostatnio.tydzien})` : "bez serii z ciężarem",
+      h.najwyzszy ? `1RM ~${liczba(h.najwyzszy.oneRM, 1)} kg` : null,
+      h.oneRMPlanu ? `w planie ${liczba(h.oneRMPlanu.oneRM, 1)} kg` : null].filter(Boolean).join(" · ");
+    w.append(el("span", "nazwa-1rm", h.nazwa),
+      el("span", "zrodlo-1rm", `${opis} · cykle ${h.cykle.map(cyklNazwa).join(", ")}`));
+    w.title = szczegolyHistoriiCwiczenia(h);
+    kontener.append(w);
+  }
 }
 
 /**
